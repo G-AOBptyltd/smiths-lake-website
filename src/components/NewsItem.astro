@@ -1,0 +1,83 @@
+---
+interface Props {
+  title: string;
+  date: Date;
+  excerpt: string;
+  href: string;
+}
+
+const { title, date, excerpt, href } = Astro.props;
+
+const formattedDate = date.toLocaleDateString('en-AU', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric'
+});
+
+const isoDate = date.toISOString().split('T')[0];
+---
+
+<article class="news-item">
+  <time class="news-item__date" datetime={isoDate}>{formattedDate}</time>
+  <h3 class="news-item__title">{title}</h3>
+  <p class="news-item__excerpt">{excerpt}</p>
+  <a href={href} class="news-item__link">
+    Read more
+    <span class="sr-only"> about {title}</span>
+  </a>
+</article>
+
+<style>
+  .news-item {
+    border-left: 4px solid var(--color-golden);
+    padding-left: var(--space-6);
+  }
+  
+  .news-item__date {
+    display: block;
+    font-size: var(--text-sm);
+    color: var(--color-gray-500);
+    margin-bottom: var(--space-2);
+  }
+  
+  .news-item__title {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-3);
+    color: var(--color-navy);
+  }
+  
+  .news-item__excerpt {
+    color: var(--color-gray-600);
+    margin-bottom: var(--space-3);
+    font-size: var(--text-base);
+  }
+  
+  .news-item__link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--color-golden-dark);
+    font-weight: 600;
+    text-decoration: none;
+    font-size: var(--text-sm);
+  }
+  
+  .news-item__link:hover {
+    color: var(--color-golden);
+  }
+  
+  .news-item__link::after {
+    content: '→';
+    transition: transform var(--transition-fast);
+  }
+  
+  .news-item__link:hover::after {
+    transform: translateX(4px);
+  }
+  
+  .news-item__link:focus-visible {
+    outline: 2px solid var(--color-golden);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+</style>

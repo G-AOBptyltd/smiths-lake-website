@@ -1,0 +1,8 @@
+# Smiths Lake Village Community Website
+# https://villagefirst.org.au
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://villagefirst.org.au/sitemap-index.xml

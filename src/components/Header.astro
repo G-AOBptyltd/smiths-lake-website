@@ -1,0 +1,304 @@
+---
+// Header component with responsive navigation
+const currentPath = Astro.url.pathname;
+
+const navItems = [
+  { href: '/', label: 'Home' },
+  { href: '/about/', label: 'About Us' },
+  { href: '/emergency/', label: 'Emergency & Safety' },
+  { href: '/services/', label: 'Services' },
+  { href: '/groups/', label: 'Groups & Activities' },
+  { href: '/environment/', label: 'Environment' },
+  { href: '/history/', label: 'History' },
+];
+
+function isActive(href: string): boolean {
+  if (href === '/') {
+    return currentPath === '/';
+  }
+  return currentPath.startsWith(href);
+}
+---
+
+<header class="site-header" role="banner">
+  <div class="header-container">
+    <a href="/" class="site-logo" aria-label="Smiths Lake Village - Home">
+      <!-- Lake wave logo -->
+      <svg class="logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2" fill="none"/>
+        <path d="M8 26 Q14 22, 20 26 T32 26 T44 26" stroke="#F5A623" stroke-width="2.5" fill="none"/>
+        <path d="M4 32 Q12 28, 20 32 T36 32 T48 32" stroke="#5B9BD5" stroke-width="2" fill="none"/>
+        <circle cx="24" cy="14" r="5" fill="#F5A623" opacity="0.6"/>
+      </svg>
+      <div class="logo-text">
+        <span class="site-title">Smiths Lake Village</span>
+        <span class="site-tagline">Pacific Palms Community</span>
+      </div>
+    </a>
+    
+    <nav class="main-nav" role="navigation" aria-label="Main navigation">
+      <button 
+        class="nav-toggle" 
+        aria-expanded="false" 
+        aria-controls="main-menu"
+        aria-label="Toggle navigation menu"
+      >
+        <span class="nav-toggle-text">Menu</span>
+        <span class="nav-toggle-icon" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </button>
+      
+      <ul id="main-menu" class="nav-menu">
+        {navItems.map((item) => (
+          <li>
+            <a 
+              href={item.href} 
+              class:list={['nav-link', { 'is-active': isActive(item.href) }]}
+              aria-current={isActive(item.href) ? 'page' : undefined}
+            >
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    background-color: var(--color-navy);
+    color: var(--color-white);
+    padding: var(--space-4) 0;
+    position: sticky;
+    top: 0;
+    z-index: var(--z-sticky);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .header-container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 var(--space-4);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+  }
+  
+  /* Logo */
+  .site-logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    text-decoration: none;
+    color: var(--color-white);
+    flex-shrink: 0;
+  }
+  
+  .site-logo:hover {
+    color: var(--color-sky-light);
+  }
+  
+  .site-logo:focus-visible {
+    outline: 3px solid var(--color-golden);
+    outline-offset: 4px;
+    border-radius: var(--radius-sm);
+  }
+  
+  .logo-icon {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+  }
+  
+  .logo-text {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .site-title {
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  
+  .site-tagline {
+    font-size: var(--text-xs);
+    opacity: 0.9;
+    line-height: 1.2;
+  }
+  
+  /* Navigation */
+  .main-nav {
+    display: flex;
+    align-items: center;
+  }
+  
+  .nav-menu {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: var(--space-1);
+  }
+  
+  .nav-link {
+    display: block;
+    padding: var(--space-3) var(--space-4);
+    color: var(--color-white);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: var(--text-sm);
+    border-radius: var(--radius-sm);
+    transition: background-color var(--transition-fast);
+    white-space: nowrap;
+  }
+  
+  .nav-link:hover {
+    background-color: var(--color-navy-light);
+    color: var(--color-white);
+  }
+  
+  .nav-link:focus-visible {
+    outline: 3px solid var(--color-golden);
+    outline-offset: 2px;
+  }
+  
+  .nav-link.is-active {
+    background-color: var(--color-golden);
+    color: var(--color-navy);
+  }
+  
+  .nav-link.is-active:hover {
+    background-color: var(--color-golden-dark);
+    color: var(--color-navy);
+  }
+  
+  /* Mobile toggle button */
+  .nav-toggle {
+    display: none;
+    align-items: center;
+    gap: var(--space-2);
+    background: transparent;
+    border: 2px solid var(--color-white);
+    color: var(--color-white);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+  
+  .nav-toggle:hover {
+    background-color: var(--color-navy-light);
+  }
+  
+  .nav-toggle:focus-visible {
+    outline: 3px solid var(--color-golden);
+    outline-offset: 2px;
+  }
+  
+  .nav-toggle-icon {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 20px;
+  }
+  
+  .nav-toggle-icon span {
+    display: block;
+    height: 2px;
+    background-color: currentColor;
+    border-radius: 1px;
+    transition: transform var(--transition-fast), opacity var(--transition-fast);
+  }
+  
+  .nav-toggle[aria-expanded="true"] .nav-toggle-icon span:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+  }
+  
+  .nav-toggle[aria-expanded="true"] .nav-toggle-icon span:nth-child(2) {
+    opacity: 0;
+  }
+  
+  .nav-toggle[aria-expanded="true"] .nav-toggle-icon span:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+  
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .nav-toggle {
+      display: flex;
+    }
+    
+    .nav-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      flex-direction: column;
+      background-color: var(--color-navy);
+      padding: var(--space-4);
+      box-shadow: var(--shadow-lg);
+      gap: var(--space-1);
+    }
+    
+    .nav-menu.is-open {
+      display: flex;
+    }
+    
+    .nav-link {
+      padding: var(--space-4);
+      font-size: var(--text-base);
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .logo-text {
+      display: none;
+    }
+    
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+    }
+  }
+</style>
+
+<script>
+  // Mobile navigation toggle
+  const navToggle = document.querySelector('.nav-toggle');
+  const navMenu = document.querySelector('.nav-menu');
+  
+  if (navToggle && navMenu) {
+    navToggle.addEventListener('click', () => {
+      const isExpanded = navToggle.getAttribute('aria-expanded') === 'true';
+      navToggle.setAttribute('aria-expanded', (!isExpanded).toString());
+      navMenu.classList.toggle('is-open');
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.main-nav')) {
+        navToggle.setAttribute('aria-expanded', 'false');
+        navMenu.classList.remove('is-open');
+      }
+    });
+    
+    // Close menu on escape key
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        navToggle.setAttribute('aria-expanded', 'false');
+        navMenu.classList.remove('is-open');
+      }
+    });
+  }
+</script>

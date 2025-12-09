@@ -1,0 +1,229 @@
+---
+const currentYear = new Date().getFullYear();
+
+const footerSections = [
+  {
+    title: 'Quick Links',
+    links: [
+      { href: '/about/', label: 'About Smiths Lake' },
+      { href: '/services/', label: 'Services & Amenities' },
+      { href: '/groups/', label: 'Groups & Activities' },
+      { href: '/contact/', label: 'Contact Us' },
+    ]
+  },
+  {
+    title: 'Emergency Info',
+    links: [
+      { href: '/emergency/', label: 'Emergency Contacts' },
+      { href: '/emergency/#evacuation', label: 'Evacuation Plans' },
+      { href: '/emergency/#bushfire', label: 'Bushfire Information' },
+      { href: '/emergency/#flood', label: 'Flood Preparedness' },
+    ]
+  },
+  {
+    title: 'Resources',
+    links: [
+      { href: '/environment/', label: 'Environment & Conservation' },
+      { href: '/history/', label: 'Local History' },
+      { href: '/about/#documents', label: 'Document Library' },
+      { href: '/about/#maps', label: 'Maps & Demographics' },
+    ]
+  },
+  {
+    title: 'Connect',
+    links: [
+      { href: '/newsletter/', label: 'Newsletter Signup' },
+      { href: '/feedback/', label: 'Submit Feedback' },
+      { href: 'https://www.midcoast.nsw.gov.au/', label: 'MidCoast Council', external: true },
+    ]
+  }
+];
+---
+
+<footer class="site-footer" role="contentinfo">
+  <div class="footer-container">
+    <div class="footer-grid">
+      {footerSections.map((section) => (
+        <div class="footer-section">
+          <h4 class="footer-heading">{section.title}</h4>
+          <ul class="footer-links">
+            {section.links.map((link) => (
+              <li>
+                <a 
+                  href={link.href}
+                  class="footer-link"
+                  {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                >
+                  {link.label}
+                  {link.external && (
+                    <span class="external-icon" aria-hidden="true">↗</span>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+    
+    <div class="footer-bottom">
+      <p class="copyright">
+        © {currentYear} Pacific Palms Community Association (PPCA). All rights reserved.
+      </p>
+      <nav class="footer-legal" aria-label="Legal links">
+        <a href="/privacy/">Privacy Policy</a>
+        <a href="/accessibility/">Accessibility</a>
+        <a href="/sitemap/">Site Map</a>
+      </nav>
+    </div>
+    
+    <div class="footer-acknowledgement">
+      <p>
+        We acknowledge the Worimi people as the traditional custodians of the land on which 
+        Smiths Lake Village is located. We pay our respects to Elders past, present and emerging.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background-color: var(--color-navy);
+    color: var(--color-white);
+    padding: var(--space-12) 0 var(--space-8);
+  }
+  
+  .footer-container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 var(--space-4);
+  }
+  
+  .footer-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: var(--space-8);
+    margin-bottom: var(--space-10);
+  }
+  
+  @media (min-width: 640px) {
+    .footer-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .footer-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+  
+  .footer-heading {
+    font-family: var(--font-heading);
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: var(--color-white);
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 2px solid var(--color-golden);
+  }
+  
+  .footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .footer-links li {
+    margin-bottom: var(--space-3);
+  }
+  
+  .footer-links li:last-child {
+    margin-bottom: 0;
+  }
+  
+  .footer-link {
+    color: var(--color-sky-light);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    transition: color var(--transition-fast);
+  }
+  
+  .footer-link:hover {
+    color: var(--color-white);
+    text-decoration: underline;
+  }
+  
+  .footer-link:focus-visible {
+    outline: 2px solid var(--color-golden);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+  
+  .external-icon {
+    font-size: 0.75em;
+  }
+  
+  .footer-bottom {
+    border-top: 1px solid var(--color-navy-light);
+    padding-top: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+  
+  @media (min-width: 768px) {
+    .footer-bottom {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+  
+  .copyright {
+    font-size: var(--text-sm);
+    color: var(--color-sky-light);
+    margin: 0;
+  }
+  
+  .footer-legal {
+    display: flex;
+    gap: var(--space-6);
+    flex-wrap: wrap;
+  }
+  
+  .footer-legal a {
+    color: var(--color-sky-light);
+    text-decoration: none;
+    font-size: var(--text-sm);
+    transition: color var(--transition-fast);
+  }
+  
+  .footer-legal a:hover {
+    color: var(--color-white);
+    text-decoration: underline;
+  }
+  
+  .footer-legal a:focus-visible {
+    outline: 2px solid var(--color-golden);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+  
+  .footer-acknowledgement {
+    border-top: 1px solid var(--color-navy-light);
+    padding-top: var(--space-6);
+  }
+  
+  .footer-acknowledgement p {
+    font-size: var(--text-sm);
+    color: var(--color-sky-light);
+    font-style: italic;
+    margin: 0;
+    line-height: var(--leading-relaxed);
+  }
+</style>

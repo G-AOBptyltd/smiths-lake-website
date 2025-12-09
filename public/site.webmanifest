@@ -1,0 +1,16 @@
+{
+  "name": "Smiths Lake Village",
+  "short_name": "Smiths Lake",
+  "description": "Official community website for Smiths Lake Village, Pacific Palms NSW",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#1B365D",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

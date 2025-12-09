@@ -1,0 +1,138 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Hero from '../../components/Hero.astro';
+
+const historySections = [
+  {
+    id: 'worimi',
+    title: 'Worimi Country',
+    content: 'Smiths Lake and the surrounding lands are the traditional country of the Worimi people. For thousands of years, the Worimi have lived in harmony with this land, managing the environment and creating a rich cultural heritage that continues today. We acknowledge their ongoing connection to country and pay our respects to Elders past, present, and emerging.',
+  },
+  {
+    id: 'smiths-lake',
+    title: 'Smiths Lake Village',
+    content: 'The village of Smiths Lake has grown from a small fishing and holiday settlement into a thriving permanent community. Named after the lake itself, the village retains its relaxed coastal character while offering modern amenities to residents and visitors.',
+  },
+  {
+    id: 'pacific-palms',
+    title: 'Pacific Palms Area',
+    content: 'Pacific Palms encompasses several communities including Smiths Lake, Blueys Beach, Boomerang Beach, and Elizabeth Beach. The area is renowned for its stunning beaches, pristine lake, and proximity to the Myall Lakes National Park.',
+  },
+  {
+    id: 'bungwahl',
+    title: 'Bungwahl & Seal Rocks',
+    content: 'The broader region includes the historic settlement of Bungwahl and the spectacular Seal Rocks headland. These areas share a connected history with Smiths Lake and contribute to the rich tapestry of our local heritage.',
+  },
+];
+---
+
+<BaseLayout 
+  title="History & Culture" 
+  description="The rich history of Smiths Lake Village, Worimi heritage, and local culture in Pacific Palms."
+>
+  <Hero 
+    title="History & Culture"
+    subtitle="Discover the stories that shaped our community and the culture that defines us."
+    size="small"
+  />
+  
+  <section class="section">
+    <div class="container container--narrow">
+      
+      <!-- Acknowledgement of Country - prominent -->
+      <div class="acknowledgement">
+        <h2>Acknowledgement of Country</h2>
+        <p>
+          We acknowledge the Worimi people as the traditional custodians of the land 
+          on which Smiths Lake Village is located. We recognise their continuing 
+          connection to land, waters, and culture. We pay our respects to their 
+          Elders past, present, and emerging.
+        </p>
+      </div>
+      
+      <div class="history-sections">
+        {historySections.map((section) => (
+          <article id={section.id} class="history-block">
+            <h2>{section.title}</h2>
+            <p>{section.content}</p>
+          </article>
+        ))}
+      </div>
+      
+      <aside class="timeline-teaser">
+        <h2>Community Timeline</h2>
+        <p>
+          We're working with local historians and community members to document the 
+          key events and stories that have shaped our area. If you have photos, 
+          documents, or memories to share, we'd love to hear from you.
+        </p>
+        <a href="/contact/" class="btn btn--outline">Share Your Story</a>
+      </aside>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .acknowledgement {
+    background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
+    color: var(--color-white);
+    padding: var(--space-10);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-12);
+    text-align: center;
+  }
+  
+  .acknowledgement h2 {
+    color: var(--color-golden);
+    margin-bottom: var(--space-4);
+  }
+  
+  .acknowledgement p {
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: var(--leading-relaxed);
+    color: var(--color-gray-200);
+  }
+  
+  .history-sections {
+    margin-bottom: var(--space-12);
+  }
+  
+  .history-block {
+    margin-bottom: var(--space-10);
+    padding-bottom: var(--space-10);
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+  
+  .history-block:last-child {
+    border-bottom: none;
+  }
+  
+  .history-block h2 {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-4);
+  }
+  
+  .history-block p {
+    color: var(--color-gray-700);
+    line-height: var(--leading-relaxed);
+  }
+  
+  .timeline-teaser {
+    background: var(--color-off-white);
+    padding: var(--space-8);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    border-left: 4px solid var(--color-golden);
+  }
+  
+  .timeline-teaser h2 {
+    margin-bottom: var(--space-4);
+  }
+  
+  .timeline-teaser p {
+    max-width: 500px;
+    margin: 0 auto var(--space-6);
+    color: var(--color-gray-700);
+  }
+</style>

@@ -1,0 +1,159 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+---
+
+<BaseLayout 
+  title="Contact Us" 
+  description="Get in touch with the Pacific Palms Community Association (PPCA)."
+>
+  <Hero 
+    title="Contact Us"
+    subtitle="Get in touch with the PPCA committee."
+    size="small"
+  />
+  
+  <section class="section">
+    <div class="container container--narrow">
+      <div class="contact-intro text-center">
+        <p>
+          Have a question, suggestion, or want to get involved? We'd love to hear from you. 
+          Fill out the form below and a committee member will respond as soon as possible.
+        </p>
+      </div>
+      
+      <form 
+        name="contact" 
+        method="POST" 
+        data-netlify="true" 
+        netlify-honeypot="bot-field"
+        class="contact-form"
+      >
+        <!-- Hidden fields for Netlify -->
+        <input type="hidden" name="form-name" value="contact" />
+        <p class="hidden">
+          <label>Don't fill this out: <input name="bot-field" /></label>
+        </p>
+        
+        <div class="form-group">
+          <label for="name" class="form-label form-label--required">Your Name</label>
+          <input 
+            type="text" 
+            id="name" 
+            name="name" 
+            class="form-input" 
+            required 
+            autocomplete="name"
+          />
+        </div>
+        
+        <div class="form-group">
+          <label for="email" class="form-label form-label--required">Email Address</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            class="form-input" 
+            required 
+            autocomplete="email"
+          />
+        </div>
+        
+        <div class="form-group">
+          <label for="phone" class="form-label">Phone Number (optional)</label>
+          <input 
+            type="tel" 
+            id="phone" 
+            name="phone" 
+            class="form-input" 
+            autocomplete="tel"
+          />
+        </div>
+        
+        <div class="form-group">
+          <label for="subject" class="form-label form-label--required">Subject</label>
+          <select id="subject" name="subject" class="form-select" required>
+            <option value="">Please select...</option>
+            <option value="general">General Enquiry</option>
+            <option value="membership">PPCA Membership</option>
+            <option value="volunteer">Volunteering</option>
+            <option value="website">Website Feedback</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="message" class="form-label form-label--required">Your Message</label>
+          <textarea 
+            id="message" 
+            name="message" 
+            class="form-textarea" 
+            rows="6" 
+            required
+          ></textarea>
+        </div>
+        
+        <div class="form-group">
+          <button type="submit" class="btn btn--primary btn--lg">Send Message</button>
+        </div>
+      </form>
+      
+      <aside class="contact-info">
+        <h2>Other Ways to Reach Us</h2>
+        <p>
+          PPCA holds regular community meetings where residents can raise matters 
+          directly. Meeting dates are announced on the website and via our newsletter.
+        </p>
+        <p>
+          For urgent community matters, please attend a PPCA meeting or contact 
+          MidCoast Council directly.
+        </p>
+      </aside>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .contact-intro {
+    max-width: 600px;
+    margin: 0 auto var(--space-10);
+  }
+  
+  .contact-intro p {
+    font-size: var(--text-lg);
+    color: var(--color-gray-700);
+  }
+  
+  .contact-form {
+    background: var(--color-off-white);
+    padding: var(--space-8);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-10);
+  }
+  
+  .hidden {
+    display: none;
+  }
+  
+  .contact-info {
+    text-align: center;
+    padding: var(--space-8);
+    background: var(--color-sky-pale);
+    border-radius: var(--radius-lg);
+  }
+  
+  .contact-info h2 {
+    font-size: var(--text-xl);
+    margin-bottom: var(--space-4);
+  }
+  
+  .contact-info p {
+    color: var(--color-gray-700);
+    max-width: 500px;
+    margin: 0 auto var(--space-4);
+  }
+  
+  .contact-info p:last-child {
+    margin-bottom: 0;
+  }
+</style>

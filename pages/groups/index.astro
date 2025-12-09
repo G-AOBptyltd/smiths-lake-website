@@ -1,0 +1,171 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Hero from '../../components/Hero.astro';
+
+const groups = [
+  { name: 'Aquatic Centre - Coomba Park', category: 'Sports' },
+  { name: 'Arts Group', category: 'Arts & Culture' },
+  { name: 'Choir', category: 'Arts & Culture' },
+  { name: 'Fishing Club', category: 'Sports' },
+  { name: 'Gardening Group', category: 'Hobbies' },
+  { name: 'Into The Wild Program', category: 'Environment' },
+  { name: "Lion's Club", category: 'Service' },
+  { name: "Men's Shed - Coomba Park", category: 'Social' },
+  { name: 'Pickle Ball', category: 'Sports' },
+  { name: 'Probus Group', category: 'Social' },
+  { name: 'Rotary', category: 'Service' },
+];
+
+const categories = ['All', 'Sports', 'Arts & Culture', 'Social', 'Service', 'Hobbies', 'Environment'];
+---
+
+<BaseLayout 
+  title="Groups & Activities" 
+  description="Community groups, clubs, and activities in Smiths Lake Village and Pacific Palms."
+>
+  <Hero 
+    title="Groups & Activities"
+    subtitle="Join our vibrant community through clubs, groups, and volunteering."
+    size="small"
+  />
+  
+  <section class="section">
+    <div class="container">
+      <div class="intro text-center">
+        <p class="lead">
+          Smiths Lake and the Pacific Palms area have a rich community life with groups 
+          catering to all interests. Whether you're into sports, arts, gardening, or 
+          community service, there's something for everyone.
+        </p>
+      </div>
+      
+      <div class="groups-grid">
+        {groups.map((group) => (
+          <article class="group-card">
+            <span class="group-category">{group.category}</span>
+            <h3 class="group-name">{group.name}</h3>
+            <a href="#" class="group-link">Learn more →</a>
+          </article>
+        ))}
+      </div>
+      
+      <aside class="volunteer-cta">
+        <h2>Get Involved</h2>
+        <p>
+          Want to make a difference in our community? Many of our groups are always 
+          looking for volunteers and new members. Contact us to find out how you can 
+          contribute.
+        </p>
+        <a href="/contact/" class="btn btn--primary">Contact Us</a>
+      </aside>
+      
+      <div class="council-section">
+        <h2>Submissions to Council</h2>
+        <p>
+          The PPCA coordinates community submissions to MidCoast Council on important 
+          local issues. If you'd like to contribute to or learn about upcoming submissions, 
+          visit our guidance documents.
+        </p>
+        <a href="#" class="btn btn--outline">View Submission Guidelines</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .intro {
+    max-width: 800px;
+    margin: 0 auto var(--space-12);
+  }
+  
+  .lead {
+    font-size: var(--text-xl);
+    color: var(--color-gray-700);
+    line-height: var(--leading-relaxed);
+  }
+  
+  .groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-6);
+    margin-bottom: var(--space-12);
+  }
+  
+  .group-card {
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+    transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+  }
+  
+  .group-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+  
+  .group-category {
+    display: inline-block;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--color-sky);
+    background: var(--color-sky-pale);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-3);
+  }
+  
+  .group-name {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-3);
+  }
+  
+  .group-link {
+    color: var(--color-golden-dark);
+    font-weight: 600;
+    text-decoration: none;
+    font-size: var(--text-sm);
+  }
+  
+  .group-link:hover {
+    color: var(--color-golden);
+  }
+  
+  .volunteer-cta {
+    background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
+    color: var(--color-white);
+    padding: var(--space-10);
+    border-radius: var(--radius-lg);
+    text-align: center;
+    margin-bottom: var(--space-12);
+  }
+  
+  .volunteer-cta h2 {
+    color: var(--color-white);
+    margin-bottom: var(--space-4);
+  }
+  
+  .volunteer-cta p {
+    max-width: 600px;
+    margin: 0 auto var(--space-6);
+    color: var(--color-gray-200);
+  }
+  
+  .council-section {
+    background: var(--color-off-white);
+    padding: var(--space-8);
+    border-radius: var(--radius-lg);
+    text-align: center;
+  }
+  
+  .council-section h2 {
+    margin-bottom: var(--space-4);
+  }
+  
+  .council-section p {
+    max-width: 600px;
+    margin: 0 auto var(--space-6);
+    color: var(--color-gray-700);
+  }
+</style>

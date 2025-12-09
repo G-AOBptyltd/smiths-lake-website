@@ -1,0 +1,192 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import QuickInfo from '../components/QuickInfo.astro';
+import SectionCard from '../components/SectionCard.astro';
+import NewsItem from '../components/NewsItem.astro';
+
+const quickInfoItems = [
+  { value: '~1,300', label: 'Permanent Residents' },
+  { value: 'Great Lakes', label: 'NSW Region' },
+  { value: 'MidCoast', label: 'Local Council' },
+  { value: 'PPCA', label: 'Community Association' },
+];
+
+const sections = [
+  {
+    title: 'About Us',
+    description: 'Learn about Smiths Lake Village, PPCA, our community plans, local demographics, and what makes our coastal community special.',
+    href: '/about/',
+    icon: 'about',
+  },
+  {
+    title: 'Emergency & Safety',
+    description: 'Critical emergency contacts, evacuation plans, Bushfire Brigade, Surf Life Saving, and safety resources for our community.',
+    href: '/emergency/',
+    icon: 'emergency',
+    variant: 'emergency' as const,
+  },
+  {
+    title: 'Services & Amenities',
+    description: 'Medical services, existing amenities, and current developing projects including the Fire Station and Recreation Reserve.',
+    href: '/services/',
+    icon: 'services',
+  },
+  {
+    title: 'Groups & Activities',
+    description: 'Join our vibrant community groups including arts, fishing, gardening, and sporting clubs. Find volunteering opportunities.',
+    href: '/groups/',
+    icon: 'groups',
+  },
+  {
+    title: 'Environment & Conservation',
+    description: 'Lake health monitoring, green space management, conservation initiatives, and environmental programs protecting our natural assets.',
+    href: '/environment/',
+    icon: 'environment',
+  },
+  {
+    title: 'History & Culture',
+    description: 'Discover the rich history of Smiths Lake Village, the Worimi people\'s connection to country, and our local cultural heritage.',
+    href: '/history/',
+    icon: 'history',
+  },
+];
+
+const newsItems = [
+  {
+    title: 'Summer Fire Season Reminder',
+    date: new Date('2025-12-01'),
+    excerpt: 'Review your bushfire survival plan and ensure your property is prepared. Check our emergency section for evacuation routes.',
+    href: '/emergency/',
+  },
+  {
+    title: 'Community Website Launch',
+    date: new Date('2025-11-15'),
+    excerpt: 'Welcome to our new community website! Access community documents, services, and stay connected with local news and updates.',
+    href: '/about/',
+  },
+  {
+    title: 'Open Spaces & Recreation Strategy',
+    date: new Date('2025-11-01'),
+    excerpt: 'The community\'s submission to MidCoast Council on open spaces and foreshore trails continues to progress through council review.',
+    href: '/services/',
+  },
+];
+---
+
+<BaseLayout title="Home">
+  <Hero 
+    title="Welcome to Smiths Lake Village"
+    subtitle="A vibrant coastal community in the heart of Pacific Palms, NSW. Discover our pristine lake, native bushland, and welcoming neighbourhood."
+    primaryCta={{ text: 'Explore Our Community', href: '/about/' }}
+    secondaryCta={{ text: 'Find Services', href: '/services/' }}
+    size="large"
+  />
+  
+  <QuickInfo items={quickInfoItems} />
+  
+  <!-- Main Sections Grid -->
+  <section class="section bg-off-white" aria-labelledby="explore-heading">
+    <div class="container">
+      <h2 id="explore-heading" class="text-center mb-8">Explore Our Community</h2>
+      <div class="sections-grid">
+        {sections.map((section) => (
+          <SectionCard 
+            title={section.title}
+            description={section.description}
+            href={section.href}
+            icon={section.icon}
+            variant={section.variant}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+  
+  <!-- Latest Updates -->
+  <section class="section" aria-labelledby="news-heading">
+    <div class="container">
+      <h2 id="news-heading" class="text-center mb-8">Latest Updates</h2>
+      <div class="news-grid">
+        {newsItems.map((item) => (
+          <NewsItem 
+            title={item.title}
+            date={item.date}
+            excerpt={item.excerpt}
+            href={item.href}
+          />
+        ))}
+      </div>
+      <p class="text-center mt-8">
+        <a href="/news/" class="btn btn--outline">View All Updates</a>
+      </p>
+    </div>
+  </section>
+  
+  <!-- Call to Action -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="cta-content">
+        <h2 class="cta-title">Stay Connected</h2>
+        <p class="cta-text">
+          Subscribe to our newsletter for community updates, events, and important announcements.
+        </p>
+        <a href="/newsletter/" class="btn btn--primary btn--lg">Sign Up for Newsletter</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .sections-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: var(--space-6);
+  }
+  
+  @media (min-width: 640px) {
+    .sections-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .sections-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  
+  .news-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: var(--space-8);
+  }
+  
+  @media (min-width: 768px) {
+    .news-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  
+  .cta-section {
+    background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
+    padding: var(--space-16) 0;
+  }
+  
+  .cta-content {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .cta-title {
+    color: var(--color-white);
+    margin-bottom: var(--space-4);
+  }
+  
+  .cta-text {
+    color: var(--color-gray-200);
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-8);
+  }
+</style>

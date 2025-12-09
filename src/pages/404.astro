@@ -1,0 +1,63 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Page Not Found" noIndex={true}>
+  <section class="error-page">
+    <div class="container">
+      <div class="error-content">
+        <h1>404</h1>
+        <p class="error-title">Page Not Found</p>
+        <p class="error-message">
+          Sorry, we couldn't find the page you're looking for. It may have been moved, 
+          deleted, or the address might be incorrect.
+        </p>
+        <div class="error-actions">
+          <a href="/" class="btn btn--primary">Go to Homepage</a>
+          <a href="/contact/" class="btn btn--outline">Contact Us</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .error-page {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-12) 0;
+  }
+  
+  .error-content {
+    text-align: center;
+    max-width: 500px;
+  }
+  
+  .error-content h1 {
+    font-size: 8rem;
+    line-height: 1;
+    color: var(--color-gray-200);
+    margin-bottom: var(--space-4);
+  }
+  
+  .error-title {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-navy);
+    margin-bottom: var(--space-4);
+  }
+  
+  .error-message {
+    color: var(--color-gray-600);
+    margin-bottom: var(--space-8);
+  }
+  
+  .error-actions {
+    display: flex;
+    gap: var(--space-4);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+</style>

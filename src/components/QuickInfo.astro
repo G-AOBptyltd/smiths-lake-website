@@ -1,0 +1,61 @@
+---
+interface QuickInfoItem {
+  value: string;
+  label: string;
+}
+
+interface Props {
+  items: QuickInfoItem[];
+}
+
+const { items } = Astro.props;
+---
+
+<section class="quick-info" aria-label="Quick facts about Smiths Lake">
+  <div class="quick-info__container">
+    {items.map((item) => (
+      <div class="quick-info__item">
+        <strong class="quick-info__value">{item.value}</strong>
+        <span class="quick-info__label">{item.label}</span>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .quick-info {
+    background-color: var(--color-sky);
+    color: var(--color-white);
+    padding: var(--space-6) 0;
+  }
+  
+  .quick-info__container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 var(--space-4);
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    text-align: center;
+  }
+  
+  .quick-info__item {
+    flex: 1;
+    min-width: 120px;
+    max-width: 200px;
+  }
+  
+  .quick-info__value {
+    display: block;
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    font-family: var(--font-heading);
+    margin-bottom: var(--space-1);
+  }
+  
+  .quick-info__label {
+    font-size: var(--text-sm);
+    opacity: 0.9;
+  }
+</style>

@@ -1,0 +1,187 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+---
+
+<BaseLayout 
+  title="Submit Feedback" 
+  description="Share your ideas and suggestions for improving Smiths Lake Village."
+>
+  <Hero 
+    title="Submit Feedback"
+    subtitle="Your ideas help shape our community's future."
+    size="small"
+  />
+  
+  <section class="section">
+    <div class="container container--narrow">
+      <div class="feedback-intro">
+        <p>
+          We want to hear from you! Share your ideas, suggestions, or concerns about 
+          our community. Your feedback helps PPCA understand what matters most to 
+          residents and guides our advocacy efforts.
+        </p>
+        <p>
+          <strong>What happens to your feedback?</strong> All submissions are reviewed 
+          by the PPCA committee. Ideas that align with community priorities may be 
+          developed into formal submissions to MidCoast Council.
+        </p>
+      </div>
+      
+      <form 
+        name="feedback" 
+        method="POST" 
+        data-netlify="true" 
+        netlify-honeypot="bot-field"
+        class="feedback-form"
+      >
+        <input type="hidden" name="form-name" value="feedback" />
+        <p class="hidden">
+          <label>Don't fill this out: <input name="bot-field" /></label>
+        </p>
+        
+        <div class="form-group">
+          <label for="name" class="form-label">Your Name (optional)</label>
+          <input 
+            type="text" 
+            id="name" 
+            name="name" 
+            class="form-input" 
+            autocomplete="name"
+          />
+          <p class="form-help">Leave blank to submit anonymously.</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="email" class="form-label">Email Address (optional)</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            class="form-input" 
+            autocomplete="email"
+          />
+          <p class="form-help">Provide if you'd like updates on your suggestion.</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="category" class="form-label form-label--required">Category</label>
+          <select id="category" name="category" class="form-select" required>
+            <option value="">Please select...</option>
+            <option value="services">Services & Amenities</option>
+            <option value="environment">Environment & Conservation</option>
+            <option value="safety">Safety & Emergency</option>
+            <option value="groups">Groups & Activities</option>
+            <option value="infrastructure">Roads & Infrastructure</option>
+            <option value="council">Council Submission Idea</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="title" class="form-label form-label--required">Feedback Title</label>
+          <input 
+            type="text" 
+            id="title" 
+            name="title" 
+            class="form-input" 
+            required 
+            placeholder="Brief summary of your idea or concern"
+          />
+        </div>
+        
+        <div class="form-group">
+          <label for="details" class="form-label form-label--required">Details</label>
+          <textarea 
+            id="details" 
+            name="details" 
+            class="form-textarea" 
+            rows="8" 
+            required
+            placeholder="Describe your idea, suggestion, or concern in detail..."
+          ></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="priority" class="form-label">How important is this to you?</label>
+          <select id="priority" name="priority" class="form-select">
+            <option value="">Please select...</option>
+            <option value="high">Very Important - Needs urgent attention</option>
+            <option value="medium">Important - Should be addressed</option>
+            <option value="low">Nice to Have - When resources allow</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <button type="submit" class="btn btn--primary btn--lg">Submit Feedback</button>
+        </div>
+      </form>
+      
+      <aside class="feedback-note">
+        <h2>Privacy Note</h2>
+        <p>
+          Your feedback is stored securely and reviewed only by PPCA committee members. 
+          Anonymous submissions are welcome. We will never share your personal 
+          information without your consent.
+        </p>
+        <p>
+          <a href="/privacy/">Read our full Privacy Policy</a>
+        </p>
+      </aside>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .feedback-intro {
+    max-width: 700px;
+    margin: 0 auto var(--space-10);
+  }
+  
+  .feedback-intro p {
+    font-size: var(--text-lg);
+    color: var(--color-gray-700);
+    line-height: var(--leading-relaxed);
+  }
+  
+  .feedback-form {
+    background: var(--color-off-white);
+    padding: var(--space-8);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-10);
+  }
+  
+  .hidden {
+    display: none;
+  }
+  
+  .feedback-note {
+    background: var(--color-navy);
+    color: var(--color-white);
+    padding: var(--space-6);
+    border-radius: var(--radius-lg);
+  }
+  
+  .feedback-note h2 {
+    color: var(--color-white);
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-3);
+  }
+  
+  .feedback-note p {
+    color: var(--color-gray-200);
+    margin-bottom: var(--space-3);
+  }
+  
+  .feedback-note p:last-child {
+    margin-bottom: 0;
+  }
+  
+  .feedback-note a {
+    color: var(--color-sky-light);
+  }
+  
+  .feedback-note a:hover {
+    color: var(--color-white);
+  }
+</style>

@@ -1,0 +1,175 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Hero from '../../components/Hero.astro';
+
+const subSections = [
+  {
+    id: 'ppca',
+    title: 'Pacific Palms Community Association (PPCA)',
+    content: 'The PPCA is the peak community organisation representing residents of Smiths Lake Village and the surrounding Pacific Palms area. Established to give our community a collective voice, we work with MidCoast Council and other stakeholders on matters affecting our neighbourhood.',
+  },
+  {
+    id: 'community-plan',
+    title: 'Community Plan',
+    content: 'Our Community Plan outlines the shared vision and priorities for Smiths Lake Village. Developed through extensive community consultation, it guides our advocacy and development efforts.',
+  },
+  {
+    id: 'maps',
+    title: 'Maps & Location',
+    content: 'Smiths Lake Village is located in the Great Lakes region of NSW, approximately 300km north of Sydney. We\'re part of the MidCoast Council local government area and the Pacific Palms community.',
+  },
+  {
+    id: 'demographics',
+    title: 'Demographics',
+    content: 'Based on ABS Census data, Smiths Lake has approximately 1,300 permanent residents. Our community includes a mix of families, retirees, and holiday homeowners who contribute to our vibrant village atmosphere.',
+  },
+];
+---
+
+<BaseLayout 
+  title="About Us" 
+  description="Learn about Smiths Lake Village, PPCA, our community plans, and what makes our coastal NSW community special."
+>
+  <Hero 
+    title="About Us"
+    subtitle="Discover what makes Smiths Lake Village a special place to live, work and visit."
+    size="small"
+  />
+  
+  <section class="section">
+    <div class="container container--narrow">
+      <div class="intro">
+        <p class="lead">
+          Smiths Lake Village is a vibrant coastal community nestled on the shores of 
+          Smiths Lake in the Pacific Palms region of New South Wales. Our village combines 
+          the natural beauty of pristine waterways and native bushland with a welcoming, 
+          community-focused atmosphere.
+        </p>
+      </div>
+      
+      <div class="content-sections">
+        {subSections.map((section) => (
+          <article id={section.id} class="content-block">
+            <h2>{section.title}</h2>
+            <p>{section.content}</p>
+            <p class="content-link">
+              <a href={`#${section.id}`}>
+                View related documents →
+              </a>
+            </p>
+          </article>
+        ))}
+      </div>
+      
+      <aside id="documents" class="documents-section">
+        <h2>Document Library</h2>
+        <p>
+          Access official PPCA documents, community plans, and reference materials. 
+          Documents are hosted on Google Drive and will open in a new window.
+        </p>
+        <ul class="document-list">
+          <li>
+            <a href="#" target="_blank" rel="noopener noreferrer">
+              PPCA Constitution (PDF)
+            </a>
+          </li>
+          <li>
+            <a href="#" target="_blank" rel="noopener noreferrer">
+              Smiths Lake Community Plan - Draft (PDF)
+            </a>
+          </li>
+          <li>
+            <a href="#" target="_blank" rel="noopener noreferrer">
+              Census 2024 Summary (PDF)
+            </a>
+          </li>
+        </ul>
+        <p class="document-note">
+          <em>Note: Document links will be updated as files are migrated to the Website Documents archive.</em>
+        </p>
+      </aside>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .intro {
+    margin-bottom: var(--space-12);
+  }
+  
+  .lead {
+    font-size: var(--text-xl);
+    line-height: var(--leading-relaxed);
+    color: var(--color-gray-700);
+  }
+  
+  .content-sections {
+    margin-bottom: var(--space-12);
+  }
+  
+  .content-block {
+    margin-bottom: var(--space-10);
+    padding-bottom: var(--space-10);
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+  
+  .content-block:last-child {
+    border-bottom: none;
+  }
+  
+  .content-block h2 {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-4);
+  }
+  
+  .content-block p {
+    color: var(--color-gray-700);
+    line-height: var(--leading-relaxed);
+  }
+  
+  .content-link a {
+    color: var(--color-golden-dark);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  
+  .content-link a:hover {
+    color: var(--color-golden);
+  }
+  
+  .documents-section {
+    background-color: var(--color-off-white);
+    padding: var(--space-8);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid var(--color-sky);
+  }
+  
+  .documents-section h2 {
+    font-size: var(--text-xl);
+    margin-bottom: var(--space-4);
+  }
+  
+  .document-list {
+    list-style: none;
+    padding: 0;
+    margin: var(--space-6) 0;
+  }
+  
+  .document-list li {
+    margin-bottom: var(--space-3);
+  }
+  
+  .document-list a {
+    color: var(--color-navy);
+    font-weight: 600;
+  }
+  
+  .document-list a:hover {
+    color: var(--color-sky);
+  }
+  
+  .document-note {
+    font-size: var(--text-sm);
+    color: var(--color-gray-500);
+  }
+</style>
