@@ -24,6 +24,8 @@ const subSections = [
     content: 'Based on ABS Census data, Smiths Lake has approximately 1,300 permanent residents. Our community includes a mix of families, retirees, and holiday homeowners who contribute to our vibrant village atmosphere.',
   },
 ];
+
+const driveFolderId = '1cxYAx-Mm-ysdM_UU_0IRThVFUZ4w61bv';
 ---
 
 <BaseLayout 
@@ -52,40 +54,28 @@ const subSections = [
           <article id={section.id} class="content-block">
             <h2>{section.title}</h2>
             <p>{section.content}</p>
-            <p class="content-link">
-              <a href={`#${section.id}`}>
-                View related documents →
-              </a>
-            </p>
           </article>
         ))}
       </div>
       
       <aside id="documents" class="documents-section">
-        <h2>Document Library</h2>
+        <h2>📁 Document Library</h2>
         <p>
           Access official PPCA documents, community plans, and reference materials. 
-          Documents are hosted on Google Drive and will open in a new window.
+          Click any document to view or download.
         </p>
-        <ul class="document-list">
-          <li>
-            <a href="#" target="_blank" rel="noopener noreferrer">
-              PPCA Constitution (PDF)
-            </a>
-          </li>
-          <li>
-            <a href="#" target="_blank" rel="noopener noreferrer">
-              Smiths Lake Community Plan - Draft (PDF)
-            </a>
-          </li>
-          <li>
-            <a href="#" target="_blank" rel="noopener noreferrer">
-              Census 2024 Summary (PDF)
-            </a>
-          </li>
-        </ul>
+        
+        <div class="drive-embed-container">
+          <iframe 
+            src={`https://drive.google.com/embeddedfolderview?id=${driveFolderId}#list`}
+            class="drive-embed"
+            title="About Us Documents"
+            loading="lazy"
+          ></iframe>
+        </div>
+        
         <p class="document-note">
-          <em>Note: Document links will be updated as files are migrated to the Website Documents archive.</em>
+          <em>Documents are managed by PPCA committee members. Files added to the Google Drive folder appear here automatically.</em>
         </p>
       </aside>
     </div>
@@ -127,16 +117,6 @@ const subSections = [
     line-height: var(--leading-relaxed);
   }
   
-  .content-link a {
-    color: var(--color-golden-dark);
-    font-weight: 600;
-    text-decoration: none;
-  }
-  
-  .content-link a:hover {
-    color: var(--color-golden);
-  }
-  
   .documents-section {
     background-color: var(--color-off-white);
     padding: var(--space-8);
@@ -149,27 +129,24 @@ const subSections = [
     margin-bottom: var(--space-4);
   }
   
-  .document-list {
-    list-style: none;
-    padding: 0;
+  .drive-embed-container {
     margin: var(--space-6) 0;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--color-white);
   }
   
-  .document-list li {
-    margin-bottom: var(--space-3);
-  }
-  
-  .document-list a {
-    color: var(--color-navy);
-    font-weight: 600;
-  }
-  
-  .document-list a:hover {
-    color: var(--color-sky);
+  .drive-embed {
+    width: 100%;
+    height: 400px;
+    border: none;
   }
   
   .document-note {
     font-size: var(--text-sm);
     color: var(--color-gray-500);
+    margin-top: var(--space-4);
+    margin-bottom: 0;
   }
 </style>
