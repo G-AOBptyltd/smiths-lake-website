@@ -3,8 +3,7 @@ const DATABASE_ID = '2c8d508adfc180bd99bbc8e0eed609e6';
 
 export async function getProjects() {
   try {
-    const response = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`, {
-      method: 'POST',
+const response = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`,      method: 'POST',
       headers: {
         'Authorization': `Bearer ${NOTION_API_KEY}`,
         'Notion-Version': '2022-06-28',
