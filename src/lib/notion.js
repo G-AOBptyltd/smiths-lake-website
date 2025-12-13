@@ -1,5 +1,5 @@
 const NOTION_API_KEY = import.meta.env.NOTION_API_KEY;
-const DATABASE_ID = '2c8d508adfc1804ca1ddf647c9902b5a';
+const DATABASE_ID = '2c8d508adfc180bd99bbc8e0eed609e6';
 
 export async function getProjects() {
   try {
