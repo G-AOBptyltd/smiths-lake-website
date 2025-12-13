@@ -3,27 +3,31 @@ const DATABASE_ID = '2c8d508adfc180bd99bbc8e0eed609e6';
 
 export async function getProjects() {
   try {
-const response = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}/query`,      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${NOTION_API_KEY}`,
-        'Notion-Version': '2022-06-28',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        filter: {
-          property: 'Show on Website',
-          checkbox: {
-            equals: true
-          }
+    const response = await fetch(
+      `https://api.notion.com/v1/databases/${DATABASE_ID}/query`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${NOTION_API_KEY}`,
+          'Notion-Version': '2022-06-28',
+          'Content-Type': 'application/json',
         },
-        sorts: [
-          {
-            property: 'Sort Order',
-            direction: 'ascending'
-          }
-        ]
-      })
-    });
+        body: JSON.stringify({
+          filter: {
+            property: 'Show on Website',
+            checkbox: {
+              equals: true
+            }
+          },
+          sorts: [
+            {
+              property: 'Sort Order',
+              direction: 'ascending'
+            }
+          ]
+        })
+      }
+    );
 
     if (!response.ok) {
       console.error('Notion API error:', response.status);
@@ -31,7 +35,7 @@ const response = await fetch(`https://api.notion.com/v1/databases/${DATABASE_ID}
     }
 
     const data = await response.json();
-    
+
     return data.results.map(page => ({
       id: page.id,
       name: page.properties['Project Name']?.title?.[0]?.plain_text || 'Untitled',
