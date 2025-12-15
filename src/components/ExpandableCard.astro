@@ -1,0 +1,202 @@
+---
+// ExpandableCard.astro - Expandable content card with preview
+// Props: item (content object), sectionSlug (for detail page links)
+
+import StatusBadge from './StatusBadge.astro';
+import CategoryBadge from './CategoryBadge.astro';
+
+interface Props {
+  item: any;
+  sectionSlug: string;
+}
+
+const { item, sectionSlug } = Astro.props;
+
+const detailUrl = `/${sectionSlug}/${item.category?.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/${item.slug}`;
+
+// Truncate description for preview
+const previewLength = 150;
+const preview = item.description?.length > previewLength 
+  ? item.description.substring(0, previewLength) + '...'
+  : item.description;
+---
+
+<div class="expandable-card border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
+  <!-- Card Header -->
+  <div class="p-4 border-b border-gray-100">
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex-1 min-w-0">
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">
+          <a href={detailUrl} class="hover:text-blue-600 transition-colors">
+            {item.title}
+          </a>
+        </h3>
+        <div class="flex flex-wrap gap-2 mb-2">
+          <CategoryBadge category={item.category} size="sm" />
+          {item.status && <StatusBadge status={item.status} />}
+        </div>
+      </div>
+      <button 
+        class="expand-toggle flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+        aria-label="Expand details"
+        aria-expanded="false"
+      >
+        <svg class="w-5 h-5 text-gray-600 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+  
+  <!-- Preview Content (Always Visible) -->
+  <div class="p-4">
+    <p class="text-gray-700 text-sm leading-relaxed">
+      {preview}
+    </p>
+  </div>
+  
+  <!-- Expanded Content (Hidden by default) -->
+  <div class="expanded-content hidden p-4 pt-0 border-t border-gray-100">
+    <!-- Meeting Info -->
+    {(item.meetingDay || item.meetingTime || item.meetingLocation) && (
+      <div class="mb-4">
+        <h4 class="font-semibold text-gray-900 mb-2 text-sm">Meeting Details</h4>
+        <div class="text-sm text-gray-700 space-y-1">
+          {item.meetingDay && <p><strong>When:</strong> {item.meetingDay} {item.meetingTime && `at ${item.meetingTime}`}</p>}
+          {item.meetingLocation && <p><strong>Where:</strong> {item.meetingLocation}</p>}
+        </div>
+      </div>
+    )}
+    
+    <!-- Contact Info (if public) -->
+    {item.showContactPublicly && (item.contactPerson || item.contactEmail || item.contactPhone) && (
+      <div class="mb-4">
+        <h4 class="font-semibold text-gray-900 mb-2 text-sm">Contact</h4>
+        <div class="text-sm text-gray-700 space-y-1">
+          {item.contactPerson && <p><strong>Contact:</strong> {item.contactPerson}</p>}
+          {item.contactEmail && (
+            <p>
+              <strong>Email:</strong> 
+              <a href={`mailto:${item.contactEmail}`} class="text-blue-600 hover:underline ml-1">
+                {item.contactEmail}
+              </a>
+            </p>
+          )}
+          {item.contactPhone && <p><strong>Phone:</strong> {item.contactPhone}</p>}
+        </div>
+      </div>
+    )}
+    
+    <!-- Service Info -->
+    {item.operatingHours && (
+      <div class="mb-4">
+        <h4 class="font-semibold text-gray-900 mb-2 text-sm">Operating Hours</h4>
+        <p class="text-sm text-gray-700">{item.operatingHours}</p>
+      </div>
+    )}
+    
+    {item.address && (
+      <div class="mb-4">
+        <h4 class="font-semibold text-gray-900 mb-2 text-sm">Address</h4>
+        <p class="text-sm text-gray-700">{item.address}</p>
+      </div>
+    )}
+    
+    {item.accessibilityInfo && (
+      <div class="mb-4">
+        <h4 class="font-semibold text-gray-900 mb-2 text-sm">Accessibility</h4>
+        <p class="text-sm text-gray-700">{item.accessibilityInfo}</p>
+      </div>
+    )}
+    
+    <!-- Links -->
+    {(item.websiteUrl || item.facebookUrl) && (
+      <div class="mb-4">
+        <h4 class="font-semibold text-gray-900 mb-2 text-sm">Links</h4>
+        <div class="flex flex-wrap gap-2">
+          {item.websiteUrl && (
+            <a 
+              href={item.websiteUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="text-sm text-blue-600 hover:underline flex items-center gap-1"
+            >
+              Website →
+            </a>
+          )}
+          {item.facebookUrl && (
+            <a 
+              href={item.facebookUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="text-sm text-blue-600 hover:underline flex items-center gap-1"
+            >
+              Facebook →
+            </a>
+          )}
+        </div>
+      </div>
+    )}
+    
+    <!-- View Full Details Button -->
+    <div class="mt-4 pt-4 border-t border-gray-100">
+      <a 
+        href={detailUrl}
+        class="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+      >
+        View full details
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Add expand/collapse functionality
+  document.querySelectorAll('.expandable-card').forEach(card => {
+    const toggle = card.querySelector('.expand-toggle');
+    const content = card.querySelector('.expanded-content');
+    const icon = toggle?.querySelector('svg');
+    
+    toggle?.addEventListener('click', () => {
+      const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+      
+      if (isExpanded) {
+        content?.classList.add('hidden');
+        toggle.setAttribute('aria-expanded', 'false');
+        icon?.classList.remove('rotate-180');
+      } else {
+        content?.classList.remove('hidden');
+        toggle.setAttribute('aria-expanded', 'true');
+        icon?.classList.add('rotate-180');
+      }
+    });
+  });
+</script>
+
+<style>
+  .expandable-card {
+    transition: all 0.2s ease;
+  }
+  
+  .expand-toggle svg {
+    transition: transform 0.2s ease;
+  }
+  
+  .expanded-content {
+    animation: slideDown 0.3s ease;
+  }
+  
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      max-height: 0;
+    }
+    to {
+      opacity: 1;
+      max-height: 1000px;
+    }
+  }
+</style>
