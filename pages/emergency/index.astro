@@ -1,229 +1,253 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Hero from '../../components/Hero.astro';
+// Emergency & Safety Index Page
+import Layout from '../../layouts/Layout.astro';
+import ExpandableCard from '../../components/ExpandableCard.astro';
+import CategoryBadge from '../../components/CategoryBadge.astro';
+import { fetchItemsBySection } from '../../lib/notion-unified.js';
 
-const emergencyContacts = [
-  { service: 'Police, Fire, Ambulance', number: '000', type: 'Emergency' },
-  { service: 'State Emergency Service (SES)', number: '132 500', type: 'Floods & Storms' },
-  { service: 'Rural Fire Service', number: '1800 679 737', type: 'Bush Fire Info' },
-  { service: 'Poisons Information', number: '13 11 26', type: '24 Hours' },
-  { service: 'Police Assistance Line', number: '131 444', type: 'Non-Emergency' },
-];
+// Fetch all Emergency & Safety items
+const items = await fetchItemsBySection('Emergency & Safety');
 
-const safetyResources = [
-  {
-    id: 'evacuation',
-    title: 'Evacuation Plans',
-    content: 'Know your evacuation routes and assembly points. In an emergency, follow directions from emergency services.',
-  },
-  {
-    id: 'bushfire',
-    title: 'Bushfire Brigade',
-    content: 'Our local Rural Fire Service brigade serves the Smiths Lake area. Volunteers are always welcome.',
-  },
-  {
-    id: 'surf',
-    title: 'Surf Life Saving',
-    content: 'Volunteer surf lifesavers patrol local beaches during summer. Learn about water safety and beach conditions.',
-  },
-  {
-    id: 'police',
-    title: 'Police Services',
-    content: 'Forster Police Station serves our area. Report suspicious activity to keep our community safe.',
-  },
-  {
-    id: 'flood',
-    title: 'Flood Preparedness',
-    content: 'Know whether your property is in a flood-prone area and have a plan for protecting your home and family.',
-  },
-];
+// Group items by category
+const categories = {
+  'Bushfire': items.filter(item => item.category === 'Bushfire'),
+  'Flood': items.filter(item => item.category === 'Flood'),
+  'Police': items.filter(item => item.category === 'Police'),
+  'Surf Life Saving': items.filter(item => item.category === 'Surf Life Saving'),
+  'Evacuation': items.filter(item => item.category === 'Evacuation'),
+};
+
+// Check for active alerts
+const activeAlerts = items.filter(item => 
+  item.alertLevel && item.alertLevel !== 'Normal'
+);
+
+const hasEmergency = activeAlerts.some(item => item.alertLevel === 'Emergency');
+const hasWarning = activeAlerts.some(item => item.alertLevel === 'Warning');
+const hasWatch = activeAlerts.some(item => item.alertLevel === 'Watch');
 ---
 
-<BaseLayout 
-  title="Emergency & Safety" 
-  description="Emergency contacts, evacuation plans, and safety resources for Smiths Lake Village."
+<Layout 
+  title="Emergency & Safety | Smiths Lake Village"
+  description="Emergency services, evacuation plans, and safety information for Smiths Lake community"
 >
-  <Hero 
-    title="Emergency & Safety"
-    subtitle="Critical safety information and emergency resources for our community."
-    size="small"
-  />
-  
-  <section class="emergency-contacts">
-    <div class="container">
-      <div class="emergency-banner">
-        <h2>Emergency Contacts</h2>
-        <p class="emergency-lead">In a life-threatening emergency, always call <strong>000</strong> first.</p>
+  <div class="bg-gray-50 min-h-screen">
+    <!-- Hero Section -->
+    <div class="bg-red-600 text-white py-12">
+      <div class="container mx-auto px-4">
+        <h1 class="text-4xl font-bold mb-4">Emergency & Safety</h1>
+        <p class="text-xl text-red-100 max-w-3xl">
+          Emergency services, evacuation plans, and safety information for the Smiths Lake community.
+        </p>
         
-        <div class="contacts-grid">
-          {emergencyContacts.map((contact) => (
-            <div class="contact-card">
-              <span class="contact-type">{contact.type}</span>
-              <span class="contact-service">{contact.service}</span>
-              <a href={`tel:${contact.number.replace(/\s/g, '')}`} class="contact-number">
-                {contact.number}
-              </a>
-            </div>
-          ))}
+        <!-- Emergency Contacts Quick Access -->
+        <div class="mt-6 flex flex-wrap gap-4">
+          <a 
+            href="tel:000" 
+            class="inline-flex items-center gap-2 px-6 py-3 bg-white text-red-600 font-bold rounded-lg hover:bg-red-50 transition-colors"
+          >
+            <span class="text-2xl">🚨</span>
+            Emergency: 000
+          </a>
+          <a 
+            href="tel:131444" 
+            class="inline-flex items-center gap-2 px-6 py-3 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Police (Non-Emergency): 131 444
+          </a>
         </div>
       </div>
     </div>
-  </section>
-  
-  <section class="section">
-    <div class="container container--narrow">
-      <h2 class="section-title">Safety Resources</h2>
-      
-      <div class="resources-list">
-        {safetyResources.map((resource) => (
-          <article id={resource.id} class="resource-card">
-            <div class="resource-content">
-              <h3>{resource.title}</h3>
-              <p>{resource.content}</p>
-              <a href={`#${resource.id}`} class="resource-link">View resources →</a>
+    
+    <!-- Active Alerts Banner -->
+    {activeAlerts.length > 0 && (
+      <div class={`py-4 ${hasEmergency ? 'bg-red-100 border-b-4 border-red-600' : hasWarning ? 'bg-orange-100 border-b-4 border-orange-500' : 'bg-yellow-100 border-b-4 border-yellow-400'}`}>
+        <div class="container mx-auto px-4">
+          <div class="flex items-start gap-3">
+            <span class="text-3xl">{hasEmergency ? '🚨' : hasWarning ? '⚠️' : '⚠️'}</span>
+            <div>
+              <h2 class={`font-bold text-lg ${hasEmergency ? 'text-red-900' : hasWarning ? 'text-orange-900' : 'text-yellow-900'}`}>
+                {hasEmergency ? 'EMERGENCY ALERT' : hasWarning ? 'WARNING' : 'WATCH'}
+              </h2>
+              <p class={`text-sm ${hasEmergency ? 'text-red-800' : hasWarning ? 'text-orange-800' : 'text-yellow-800'}`}>
+                {activeAlerts.length} active {activeAlerts.length === 1 ? 'alert' : 'alerts'}. Please review information below.
+              </p>
             </div>
-          </article>
-        ))}
+          </div>
+        </div>
+      </div>
+    )}
+    
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-12">
+      
+      <!-- Important Notice -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+        <div class="flex items-start gap-3">
+          <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div>
+            <h3 class="font-semibold text-blue-900 mb-2">Emergency Preparedness</h3>
+            <p class="text-blue-800 text-sm leading-relaxed">
+              Make sure you have an emergency plan for your household. Know your evacuation routes, 
+              have an emergency kit ready, and stay informed through official channels during emergencies.
+            </p>
+          </div>
+        </div>
       </div>
       
-      <aside class="prepare-section">
-        <h2>Be Prepared</h2>
-        <ul>
-          <li>Create a household emergency plan</li>
-          <li>Prepare an emergency kit with essentials</li>
-          <li>Know your evacuation routes</li>
-          <li>Keep important documents in a safe, accessible place</li>
-          <li>Stay informed via ABC Radio and official channels</li>
-        </ul>
-      </aside>
+      <!-- Bushfire Section -->
+      {categories['Bushfire'].length > 0 && (
+        <section class="mb-12">
+          <div class="flex items-center gap-3 mb-6">
+            <span class="text-4xl">🔥</span>
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900">Bushfire Safety</h2>
+              <p class="text-gray-600">Evacuation routes, fire danger ratings, and bushfire preparedness</p>
+            </div>
+          </div>
+          <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
+            {categories['Bushfire'].map(item => (
+              <ExpandableCard item={item} sectionSlug="emergency" />
+            ))}
+          </div>
+        </section>
+      )}
+      
+      <!-- Flood Section -->
+      {categories['Flood'].length > 0 && (
+        <section class="mb-12">
+          <div class="flex items-center gap-3 mb-6">
+            <span class="text-4xl">🌊</span>
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900">Flood Safety</h2>
+              <p class="text-gray-600">Flood response plans and evacuation procedures</p>
+            </div>
+          </div>
+          <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
+            {categories['Flood'].map(item => (
+              <ExpandableCard item={item} sectionSlug="emergency" />
+            ))}
+          </div>
+        </section>
+      )}
+      
+      <!-- Evacuation Section -->
+      {categories['Evacuation'].length > 0 && (
+        <section class="mb-12">
+          <div class="flex items-center gap-3 mb-6">
+            <span class="text-4xl">🚨</span>
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900">Evacuation Plans</h2>
+              <p class="text-gray-600">Know your evacuation routes and assembly points</p>
+            </div>
+          </div>
+          <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
+            {categories['Evacuation'].map(item => (
+              <ExpandableCard item={item} sectionSlug="emergency" />
+            ))}
+          </div>
+        </section>
+      )}
+      
+      <!-- Police Section -->
+      {categories['Police'].length > 0 && (
+        <section class="mb-12">
+          <div class="flex items-center gap-3 mb-6">
+            <span class="text-4xl">👮</span>
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900">Police Services</h2>
+              <p class="text-gray-600">Local police station and community safety</p>
+            </div>
+          </div>
+          <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
+            {categories['Police'].map(item => (
+              <ExpandableCard item={item} sectionSlug="emergency" />
+            ))}
+          </div>
+        </section>
+      )}
+      
+      <!-- Surf Life Saving Section -->
+      {categories['Surf Life Saving'].length > 0 && (
+        <section class="mb-12">
+          <div class="flex items-center gap-3 mb-6">
+            <span class="text-4xl">🏖️</span>
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900">Surf Life Saving</h2>
+              <p class="text-gray-600">Beach safety, patrols, and water safety information</p>
+            </div>
+          </div>
+          <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-1">
+            {categories['Surf Life Saving'].map(item => (
+              <ExpandableCard item={item} sectionSlug="emergency" />
+            ))}
+          </div>
+        </section>
+      )}
+      
+      <!-- External Resources -->
+      <section class="bg-white border border-gray-200 rounded-lg p-6 mt-12">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">External Emergency Resources</h2>
+        <div class="grid gap-4 md:grid-cols-2">
+          <a 
+            href="https://www.rfs.nsw.gov.au" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <span class="text-2xl">🔥</span>
+            <div>
+              <div class="font-semibold text-gray-900">NSW Rural Fire Service</div>
+              <div class="text-sm text-gray-600">Fire danger ratings & warnings</div>
+            </div>
+          </a>
+          <a 
+            href="https://www.ses.nsw.gov.au" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <span class="text-2xl">🌊</span>
+            <div>
+              <div class="font-semibold text-gray-900">NSW SES</div>
+              <div class="text-sm text-gray-600">Flood & storm information</div>
+            </div>
+          </a>
+          <a 
+            href="https://www.bom.gov.au" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <span class="text-2xl">🌤️</span>
+            <div>
+              <div class="font-semibold text-gray-900">Bureau of Meteorology</div>
+              <div class="text-sm text-gray-600">Weather warnings & forecasts</div>
+            </div>
+          </a>
+          <a 
+            href="https://www.fire.nsw.gov.au" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <span class="text-2xl">🚒</span>
+            <div>
+              <div class="font-semibold text-gray-900">Fire & Rescue NSW</div>
+              <div class="text-sm text-gray-600">Fire safety information</div>
+            </div>
+          </a>
+        </div>
+      </section>
+      
+      <!-- No Content Message -->
+      {items.length === 0 && (
+        <div class="text-center py-12">
+          <p class="text-gray-600 text-lg">Emergency information is being updated. Check back soon.</p>
+        </div>
+      )}
     </div>
-  </section>
-</BaseLayout>
-
-<style>
-  .emergency-contacts {
-    background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
-    padding: var(--space-10) 0;
-  }
-  
-  .emergency-banner {
-    text-align: center;
-    color: var(--color-white);
-  }
-  
-  .emergency-banner h2 {
-    color: var(--color-white);
-    margin-bottom: var(--space-2);
-  }
-  
-  .emergency-lead {
-    font-size: var(--text-xl);
-    margin-bottom: var(--space-8);
-  }
-  
-  .emergency-lead strong {
-    font-size: var(--text-3xl);
-    display: inline-block;
-    margin-left: var(--space-2);
-  }
-  
-  .contacts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--space-4);
-    max-width: 900px;
-    margin: 0 auto;
-  }
-  
-  .contact-card {
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: var(--radius-md);
-    padding: var(--space-4);
-    text-align: center;
-  }
-  
-  .contact-type {
-    display: block;
-    font-size: var(--text-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    opacity: 0.8;
-    margin-bottom: var(--space-1);
-  }
-  
-  .contact-service {
-    display: block;
-    font-weight: 600;
-    margin-bottom: var(--space-2);
-  }
-  
-  .contact-number {
-    display: block;
-    font-size: var(--text-xl);
-    font-weight: 700;
-    color: var(--color-white);
-    text-decoration: none;
-  }
-  
-  .contact-number:hover {
-    text-decoration: underline;
-  }
-  
-  .section-title {
-    text-align: center;
-    margin-bottom: var(--space-10);
-  }
-  
-  .resources-list {
-    margin-bottom: var(--space-12);
-  }
-  
-  .resource-card {
-    padding: var(--space-6);
-    border-left: 4px solid var(--color-error);
-    background: var(--color-off-white);
-    margin-bottom: var(--space-6);
-    border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  }
-  
-  .resource-card h3 {
-    font-size: var(--text-xl);
-    margin-bottom: var(--space-3);
-  }
-  
-  .resource-card p {
-    color: var(--color-gray-700);
-    margin-bottom: var(--space-3);
-  }
-  
-  .resource-link {
-    color: var(--color-golden-dark);
-    font-weight: 600;
-    text-decoration: none;
-  }
-  
-  .resource-link:hover {
-    color: var(--color-golden);
-  }
-  
-  .prepare-section {
-    background: var(--color-navy);
-    color: var(--color-white);
-    padding: var(--space-8);
-    border-radius: var(--radius-lg);
-  }
-  
-  .prepare-section h2 {
-    color: var(--color-white);
-    margin-bottom: var(--space-4);
-  }
-  
-  .prepare-section ul {
-    padding-left: var(--space-6);
-  }
-  
-  .prepare-section li {
-    margin-bottom: var(--space-2);
-    color: var(--color-gray-200);
-  }
-</style>
+  </div>
+</Layout>
