@@ -1,202 +1,204 @@
 ---
-// ExpandableCard.astro - Expandable content card with preview
-// Props: item (content object), sectionSlug (for detail page links)
-
+// ExpandableCard.astro - Simple expandable card
 import StatusBadge from './StatusBadge.astro';
 import CategoryBadge from './CategoryBadge.astro';
 
 interface Props {
   item: any;
-  sectionSlug: string;
+  section: string;
 }
 
-const { item, sectionSlug } = Astro.props;
+const { item, section } = Astro.props;
 
-const detailUrl = `/${sectionSlug}/${item.category?.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/${item.slug}`;
-
-// Truncate description for preview
-const previewLength = 150;
-const preview = item.description?.length > previewLength 
-  ? item.description.substring(0, previewLength) + '...'
-  : item.description;
+// Generate unique ID for this card
+const cardId = `card-${Math.random().toString(36).substr(2, 9)}`;
 ---
 
-<div class="expandable-card border border-gray-200 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
-  <!-- Card Header -->
-  <div class="p-4 border-b border-gray-100">
-    <div class="flex items-start justify-between gap-3">
-      <div class="flex-1 min-w-0">
-        <h3 class="text-lg font-semibold text-gray-900 mb-2">
-          <a href={detailUrl} class="hover:text-blue-600 transition-colors">
-            {item.title}
-          </a>
-        </h3>
-        <div class="flex flex-wrap gap-2 mb-2">
-          <CategoryBadge category={item.category} size="sm" />
-          {item.status && <StatusBadge status={item.status} />}
-        </div>
-      </div>
-      <button 
-        class="expand-toggle flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-        aria-label="Expand details"
-        aria-expanded="false"
-      >
-        <svg class="w-5 h-5 text-gray-600 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-        </svg>
+<div class="expandable-card" data-card-id={cardId}>
+  <div class="card-header">
+    <div class="card-title-row">
+      <h3 class="card-title">{item.title}</h3>
+      <button class="expand-btn" data-target={cardId} aria-label="Expand details">
+        <span class="expand-icon">+</span>
       </button>
+    </div>
+    <div class="card-badges">
+      <CategoryBadge category={item.category} size="sm" />
+      {item.status && <StatusBadge status={item.status} />}
     </div>
   </div>
   
-  <!-- Preview Content (Always Visible) -->
-  <div class="p-4">
-    <p class="text-gray-700 text-sm leading-relaxed">
-      {preview}
-    </p>
-  </div>
-  
-  <!-- Expanded Content (Hidden by default) -->
-  <div class="expanded-content hidden p-4 pt-0 border-t border-gray-100">
-    <!-- Meeting Info -->
-    {(item.meetingDay || item.meetingTime || item.meetingLocation) && (
-      <div class="mb-4">
-        <h4 class="font-semibold text-gray-900 mb-2 text-sm">Meeting Details</h4>
-        <div class="text-sm text-gray-700 space-y-1">
-          {item.meetingDay && <p><strong>When:</strong> {item.meetingDay} {item.meetingTime && `at ${item.meetingTime}`}</p>}
-          {item.meetingLocation && <p><strong>Where:</strong> {item.meetingLocation}</p>}
-        </div>
+  <div class="card-content" id={cardId} style="display: none;">
+    {item.description && (
+      <div class="content-section">
+        <p>{item.description}</p>
       </div>
     )}
     
-    <!-- Contact Info (if public) -->
-    {item.showContactPublicly && (item.contactPerson || item.contactEmail || item.contactPhone) && (
-      <div class="mb-4">
-        <h4 class="font-semibold text-gray-900 mb-2 text-sm">Contact</h4>
-        <div class="text-sm text-gray-700 space-y-1">
-          {item.contactPerson && <p><strong>Contact:</strong> {item.contactPerson}</p>}
-          {item.contactEmail && (
-            <p>
-              <strong>Email:</strong> 
-              <a href={`mailto:${item.contactEmail}`} class="text-blue-600 hover:underline ml-1">
-                {item.contactEmail}
-              </a>
-            </p>
-          )}
-          {item.contactPhone && <p><strong>Phone:</strong> {item.contactPhone}</p>}
-        </div>
+    {item.meetingDay && (
+      <div class="content-section">
+        <strong>Meeting Time:</strong> {item.meetingDay}
+        {item.meetingTime && ` at ${item.meetingTime}`}
+        {item.meetingLocation && ` - ${item.meetingLocation}`}
       </div>
     )}
     
-    <!-- Service Info -->
     {item.operatingHours && (
-      <div class="mb-4">
-        <h4 class="font-semibold text-gray-900 mb-2 text-sm">Operating Hours</h4>
-        <p class="text-sm text-gray-700">{item.operatingHours}</p>
+      <div class="content-section">
+        <strong>Hours:</strong> {item.operatingHours}
       </div>
     )}
     
     {item.address && (
-      <div class="mb-4">
-        <h4 class="font-semibold text-gray-900 mb-2 text-sm">Address</h4>
-        <p class="text-sm text-gray-700">{item.address}</p>
+      <div class="content-section">
+        <strong>Address:</strong> {item.address}
       </div>
     )}
     
-    {item.accessibilityInfo && (
-      <div class="mb-4">
-        <h4 class="font-semibold text-gray-900 mb-2 text-sm">Accessibility</h4>
-        <p class="text-sm text-gray-700">{item.accessibilityInfo}</p>
+    {item.contactPerson && item.showContactPublicly && (
+      <div class="content-section">
+        <strong>Contact:</strong> {item.contactPerson}
+        {item.contactEmail && (
+          <> - <a href={`mailto:${item.contactEmail}`}>{item.contactEmail}</a></>
+        )}
+        {item.contactPhone && (
+          <> - <a href={`tel:${item.contactPhone}`}>{item.contactPhone}</a></>
+        )}
       </div>
     )}
     
-    <!-- Links -->
-    {(item.websiteUrl || item.facebookUrl) && (
-      <div class="mb-4">
-        <h4 class="font-semibold text-gray-900 mb-2 text-sm">Links</h4>
-        <div class="flex flex-wrap gap-2">
-          {item.websiteUrl && (
-            <a 
-              href={item.websiteUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              class="text-sm text-blue-600 hover:underline flex items-center gap-1"
-            >
-              Website →
-            </a>
-          )}
-          {item.facebookUrl && (
-            <a 
-              href={item.facebookUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              class="text-sm text-blue-600 hover:underline flex items-center gap-1"
-            >
-              Facebook →
-            </a>
-          )}
-        </div>
+    {item.websiteUrl && (
+      <div class="content-section">
+        <a href={item.websiteUrl} target="_blank" rel="noopener noreferrer" class="external-link">
+          Visit Website →
+        </a>
       </div>
     )}
     
-    <!-- View Full Details Button -->
-    <div class="mt-4 pt-4 border-t border-gray-100">
-      <a 
-        href={detailUrl}
-        class="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
-      >
-        View full details
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-        </svg>
-      </a>
-    </div>
+    {item.emergencyPhone && (
+      <div class="content-section emergency-contact">
+        <strong>Emergency:</strong> <a href={`tel:${item.emergencyPhone}`}>{item.emergencyPhone}</a>
+      </div>
+    )}
   </div>
 </div>
 
+<style>
+  .expandable-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+  }
+  .expandable-card:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  .card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .card-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+  .card-title {
+    color: #1B365D;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+  }
+  .expand-btn {
+    background: #f3f4f6;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .expand-btn:hover {
+    background: #e5e7eb;
+  }
+  .expand-icon {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #1B365D;
+    transition: transform 0.2s;
+  }
+  .expand-btn.expanded .expand-icon {
+    transform: rotate(45deg);
+  }
+  .card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .card-content {
+    padding: 1.5rem;
+    background: #f9fafb;
+  }
+  .content-section {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+  .content-section:last-child {
+    margin-bottom: 0;
+  }
+  .content-section strong {
+    color: #1B365D;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  .external-link {
+    color: #5B9BD5;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .external-link:hover {
+    text-decoration: underline;
+  }
+  .emergency-contact {
+    background: #fee2e2;
+    padding: 1rem;
+    border-radius: 6px;
+    border-left: 4px solid #dc2626;
+  }
+  .emergency-contact strong {
+    color: #dc2626;
+  }
+  .emergency-contact a {
+    color: #dc2626;
+    font-weight: bold;
+    font-size: 1.125rem;
+  }
+</style>
+
 <script>
-  // Add expand/collapse functionality
-  document.querySelectorAll('.expandable-card').forEach(card => {
-    const toggle = card.querySelector('.expand-toggle');
-    const content = card.querySelector('.expanded-content');
-    const icon = toggle?.querySelector('svg');
-    
-    toggle?.addEventListener('click', () => {
-      const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+  // Simple expand/collapse functionality
+  document.querySelectorAll('.expand-btn').forEach(button => {
+    button.addEventListener('click', () => {
+      const targetId = button.getAttribute('data-target');
+      const content = document.getElementById(targetId);
+      const icon = button.querySelector('.expand-icon');
       
-      if (isExpanded) {
-        content?.classList.add('hidden');
-        toggle.setAttribute('aria-expanded', 'false');
-        icon?.classList.remove('rotate-180');
+      if (content.style.display === 'none') {
+        content.style.display = 'block';
+        button.classList.add('expanded');
+        button.setAttribute('aria-expanded', 'true');
       } else {
-        content?.classList.remove('hidden');
-        toggle.setAttribute('aria-expanded', 'true');
-        icon?.classList.add('rotate-180');
+        content.style.display = 'none';
+        button.classList.remove('expanded');
+        button.setAttribute('aria-expanded', 'false');
       }
     });
   });
 </script>
-
-<style>
-  .expandable-card {
-    transition: all 0.2s ease;
-  }
-  
-  .expand-toggle svg {
-    transition: transform 0.2s ease;
-  }
-  
-  .expanded-content {
-    animation: slideDown 0.3s ease;
-  }
-  
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      max-height: 0;
-    }
-    to {
-      opacity: 1;
-      max-height: 1000px;
-    }
-  }
-</style>
