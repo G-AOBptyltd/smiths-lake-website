@@ -174,10 +174,6 @@ export async function fetchNotionContent(filters = {}) {
         {
           property: 'Priority Order',
           direction: 'ascending'
-        },
-        {
-          property: 'Last Edited Time',
-          direction: 'descending'
         }
       ]
     });
