@@ -1,228 +1,110 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Hero from '../../components/Hero.astro';
-import { getProjects } from '../../lib/notion.js';
+// Services Index Page
+import Layout from '../../layouts/BaseLayout.astro';
+import ExpandableCard from '../../components/ExpandableCard.astro';
+import { fetchItemsBySection } from '../../lib/notion-unified.js';
 
-const existingAmenities = [
-  'General Store & Post Office',
-  'Café & Takeaway',
-  'Community Hall',
-  'Public Boat Ramp',
-  'Playground & Picnic Areas',
-  'Tennis Courts',
-];
+// Fetch all Services items
+const items = await fetchItemsBySection('Services');
 
-// Fetch projects from Notion
-let developingProjects = [];
-try {
-  developingProjects = await getProjects();
-} catch (error) {
-  console.error('Failed to fetch projects:', error);
-}
-
-// Fallback if Notion fetch fails
-if (developingProjects.length === 0) {
-  developingProjects = [
-    { name: 'Bus Shelter & Village Entry Precinct', status: 'In Progress', description: 'Improving the main village entry point with improved bus shelter and streetscape.' },
-    { name: 'Fire Station NEW BUILD Project', status: 'Planning', description: 'New Rural Fire Service station to better serve our growing community.' },
-    { name: 'Community Garden Proposal', status: 'Proposed', description: 'A community garden space for residents to grow vegetables and connect.' },
-  ];
-}
-
-// Status badge colors
-const statusColors: Record<string, string> = {
-  'In Progress': 'status--in-progress',
-  'Planning': 'status--planning',
-  'Proposed': 'status--proposed',
-  'Advocating': 'status--advocating',
-  'Not started': 'status--not-started',
-  'Completed': 'status--completed',
-  'On Hold': 'status--on-hold',
-};
+// Group by service type
+const amenities = items.filter(item => 
+  item.serviceType === 'Amenity' || item.category === 'Amenities'
+);
+const projects = items.filter(item => 
+  item.serviceType === 'Developing Project' || 
+  item.serviceType === 'Proposed Project' || 
+  item.category === 'Projects'
+);
 ---
 
-<BaseLayout 
-  title="Services & Amenities" 
-  description="Local services, amenities, and developing projects in Smiths Lake Village."
+<Layout 
+  title="Community Services | Smiths Lake Village"
+  description="Community services, amenities, and development projects in Smiths Lake"
 >
-  <Hero 
-    title="Services & Amenities"
-    subtitle="Local services and the projects shaping our community's future."
-    size="small"
-  />
-  
-  <section class="section">
-    <div class="container">
-      <div class="two-column">
-        <div class="column">
-          <h2>Existing Amenities</h2>
-          <p>Smiths Lake Village offers essential services and amenities for residents and visitors.</p>
-          <ul class="amenities-list">
-            {existingAmenities.map((amenity) => (
-              <li>{amenity}</li>
-            ))}
-          </ul>
-          
-          <div class="medical-info">
-            <h3>Medical Services</h3>
-            <p>The nearest medical centres are located in Pacific Palms and Forster. For emergencies, call 000.</p>
-          </div>
-        </div>
-        
-        <div class="column">
-          <h2>Developing Projects</h2>
-          <p>The community is actively working on several projects to improve our village.</p>
-          <p class="update-note"><em>Status updates from PPCA project tracking.</em></p>
-          
-          <div class="projects-list">
-            {developingProjects.map((project) => (
-              <article class="project-card">
-                <span class={`status ${statusColors[project.status] || 'status--default'}`}>
-                  {project.status}
-                </span>
-                <h3>{project.name}</h3>
-                <p>{project.description}</p>
-              </article>
-            ))}
-          </div>
-        </div>
+  <div class="bg-gray-50 min-h-screen">
+    <!-- Hero Section -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-12">
+      <div class="container mx-auto px-4">
+        <h1 class="text-4xl font-bold mb-4">Community Services</h1>
+        <p class="text-xl text-blue-100 max-w-3xl">
+          Local services, amenities, and community development projects serving the Smiths Lake area.
+        </p>
       </div>
     </div>
-  </section>
-</BaseLayout>
-
-<style>
-  .two-column {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-12);
-  }
-  
-  @media (min-width: 1024px) {
-    .two-column {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-  
-  .column h2 {
-    margin-bottom: var(--space-4);
-  }
-  
-  .amenities-list {
-    list-style: none;
-    padding: 0;
-    margin: var(--space-6) 0;
-  }
-  
-  .amenities-list li {
-    padding: var(--space-3) 0;
-    border-bottom: 1px solid var(--color-gray-200);
-    padding-left: var(--space-6);
-    position: relative;
-  }
-  
-  .amenities-list li::before {
-    content: '✓';
-    position: absolute;
-    left: 0;
-    color: var(--color-success);
-    font-weight: bold;
-  }
-  
-  .medical-info {
-    background: var(--color-sky-pale);
-    padding: var(--space-6);
-    border-radius: var(--radius-md);
-    margin-top: var(--space-6);
-  }
-  
-  .medical-info h3 {
-    font-size: var(--text-lg);
-    margin-bottom: var(--space-2);
-  }
-  
-  .medical-info p {
-    margin: 0;
-    color: var(--color-gray-700);
-  }
-  
-  .update-note {
-    font-size: var(--text-sm);
-    color: var(--color-gray-500);
-  }
-  
-  .projects-list {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    margin-top: var(--space-6);
-  }
-  
-  .project-card {
-    background: var(--color-off-white);
-    padding: var(--space-5);
-    border-radius: var(--radius-md);
-    border-left: 4px solid var(--color-sky);
-  }
-  
-  .project-card h3 {
-    font-size: var(--text-lg);
-    margin-bottom: var(--space-2);
-  }
-  
-  .project-card p {
-    color: var(--color-gray-600);
-    margin: 0;
-    font-size: var(--text-sm);
-  }
-  
-  .status {
-    display: inline-block;
-    font-size: var(--text-xs);
-    font-weight: 600;
-    text-transform: uppercase;
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-sm);
-    margin-bottom: var(--space-2);
-  }
-  
-  .status--in-progress {
-    background: #FEF3C7;
-    color: #92400E;
-  }
-  
-  .status--planning {
-    background: #DBEAFE;
-    color: #1E40AF;
-  }
-  
-  .status--proposed {
-    background: #E5E7EB;
-    color: #374151;
-  }
-  
-  .status--advocating {
-    background: #D1FAE5;
-    color: #065F46;
-  }
-  
-  .status--not-started {
-    background: #F3F4F6;
-    color: #6B7280;
-  }
-  
-  .status--completed {
-    background: #D1FAE5;
-    color: #065F46;
-  }
-  
-  .status--on-hold {
-    background: #FEE2E2;
-    color: #991B1B;
-  }
-  
-  .status--default {
-    background: #E5E7EB;
-    color: #374151;
-  }
-</style>
+    
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-12">
+      
+      <!-- Amenities Section -->
+      {amenities.length > 0 && (
+        <section class="mb-12">
+          <div class="flex items-center gap-3 mb-6">
+            <span class="text-4xl">🏢</span>
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900">Community Amenities</h2>
+              <p class="text-gray-600">Local facilities and services available to the community</p>
+            </div>
+          </div>
+          <div class="grid gap-6 lg:grid-cols-2">
+            {amenities.map(item => (
+              <ExpandableCard item={item} sectionSlug="services" />
+            ))}
+          </div>
+        </section>
+      )}
+      
+      <!-- Projects Section -->
+      {projects.length > 0 && (
+        <section class="mb-12">
+          <div class="flex items-center gap-3 mb-6">
+            <span class="text-4xl">🏗️</span>
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900">Development Projects</h2>
+              <p class="text-gray-600">Current and proposed projects for community improvement</p>
+            </div>
+          </div>
+          <div class="grid gap-6 lg:grid-cols-2">
+            {projects.map(item => (
+              <ExpandableCard item={item} sectionSlug="services" />
+            ))}
+          </div>
+        </section>
+      )}
+      
+      <!-- Contact PPCA -->
+      <section class="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-12">
+        <div class="flex items-start gap-3">
+          <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div>
+            <h3 class="font-semibold text-blue-900 mb-2">Need a Service Not Listed?</h3>
+            <p class="text-blue-800 text-sm mb-3 leading-relaxed">
+              If you're looking for a specific service or want to suggest a new community amenity, 
+              please get in touch with the Pacific Palms Community Association.
+            </p>
+            <a 
+              href="/contact" 
+              class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            >
+              Contact PPCA
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </section>
+      
+      <!-- No Content Message -->
+      {items.length === 0 && (
+        <div class="text-center py-12">
+          <div class="text-gray-400 text-6xl mb-4">🏢</div>
+          <p class="text-gray-600 text-lg mb-2">Services information is being updated.</p>
+          <p class="text-gray-500">Check back soon for details on community amenities and projects.</p>
+        </div>
+      )}
+    </div>
+  </div>
+</Layout>
