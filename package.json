@@ -1,21 +1,21 @@
 {
-  "name": "smiths-lake-village",
+  "name": "smiths-lake-website",
   "type": "module",
-  "version": "1.0.0",
-  "description": "Smiths Lake Village Community Website - Pacific Palms Community Association",
+  "version": "2.0.0",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build",
+    "build": "node src/scripts/generate-search-index.js && astro check && astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^4.16.0",
-    "@astrojs/sitemap": "^3.2.0"
+    "@astrojs/check": "^0.9.0",
+    "@notionhq/client": "^2.2.15",
+    "astro": "^4.16.19",
+    "typescript": "^5.6.0"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.0",
-    "typescript": "^5.6.0"
+    "@types/node": "^20.0.0"
   }
 }
