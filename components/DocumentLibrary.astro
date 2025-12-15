@@ -1,0 +1,41 @@
+---
+// DocumentLibrary.astro - Google Drive folder embed
+// Props: folderId (Google Drive folder ID), title (optional)
+
+interface Props {
+  folderId: string;
+  title?: string;
+}
+
+const { folderId, title = 'Documents' } = Astro.props;
+
+// Construct Google Drive embed URL
+const embedUrl = `https://drive.google.com/embeddedfolderview?id=${folderId}#list`;
+---
+
+{folderId && (
+  <div class="document-library mt-6 mb-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-3">{title}</h3>
+    <div class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
+      <iframe
+        src={embedUrl}
+        width="100%"
+        height="400"
+        frameborder="0"
+        loading="lazy"
+        class="w-full"
+        title={`${title} folder`}
+      ></iframe>
+    </div>
+    <p class="text-sm text-gray-600 mt-2">
+      <a 
+        href={`https://drive.google.com/drive/folders/${folderId}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-blue-600 hover:underline"
+      >
+        Open in Google Drive →
+      </a>
+    </p>
+  </div>
+)}

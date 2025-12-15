@@ -1,0 +1,112 @@
+---
+// EmergencyBanner.astro - Site-wide emergency alert banner
+// Props: alertLevel (Normal/Watch/Warning/Emergency), items (array of emergency items)
+
+interface Props {
+  alertLevel?: string;
+  items?: any[];
+}
+
+const { alertLevel, items = [] } = Astro.props;
+
+// Don't show banner if Normal or no alert
+if (!alertLevel || alertLevel === 'Normal' || items.length === 0) {
+  return null;
+}
+
+// Banner styling based on alert level
+const bannerStyles = {
+  'Watch': {
+    bg: 'bg-yellow-50 border-yellow-400',
+    text: 'text-yellow-900',
+    icon: '⚠️',
+    title: 'Weather Watch'
+  },
+  'Warning': {
+    bg: 'bg-orange-50 border-orange-500',
+    text: 'text-orange-900',
+    icon: '⚠️',
+    title: 'Warning'
+  },
+  'Emergency': {
+    bg: 'bg-red-50 border-red-600',
+    text: 'text-red-900',
+    icon: '🚨',
+    title: 'EMERGENCY ALERT'
+  }
+};
+
+const style = bannerStyles[alertLevel as keyof typeof bannerStyles] || bannerStyles['Watch'];
+---
+
+<div 
+  id="emergency-banner" 
+  class={`emergency-banner border-b-4 ${style.bg} ${style.text} py-3 px-4`}
+  role="alert"
+  aria-live="assertive"
+>
+  <div class="container mx-auto">
+    <div class="flex items-start gap-3">
+      <span class="text-2xl flex-shrink-0" role="img" aria-label={style.title}>{style.icon}</span>
+      <div class="flex-1 min-w-0">
+        <h2 class="font-bold text-lg mb-1">{style.title}</h2>
+        <p class="text-sm mb-2">
+          {items.length} active {items.length === 1 ? 'alert' : 'alerts'}. Please review emergency information.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <a 
+            href="/emergency" 
+            class={`inline-flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${style.text} bg-white border-2 ${alertLevel === 'Emergency' ? 'border-red-600' : alertLevel === 'Warning' ? 'border-orange-500' : 'border-yellow-400'} hover:opacity-80 transition-opacity`}
+          >
+            View Emergency Info
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </a>
+          <button
+            id="dismiss-banner"
+            class="inline-flex items-center gap-1 px-3 py-1 rounded text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
+            aria-label="Dismiss alert banner"
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Dismiss banner functionality with localStorage
+  const banner = document.getElementById('emergency-banner');
+  const dismissBtn = document.getElementById('dismiss-banner');
+  
+  // Check if banner was dismissed
+  const dismissed = localStorage.getItem('emergency-banner-dismissed');
+  const dismissedTime = dismissed ? parseInt(dismissed) : 0;
+  const oneHour = 60 * 60 * 1000;
+  
+  // Hide if dismissed within last hour
+  if (Date.now() - dismissedTime < oneHour) {
+    banner?.classList.add('hidden');
+  }
+  
+  // Dismiss handler
+  dismissBtn?.addEventListener('click', () => {
+    banner?.classList.add('hidden');
+    localStorage.setItem('emergency-banner-dismissed', Date.now().toString());
+  });
+</script>
+
+<style>
+  .emergency-banner {
+    position: relative;
+    z-index: 50;
+  }
+  
+  @media (max-width: 640px) {
+    .emergency-banner {
+      font-size: 0.9rem;
+    }
+  }
+</style>

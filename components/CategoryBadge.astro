@@ -1,0 +1,71 @@
+---
+// CategoryBadge.astro - Displays category with icon
+// Props: category (string), section (string for icon lookup)
+
+interface Props {
+  category: string;
+  section?: string;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const { category, section, size = 'md' } = Astro.props;
+
+// Icon mapping by category
+const iconMap: Record<string, string> = {
+  // Groups & Activities
+  'Sports': '⚽',
+  'Arts & Culture': '🎨',
+  'Hobbies': '🌱',
+  'Environment': '🌿',
+  'Social': '🤝',
+  'Service': '🛠️',
+  
+  // Emergency & Safety
+  'Evacuation': '🚨',
+  'Bushfire': '🔥',
+  'Flood': '🌊',
+  'Police': '👮',
+  'Surf Life Saving': '🏖️',
+  
+  // Services
+  'Amenities': '🏢',
+  'Projects': '🏗️',
+  
+  // Environment
+  'Conservation': '🦘',
+  'Wildlife': '🦜',
+  'Waterways': '💧',
+  'Bushland': '🌳',
+  'Sustainability': '♻️',
+  
+  // History & Culture
+  'Indigenous Heritage': '🪃',
+  'Early Settlement': '🏘️',
+  'Industry & Work': '⚙️',
+  'Community Stories': '📖',
+  'Places & Landmarks': '🗺️',
+  
+  // About
+  'General Info': 'ℹ️',
+  'Demographics': '📊',
+  'Location & Access': '📍',
+  'Facilities': '🏛️',
+};
+
+const icon = iconMap[category] || '📌';
+
+const sizeClasses = {
+  sm: 'text-sm px-2 py-1',
+  md: 'text-base px-3 py-1.5',
+  lg: 'text-lg px-4 py-2'
+};
+
+const sizeClass = sizeClasses[size];
+---
+
+{category && (
+  <span class={`inline-flex items-center gap-1.5 rounded-md bg-gray-100 text-gray-700 font-medium border border-gray-300 ${sizeClass}`}>
+    <span class="text-base" role="img" aria-label={category}>{icon}</span>
+    <span>{category}</span>
+  </span>
+)}
