@@ -139,8 +139,8 @@ export async function fetchNotionContent(filters = {}) {
       and: [
         {
           property: 'Show on Website',
-          checkbox: {
-            equals: true
+          select: {
+            equals: 'TRUE'
           }
         }
       ]
