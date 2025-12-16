@@ -2,6 +2,7 @@
 // Services Index Page - Simplified
 import Layout from '../../layouts/BaseLayout.astro';
 import ExpandableCard from '../../components/ExpandableCard.astro';
+import ProjectStatusRegister from '../../components/ProjectStatusRegister.astro';
 import { fetchItemsBySection } from '../../lib/notion-unified.js';
 
 // Fetch all Services items
@@ -107,11 +108,19 @@ const projects = items.filter(item =>
         <div class="section-group">
           <h2>Developing Projects</h2>
           <p style="margin-bottom: 1.5rem;">The community is actively working on several projects to improve our village.</p>
-          <div class="items-grid">
-            {projects.map(item => (
-              <ExpandableCard item={item} section="Services" />
-            ))}
-          </div>
+          
+          <ProjectStatusRegister projects={projects} />
+          
+          <details style="margin-top: 2rem;">
+            <summary style="cursor: pointer; font-weight: 600; color: #1B365D; padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+              View Detailed Project Information
+            </summary>
+            <div style="margin-top: 1rem;" class="items-grid">
+              {projects.map(item => (
+                <ExpandableCard item={item} section="Services" />
+              ))}
+            </div>
+          </details>
         </div>
       )}
       
