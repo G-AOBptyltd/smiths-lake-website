@@ -8,15 +8,24 @@ import { fetchItemsBySection } from '../../lib/notion-unified.js';
 // Fetch all Services items
 const items = await fetchItemsBySection('Services');
 
-// Group by service type
+// Debug: Log what we got
+console.log('=== SERVICES PAGE DEBUG ===');
+console.log('Total items fetched:', items.length);
+items.forEach(item => {
+  console.log(`- ${item.title}: serviceType="${item.serviceType}", category="${item.category}"`);
+});
+
+// Group by service type - anything NOT an amenity is a project
 const amenities = items.filter(item => 
   item.serviceType === 'Amenity' || item.category === 'Amenities'
 );
 const projects = items.filter(item => 
-  item.serviceType === 'Developing Project' || 
-  item.serviceType === 'Proposed Project' ||
-  item.category === 'Projects'
+  item.serviceType !== 'Amenity' && item.category !== 'Amenities'
 );
+
+console.log('Amenities count:', amenities.length);
+console.log('Projects count:', projects.length);
+projects.forEach(p => console.log(`  - ${p.title}`));
 ---
 
 <Layout 
