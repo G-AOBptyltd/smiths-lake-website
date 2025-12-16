@@ -1,176 +1,266 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import Hero from '../../components/Hero.astro';
+// Environment & Sustainability Index Page
+import Layout from '../../layouts/BaseLayout.astro';
+import CategoryBadge from '../../components/CategoryBadge.astro';
+import StatusBadge from '../../components/StatusBadge.astro';
+import ProjectStatusRegister from '../../components/ProjectStatusRegister.astro';
+import { fetchItemsBySection } from '../../lib/notion-unified.js';
 
-const initiatives = [
-  {
-    title: 'Lake Health Monitoring',
-    description: 'Regular monitoring of water quality, fish populations, and ecosystem health in Smiths Lake.',
-    icon: '💧',
-  },
-  {
-    title: 'Green Space Management',
-    description: 'Maintaining and improving our parks, reserves, and natural areas for community enjoyment.',
-    icon: '🌳',
-  },
-  {
-    title: 'Conservation Programs',
-    description: 'Protecting native flora and fauna, including threatened species in our local area.',
-    icon: '🦜',
-  },
-  {
-    title: 'Foreshore Protection',
-    description: 'Managing erosion, vegetation, and access along the lake foreshore.',
-    icon: '🏖️',
-  },
-];
+// Fetch ALL Environment items
+const items = await fetchItemsBySection('Environment');
+
+// Separate into active programs and projects
+const programs = items.filter(item => 
+  item.status === 'Active' || item.status === 'Published'
+);
+const projects = items.filter(item => 
+  item.status !== 'Active' && item.status !== 'Published'
+);
+
+// Category emoji mapping
+const categoryEmojis = {
+  'Waterways': '💧',
+  'Conservation': '🌿',
+  'Sustainability': '♻️',
+  'Bushland': '🌳'
+};
 ---
 
-<BaseLayout 
-  title="Environment & Conservation" 
-  description="Lake health, conservation initiatives, and environmental programs in Smiths Lake."
+<Layout 
+  title="Environment & Sustainability"
+  description="Lake health monitoring, conservation programs, and environmental initiatives"
 >
-  <Hero 
-    title="Environment & Conservation"
-    subtitle="Protecting and preserving our pristine natural environment for future generations."
-    size="small"
-  />
-  
-  <section class="section">
-    <div class="container">
-      <div class="intro">
-        <p class="lead text-center">
-          Smiths Lake is a remarkable coastal lagoon surrounded by native bushland, 
-          wetlands, and the Myall Lakes National Park. Our community is committed to 
-          preserving this natural treasure.
-        </p>
-      </div>
+  <style>
+    .environment-page {
+      background: #f7f9fc;
+    }
+    
+    .environment-hero {
+      background: linear-gradient(135deg, rgba(22, 163, 74, 0.95), rgba(34, 197, 94, 0.9)),
+                  url('/images/smiths-lake-aerial.jpg') center/cover;
+      color: white;
+      padding: 5rem 1rem;
+      text-align: center;
+    }
+    
+    .hero-content {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .environment-hero h1 {
+      color: white;
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    
+    .environment-hero p {
+      font-size: 1.25rem;
+      opacity: 0.95;
+    }
+    
+    .content-section {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 3rem 1rem;
+    }
+    
+    .section-group {
+      margin-bottom: 4rem;
+    }
+    
+    .section-header {
+      margin-bottom: 2rem;
+    }
+    
+    .section-header h2 {
+      color: #1B365D;
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 3px solid #16a34a;
+    }
+    
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 2rem;
+    }
+    
+    .item-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      border-top: 4px solid #16a34a;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .item-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    .card-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1B365D;
+      margin: 0 0 0.75rem 0;
+    }
+    
+    .card-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .card-body {
+      padding: 1.5rem;
+      flex: 1;
+    }
+    
+    .card-description {
+      color: #4b5563;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    
+    .card-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      font-size: 0.9375rem;
+    }
+    
+    .detail-row {
+      display: flex;
+      gap: 0.75rem;
+    }
+    
+    .detail-icon {
+      flex-shrink: 0;
+      width: 20px;
+    }
+    
+    .detail-label {
+      font-weight: 600;
+      color: #16a34a;
+      margin-right: 0.25rem;
+    }
+    
+    .card-footer {
+      padding: 1rem 1.5rem;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+    }
+    
+    .external-link {
+      color: #16a34a;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    
+    .external-link:hover {
+      color: #15803d;
+    }
+    
+    @media (max-width: 768px) {
+      .environment-hero h1 {
+        font-size: 2rem;
+      }
       
-      <div class="initiatives-grid">
-        {initiatives.map((initiative) => (
-          <article class="initiative-card">
-            <span class="initiative-icon" aria-hidden="true">{initiative.icon}</span>
-            <h3>{initiative.title}</h3>
-            <p>{initiative.description}</p>
-          </article>
-        ))}
-      </div>
-      
-      <div class="lake-info">
-        <h2>About Smiths Lake</h2>
-        <div class="lake-facts">
-          <p>
-            Smiths Lake is an Intermittently Closed and Open Lake or Lagoon (ICOLL), 
-            meaning it periodically opens to the sea. This unique hydrology creates 
-            a diverse ecosystem supporting fish, birds, and marine life.
-          </p>
-          <p>
-            The lake and surrounding areas are part of the traditional lands of the 
-            Worimi people, who have cared for this country for thousands of years.
-          </p>
-        </div>
-      </div>
-      
-      <aside class="action-section">
-        <h2>How You Can Help</h2>
-        <ul>
-          <li>Report pollution or environmental concerns to MidCoast Council</li>
-          <li>Join local clean-up events and working bees</li>
-          <li>Use eco-friendly products that won't harm waterways</li>
-          <li>Respect wildlife and their habitats</li>
-          <li>Support native plant regeneration on your property</li>
-        </ul>
-      </aside>
-    </div>
-  </section>
-</BaseLayout>
+      .items-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 
-<style>
-  .intro {
-    max-width: 800px;
-    margin: 0 auto var(--space-12);
-  }
-  
-  .lead {
-    font-size: var(--text-xl);
-    color: var(--color-gray-700);
-    line-height: var(--leading-relaxed);
-  }
-  
-  .initiatives-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: var(--space-6);
-    margin-bottom: var(--space-12);
-  }
-  
-  .initiative-card {
-    background: var(--color-off-white);
-    padding: var(--space-6);
-    border-radius: var(--radius-lg);
-    border-top: 4px solid var(--color-success);
-    text-align: center;
-  }
-  
-  .initiative-icon {
-    font-size: 3rem;
-    display: block;
-    margin-bottom: var(--space-4);
-  }
-  
-  .initiative-card h3 {
-    font-size: var(--text-lg);
-    margin-bottom: var(--space-3);
-  }
-  
-  .initiative-card p {
-    color: var(--color-gray-600);
-    margin: 0;
-  }
-  
-  .lake-info {
-    background: var(--color-sky-pale);
-    padding: var(--space-10);
-    border-radius: var(--radius-lg);
-    margin-bottom: var(--space-12);
-  }
-  
-  .lake-info h2 {
-    text-align: center;
-    margin-bottom: var(--space-6);
-  }
-  
-  .lake-facts {
-    max-width: 700px;
-    margin: 0 auto;
-  }
-  
-  .lake-facts p {
-    color: var(--color-gray-700);
-    line-height: var(--leading-relaxed);
-  }
-  
-  .action-section {
-    background: var(--color-navy);
-    color: var(--color-white);
-    padding: var(--space-8);
-    border-radius: var(--radius-lg);
-  }
-  
-  .action-section h2 {
-    color: var(--color-white);
-    margin-bottom: var(--space-6);
-    text-align: center;
-  }
-  
-  .action-section ul {
-    max-width: 500px;
-    margin: 0 auto;
-    padding-left: var(--space-6);
-  }
-  
-  .action-section li {
-    color: var(--color-gray-200);
-    margin-bottom: var(--space-3);
-  }
-</style>
+  <div class="environment-page">
+    <div class="environment-hero">
+      <div class="hero-content">
+        <h1>Environment & Sustainability</h1>
+        <p>Lake health monitoring, foreshore management, wildlife conservation, and environmental programs</p>
+      </div>
+    </div>
+    
+    <div class="content-section">
+      {programs.length > 0 && (
+        <div class="section-group">
+          <div class="section-header">
+            <h2>Active Programs</h2>
+            <p>Our ongoing environmental initiatives and conservation efforts</p>
+          </div>
+          <div class="items-grid">
+            {programs.map(item => (
+              <div class="item-card">
+                <div class="card-header">
+                  <h3 class="card-title">{item.title}</h3>
+                  <div class="card-badges">
+                    <CategoryBadge category={item.category} size="sm" />
+                    {item.status && <StatusBadge status={item.status} />}
+                  </div>
+                </div>
+                <div class="card-body">
+                  {item.description && (
+                    <p class="card-description">{item.description}</p>
+                  )}
+                  <div class="card-details">
+                    {item.locationArea && (
+                      <div class="detail-row">
+                        <span class="detail-icon">📍</span>
+                        <div>
+                          <span class="detail-label">Location:</span>
+                          {item.locationArea}
+                        </div>
+                      </div>
+                    )}
+                    {item.partnerOrganisations && (
+                      <div class="detail-row">
+                        <span class="detail-icon">🤝</span>
+                        <div>
+                          <span class="detail-label">Partners:</span>
+                          {item.partnerOrganisations}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {item.websiteUrl && (
+                  <div class="card-footer">
+                    <a href={item.websiteUrl} target="_blank" rel="noopener" class="external-link">
+                      Learn More →
+                    </a>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {projects.length > 0 && (
+        <div class="section-group">
+          <div class="section-header">
+            <h2>Environmental Projects</h2>
+            <p>Initiatives in planning and development stages</p>
+          </div>
+          
+          <ProjectStatusRegister projects={projects} />
+        </div>
+      )}
+      
+      {items.length === 0 && (
+        <div style="text-align: center; padding: 3rem; color: #6b7280;">
+          <p>Environmental information is being updated. Check back soon.</p>
+        </div>
+      )}
+    </div>
+  </div>
+</Layout>
