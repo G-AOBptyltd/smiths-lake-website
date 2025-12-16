@@ -1,0 +1,296 @@
+---
+// ProjectStatusRegister.astro - Status dashboard for community projects
+interface Props {
+  projects: any[];
+}
+
+const { projects } = Astro.props;
+
+// Sort by priority order and status
+const sortedProjects = projects.sort((a, b) => {
+  // First by priority order (if exists)
+  if (a.priorityOrder && b.priorityOrder) {
+    return a.priorityOrder - b.priorityOrder;
+  }
+  // Then alphabetically
+  return (a.title || '').localeCompare(b.title || '');
+});
+
+// Status color mapping
+const statusColors = {
+  'Proposed': { bg: '#fef3c7', text: '#92400e', icon: '📋' },
+  'Planning': { bg: '#dbeafe', text: '#1e40af', icon: '📐' },
+  'In Progress': { bg: '#e0e7ff', text: '#4338ca', icon: '🔨' },
+  'Active': { bg: '#d1fae5', text: '#065f46', icon: '✅' },
+  'On Hold': { bg: '#fee2e2', text: '#991b1b', icon: '⏸️' },
+  'Completed': { bg: '#dcfce7', text: '#166534', icon: '🎉' },
+};
+
+function getStatusStyle(status: string) {
+  return statusColors[status] || { bg: '#f3f4f6', text: '#374151', icon: '📌' };
+}
+---
+
+<div class="project-register">
+  <div class="register-header">
+    <h3>Project Status Register</h3>
+    <p class="register-subtitle">Track progress on community initiatives</p>
+  </div>
+  
+  <div class="projects-table">
+    <div class="table-header">
+      <div class="col-project">Project Name</div>
+      <div class="col-status">Status</div>
+      <div class="col-type">Type</div>
+      <div class="col-notes">Latest Update</div>
+    </div>
+    
+    {sortedProjects.map(project => {
+      const statusStyle = getStatusStyle(project.status);
+      return (
+        <div class="table-row">
+          <div class="col-project">
+            <div class="project-title">{project.title}</div>
+            {project.description && (
+              <div class="project-desc">{project.description.substring(0, 80)}...</div>
+            )}
+          </div>
+          <div class="col-status">
+            <span 
+              class="status-badge" 
+              style={`background: ${statusStyle.bg}; color: ${statusStyle.text};`}
+            >
+              <span class="status-icon">{statusStyle.icon}</span>
+              {project.status || 'Active'}
+            </span>
+          </div>
+          <div class="col-type">
+            <span class="type-label">
+              {project.serviceType || project.category || 'Project'}
+            </span>
+          </div>
+          <div class="col-notes">
+            {project.notes ? (
+              <div class="notes-text">{project.notes}</div>
+            ) : (
+              <span class="no-notes">No recent updates</span>
+            )}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+  
+  {projects.length === 0 && (
+    <div class="no-projects">
+      <p>No active projects at this time.</p>
+    </div>
+  )}
+</div>
+
+<style>
+  .project-register {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin: 2rem 0;
+  }
+  
+  .register-header {
+    background: linear-gradient(135deg, #1B365D, #2B4A7D);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+  }
+  
+  .register-header h3 {
+    color: white;
+    font-size: 1.75rem;
+    margin: 0 0 0.5rem 0;
+  }
+  
+  .register-subtitle {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 1rem;
+  }
+  
+  .projects-table {
+    display: grid;
+    gap: 1px;
+    background: #e5e7eb;
+  }
+  
+  .table-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 2fr;
+    gap: 1px;
+    background: #f3f4f6;
+    font-weight: 700;
+    color: #1B365D;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  
+  .table-header > div {
+    padding: 1rem;
+    background: white;
+  }
+  
+  .table-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 2fr;
+    gap: 1px;
+    background: white;
+    transition: background 0.2s;
+  }
+  
+  .table-row:hover {
+    background: #f9fafb;
+  }
+  
+  .table-row > div {
+    padding: 1.25rem 1rem;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .col-project {
+    align-items: flex-start !important;
+  }
+  
+  .project-title {
+    font-weight: 600;
+    color: #1B365D;
+    margin-bottom: 0.25rem;
+    font-size: 1rem;
+  }
+  
+  .project-desc {
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+  
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+  
+  .status-icon {
+    font-size: 1.125rem;
+  }
+  
+  .type-label {
+    font-size: 0.875rem;
+    color: #4b5563;
+    padding: 0.375rem 0.75rem;
+    background: #f3f4f6;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  
+  .notes-text {
+    font-size: 0.875rem;
+    color: #4b5563;
+    line-height: 1.5;
+  }
+  
+  .no-notes {
+    font-size: 0.875rem;
+    color: #9ca3af;
+    font-style: italic;
+  }
+  
+  .no-projects {
+    padding: 3rem;
+    text-align: center;
+    color: #6b7280;
+  }
+  
+  /* Mobile responsive */
+  @media (max-width: 768px) {
+    .table-header {
+      display: none;
+    }
+    
+    .table-row {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+      padding: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .table-row > div {
+      padding: 0.5rem 0;
+    }
+    
+    .col-project {
+      order: 1;
+    }
+    
+    .col-status {
+      order: 2;
+    }
+    
+    .col-type {
+      order: 3;
+    }
+    
+    .col-notes {
+      order: 4;
+      padding-top: 0.75rem;
+      border-top: 1px solid #f3f4f6;
+    }
+    
+    .col-project::before {
+      content: 'Project';
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #6b7280;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    
+    .col-status::before {
+      content: 'Status';
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #6b7280;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    
+    .col-type::before {
+      content: 'Type';
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #6b7280;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    
+    .col-notes::before {
+      content: 'Latest Update';
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #6b7280;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+  }
+</style>
