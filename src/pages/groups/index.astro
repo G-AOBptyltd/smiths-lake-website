@@ -1,7 +1,8 @@
 ---
-// Groups & Activities Index Page
+// Groups & Activities Index Page - Beautiful Card Layout
 import Layout from '../../layouts/BaseLayout.astro';
-import ExpandableCard from '../../components/ExpandableCard.astro';
+import CategoryBadge from '../../components/CategoryBadge.astro';
+import StatusBadge from '../../components/StatusBadge.astro';
 import { fetchItemsBySection } from '../../lib/notion-unified.js';
 
 // Fetch all Groups & Activities items
@@ -13,6 +14,15 @@ const artsAndCulture = items.filter(item => item.category === 'Arts & Culture');
 const hobbies = items.filter(item => item.category === 'Hobbies');
 const social = items.filter(item => item.category === 'Social');
 const service = items.filter(item => item.category === 'Service');
+
+// Category emoji mapping
+const categoryEmojis = {
+  'Sports': '⚽',
+  'Arts & Culture': '🎨',
+  'Hobbies': '🌱',
+  'Social': '☕',
+  'Service': '🤝'
+};
 ---
 
 <Layout 
@@ -23,6 +33,8 @@ const service = items.filter(item => item.category === 'Service');
     .groups-page {
       background: #f7f9fc;
     }
+    
+    /* Hero Section */
     .groups-hero {
       background: linear-gradient(135deg, rgba(27, 54, 93, 0.95), rgba(91, 155, 213, 0.85)), 
                   url('/images/smiths-lake-aerial.jpg') center/cover;
@@ -30,25 +42,53 @@ const service = items.filter(item => item.category === 'Service');
       padding: 5rem 1rem;
       text-align: center;
       position: relative;
+      overflow: hidden;
     }
+    
+    .groups-hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 50%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        -60deg,
+        transparent,
+        transparent 10px,
+        rgba(255, 255, 255, 0.03) 10px,
+        rgba(255, 255, 255, 0.03) 20px
+      );
+    }
+    
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
     .groups-hero h1 {
       color: white;
       font-size: 3rem;
       margin-bottom: 1rem;
       font-weight: 700;
     }
+    
     .groups-hero p {
       font-size: 1.25rem;
-      max-width: 800px;
-      margin: 0 auto;
       opacity: 0.95;
+      line-height: 1.6;
     }
+    
+    /* Intro Section */
     .intro-section {
       max-width: 1200px;
       margin: 3rem auto;
       padding: 0 1rem;
       text-align: center;
     }
+    
     .intro-section p {
       font-size: 1.125rem;
       color: #4b5563;
@@ -56,32 +96,168 @@ const service = items.filter(item => item.category === 'Service');
       max-width: 900px;
       margin: 0 auto;
     }
+    
+    /* Content Sections */
     .content-section {
       max-width: 1200px;
-      margin: 0 auto 3rem;
+      margin: 0 auto 4rem;
       padding: 0 1rem;
     }
-    .category-group {
-      margin-bottom: 3rem;
+    
+    .category-section {
+      margin-bottom: 4rem;
     }
-    .category-group h2 {
-      color: #1B365D;
-      font-size: 1.75rem;
-      margin-bottom: 1.5rem;
-      padding-bottom: 0.5rem;
+    
+    .category-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
       border-bottom: 3px solid #1B365D;
     }
-    .items-grid {
+    
+    .category-icon {
+      font-size: 2.5rem;
+    }
+    
+    .category-header h2 {
+      color: #1B365D;
+      font-size: 1.75rem;
+      margin: 0;
+    }
+    
+    /* Card Grid */
+    .groups-grid {
       display: grid;
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 2rem;
     }
-    .no-items {
-      padding: 2rem;
+    
+    /* Group Card */
+    .group-card {
       background: white;
-      border-radius: 8px;
-      text-align: center;
-      color: #6b7280;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      border-top: 4px solid #5B9BD5;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
+    
+    .group-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    .card-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1B365D;
+      margin: 0 0 0.75rem 0;
+      line-height: 1.3;
+    }
+    
+    .card-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .card-body {
+      padding: 1.5rem;
+      flex: 1;
+    }
+    
+    .card-description {
+      color: #4b5563;
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+    }
+    
+    .card-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .detail-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.9375rem;
+    }
+    
+    .detail-icon {
+      flex-shrink: 0;
+      width: 20px;
+      color: #5B9BD5;
+      font-size: 1rem;
+    }
+    
+    .detail-content {
+      flex: 1;
+      color: #374151;
+    }
+    
+    .detail-label {
+      font-weight: 600;
+      color: #1B365D;
+      margin-right: 0.25rem;
+    }
+    
+    .card-footer {
+      padding: 1rem 1.5rem;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .contact-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #5B9BD5;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      transition: color 0.2s;
+    }
+    
+    .contact-link:hover {
+      color: #1B365D;
+    }
+    
+    .external-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #5B9BD5;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      transition: background 0.2s;
+    }
+    
+    .external-link:hover {
+      background: #1B365D;
+    }
+    
+    /* CTA Box */
     .cta-box {
       background: linear-gradient(135deg, #5B9BD5, #1B365D);
       color: white;
@@ -89,40 +265,79 @@ const service = items.filter(item => item.category === 'Service');
       border-radius: 12px;
       text-align: center;
       max-width: 1200px;
-      margin: 3rem auto;
+      margin: 4rem auto 0;
+      box-shadow: 0 8px 24px rgba(27, 54, 93, 0.2);
     }
+    
     .cta-box h3 {
       color: white;
-      font-size: 1.75rem;
+      font-size: 2rem;
       margin-bottom: 1rem;
     }
+    
     .cta-box p {
       font-size: 1.125rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
       opacity: 0.95;
+      line-height: 1.6;
     }
+    
     .cta-button {
       display: inline-block;
       background: white;
       color: #1B365D;
-      padding: 1rem 2rem;
+      padding: 1rem 2.5rem;
       border-radius: 8px;
       text-decoration: none;
       font-weight: bold;
-      transition: transform 0.2s;
+      font-size: 1.0625rem;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
+    
     .cta-button:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .no-groups {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-style: italic;
+    }
+    
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .groups-hero h1 {
+        font-size: 2rem;
+      }
+      
+      .groups-hero p {
+        font-size: 1rem;
+      }
+      
+      .groups-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .category-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
     }
   </style>
 
   <div class="groups-page">
+    <!-- Hero Section -->
     <div class="groups-hero">
-      <h1>Groups & Activities</h1>
-      <p>Join our vibrant community through clubs, groups, and volunteering.</p>
+      <div class="hero-content">
+        <h1>Groups & Activities</h1>
+        <p>Join our vibrant community through clubs, groups, and volunteering.</p>
+      </div>
     </div>
     
+    <!-- Intro -->
     <div class="intro-section">
       <p>
         Smiths Lake and the Pacific Palms area have a rich community life with groups catering to all interests. 
@@ -131,69 +346,353 @@ const service = items.filter(item => item.category === 'Service');
     </div>
     
     <div class="content-section">
+      <!-- Sports & Recreation -->
       {sports.length > 0 && (
-        <div class="category-group">
-          <h2>Sports & Recreation</h2>
-          <div class="items-grid">
-            {sports.map(item => (
-              <ExpandableCard item={item} section="Groups & Activities" />
+        <div class="category-section">
+          <div class="category-header">
+            <span class="category-icon">{categoryEmojis['Sports']}</span>
+            <h2>Sports & Recreation</h2>
+          </div>
+          <div class="groups-grid">
+            {sports.map(group => (
+              <div class="group-card">
+                <div class="card-header">
+                  <h3 class="card-title">{group.title}</h3>
+                  <div class="card-badges">
+                    <CategoryBadge category={group.category} size="sm" />
+                    {group.status && <StatusBadge status={group.status} />}
+                  </div>
+                </div>
+                <div class="card-body">
+                  {group.description && (
+                    <p class="card-description">{group.description}</p>
+                  )}
+                  <div class="card-details">
+                    {group.meetingDay && (
+                      <div class="detail-row">
+                        <span class="detail-icon">📅</span>
+                        <div class="detail-content">
+                          <span class="detail-label">Meets:</span>
+                          {group.meetingDay}
+                          {group.meetingTime && ` at ${group.meetingTime}`}
+                        </div>
+                      </div>
+                    )}
+                    {group.meetingLocation && (
+                      <div class="detail-row">
+                        <span class="detail-icon">📍</span>
+                        <div class="detail-content">
+                          <span class="detail-label">Location:</span>
+                          {group.meetingLocation}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {(group.contactEmail || group.websiteUrl || group.facebookUrl) && (
+                  <div class="card-footer">
+                    {group.contactEmail && group.showContactPublicly && (
+                      <a href={`mailto:${group.contactEmail}`} class="contact-link">
+                        ✉️ Contact
+                      </a>
+                    )}
+                    {group.websiteUrl && (
+                      <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
+                        Visit Website →
+                      </a>
+                    )}
+                    {group.facebookUrl && !group.websiteUrl && (
+                      <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
+                        Facebook →
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
       )}
       
+      <!-- Arts & Culture -->
       {artsAndCulture.length > 0 && (
-        <div class="category-group">
-          <h2>Arts & Culture</h2>
-          <div class="items-grid">
-            {artsAndCulture.map(item => (
-              <ExpandableCard item={item} section="Groups & Activities" />
+        <div class="category-section">
+          <div class="category-header">
+            <span class="category-icon">{categoryEmojis['Arts & Culture']}</span>
+            <h2>Arts & Culture</h2>
+          </div>
+          <div class="groups-grid">
+            {artsAndCulture.map(group => (
+              <div class="group-card">
+                <div class="card-header">
+                  <h3 class="card-title">{group.title}</h3>
+                  <div class="card-badges">
+                    <CategoryBadge category={group.category} size="sm" />
+                    {group.status && <StatusBadge status={group.status} />}
+                  </div>
+                </div>
+                <div class="card-body">
+                  {group.description && (
+                    <p class="card-description">{group.description}</p>
+                  )}
+                  <div class="card-details">
+                    {group.meetingDay && (
+                      <div class="detail-row">
+                        <span class="detail-icon">📅</span>
+                        <div class="detail-content">
+                          <span class="detail-label">Meets:</span>
+                          {group.meetingDay}
+                          {group.meetingTime && ` at ${group.meetingTime}`}
+                        </div>
+                      </div>
+                    )}
+                    {group.meetingLocation && (
+                      <div class="detail-row">
+                        <span class="detail-icon">📍</span>
+                        <div class="detail-content">
+                          <span class="detail-label">Location:</span>
+                          {group.meetingLocation}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {(group.contactEmail || group.websiteUrl || group.facebookUrl) && (
+                  <div class="card-footer">
+                    {group.contactEmail && group.showContactPublicly && (
+                      <a href={`mailto:${group.contactEmail}`} class="contact-link">
+                        ✉️ Contact
+                      </a>
+                    )}
+                    {group.websiteUrl && (
+                      <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
+                        Visit Website →
+                      </a>
+                    )}
+                    {group.facebookUrl && !group.websiteUrl && (
+                      <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
+                        Facebook →
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
       )}
       
+      <!-- Hobbies & Interests -->
       {hobbies.length > 0 && (
-        <div class="category-group">
-          <h2>Hobbies & Interests</h2>
-          <div class="items-grid">
-            {hobbies.map(item => (
-              <ExpandableCard item={item} section="Groups & Activities" />
+        <div class="category-section">
+          <div class="category-header">
+            <span class="category-icon">{categoryEmojis['Hobbies']}</span>
+            <h2>Hobbies & Interests</h2>
+          </div>
+          <div class="groups-grid">
+            {hobbies.map(group => (
+              <div class="group-card">
+                <div class="card-header">
+                  <h3 class="card-title">{group.title}</h3>
+                  <div class="card-badges">
+                    <CategoryBadge category={group.category} size="sm" />
+                    {group.status && <StatusBadge status={group.status} />}
+                  </div>
+                </div>
+                <div class="card-body">
+                  {group.description && (
+                    <p class="card-description">{group.description}</p>
+                  )}
+                  <div class="card-details">
+                    {group.meetingDay && (
+                      <div class="detail-row">
+                        <span class="detail-icon">📅</span>
+                        <div class="detail-content">
+                          <span class="detail-label">Meets:</span>
+                          {group.meetingDay}
+                          {group.meetingTime && ` at ${group.meetingTime}`}
+                        </div>
+                      </div>
+                    )}
+                    {group.meetingLocation && (
+                      <div class="detail-row">
+                        <span class="detail-icon">📍</span>
+                        <div class="detail-content">
+                          <span class="detail-label">Location:</span>
+                          {group.meetingLocation}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {(group.contactEmail || group.websiteUrl || group.facebookUrl) && (
+                  <div class="card-footer">
+                    {group.contactEmail && group.showContactPublicly && (
+                      <a href={`mailto:${group.contactEmail}`} class="contact-link">
+                        ✉️ Contact
+                      </a>
+                    )}
+                    {group.websiteUrl && (
+                      <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
+                        Visit Website →
+                      </a>
+                    )}
+                    {group.facebookUrl && !group.websiteUrl && (
+                      <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
+                        Facebook →
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
       )}
       
+      <!-- Social & Community -->
       {social.length > 0 && (
-        <div class="category-group">
-          <h2>Social & Community</h2>
-          <div class="items-grid">
-            {social.map(item => (
-              <ExpandableCard item={item} section="Groups & Activities" />
+        <div class="category-section">
+          <div class="category-header">
+            <span class="category-icon">{categoryEmojis['Social']}</span>
+            <h2>Social & Community</h2>
+          </div>
+          <div class="groups-grid">
+            {social.map(group => (
+              <div class="group-card">
+                <div class="card-header">
+                  <h3 class="card-title">{group.title}</h3>
+                  <div class="card-badges">
+                    <CategoryBadge category={group.category} size="sm" />
+                    {group.status && <StatusBadge status={group.status} />}
+                  </div>
+                </div>
+                <div class="card-body">
+                  {group.description && (
+                    <p class="card-description">{group.description}</p>
+                  )}
+                  <div class="card-details">
+                    {group.meetingDay && (
+                      <div class="detail-row">
+                        <span class="detail-icon">📅</span>
+                        <div class="detail-content">
+                          <span class="detail-label">Meets:</span>
+                          {group.meetingDay}
+                          {group.meetingTime && ` at ${group.meetingTime}`}
+                        </div>
+                      </div>
+                    )}
+                    {group.meetingLocation && (
+                      <div class="detail-row">
+                        <span class="detail-icon">📍</span>
+                        <div class="detail-content">
+                          <span class="detail-label">Location:</span>
+                          {group.meetingLocation}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {(group.contactEmail || group.websiteUrl || group.facebookUrl) && (
+                  <div class="card-footer">
+                    {group.contactEmail && group.showContactPublicly && (
+                      <a href={`mailto:${group.contactEmail}`} class="contact-link">
+                        ✉️ Contact
+                      </a>
+                    )}
+                    {group.websiteUrl && (
+                      <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
+                        Visit Website →
+                      </a>
+                    )}
+                    {group.facebookUrl && !group.websiteUrl && (
+                      <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
+                        Facebook →
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
       )}
       
+      <!-- Community Service -->
       {service.length > 0 && (
-        <div class="category-group">
-          <h2>Community Service</h2>
-          <div class="items-grid">
-            {service.map(item => (
-              <ExpandableCard item={item} section="Groups & Activities" />
+        <div class="category-section">
+          <div class="category-header">
+            <span class="category-icon">{categoryEmojis['Service']}</span>
+            <h2>Community Service</h2>
+          </div>
+          <div class="groups-grid">
+            {service.map(group => (
+              <div class="group-card">
+                <div class="card-header">
+                  <h3 class="card-title">{group.title}</h3>
+                  <div class="card-badges">
+                    <CategoryBadge category={group.category} size="sm" />
+                    {group.status && <StatusBadge status={group.status} />}
+                  </div>
+                </div>
+                <div class="card-body">
+                  {group.description && (
+                    <p class="card-description">{group.description}</p>
+                  )}
+                  <div class="card-details">
+                    {group.meetingDay && (
+                      <div class="detail-row">
+                        <span class="detail-icon">📅</span>
+                        <div class="detail-content">
+                          <span class="detail-label">Meets:</span>
+                          {group.meetingDay}
+                          {group.meetingTime && ` at ${group.meetingTime}`}
+                        </div>
+                      </div>
+                    )}
+                    {group.meetingLocation && (
+                      <div class="detail-row">
+                        <span class="detail-icon">📍</span>
+                        <div class="detail-content">
+                          <span class="detail-label">Location:</span>
+                          {group.meetingLocation}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {(group.contactEmail || group.websiteUrl || group.facebookUrl) && (
+                  <div class="card-footer">
+                    {group.contactEmail && group.showContactPublicly && (
+                      <a href={`mailto:${group.contactEmail}`} class="contact-link">
+                        ✉️ Contact
+                      </a>
+                    )}
+                    {group.websiteUrl && (
+                      <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
+                        Visit Website →
+                      </a>
+                    )}
+                    {group.facebookUrl && !group.websiteUrl && (
+                      <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
+                        Facebook →
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>
       )}
       
       {items.length === 0 && (
-        <div class="no-items">
+        <div class="no-groups">
           <p>Groups information is being updated. Check back soon.</p>
         </div>
       )}
-    </div>
-    
-    <div class="content-section">
+      
+      <!-- CTA Box -->
       <div class="cta-box">
         <h3>Want to Start a New Group?</h3>
         <p>We're always looking to expand our community offerings. If you have an idea for a new group or activity, we'd love to hear from you!</p>
