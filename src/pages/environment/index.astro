@@ -1,5 +1,5 @@
 ---
-// Environment & Sustainability Index Page
+// Environment & Sustainability Index Page - Cards + Register
 import Layout from '../../layouts/BaseLayout.astro';
 import CategoryBadge from '../../components/CategoryBadge.astro';
 import StatusBadge from '../../components/StatusBadge.astro';
@@ -10,20 +10,12 @@ import { fetchItemsBySection } from '../../lib/notion-unified.js';
 const items = await fetchItemsBySection('Environment');
 
 // Separate into active programs and projects
-const programs = items.filter(item => 
+const activePrograms = items.filter(item => 
   item.status === 'Active' || item.status === 'Published'
 );
-const projects = items.filter(item => 
+const developingProjects = items.filter(item => 
   item.status !== 'Active' && item.status !== 'Published'
 );
-
-// Category emoji mapping
-const categoryEmojis = {
-  'Waterways': '💧',
-  'Conservation': '🌿',
-  'Sustainability': '♻️',
-  'Bushland': '🌳'
-};
 ---
 
 <Layout 
@@ -35,15 +27,36 @@ const categoryEmojis = {
       background: #f7f9fc;
     }
     
+    /* Hero Section */
     .environment-hero {
       background: linear-gradient(135deg, rgba(22, 163, 74, 0.95), rgba(34, 197, 94, 0.9)),
                   url('/images/smiths-lake-aerial.jpg') center/cover;
       color: white;
       padding: 5rem 1rem;
       text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .environment-hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 50%;
+      height: 100%;
+      background: repeating-linear-gradient(
+        -60deg,
+        transparent,
+        transparent 10px,
+        rgba(255, 255, 255, 0.03) 10px,
+        rgba(255, 255, 255, 0.03) 20px
+      );
     }
     
     .hero-content {
+      position: relative;
+      z-index: 1;
       max-width: 900px;
       margin: 0 auto;
     }
@@ -52,13 +65,16 @@ const categoryEmojis = {
       color: white;
       font-size: 3rem;
       margin-bottom: 1rem;
+      font-weight: 700;
     }
     
     .environment-hero p {
       font-size: 1.25rem;
       opacity: 0.95;
+      line-height: 1.6;
     }
     
+    /* Content Sections */
     .content-section {
       max-width: 1200px;
       margin: 0 auto;
@@ -81,13 +97,21 @@ const categoryEmojis = {
       border-bottom: 3px solid #16a34a;
     }
     
-    .items-grid {
+    .section-intro {
+      color: #4b5563;
+      font-size: 1.0625rem;
+      line-height: 1.6;
+    }
+    
+    /* Programs Grid */
+    .programs-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 2rem;
     }
     
-    .item-card {
+    /* Program Card */
+    .program-card {
       background: white;
       border-radius: 12px;
       overflow: hidden;
@@ -96,16 +120,31 @@ const categoryEmojis = {
       border-top: 4px solid #16a34a;
       display: flex;
       flex-direction: column;
+      height: 100%;
     }
     
-    .item-card:hover {
+    .program-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
     
-    .card-header {
+    .card-icon-header {
+      background: linear-gradient(135deg, #16a34a, #22c55e);
+      color: white;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 140px;
+    }
+    
+    .card-icon {
+      font-size: 4rem;
+    }
+    
+    .card-content {
       padding: 1.5rem;
-      border-bottom: 1px solid #f3f4f6;
+      flex: 1;
     }
     
     .card-title {
@@ -113,17 +152,14 @@ const categoryEmojis = {
       font-weight: 700;
       color: #1B365D;
       margin: 0 0 0.75rem 0;
+      line-height: 1.3;
     }
     
     .card-badges {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
-    }
-    
-    .card-body {
-      padding: 1.5rem;
-      flex: 1;
+      margin-bottom: 1rem;
     }
     
     .card-description {
@@ -141,12 +177,19 @@ const categoryEmojis = {
     
     .detail-row {
       display: flex;
+      align-items: flex-start;
       gap: 0.75rem;
     }
     
     .detail-icon {
       flex-shrink: 0;
       width: 20px;
+      color: #16a34a;
+    }
+    
+    .detail-content {
+      flex: 1;
+      color: #374151;
     }
     
     .detail-label {
@@ -165,76 +208,110 @@ const categoryEmojis = {
       color: #16a34a;
       text-decoration: none;
       font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: color 0.2s;
     }
     
     .external-link:hover {
       color: #15803d;
     }
     
+    /* Category Icons */
+    .icon-waterways::before { content: '💧'; }
+    .icon-conservation::before { content: '🌿'; }
+    .icon-sustainability::before { content: '♻️'; }
+    .icon-bushland::before { content: '🌳'; }
+    
+    /* Mobile responsive */
     @media (max-width: 768px) {
       .environment-hero h1 {
         font-size: 2rem;
       }
       
-      .items-grid {
+      .environment-hero p {
+        font-size: 1rem;
+      }
+      
+      .programs-grid {
         grid-template-columns: 1fr;
       }
     }
   </style>
 
   <div class="environment-page">
+    <!-- Hero Section -->
     <div class="environment-hero">
       <div class="hero-content">
         <h1>Environment & Sustainability</h1>
-        <p>Lake health monitoring, foreshore management, wildlife conservation, and environmental programs</p>
+        <p>Lake health monitoring, foreshore management, wildlife conservation, and environmental programs protecting our natural assets.</p>
       </div>
     </div>
     
     <div class="content-section">
-      {programs.length > 0 && (
+      <!-- Active Programs -->
+      {activePrograms.length > 0 && (
         <div class="section-group">
           <div class="section-header">
             <h2>Active Programs</h2>
-            <p>Our ongoing environmental initiatives and conservation efforts</p>
+            <p class="section-intro">Our ongoing environmental initiatives and conservation efforts to protect and enhance Smiths Lake's natural environment.</p>
           </div>
-          <div class="items-grid">
-            {programs.map(item => (
-              <div class="item-card">
-                <div class="card-header">
-                  <h3 class="card-title">{item.title}</h3>
-                  <div class="card-badges">
-                    <CategoryBadge category={item.category} size="sm" />
-                    {item.status && <StatusBadge status={item.status} />}
+          <div class="programs-grid">
+            {activePrograms.map(program => (
+              <div class="program-card">
+                <div class="card-icon-header">
+                  <div class="card-icon icon-{program.category?.toLowerCase() || 'conservation'}">
+                    {program.category === 'Waterways' && '💧'}
+                    {program.category === 'Conservation' && '🌿'}
+                    {program.category === 'Sustainability' && '♻️'}
+                    {program.category === 'Bushland' && '🌳'}
+                    {!['Waterways', 'Conservation', 'Sustainability', 'Bushland'].includes(program.category) && '🌍'}
                   </div>
                 </div>
-                <div class="card-body">
-                  {item.description && (
-                    <p class="card-description">{item.description}</p>
+                <div class="card-content">
+                  <h3 class="card-title">{program.title}</h3>
+                  <div class="card-badges">
+                    <CategoryBadge category={program.category} size="sm" />
+                    {program.status && <StatusBadge status={program.status} />}
+                  </div>
+                  {program.description && (
+                    <p class="card-description">{program.description}</p>
                   )}
                   <div class="card-details">
-                    {item.locationArea && (
+                    {program.locationArea && (
                       <div class="detail-row">
                         <span class="detail-icon">📍</span>
-                        <div>
+                        <div class="detail-content">
                           <span class="detail-label">Location:</span>
-                          {item.locationArea}
+                          {program.locationArea}
                         </div>
                       </div>
                     )}
-                    {item.partnerOrganisations && (
+                    {program.partnerOrganisations && (
                       <div class="detail-row">
                         <span class="detail-icon">🤝</span>
-                        <div>
+                        <div class="detail-content">
                           <span class="detail-label">Partners:</span>
-                          {item.partnerOrganisations}
+                          {program.partnerOrganisations}
+                        </div>
+                      </div>
+                    )}
+                    {program.meetingDay && (
+                      <div class="detail-row">
+                        <span class="detail-icon">📅</span>
+                        <div class="detail-content">
+                          <span class="detail-label">When:</span>
+                          {program.meetingDay}
+                          {program.meetingTime && ` at ${program.meetingTime}`}
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
-                {item.websiteUrl && (
+                {program.websiteUrl && (
                   <div class="card-footer">
-                    <a href={item.websiteUrl} target="_blank" rel="noopener" class="external-link">
+                    <a href={program.websiteUrl} target="_blank" rel="noopener" class="external-link">
                       Learn More →
                     </a>
                   </div>
@@ -245,19 +322,20 @@ const categoryEmojis = {
         </div>
       )}
       
-      {projects.length > 0 && (
+      <!-- Developing Projects -->
+      {developingProjects.length > 0 && (
         <div class="section-group">
           <div class="section-header">
             <h2>Environmental Projects</h2>
-            <p>Initiatives in planning and development stages</p>
+            <p class="section-intro">Initiatives in planning and development stages to further enhance our environmental stewardship.</p>
           </div>
           
-          <ProjectStatusRegister projects={projects} />
+          <ProjectStatusRegister projects={developingProjects} />
         </div>
       )}
       
       {items.length === 0 && (
-        <div style="text-align: center; padding: 3rem; color: #6b7280;">
+        <div style="text-align: center; padding: 3rem; color: #6b7280; font-style: italic;">
           <p>Environmental information is being updated. Check back soon.</p>
         </div>
       )}
