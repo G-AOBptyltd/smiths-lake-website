@@ -1,0 +1,262 @@
+---
+// News & Updates Index Page
+import Layout from '../../layouts/BaseLayout.astro';
+
+// Hardcoded news items for now - can be moved to Notion later
+const newsItems = [
+  {
+    date: '2025-12-01',
+    title: 'Summer Fire Season Reminder',
+    excerpt: 'Review your bushfire survival plan and ensure your property is prepared. Check our emergency section for evacuation routes.',
+    link: '/emergency/',
+    category: 'Safety'
+  },
+  {
+    date: '2025-11-15',
+    title: 'Community Website Launch',
+    excerpt: 'Welcome to our new community website! Access community documents, services, and stay connected with local news.',
+    link: '/about/',
+    category: 'Community'
+  },
+  {
+    date: '2025-11-01',
+    title: 'Open Spaces & Recreation Strategy',
+    excerpt: 'The community\'s submission to MidCoast Council on open spaces and foreshore trails continues to progress.',
+    link: '/planning/',
+    category: 'Planning'
+  }
+];
+
+// Format date for display
+function formatDate(dateString: string) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-AU', { 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+  });
+}
+---
+
+<Layout 
+  title="News & Updates"
+  description="Latest news, announcements, and updates from Smiths Lake community"
+>
+  <style>
+    .news-page {
+      background: #f7f9fc;
+    }
+    
+    /* Hero Section */
+    .news-hero {
+      background: linear-gradient(135deg, #1B365D, #2B4A7D);
+      color: white;
+      padding: 4rem 1rem;
+      text-align: center;
+    }
+    
+    .hero-content {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .news-hero h1 {
+      color: white;
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+    
+    .news-hero p {
+      font-size: 1.25rem;
+      opacity: 0.95;
+    }
+    
+    /* Content Section */
+    .content-section {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3rem 1rem;
+    }
+    
+    /* News List */
+    .news-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+    
+    .news-item {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-left: 6px solid #F5A623;
+      transition: all 0.3s ease;
+    }
+    
+    .news-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    .news-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .news-date {
+      color: #6b7280;
+      font-size: 0.9375rem;
+      font-weight: 500;
+    }
+    
+    .news-category {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: #e0e7ff;
+      color: #1B365D;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+    
+    .news-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #1B365D;
+      margin: 0 0 1rem 0;
+      line-height: 1.3;
+    }
+    
+    .news-excerpt {
+      color: #4b5563;
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+      font-size: 1.0625rem;
+    }
+    
+    .read-more {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #5B9BD5;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: color 0.2s;
+    }
+    
+    .read-more:hover {
+      color: #1B365D;
+    }
+    
+    .read-more::after {
+      content: '→';
+      transition: transform 0.2s;
+    }
+    
+    .read-more:hover::after {
+      transform: translateX(4px);
+    }
+    
+    /* Newsletter CTA */
+    .newsletter-cta {
+      background: linear-gradient(135deg, #5B9BD5, #1B365D);
+      color: white;
+      padding: 3rem 2rem;
+      border-radius: 12px;
+      text-align: center;
+      margin-top: 4rem;
+      box-shadow: 0 8px 24px rgba(27, 54, 93, 0.2);
+    }
+    
+    .newsletter-cta h2 {
+      color: white;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    
+    .newsletter-cta p {
+      font-size: 1.125rem;
+      margin-bottom: 2rem;
+      opacity: 0.95;
+    }
+    
+    .cta-button {
+      display: inline-block;
+      background: white;
+      color: #1B365D;
+      padding: 1rem 2.5rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 1.0625rem;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .news-hero h1 {
+        font-size: 2rem;
+      }
+      
+      .news-title {
+        font-size: 1.5rem;
+      }
+      
+      .newsletter-cta {
+        padding: 2rem 1.5rem;
+      }
+      
+      .newsletter-cta h2 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+
+  <div class="news-page">
+    <!-- Hero Section -->
+    <div class="news-hero">
+      <div class="hero-content">
+        <h1>News & Updates</h1>
+        <p>Stay informed with the latest news and announcements from Smiths Lake community</p>
+      </div>
+    </div>
+    
+    <div class="content-section">
+      <!-- News List -->
+      <div class="news-list">
+        {newsItems.map(item => (
+          <article class="news-item">
+            <div class="news-meta">
+              <time class="news-date" datetime={item.date}>
+                {formatDate(item.date)}
+              </time>
+              <span class="news-category">{item.category}</span>
+            </div>
+            <h2 class="news-title">{item.title}</h2>
+            <p class="news-excerpt">{item.excerpt}</p>
+            <a href={item.link} class="read-more">Read more</a>
+          </article>
+        ))}
+      </div>
+      
+      <!-- Newsletter CTA -->
+      <div class="newsletter-cta">
+        <h2>Stay Connected</h2>
+        <p>Subscribe to our newsletter for community updates, events, and important announcements.</p>
+        <a href="/newsletter/" class="cta-button">Sign Up for Newsletter</a>
+      </div>
+    </div>
+  </div>
+</Layout>
