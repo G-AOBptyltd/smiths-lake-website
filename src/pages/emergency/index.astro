@@ -1,20 +1,31 @@
 ---
-// Emergency & Safety Index Page - Simplified
+// Emergency & Safety Index Page - Beautiful Card Layout
 import Layout from '../../layouts/BaseLayout.astro';
-import ExpandableCard from '../../components/ExpandableCard.astro';
 import CategoryBadge from '../../components/CategoryBadge.astro';
+import StatusBadge from '../../components/StatusBadge.astro';
 import { fetchItemsBySection } from '../../lib/notion-unified.js';
 
-// Fetch all Emergency & Safety items
+// Fetch ALL Emergency & Safety items (no category filtering)
 const items = await fetchItemsBySection('Emergency & Safety');
 
-// Group items by category
+// Group by category for organization
 const categories = {
   'Bushfire': items.filter(item => item.category === 'Bushfire'),
   'Flood': items.filter(item => item.category === 'Flood'),
   'Police': items.filter(item => item.category === 'Police'),
   'Surf Life Saving': items.filter(item => item.category === 'Surf Life Saving'),
-  'Evacuation': items.filter(item => item.category === 'Evacuation'),
+  'Amenities': items.filter(item => item.category === 'Amenities'),
+  'Other': items.filter(item => !['Bushfire', 'Flood', 'Police', 'Surf Life Saving', 'Amenities'].includes(item.category))
+};
+
+// Category emoji mapping
+const categoryEmojis = {
+  'Bushfire': '🔥',
+  'Flood': '🌊',
+  'Police': '👮',
+  'Surf Life Saving': '🏖️',
+  'Amenities': '🏢',
+  'Other': '📋'
 };
 ---
 
@@ -25,90 +36,353 @@ const categories = {
   <style>
     .emergency-page {
       background: #f7f9fc;
-      padding: 2rem 0;
     }
+    
+    /* Hero Section */
     .emergency-hero {
-      background: #dc2626;
+      background: linear-gradient(135deg, rgba(220, 38, 38, 0.95), rgba(239, 68, 68, 0.9));
       color: white;
-      padding: 3rem 1rem;
+      padding: 4rem 1rem;
       text-align: center;
-      margin-bottom: 2rem;
+      position: relative;
     }
+    
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
     .emergency-hero h1 {
       color: white;
-      font-size: 2.5rem;
+      font-size: 3rem;
       margin-bottom: 1rem;
+      font-weight: 700;
     }
+    
+    .emergency-hero p {
+      font-size: 1.25rem;
+      opacity: 0.95;
+      margin-bottom: 2rem;
+    }
+    
+    /* Emergency Contact Buttons */
     .emergency-contacts {
       display: flex;
       gap: 1rem;
       justify-content: center;
-      margin-top: 2rem;
       flex-wrap: wrap;
     }
+    
     .emergency-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
       background: white;
       color: #dc2626;
-      padding: 1rem 1.5rem;
+      padding: 1rem 2rem;
+      border-radius: 8px;
       text-decoration: none;
       font-weight: bold;
-      border-radius: 8px;
-      display: inline-block;
+      font-size: 1.0625rem;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
+    
     .emergency-btn:hover {
-      background: #fee2e2;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
     }
+    
+    .emergency-btn-secondary {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 2px solid white;
+    }
+    
+    .emergency-btn-secondary:hover {
+      background: white;
+      color: #dc2626;
+    }
+    
+    /* Content Sections */
     .content-section {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 0 1rem;
+      padding: 3rem 1rem;
     }
-    .category-group {
-      margin-bottom: 3rem;
+    
+    .category-section {
+      margin-bottom: 4rem;
     }
-    .category-group h2 {
+    
+    .category-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 3px solid #dc2626;
+    }
+    
+    .category-icon {
+      font-size: 2.5rem;
+    }
+    
+    .category-header h2 {
       color: #1B365D;
       font-size: 1.75rem;
-      margin-bottom: 1.5rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 3px solid #1B365D;
+      margin: 0;
     }
+    
+    /* Card Grid */
     .items-grid {
       display: grid;
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 2rem;
     }
-    .no-items {
-      padding: 2rem;
+    
+    /* Item Card */
+    .item-card {
       background: white;
-      border-radius: 8px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      border-top: 4px solid #dc2626;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    
+    .item-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    
+    .card-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1B365D;
+      margin: 0 0 0.75rem 0;
+      line-height: 1.3;
+    }
+    
+    .card-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .card-body {
+      padding: 1.5rem;
+      flex: 1;
+    }
+    
+    .card-description {
+      color: #4b5563;
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+    }
+    
+    .card-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .detail-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.9375rem;
+    }
+    
+    .detail-icon {
+      flex-shrink: 0;
+      width: 20px;
+      font-size: 1rem;
+    }
+    
+    .detail-content {
+      flex: 1;
+      color: #374151;
+    }
+    
+    .detail-label {
+      font-weight: 600;
+      color: #dc2626;
+      margin-right: 0.25rem;
+    }
+    
+    .emergency-phone {
+      background: #fee2e2;
+      padding: 1rem;
+      border-radius: 6px;
+      border-left: 4px solid #dc2626;
+      margin-top: 1rem;
+    }
+    
+    .emergency-phone a {
+      color: #dc2626;
+      font-weight: bold;
+      font-size: 1.125rem;
+      text-decoration: none;
+    }
+    
+    .emergency-phone a:hover {
+      text-decoration: underline;
+    }
+    
+    .card-footer {
+      padding: 1rem 1.5rem;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .external-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #dc2626;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      transition: color 0.2s;
+    }
+    
+    .external-link:hover {
+      color: #991b1b;
+    }
+    
+    .no-items {
       text-align: center;
+      padding: 3rem;
       color: #6b7280;
+      font-style: italic;
+    }
+    
+    /* Mobile responsive */
+    @media (max-width: 768px) {
+      .emergency-hero h1 {
+        font-size: 2rem;
+      }
+      
+      .emergency-hero p {
+        font-size: 1rem;
+      }
+      
+      .items-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .emergency-contacts {
+        flex-direction: column;
+      }
+      
+      .emergency-btn {
+        width: 100%;
+        justify-content: center;
+      }
     }
   </style>
 
   <div class="emergency-page">
+    <!-- Hero Section -->
     <div class="emergency-hero">
-      <h1>Emergency & Safety</h1>
-      <p>Emergency services, evacuation plans, and safety information for the Smiths Lake community.</p>
-      
-      <div class="emergency-contacts">
-        <a href="tel:000" class="emergency-btn">
-          🚨 Emergency: 000
-        </a>
-        <a href="tel:131444" class="emergency-btn">
-          Police (Non-Emergency): 131 444
-        </a>
+      <div class="hero-content">
+        <h1>Emergency & Safety</h1>
+        <p>Emergency services, evacuation plans, and safety information for the Smiths Lake community.</p>
+        
+        <div class="emergency-contacts">
+          <a href="tel:000" class="emergency-btn">
+            <span style="font-size: 1.5rem;">🚨</span>
+            Emergency: 000
+          </a>
+          <a href="tel:131444" class="emergency-btn emergency-btn-secondary">
+            Police (Non-Emergency): 131 444
+          </a>
+        </div>
       </div>
     </div>
     
     <div class="content-section">
       {Object.entries(categories).map(([category, categoryItems]) => 
         categoryItems.length > 0 && (
-          <div class="category-group">
-            <h2>{category}</h2>
+          <div class="category-section">
+            <div class="category-header">
+              <span class="category-icon">{categoryEmojis[category]}</span>
+              <h2>{category}</h2>
+            </div>
             <div class="items-grid">
               {categoryItems.map(item => (
-                <ExpandableCard item={item} section="Emergency & Safety" />
+                <div class="item-card">
+                  <div class="card-header">
+                    <h3 class="card-title">{item.title}</h3>
+                    <div class="card-badges">
+                      <CategoryBadge category={item.category} size="sm" />
+                      {item.status && <StatusBadge status={item.status} />}
+                    </div>
+                  </div>
+                  <div class="card-body">
+                    {item.description && (
+                      <p class="card-description">{item.description}</p>
+                    )}
+                    <div class="card-details">
+                      {item.address && (
+                        <div class="detail-row">
+                          <span class="detail-icon">📍</span>
+                          <div class="detail-content">
+                            <span class="detail-label">Location:</span>
+                            {item.address}
+                          </div>
+                        </div>
+                      )}
+                      {item.operatingHours && (
+                        <div class="detail-row">
+                          <span class="detail-icon">🕐</span>
+                          <div class="detail-content">
+                            <span class="detail-label">Hours:</span>
+                            {item.operatingHours}
+                          </div>
+                        </div>
+                      )}
+                      {item.contactPhone && item.showContactPublicly && (
+                        <div class="detail-row">
+                          <span class="detail-icon">📞</span>
+                          <div class="detail-content">
+                            <span class="detail-label">Contact:</span>
+                            <a href={`tel:${item.contactPhone}`}>{item.contactPhone}</a>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {item.emergencyPhone && (
+                      <div class="emergency-phone">
+                        <strong>Emergency Contact:</strong><br/>
+                        <a href={`tel:${item.emergencyPhone}`}>{item.emergencyPhone}</a>
+                      </div>
+                    )}
+                  </div>
+                  {item.websiteUrl && (
+                    <div class="card-footer">
+                      <a href={item.websiteUrl} target="_blank" rel="noopener" class="external-link">
+                        Visit Website →
+                      </a>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>
