@@ -1,110 +1,138 @@
 ---
-// Services Index Page
-import Layout from '../../layouts/Layout.astro';
+// Services Index Page - Simplified
+import Layout from '../../layouts/BaseLayout.astro';
 import ExpandableCard from '../../components/ExpandableCard.astro';
+import ProjectStatusRegister from '../../components/ProjectStatusRegister.astro';
 import { fetchItemsBySection } from '../../lib/notion-unified.js';
 
 // Fetch all Services items
 const items = await fetchItemsBySection('Services');
 
-// Group by service type
+// Group by service type - anything NOT an amenity is a project
 const amenities = items.filter(item => 
   item.serviceType === 'Amenity' || item.category === 'Amenities'
 );
 const projects = items.filter(item => 
-  item.serviceType === 'Developing Project' || 
-  item.serviceType === 'Proposed Project' || 
-  item.category === 'Projects'
+  item.serviceType !== 'Amenity' && item.category !== 'Amenities'
 );
 ---
 
 <Layout 
-  title="Community Services | Smiths Lake Village"
+  title="Services"
   description="Community services, amenities, and development projects in Smiths Lake"
 >
-  <div class="bg-gray-50 min-h-screen">
-    <!-- Hero Section -->
-    <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-12">
-      <div class="container mx-auto px-4">
-        <h1 class="text-4xl font-bold mb-4">Community Services</h1>
-        <p class="text-xl text-blue-100 max-w-3xl">
-          Local services, amenities, and community development projects serving the Smiths Lake area.
-        </p>
-      </div>
+  <style>
+    .services-page {
+      background: #f7f9fc;
+      padding: 2rem 0;
+    }
+    .services-hero {
+      background: #1B365D;
+      color: white;
+      padding: 3rem 1rem;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .services-hero h1 {
+      color: white;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+    .content-section {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    .section-group {
+      margin-bottom: 3rem;
+    }
+    .section-group h2 {
+      color: #1B365D;
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 3px solid #1B365D;
+    }
+    .items-grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+    .no-items {
+      padding: 2rem;
+      background: white;
+      border-radius: 8px;
+      text-align: center;
+      color: #6b7280;
+    }
+    .contact-box {
+      background: #5B9BD5;
+      color: white;
+      padding: 2rem;
+      border-radius: 8px;
+      text-align: center;
+      margin-top: 3rem;
+    }
+    .contact-box h3 {
+      color: white;
+      margin-bottom: 1rem;
+    }
+    .contact-box a {
+      color: white;
+      font-weight: bold;
+      text-decoration: underline;
+    }
+  </style>
+
+  <div class="services-page">
+    <div class="services-hero">
+      <h1>Community Services</h1>
+      <p>Facilities, amenities, and community projects in Smiths Lake Village</p>
     </div>
     
-    <!-- Main Content -->
-    <div class="container mx-auto px-4 py-12">
-      
-      <!-- Amenities Section -->
+    <div class="content-section">
       {amenities.length > 0 && (
-        <section class="mb-12">
-          <div class="flex items-center gap-3 mb-6">
-            <span class="text-4xl">🏢</span>
-            <div>
-              <h2 class="text-2xl font-bold text-gray-900">Community Amenities</h2>
-              <p class="text-gray-600">Local facilities and services available to the community</p>
-            </div>
-          </div>
-          <div class="grid gap-6 lg:grid-cols-2">
+        <div class="section-group">
+          <h2>Existing Amenities</h2>
+          <p style="margin-bottom: 1.5rem;">Smiths Lake Village offers essential services and amenities for residents and visitors.</p>
+          <div class="items-grid">
             {amenities.map(item => (
-              <ExpandableCard item={item} sectionSlug="services" />
+              <ExpandableCard item={item} section="Services" />
             ))}
           </div>
-        </section>
+        </div>
       )}
       
-      <!-- Projects Section -->
       {projects.length > 0 && (
-        <section class="mb-12">
-          <div class="flex items-center gap-3 mb-6">
-            <span class="text-4xl">🏗️</span>
-            <div>
-              <h2 class="text-2xl font-bold text-gray-900">Development Projects</h2>
-              <p class="text-gray-600">Current and proposed projects for community improvement</p>
+        <div class="section-group">
+          <h2>Developing Projects</h2>
+          <p style="margin-bottom: 1.5rem;">The community is actively working on several projects to improve our village.</p>
+          
+          <ProjectStatusRegister projects={projects} />
+          
+          <details style="margin-top: 2rem;">
+            <summary style="cursor: pointer; font-weight: 600; color: #1B365D; padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+              View Detailed Project Information
+            </summary>
+            <div style="margin-top: 1rem;" class="items-grid">
+              {projects.map(item => (
+                <ExpandableCard item={item} section="Services" />
+              ))}
             </div>
-          </div>
-          <div class="grid gap-6 lg:grid-cols-2">
-            {projects.map(item => (
-              <ExpandableCard item={item} sectionSlug="services" />
-            ))}
-          </div>
-        </section>
+          </details>
+        </div>
       )}
       
-      <!-- Contact PPCA -->
-      <section class="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-12">
-        <div class="flex items-start gap-3">
-          <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
-          <div>
-            <h3 class="font-semibold text-blue-900 mb-2">Need a Service Not Listed?</h3>
-            <p class="text-blue-800 text-sm mb-3 leading-relaxed">
-              If you're looking for a specific service or want to suggest a new community amenity, 
-              please get in touch with the Pacific Palms Community Association.
-            </p>
-            <a 
-              href="/contact" 
-              class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-            >
-              Contact PPCA
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-              </svg>
-            </a>
-          </div>
-        </div>
-      </section>
-      
-      <!-- No Content Message -->
       {items.length === 0 && (
-        <div class="text-center py-12">
-          <div class="text-gray-400 text-6xl mb-4">🏢</div>
-          <p class="text-gray-600 text-lg mb-2">Services information is being updated.</p>
-          <p class="text-gray-500">Check back soon for details on community amenities and projects.</p>
+        <div class="no-items">
+          <p>Services information is being updated. Check back soon.</p>
         </div>
       )}
+      
+      <div class="contact-box">
+        <h3>Need More Information?</h3>
+        <p>Contact PPCA for inquiries about services and facilities.</p>
+        <p><a href="mailto:info@pacificpalms.org.au">info@pacificpalms.org.au</a></p>
+      </div>
     </div>
   </div>
 </Layout>
