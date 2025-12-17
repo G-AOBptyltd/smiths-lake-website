@@ -1,38 +1,28 @@
 ---
-// DocumentLibrary.astro (Notion-powered)
-// Renders a document list based on Notion DB filters:
-//
-// Required Notion properties (as configured in your DB):
-// - Record Type (select) = "Document"
-// - Show on Website (select) = "TRUE" / "FALSE"
-// - Display Locations (multi-select) contains the displayLocation prop
-// - Document Audience (select) = "Public" | "Members"
-// - Document URL (url)
-// - Title (title)
-// Optional:
-// - Document Summary / Document Description / Description (rich text or title)
-// - Document Category (select)
-// - Document Sort Order (number)
+/**
+ * DocumentLibrary.astro
+ * Reusable Notion-powered document list
+ */
 
 import { getDocuments } from "../lib/notionDocuments";
 
 interface Props {
-  /** Must match a Notion multi-select option inside "Display Locations" */
+  /** Must exactly match a Notion multi-select value in "Display Locations" */
   displayLocation: string;
 
-  /** "Public" (default) or "Members" */
+  /** Document Audience filter */
   audience?: "Public" | "Members";
 
-  /** Section heading shown above the list */
+  /** Section heading */
   title?: string;
 
-  /** Optional subheading text */
+  /** Optional intro text */
   subtitle?: string;
 
-  /** Show the summary/description under the title (if present) */
+  /** Show document summary text */
   showSummary?: boolean;
 
-  /** Anchor id for deep-links like /about/#documents */
+  /** Anchor ID for deep links */
   anchorId?: string;
 }
 
@@ -41,7 +31,7 @@ const {
   audience = "Public",
   title = "Document Library",
   subtitle = "Access official PPCA documents and reference materials.",
-  showSummary = false,
+  showSummary = true,
   anchorId = "documents",
 } = Astro.props;
 
@@ -49,54 +39,209 @@ const documents = await getDocuments(displayLocation, audience);
 ---
 
 <section id={anchorId} class="doclib">
-  <div class="doclib__header">
-    <div class="doclib__icon" aria-hidden="true">📚</div>
+  <header class="doclib-header">
+    <div class="doclib-icon" aria-hidden="true">📚</div>
     <div>
-      <h2 class="doclib__title">{title}</h2>
-      {subtitle && <p class="doclib__subtitle">{subtitle}</p>}
+      <h2 class="doclib-title">{title}</h2>
+      {subtitle && <p class="doclib-subtitle">{subtitle}</p>}
     </div>
-  </div>
+  </header>
 
-  <div class="doclib__list">
+  <div class="doclib-list">
     {documents.length > 0 ? (
       documents.map((doc) => (
-        <div class="doclib__item">
-          <div class="doclib__fileicon" aria-hidden="true">📄</div>
+        <article class="doclib-item">
+          <div class="doclib-fileicon" aria-hidden="true">📄</div>
 
-          <div class="doclib__info">
-            <div class="doclib__name">{doc.title}</div>
+          <div class="doclib-info">
+            <h3 class="doclib-name">{doc.title}</h3>
 
-            <div class="doclib__meta">
+            <div class="doclib-meta">
               {doc.lastEdited && (
-                <span class="doclib__metaItem">
-                  <span aria-hidden="true">📅</span>
-                  <span>Last Modified: {doc.lastEdited}</span>
+                <span>
+                  📅 Last updated: {doc.lastEdited}
                 </span>
               )}
               {doc.editedBy && (
-                <span class="doclib__metaItem">
-                  <span aria-hidden="true">👤</span>
-                  <span>{doc.editedBy}</span>
+                <span>
+                  👤 {doc.editedBy}
                 </span>
               )}
               {doc.category && (
-                <span class="doclib__metaItem">
-                  <span aria-hidden="true">🏷️</span>
-                  <span>{doc.category}</span>
+                <span>
+                  🏷️ {doc.category}
                 </span>
               )}
             </div>
 
             {showSummary && doc.description && (
-              <p class="doclib__summary">{doc.description}</p>
+              <p class="doclib-summary">{doc.description}</p>
             )}
           </div>
 
           <a
-            class="doclib__btn"
-            href={doc.url || "#"}
+            class="doclib-btn"
+            href={doc.url}
             target="_blank"
             rel="noopener"
           >
             View / Download
           </a>
+        </article>
+      ))
+    ) : (
+      <div class="doclib-empty">
+        No documents are currently available.
+      </div>
+    )}
+  </div>
+
+  <footer class="doclib-footer">
+    Documents are managed in Notion using
+    <strong> Show on Website</strong>,
+    <strong> Display Locations</strong>, and
+    <strong> Document Audience</strong>.
+  </footer>
+</section>
+
+<style>
+  .doclib {
+    background: white;
+    padding: 3rem;
+    border-radius: 12px;
+    border-left: 6px solid #5B9BD5;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  .doclib-header {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .doclib-icon {
+    font-size: 2.5rem;
+  }
+
+  .doclib-title {
+    margin: 0 0 0.25rem;
+    color: #1B365D;
+    font-size: 1.75rem;
+  }
+
+  .doclib-subtitle {
+    margin: 0;
+    color: #6b7280;
+    font-size: 1rem;
+  }
+
+  .doclib-list {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .doclib-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1.25rem;
+    padding: 1.25rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .doclib-item:hover {
+    background: #f3f4f6;
+    border-color: #5B9BD5;
+    transform: translateX(4px);
+  }
+
+  .doclib-fileicon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #5B9BD5, #1B365D);
+    color: white;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+
+  .doclib-info {
+    min-width: 0;
+  }
+
+  .doclib-name {
+    margin: 0 0 0.5rem;
+    color: #1B365D;
+    font-size: 1.05rem;
+  }
+
+  .doclib-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .doclib-summary {
+    margin-top: 0.75rem;
+    font-size: 0.95rem;
+    color: #4b5563;
+    line-height: 1.5;
+  }
+
+  .doclib-btn {
+    padding: 0.5rem 1rem;
+    border: 2px solid #5B9BD5;
+    border-radius: 6px;
+    background: white;
+    color: #5B9BD5;
+    font-weight: 700;
+    font-size: 0.875rem;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+
+  .doclib-btn:hover {
+    background: #5B9BD5;
+    color: white;
+  }
+
+  .doclib-empty {
+    padding: 1.25rem;
+    color: #6b7280;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .doclib-footer {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+    font-size: 0.9375rem;
+    color: #6b7280;
+    font-style: italic;
+  }
+
+  @media (max-width: 768px) {
+    .doclib {
+      padding: 2rem 1.5rem;
+    }
+
+    .doclib-item {
+      grid-template-columns: auto 1fr;
+    }
+
+    .doclib-btn {
+      grid-column: 1 / -1;
+      width: 100%;
+    }
+  }
+</style>
