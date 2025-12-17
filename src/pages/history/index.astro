@@ -5,24 +5,17 @@ import CategoryBadge from '../../components/CategoryBadge.astro';
 import StatusBadge from '../../components/StatusBadge.astro';
 import DocumentLibrary from '../../components/DocumentLibrary.astro';
 import { fetchItemsBySection } from '../../lib/notion-unified.js';
-import { getPublicDocuments } from '../../lib/notionDocuments';
 
-// Fetch ALL History & Culture items (content cards)
+// Fetch ALL History & Culture items
 const items = await fetchItemsBySection('History & Culture');
-
-// Fetch History documents (Document Library)
-const documents = await getPublicDocuments('History');
 
 // Group by category
 const indigenousHeritage = items.filter(item => item.category === 'Indigenous Heritage');
 const earlySettlement = items.filter(item => item.category === 'Early Settlement');
 const industryWork = items.filter(item => item.category === 'Industry & Work');
-const otherHistory = items.filter(item =>
-  !['Indigenous Heritage', 'Early Settlement', 'Industry & Work'].includes(item.category)
-);
 ---
 
-<Layout
+<Layout 
   title="History & Culture"
   description="Discover the stories that shaped our community and the culture that defines us"
 >
@@ -31,54 +24,31 @@ const otherHistory = items.filter(item =>
       background: #f7f9fc;
     }
 
-    /* Hero Section */
+    /* Hero */
     .history-hero {
-      background: linear-gradient(135deg, rgba(27, 54, 93, 0.95), rgba(91, 155, 213, 0.85)),
+      background: linear-gradient(135deg, rgba(27,54,93,0.95), rgba(91,155,213,0.85)),
                   url('/images/smiths-lake-aerial.jpg') center/cover;
       color: white;
       padding: 5rem 1rem;
       text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .history-hero::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 50%;
-      height: 100%;
-      background: repeating-linear-gradient(
-        -60deg,
-        transparent,
-        transparent 10px,
-        rgba(255, 255, 255, 0.03) 10px,
-        rgba(255, 255, 255, 0.03) 20px
-      );
     }
 
     .hero-content {
-      position: relative;
-      z-index: 1;
       max-width: 900px;
       margin: 0 auto;
     }
 
     .history-hero h1 {
-      color: white;
       font-size: 3rem;
       margin-bottom: 1rem;
-      font-weight: 700;
     }
 
     .history-hero p {
       font-size: 1.25rem;
       opacity: 0.95;
-      line-height: 1.6;
     }
 
-    /* Acknowledgement Box */
+    /* Acknowledgement */
     .acknowledgement-box {
       max-width: 900px;
       margin: 3rem auto;
@@ -87,22 +57,14 @@ const otherHistory = items.filter(item =>
       color: white;
       border-radius: 12px;
       text-align: center;
-      box-shadow: 0 8px 24px rgba(27, 54, 93, 0.2);
+      box-shadow: 0 8px 24px rgba(27,54,93,0.2);
     }
 
     .acknowledgement-box h2 {
       color: #F5A623;
-      font-size: 2rem;
       margin-bottom: 1.5rem;
     }
 
-    .acknowledgement-box p {
-      font-size: 1.0625rem;
-      line-height: 1.8;
-      opacity: 0.95;
-    }
-
-    /* Content Section */
     .content-section {
       max-width: 1200px;
       margin: 0 auto;
@@ -113,26 +75,18 @@ const otherHistory = items.filter(item =>
       margin-bottom: 4rem;
     }
 
-    .category-header {
-      margin-bottom: 2rem;
-    }
-
     .category-header h2 {
       color: #1B365D;
-      font-size: 1.75rem;
-      margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
       border-bottom: 3px solid #1B365D;
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
     }
 
     .category-intro {
       color: #4b5563;
-      font-size: 1.0625rem;
-      line-height: 1.6;
       margin-bottom: 1.5rem;
     }
 
-    /* Timeline Cards */
     .timeline-grid {
       display: grid;
       gap: 2rem;
@@ -141,38 +95,26 @@ const otherHistory = items.filter(item =>
     .history-card {
       background: white;
       border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       border-left: 6px solid #F5A623;
       display: grid;
       grid-template-columns: auto 1fr;
       gap: 1.5rem;
-    }
-
-    .history-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      padding: 1.5rem;
     }
 
     .card-timeline {
       background: linear-gradient(135deg, #1B365D, #2B4A7D);
       color: white;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      padding: 1rem;
       min-width: 120px;
       text-align: center;
+      border-radius: 8px;
     }
 
     .timeline-era {
-      font-size: 0.875rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      font-size: 0.75rem;
       opacity: 0.9;
-      margin-bottom: 0.5rem;
     }
 
     .timeline-year {
@@ -180,314 +122,145 @@ const otherHistory = items.filter(item =>
       font-weight: 700;
     }
 
-    .card-content {
-      padding: 1.5rem 1.5rem 1.5rem 0;
-      flex: 1;
-    }
-
     .card-title {
       font-size: 1.25rem;
-      font-weight: 700;
       color: #1B365D;
-      margin: 0 0 0.75rem 0;
-    }
-
-    .card-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
     }
 
     .card-description {
       color: #4b5563;
-      line-height: 1.6;
       margin-bottom: 1rem;
-    }
-
-    .card-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      font-size: 0.9375rem;
-    }
-
-    .meta-row {
-      display: flex;
-      gap: 0.5rem;
-      color: #6b7280;
-    }
-
-    .meta-label {
-      font-weight: 600;
-      color: #1B365D;
     }
 
     .card-link {
       color: #5B9BD5;
-      text-decoration: none;
       font-weight: 600;
+      text-decoration: none;
     }
 
     .card-link:hover {
       color: #1B365D;
     }
 
-    .no-items {
-      text-align: center;
-      padding: 3rem;
-      color: #6b7280;
-      font-style: italic;
-    }
-
-    /* Document section wrapper */
-    .documents-section {
-      margin-top: 4rem;
-    }
-
-    .documents-empty {
-      margin-top: 1rem;
-      background: white;
-      border-radius: 12px;
-      padding: 1.25rem 1.5rem;
-      border: 1px solid #e5e7eb;
-      color: #6b7280;
-      font-style: italic;
-    }
-
-    /* Mobile responsive */
     @media (max-width: 768px) {
-      .history-hero h1 {
-        font-size: 2rem;
-      }
-
-      .history-hero p {
-        font-size: 1rem;
-      }
-
-      .acknowledgement-box {
-        padding: 2rem 1.5rem;
-      }
-
-      .acknowledgement-box h2 {
-        font-size: 1.5rem;
-      }
-
       .history-card {
         grid-template-columns: 1fr;
-      }
-
-      .card-timeline {
-        min-width: auto;
-      }
-
-      .card-content {
-        padding: 1.5rem;
       }
     }
   </style>
 
   <div class="history-page">
-    <!-- Hero Section -->
+    <!-- Hero -->
     <div class="history-hero">
       <div class="hero-content">
         <h1>History & Culture</h1>
-        <p>Discover the stories that shaped our community and the culture that defines us.</p>
+        <p>Discover the stories that shaped our community.</p>
       </div>
     </div>
 
-    <!-- Acknowledgement of Country -->
+    <!-- Acknowledgement -->
     <div class="content-section">
       <div class="acknowledgement-box">
         <h2>Acknowledgement of Country</h2>
         <p>
           We acknowledge the Worimi people as the traditional custodians of the land on which Smiths Lake Village is located.
-          We recognise their continuing connection to land, waters, and culture. We pay our respects to their Elders past,
-          present, and emerging.
+          We pay our respects to Elders past, present and emerging.
         </p>
       </div>
     </div>
 
-    <div class="content-section">
-      <!-- Indigenous Heritage -->
-      {indigenousHeritage.length > 0 && (
-        <div class="category-section">
-          <div class="category-header">
-            <h2>Worimi Country</h2>
-            <p class="category-intro">
-              Smiths Lake and the surrounding lands are the traditional country of the Worimi people. For thousands of years,
-              the Worimi have lived in harmony with this land, managing the environment and creating a rich cultural heritage
-              that continues today.
-            </p>
-          </div>
-          <div class="timeline-grid">
-            {indigenousHeritage.map(item => (
-              <div class="history-card">
-                {item.yearEra && (
-                  <div class="card-timeline">
-                    <div class="timeline-era">Ancient</div>
-                    <div class="timeline-year">{item.yearEra}</div>
-                  </div>
-                )}
-                <div class="card-content">
-                  <h3 class="card-title">{item.title}</h3>
-                  <div class="card-badges">
-                    <CategoryBadge category={item.category} size="sm" />
-                    {item.status && <StatusBadge status={item.status} />}
-                  </div>
-                  {item.description && (
-                    <p class="card-description">{item.description}</p>
-                  )}
-                  {(item.sourceAttribution || item.websiteUrl) && (
-                    <div class="card-meta">
-                      {item.sourceAttribution && (
-                        <div class="meta-row">
-                          <span class="meta-label">Source:</span>
-                          <span>{item.sourceAttribution}</span>
-                        </div>
-                      )}
-                      {item.websiteUrl && (
-                        <div class="meta-row">
-                          <a href={item.websiteUrl} target="_blank" rel="noopener" class="card-link">
-                            Learn More →
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  )}
+    <!-- Indigenous Heritage -->
+    {indigenousHeritage.length > 0 && (
+      <div class="content-section category-section">
+        <div class="category-header">
+          <h2>Worimi Country</h2>
+          <p class="category-intro">
+            Smiths Lake and surrounding lands are the traditional country of the Worimi people.
+          </p>
+        </div>
+        <div class="timeline-grid">
+          {indigenousHeritage.map(item => (
+            <div class="history-card">
+              {item.yearEra && (
+                <div class="card-timeline">
+                  <div class="timeline-era">Ancient</div>
+                  <div class="timeline-year">{item.yearEra}</div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <!-- Early Settlement -->
-      {earlySettlement.length > 0 && (
-        <div class="category-section">
-          <div class="category-header">
-            <h2>Smiths Lake Village</h2>
-            <p class="category-intro">
-              European settlement of the Smiths Lake area began in the 1820s. The village grew from farming, fishing,
-              and timber industries into the peaceful coastal community we know today.
-            </p>
-          </div>
-          <div class="timeline-grid">
-            {earlySettlement.map(item => (
-              <div class="history-card">
-                {item.yearEra && (
-                  <div class="card-timeline">
-                    <div class="timeline-era">Historic</div>
-                    <div class="timeline-year">{item.yearEra}</div>
-                  </div>
+              )}
+              <div>
+                <h3 class="card-title">{item.title}</h3>
+                <div class="card-description">{item.description}</div>
+                {item.websiteUrl && (
+                  <a href={item.websiteUrl} class="card-link" target="_blank" rel="noopener">
+                    Learn more →
+                  </a>
                 )}
-                <div class="card-content">
-                  <h3 class="card-title">{item.title}</h3>
-                  <div class="card-badges">
-                    <CategoryBadge category={item.category} size="sm" />
-                    {item.status && <StatusBadge status={item.status} />}
-                  </div>
-                  {item.description && (
-                    <p class="card-description">{item.description}</p>
-                  )}
-                  {(item.sourceAttribution || item.websiteUrl) && (
-                    <div class="card-meta">
-                      {item.sourceAttribution && (
-                        <div class="meta-row">
-                          <span class="meta-label">Source:</span>
-                          <span>{item.sourceAttribution}</span>
-                        </div>
-                      )}
-                      {item.websiteUrl && (
-                        <div class="meta-row">
-                          <a href={item.websiteUrl} target="_blank" rel="noopener" class="card-link">
-                            Learn More →
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
-      )}
-
-      <!-- Industry & Work -->
-      {industryWork.length > 0 && (
-        <div class="category-section">
-          <div class="category-header">
-            <h2>Industry Heritage</h2>
-            <p class="category-intro">
-              The story of the cedar and timber industry that shaped Smiths Lake from 1820s-1950s. Mills, workers,
-              and environmental impact.
-            </p>
-          </div>
-          <div class="timeline-grid">
-            {industryWork.map(item => (
-              <div class="history-card">
-                {item.yearEra && (
-                  <div class="card-timeline">
-                    <div class="timeline-era">Industrial</div>
-                    <div class="timeline-year">{item.yearEra}</div>
-                  </div>
-                )}
-                <div class="card-content">
-                  <h3 class="card-title">{item.title}</h3>
-                  <div class="card-badges">
-                    <CategoryBadge category={item.category} size="sm" />
-                    {item.status && <StatusBadge status={item.status} />}
-                  </div>
-                  {item.description && (
-                    <p class="card-description">{item.description}</p>
-                  )}
-                  {(item.sourceAttribution || item.websiteUrl) && (
-                    <div class="card-meta">
-                      {item.sourceAttribution && (
-                        <div class="meta-row">
-                          <span class="meta-label">Source:</span>
-                          <span>{item.sourceAttribution}</span>
-                        </div>
-                      )}
-                      {item.websiteUrl && (
-                        <div class="meta-row">
-                          <a href={item.websiteUrl} target="_blank" rel="noopener" class="card-link">
-                            Learn More →
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {items.length === 0 && (
-        <div class="no-items">
-          <p>Historical information is being updated. Check back soon.</p>
-        </div>
-      )}
-
-      <!-- Document Library (History) -->
-      <div class="documents-section" id="documents">
-        <DocumentLibrary
-          title="History Documents"
-          subtitle="Reference material, archives, and historical documents related to Smiths Lake and the wider Pacific Palms area."
-          documents={documents}
-        />
-
-        {documents.length === 0 && (
-          <div class="documents-empty">
-            No History documents are currently available. If you expected to see documents here, check the Notion
-            fields: <strong>Show on Website = TRUE</strong>, <strong>Document Audience = Public</strong>, and
-            <strong>Display Locations</strong> includes <strong>History</strong>.
-          </div>
-        )}
       </div>
+    )}
+
+    <!-- Early Settlement -->
+    {earlySettlement.length > 0 && (
+      <div class="content-section category-section">
+        <div class="category-header">
+          <h2>Early Settlement</h2>
+        </div>
+        <div class="timeline-grid">
+          {earlySettlement.map(item => (
+            <div class="history-card">
+              {item.yearEra && (
+                <div class="card-timeline">
+                  <div class="timeline-era">Historic</div>
+                  <div class="timeline-year">{item.yearEra}</div>
+                </div>
+              )}
+              <div>
+                <h3 class="card-title">{item.title}</h3>
+                <div class="card-description">{item.description}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- Industry -->
+    {industryWork.length > 0 && (
+      <div class="content-section category-section">
+        <div class="category-header">
+          <h2>Industry & Work</h2>
+        </div>
+        <div class="timeline-grid">
+          {industryWork.map(item => (
+            <div class="history-card">
+              {item.yearEra && (
+                <div class="card-timeline">
+                  <div class="timeline-era">Industrial</div>
+                  <div class="timeline-year">{item.yearEra}</div>
+                </div>
+              )}
+              <div>
+                <h3 class="card-title">{item.title}</h3>
+                <div class="card-description">{item.description}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <!-- 📚 Notion Document Library -->
+    <div class="content-section">
+      <DocumentLibrary
+        displayLocation="History"
+        title="Historical Documents & References"
+        subtitle="Primary sources, maps, reports and reference material"
+        showSummary={true}
+      />
     </div>
   </div>
 </Layout>
