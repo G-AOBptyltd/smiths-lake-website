@@ -1,41 +1,102 @@
 ---
-// DocumentLibrary.astro - Google Drive folder embed
-// Props: folderId (Google Drive folder ID), title (optional)
+// DocumentLibrary.astro (Notion-powered)
+// Renders a document list based on Notion DB filters:
+//
+// Required Notion properties (as configured in your DB):
+// - Record Type (select) = "Document"
+// - Show on Website (select) = "TRUE" / "FALSE"
+// - Display Locations (multi-select) contains the displayLocation prop
+// - Document Audience (select) = "Public" | "Members"
+// - Document URL (url)
+// - Title (title)
+// Optional:
+// - Document Summary / Document Description / Description (rich text or title)
+// - Document Category (select)
+// - Document Sort Order (number)
+
+import { getDocuments } from "../lib/notionDocuments";
 
 interface Props {
-  folderId: string;
+  /** Must match a Notion multi-select option inside "Display Locations" */
+  displayLocation: string;
+
+  /** "Public" (default) or "Members" */
+  audience?: "Public" | "Members";
+
+  /** Section heading shown above the list */
   title?: string;
+
+  /** Optional subheading text */
+  subtitle?: string;
+
+  /** Show the summary/description under the title (if present) */
+  showSummary?: boolean;
+
+  /** Anchor id for deep-links like /about/#documents */
+  anchorId?: string;
 }
 
-const { folderId, title = 'Documents' } = Astro.props;
+const {
+  displayLocation,
+  audience = "Public",
+  title = "Document Library",
+  subtitle = "Access official PPCA documents and reference materials.",
+  showSummary = false,
+  anchorId = "documents",
+} = Astro.props;
 
-// Construct Google Drive embed URL
-const embedUrl = `https://drive.google.com/embeddedfolderview?id=${folderId}#list`;
+const documents = await getDocuments(displayLocation, audience);
 ---
 
-{folderId && (
-  <div class="document-library mt-6 mb-6">
-    <h3 class="text-lg font-semibold text-gray-900 mb-3">{title}</h3>
-    <div class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
-      <iframe
-        src={embedUrl}
-        width="100%"
-        height="400"
-        frameborder="0"
-        loading="lazy"
-        class="w-full"
-        title={`${title} folder`}
-      ></iframe>
+<section id={anchorId} class="doclib">
+  <div class="doclib__header">
+    <div class="doclib__icon" aria-hidden="true">📚</div>
+    <div>
+      <h2 class="doclib__title">{title}</h2>
+      {subtitle && <p class="doclib__subtitle">{subtitle}</p>}
     </div>
-    <p class="text-sm text-gray-600 mt-2">
-      <a 
-        href={`https://drive.google.com/drive/folders/${folderId}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="text-blue-600 hover:underline"
-      >
-        Open in Google Drive →
-      </a>
-    </p>
   </div>
-)}
+
+  <div class="doclib__list">
+    {documents.length > 0 ? (
+      documents.map((doc) => (
+        <div class="doclib__item">
+          <div class="doclib__fileicon" aria-hidden="true">📄</div>
+
+          <div class="doclib__info">
+            <div class="doclib__name">{doc.title}</div>
+
+            <div class="doclib__meta">
+              {doc.lastEdited && (
+                <span class="doclib__metaItem">
+                  <span aria-hidden="true">📅</span>
+                  <span>Last Modified: {doc.lastEdited}</span>
+                </span>
+              )}
+              {doc.editedBy && (
+                <span class="doclib__metaItem">
+                  <span aria-hidden="true">👤</span>
+                  <span>{doc.editedBy}</span>
+                </span>
+              )}
+              {doc.category && (
+                <span class="doclib__metaItem">
+                  <span aria-hidden="true">🏷️</span>
+                  <span>{doc.category}</span>
+                </span>
+              )}
+            </div>
+
+            {showSummary && doc.description && (
+              <p class="doclib__summary">{doc.description}</p>
+            )}
+          </div>
+
+          <a
+            class="doclib__btn"
+            href={doc.url || "#"}
+            target="_blank"
+            rel="noopener"
+          >
+            View / Download
+          </a>
