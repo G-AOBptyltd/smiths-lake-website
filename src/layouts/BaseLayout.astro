@@ -2,6 +2,7 @@
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import CookieConsent from '../components/CookieConsent.astro';
+import { getPublicDocuments } from '../lib/notionDocuments';
 import '../styles/global.css';
 
 interface Props {
@@ -23,6 +24,24 @@ const {
 const siteTitle = "Smiths Lake Village";
 const fullTitle = title === "Home" ? siteTitle : `${title} | ${siteTitle}`;
 const canonical = canonicalUrl || Astro.url.href;
+
+// STEP 2: Pull footer documents from Notion (safe fallback so builds don't fail)
+let footerDocuments: Array<{
+  id: string;
+  title: string;
+  url: string;
+  category?: string;
+  lastEdited?: string;
+  editedBy?: string;
+  summary?: string;
+}> = [];
+
+try {
+  footerDocuments = await getPublicDocuments("Footer – Key Documents");
+} catch (err) {
+  console.warn("Notion footer documents fetch failed:", err);
+  footerDocuments = [];
+}
 ---
 
 <!DOCTYPE html>
@@ -99,7 +118,7 @@ const canonical = canonicalUrl || Astro.url.href;
     <slot />
   </main>
   
-  <Footer />
+  <Footer documents={footerDocuments} />
   
   <CookieConsent />
 </body>
