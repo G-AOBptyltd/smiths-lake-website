@@ -69,20 +69,19 @@ const canonical = canonicalUrl || Astro.url.href;
   <title>{fullTitle}</title>
   
   <!-- Google Analytics 4 -->
-  <!-- Replace G-XXXXXXXXXX with your actual GA4 Measurement ID -->
   <script is:inline>
     // Only load GA if cookie consent given
     if (localStorage.getItem('cookieConsent') === 'accepted') {
       (function() {
         var script = document.createElement('script');
         script.async = true;
-        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX';
+        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-YRM5EQC0JM';
         document.head.appendChild(script);
         
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
-        gtag('config', 'G-XXXXXXXXXX', {
+        gtag('config', 'G-YRM5EQC0JM', {
           'anonymize_ip': true,
           'cookie_flags': 'SameSite=None;Secure'
         });
