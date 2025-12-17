@@ -3,21 +3,26 @@
 import Layout from '../../layouts/BaseLayout.astro';
 import CategoryBadge from '../../components/CategoryBadge.astro';
 import StatusBadge from '../../components/StatusBadge.astro';
+import DocumentLibrary from '../../components/DocumentLibrary.astro';
 import { fetchItemsBySection } from '../../lib/notion-unified.js';
+import { getPublicDocuments } from '../../lib/notionDocuments';
 
-// Fetch ALL History & Culture items
+// Fetch ALL History & Culture items (content cards)
 const items = await fetchItemsBySection('History & Culture');
+
+// Fetch History documents (Document Library)
+const documents = await getPublicDocuments('History');
 
 // Group by category
 const indigenousHeritage = items.filter(item => item.category === 'Indigenous Heritage');
 const earlySettlement = items.filter(item => item.category === 'Early Settlement');
 const industryWork = items.filter(item => item.category === 'Industry & Work');
-const otherHistory = items.filter(item => 
+const otherHistory = items.filter(item =>
   !['Indigenous Heritage', 'Early Settlement', 'Industry & Work'].includes(item.category)
 );
 ---
 
-<Layout 
+<Layout
   title="History & Culture"
   description="Discover the stories that shaped our community and the culture that defines us"
 >
@@ -25,7 +30,7 @@ const otherHistory = items.filter(item =>
     .history-page {
       background: #f7f9fc;
     }
-    
+
     /* Hero Section */
     .history-hero {
       background: linear-gradient(135deg, rgba(27, 54, 93, 0.95), rgba(91, 155, 213, 0.85)),
@@ -36,7 +41,7 @@ const otherHistory = items.filter(item =>
       position: relative;
       overflow: hidden;
     }
-    
+
     .history-hero::before {
       content: '';
       position: absolute;
@@ -52,27 +57,27 @@ const otherHistory = items.filter(item =>
         rgba(255, 255, 255, 0.03) 20px
       );
     }
-    
+
     .hero-content {
       position: relative;
       z-index: 1;
       max-width: 900px;
       margin: 0 auto;
     }
-    
+
     .history-hero h1 {
       color: white;
       font-size: 3rem;
       margin-bottom: 1rem;
       font-weight: 700;
     }
-    
+
     .history-hero p {
       font-size: 1.25rem;
       opacity: 0.95;
       line-height: 1.6;
     }
-    
+
     /* Acknowledgement Box */
     .acknowledgement-box {
       max-width: 900px;
@@ -84,34 +89,34 @@ const otherHistory = items.filter(item =>
       text-align: center;
       box-shadow: 0 8px 24px rgba(27, 54, 93, 0.2);
     }
-    
+
     .acknowledgement-box h2 {
       color: #F5A623;
       font-size: 2rem;
       margin-bottom: 1.5rem;
     }
-    
+
     .acknowledgement-box p {
       font-size: 1.0625rem;
       line-height: 1.8;
       opacity: 0.95;
     }
-    
+
     /* Content Section */
     .content-section {
       max-width: 1200px;
       margin: 0 auto;
       padding: 0 1rem 3rem;
     }
-    
+
     .category-section {
       margin-bottom: 4rem;
     }
-    
+
     .category-header {
       margin-bottom: 2rem;
     }
-    
+
     .category-header h2 {
       color: #1B365D;
       font-size: 1.75rem;
@@ -119,20 +124,20 @@ const otherHistory = items.filter(item =>
       padding-bottom: 0.5rem;
       border-bottom: 3px solid #1B365D;
     }
-    
+
     .category-intro {
       color: #4b5563;
       font-size: 1.0625rem;
       line-height: 1.6;
       margin-bottom: 1.5rem;
     }
-    
+
     /* Timeline Cards */
     .timeline-grid {
       display: grid;
       gap: 2rem;
     }
-    
+
     .history-card {
       background: white;
       border-radius: 12px;
@@ -144,12 +149,12 @@ const otherHistory = items.filter(item =>
       grid-template-columns: auto 1fr;
       gap: 1.5rem;
     }
-    
+
     .history-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
-    
+
     .card-timeline {
       background: linear-gradient(135deg, #1B365D, #2B4A7D);
       color: white;
@@ -161,7 +166,7 @@ const otherHistory = items.filter(item =>
       min-width: 120px;
       text-align: center;
     }
-    
+
     .timeline-era {
       font-size: 0.875rem;
       text-transform: uppercase;
@@ -169,98 +174,113 @@ const otherHistory = items.filter(item =>
       opacity: 0.9;
       margin-bottom: 0.5rem;
     }
-    
+
     .timeline-year {
       font-size: 1.5rem;
       font-weight: 700;
     }
-    
+
     .card-content {
       padding: 1.5rem 1.5rem 1.5rem 0;
       flex: 1;
     }
-    
+
     .card-title {
       font-size: 1.25rem;
       font-weight: 700;
       color: #1B365D;
       margin: 0 0 0.75rem 0;
     }
-    
+
     .card-badges {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
       margin-bottom: 1rem;
     }
-    
+
     .card-description {
       color: #4b5563;
       line-height: 1.6;
       margin-bottom: 1rem;
     }
-    
+
     .card-meta {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
       font-size: 0.9375rem;
     }
-    
+
     .meta-row {
       display: flex;
       gap: 0.5rem;
       color: #6b7280;
     }
-    
+
     .meta-label {
       font-weight: 600;
       color: #1B365D;
     }
-    
+
     .card-link {
       color: #5B9BD5;
       text-decoration: none;
       font-weight: 600;
     }
-    
+
     .card-link:hover {
       color: #1B365D;
     }
-    
+
     .no-items {
       text-align: center;
       padding: 3rem;
       color: #6b7280;
       font-style: italic;
     }
-    
+
+    /* Document section wrapper */
+    .documents-section {
+      margin-top: 4rem;
+    }
+
+    .documents-empty {
+      margin-top: 1rem;
+      background: white;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      border: 1px solid #e5e7eb;
+      color: #6b7280;
+      font-style: italic;
+    }
+
     /* Mobile responsive */
     @media (max-width: 768px) {
       .history-hero h1 {
         font-size: 2rem;
       }
-      
+
       .history-hero p {
         font-size: 1rem;
       }
-      
+
       .acknowledgement-box {
         padding: 2rem 1.5rem;
       }
-      
+
       .acknowledgement-box h2 {
         font-size: 1.5rem;
       }
-      
+
       .history-card {
         grid-template-columns: 1fr;
       }
-      
+
       .card-timeline {
         min-width: auto;
       }
-      
+
       .card-content {
         padding: 1.5rem;
       }
@@ -275,19 +295,19 @@ const otherHistory = items.filter(item =>
         <p>Discover the stories that shaped our community and the culture that defines us.</p>
       </div>
     </div>
-    
+
     <!-- Acknowledgement of Country -->
     <div class="content-section">
       <div class="acknowledgement-box">
         <h2>Acknowledgement of Country</h2>
         <p>
-          We acknowledge the Worimi people as the traditional custodians of the land on which Smiths Lake Village is located. 
-          We recognise their continuing connection to land, waters, and culture. We pay our respects to their Elders past, 
+          We acknowledge the Worimi people as the traditional custodians of the land on which Smiths Lake Village is located.
+          We recognise their continuing connection to land, waters, and culture. We pay our respects to their Elders past,
           present, and emerging.
         </p>
       </div>
     </div>
-    
+
     <div class="content-section">
       <!-- Indigenous Heritage -->
       {indigenousHeritage.length > 0 && (
@@ -295,8 +315,8 @@ const otherHistory = items.filter(item =>
           <div class="category-header">
             <h2>Worimi Country</h2>
             <p class="category-intro">
-              Smiths Lake and the surrounding lands are the traditional country of the Worimi people. For thousands of years, 
-              the Worimi have lived in harmony with this land, managing the environment and creating a rich cultural heritage 
+              Smiths Lake and the surrounding lands are the traditional country of the Worimi people. For thousands of years,
+              the Worimi have lived in harmony with this land, managing the environment and creating a rich cultural heritage
               that continues today.
             </p>
           </div>
@@ -341,14 +361,14 @@ const otherHistory = items.filter(item =>
           </div>
         </div>
       )}
-      
+
       <!-- Early Settlement -->
       {earlySettlement.length > 0 && (
         <div class="category-section">
           <div class="category-header">
             <h2>Smiths Lake Village</h2>
             <p class="category-intro">
-              European settlement of the Smiths Lake area began in the 1820s. The village grew from farming, fishing, 
+              European settlement of the Smiths Lake area began in the 1820s. The village grew from farming, fishing,
               and timber industries into the peaceful coastal community we know today.
             </p>
           </div>
@@ -393,14 +413,14 @@ const otherHistory = items.filter(item =>
           </div>
         </div>
       )}
-      
+
       <!-- Industry & Work -->
       {industryWork.length > 0 && (
         <div class="category-section">
           <div class="category-header">
             <h2>Industry Heritage</h2>
             <p class="category-intro">
-              The story of the cedar and timber industry that shaped Smiths Lake from 1820s-1950s. Mills, workers, 
+              The story of the cedar and timber industry that shaped Smiths Lake from 1820s-1950s. Mills, workers,
               and environmental impact.
             </p>
           </div>
@@ -445,12 +465,29 @@ const otherHistory = items.filter(item =>
           </div>
         </div>
       )}
-      
+
       {items.length === 0 && (
         <div class="no-items">
           <p>Historical information is being updated. Check back soon.</p>
         </div>
       )}
+
+      <!-- Document Library (History) -->
+      <div class="documents-section" id="documents">
+        <DocumentLibrary
+          title="History Documents"
+          subtitle="Reference material, archives, and historical documents related to Smiths Lake and the wider Pacific Palms area."
+          documents={documents}
+        />
+
+        {documents.length === 0 && (
+          <div class="documents-empty">
+            No History documents are currently available. If you expected to see documents here, check the Notion
+            fields: <strong>Show on Website = TRUE</strong>, <strong>Document Audience = Public</strong>, and
+            <strong>Display Locations</strong> includes <strong>History</strong>.
+          </div>
+        )}
+      </div>
     </div>
   </div>
 </Layout>
