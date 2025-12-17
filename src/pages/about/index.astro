@@ -1,30 +1,10 @@
 ---
 // About Us Index Page
 import Layout from '../../layouts/BaseLayout.astro';
+import { getPublicDocuments } from '../../lib/notionDocuments';
 
-// Hardcoded documents for now - can be moved to Notion/Google Drive integration later
-const documents = [
-  {
-    title: 'Community Plan',
-    lastModified: '11 Dec',
-    modifiedBy: 'Gregory Collocott'
-  },
-  {
-    title: 'Demographics',
-    lastModified: '11 Dec',
-    modifiedBy: 'Gregory Collocott'
-  },
-  {
-    title: 'Maps',
-    lastModified: '11 Dec',
-    modifiedBy: 'Gregory Collocott'
-  },
-  {
-    title: 'PPCA',
-    lastModified: '11 Dec',
-    modifiedBy: 'Gregory Collocott'
-  }
-];
+// Pull documents from Notion (controlled via Display Locations + Show on Website)
+const documents = await getPublicDocuments('About – Document Library');
 ---
 
 <Layout 
@@ -223,6 +203,10 @@ const documents = [
       cursor: pointer;
       transition: all 0.2s;
       white-space: nowrap;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .download-btn:hover {
@@ -382,31 +366,42 @@ const documents = [
             <p>Access official PPCA documents, community plans, and reference materials. Click any document to view or download.</p>
           </div>
         </div>
-        
+
         <div class="document-grid">
-          {documents.map(doc => (
-            <div class="document-item">
-              <div class="doc-icon">📄</div>
-              <div class="doc-info">
-                <div class="doc-title">{doc.title}</div>
-                <div class="doc-meta">
-                  <div class="meta-item">
-                    <span>📅</span>
-                    <span>Last Modified: {doc.lastModified}</span>
-                  </div>
-                  <div class="meta-item">
-                    <span>👤</span>
-                    <span>{doc.modifiedBy}</span>
+          {documents.length > 0 ? (
+            documents.map(doc => (
+              <div class="document-item">
+                <div class="doc-icon">📄</div>
+                <div class="doc-info">
+                  <div class="doc-title">{doc.title}</div>
+                  <div class="doc-meta">
+                    <div class="meta-item">
+                      <span>📅</span>
+                      <span>Last Modified: {doc.lastEdited}</span>
+                    </div>
+                    <div class="meta-item">
+                      <span>👤</span>
+                      <span>{doc.editedBy}</span>
+                    </div>
                   </div>
                 </div>
+                <a class="download-btn" href={doc.url} target="_blank" rel="noopener">
+                  View / Download
+                </a>
               </div>
-              <button class="download-btn">View / Download</button>
+            ))
+          ) : (
+            <div class="content-block" style="margin: 0; padding: 1.5rem; background: #f9fafb;">
+              <p style="margin: 0; color: #6b7280;">
+                No documents are currently available. Please check back soon.
+              </p>
             </div>
-          ))}
+          )}
         </div>
         
         <div class="library-footer">
-          Documents are managed by PPCA committee members. Files added to the Google Drive folder appear here automatically.
+          Documents are managed by PPCA committee members. Updates are controlled in Notion using
+          <strong> Show on Website </strong> and <strong> Display Locations </strong>.
         </div>
       </div>
     </div>
