@@ -6,7 +6,58 @@ const notion = new Client({
 
 const DATABASE_ID = import.meta.env.NOTION_DATABASE_ID;
 
-export async function getPublicDocuments(displayLocation: string) {
+/**
+ * Helper to safely pull a plain text value from a Notion "rich_text" or "title" property.
+ */
+function getPlainText(prop: any): string {
+  if (!prop) return "";
+  const arr = prop?.title ?? prop?.rich_text ?? [];
+  return arr?.[0]?.plain_text ?? "";
+}
+
+/**
+ * Helper to safely pull a URL from a Notion "url" property.
+ */
+function getUrl(prop: any): string {
+  return prop?.url ?? "";
+}
+
+/**
+ * Helper to safely pull a select name.
+ */
+function getSelectName(prop: any): string {
+  return prop?.select?.name ?? "";
+}
+
+/**
+ * Try multiple possible property names for "description" so you can name it whatever
+ * you prefer in Notion without breaking the site.
+ */
+function getDescriptionFromPage(page: any): string {
+  const props = page?.properties ?? {};
+
+  // Preferred names (create any ONE of these in Notion)
+  const candidates = ["Document Summary", "Document Description", "Description"];
+
+  for (const key of candidates) {
+    const value = getPlainText(props?.[key]);
+    if (value) return value;
+  }
+
+  return "";
+}
+
+/**
+ * Core fetcher (use this everywhere).
+ * - displayLocation matches a multi-select tag in Notion: "Display Locations"
+ * - audience is a select: "Document Audience" = "Public" | "Members"
+ *
+ * NOTE: Your "Show on Website" is a SELECT with TRUE/FALSE (not a checkbox).
+ */
+export async function getDocuments(
+  displayLocation: string,
+  audience: "Public" | "Members" = "Public"
+) {
   const response = await notion.databases.query({
     database_id: DATABASE_ID,
     filter: {
@@ -17,22 +68,22 @@ export async function getPublicDocuments(displayLocation: string) {
           select: { equals: "Document" },
         },
 
-        // Your "Show on Website" is a SELECT with TRUE/FALSE (not a checkbox)
+        // "Show on Website" is a SELECT in your DB (TRUE/FALSE)
         {
           property: "Show on Website",
           select: { equals: "TRUE" },
         },
 
-        // Multi-select tag that controls where it appears
+        // Controls where it appears (multi-select)
         {
           property: "Display Locations",
           multi_select: { contains: displayLocation },
         },
 
-        // New column you added
+        // Audience gate (select)
         {
           property: "Document Audience",
-          select: { equals: "Public" },
+          select: { equals: audience },
         },
       ],
     },
@@ -46,9 +97,10 @@ export async function getPublicDocuments(displayLocation: string) {
 
   return response.results.map((page: any) => ({
     id: page.id,
-    title: page.properties.Title?.title?.[0]?.plain_text ?? "Untitled",
-    url: page.properties["Document URL"]?.url ?? "#",
-    category: page.properties["Document Category"]?.select?.name ?? "",
+    title: getPlainText(page?.properties?.Title) || "Untitled",
+    url: getUrl(page?.properties?.["Document URL"]) || "#",
+    category: getSelectName(page?.properties?.["Document Category"]),
+    description: getDescriptionFromPage(page),
     lastEdited: page.last_edited_time
       ? new Date(page.last_edited_time).toLocaleDateString("en-AU", {
           day: "2-digit",
@@ -58,4 +110,19 @@ export async function getPublicDocuments(displayLocation: string) {
       : "",
     editedBy: page.last_edited_by?.name ?? "PPCA",
   }));
+}
+
+/**
+ * Backwards-compatible function used by your About page right now.
+ * (So you don’t have to change anything else yet.)
+ */
+export async function getPublicDocuments(displayLocation: string) {
+  return getDocuments(displayLocation, "Public");
+}
+
+/**
+ * Convenience function for members-only documents (we’ll wire this into the UI next).
+ */
+export async function getMemberDocuments(displayLocation: string) {
+  return getDocuments(displayLocation, "Members");
 }
