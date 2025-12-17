@@ -1,24 +1,25 @@
 ---
-// Environment & Sustainability Index Page - Cards + Register
+// Environment & Sustainability Index Page - Cards + Register + Documents
 import Layout from '../../layouts/BaseLayout.astro';
 import CategoryBadge from '../../components/CategoryBadge.astro';
 import StatusBadge from '../../components/StatusBadge.astro';
 import ProjectStatusRegister from '../../components/ProjectStatusRegister.astro';
+import DocumentLibrary from '../../components/DocumentLibrary.astro';
 import { fetchItemsBySection } from '../../lib/notion-unified.js';
 
 // Fetch ALL Environment items
 const items = await fetchItemsBySection('Environment');
 
 // Separate into active programs and projects
-const activePrograms = items.filter(item => 
+const activePrograms = items.filter(item =>
   item.status === 'Active' || item.status === 'Published'
 );
-const developingProjects = items.filter(item => 
+const developingProjects = items.filter(item =>
   item.status !== 'Active' && item.status !== 'Published'
 );
 ---
 
-<Layout 
+<Layout
   title="Environment & Sustainability"
   description="Lake health monitoring, conservation programs, and environmental initiatives"
 >
@@ -26,7 +27,7 @@ const developingProjects = items.filter(item =>
     .environment-page {
       background: #f7f9fc;
     }
-    
+
     /* Hero Section */
     .environment-hero {
       background: linear-gradient(135deg, rgba(22, 163, 74, 0.95), rgba(34, 197, 94, 0.9)),
@@ -37,7 +38,7 @@ const developingProjects = items.filter(item =>
       position: relative;
       overflow: hidden;
     }
-    
+
     .environment-hero::before {
       content: '';
       position: absolute;
@@ -53,42 +54,42 @@ const developingProjects = items.filter(item =>
         rgba(255, 255, 255, 0.03) 20px
       );
     }
-    
+
     .hero-content {
       position: relative;
       z-index: 1;
       max-width: 900px;
       margin: 0 auto;
     }
-    
+
     .environment-hero h1 {
       color: white;
       font-size: 3rem;
       margin-bottom: 1rem;
       font-weight: 700;
     }
-    
+
     .environment-hero p {
       font-size: 1.25rem;
       opacity: 0.95;
       line-height: 1.6;
     }
-    
+
     /* Content Sections */
     .content-section {
       max-width: 1200px;
       margin: 0 auto;
       padding: 3rem 1rem;
     }
-    
+
     .section-group {
       margin-bottom: 4rem;
     }
-    
+
     .section-header {
       margin-bottom: 2rem;
     }
-    
+
     .section-header h2 {
       color: #1B365D;
       font-size: 1.75rem;
@@ -96,20 +97,20 @@ const developingProjects = items.filter(item =>
       padding-bottom: 0.5rem;
       border-bottom: 3px solid #16a34a;
     }
-    
+
     .section-intro {
       color: #4b5563;
       font-size: 1.0625rem;
       line-height: 1.6;
     }
-    
+
     /* Programs Grid */
     .programs-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 2rem;
     }
-    
+
     /* Program Card */
     .program-card {
       background: white;
@@ -122,12 +123,12 @@ const developingProjects = items.filter(item =>
       flex-direction: column;
       height: 100%;
     }
-    
+
     .program-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
-    
+
     .card-icon-header {
       background: linear-gradient(135deg, #16a34a, #22c55e);
       color: white;
@@ -137,16 +138,16 @@ const developingProjects = items.filter(item =>
       justify-content: center;
       min-height: 140px;
     }
-    
+
     .card-icon {
       font-size: 4rem;
     }
-    
+
     .card-content {
       padding: 1.5rem;
       flex: 1;
     }
-    
+
     .card-title {
       font-size: 1.25rem;
       font-weight: 700;
@@ -154,56 +155,56 @@ const developingProjects = items.filter(item =>
       margin: 0 0 0.75rem 0;
       line-height: 1.3;
     }
-    
+
     .card-badges {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
       margin-bottom: 1rem;
     }
-    
+
     .card-description {
       color: #4b5563;
       line-height: 1.6;
       margin-bottom: 1rem;
     }
-    
+
     .card-details {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
       font-size: 0.9375rem;
     }
-    
+
     .detail-row {
       display: flex;
       align-items: flex-start;
       gap: 0.75rem;
     }
-    
+
     .detail-icon {
       flex-shrink: 0;
       width: 20px;
       color: #16a34a;
     }
-    
+
     .detail-content {
       flex: 1;
       color: #374151;
     }
-    
+
     .detail-label {
       font-weight: 600;
       color: #16a34a;
       margin-right: 0.25rem;
     }
-    
+
     .card-footer {
       padding: 1rem 1.5rem;
       background: #f9fafb;
       border-top: 1px solid #e5e7eb;
     }
-    
+
     .external-link {
       color: #16a34a;
       text-decoration: none;
@@ -213,27 +214,27 @@ const developingProjects = items.filter(item =>
       gap: 0.5rem;
       transition: color 0.2s;
     }
-    
+
     .external-link:hover {
       color: #15803d;
     }
-    
+
     /* Category Icons */
     .icon-waterways::before { content: '💧'; }
     .icon-conservation::before { content: '🌿'; }
     .icon-sustainability::before { content: '♻️'; }
     .icon-bushland::before { content: '🌳'; }
-    
+
     /* Mobile responsive */
     @media (max-width: 768px) {
       .environment-hero h1 {
         font-size: 2rem;
       }
-      
+
       .environment-hero p {
         font-size: 1rem;
       }
-      
+
       .programs-grid {
         grid-template-columns: 1fr;
       }
@@ -248,7 +249,7 @@ const developingProjects = items.filter(item =>
         <p>Lake health monitoring, foreshore management, wildlife conservation, and environmental programs protecting our natural assets.</p>
       </div>
     </div>
-    
+
     <div class="content-section">
       <!-- Active Programs -->
       {activePrograms.length > 0 && (
@@ -321,7 +322,7 @@ const developingProjects = items.filter(item =>
           </div>
         </div>
       )}
-      
+
       <!-- Developing Projects -->
       {developingProjects.length > 0 && (
         <div class="section-group">
@@ -329,11 +330,25 @@ const developingProjects = items.filter(item =>
             <h2>Environmental Projects</h2>
             <p class="section-intro">Initiatives in planning and development stages to further enhance our environmental stewardship.</p>
           </div>
-          
+
           <ProjectStatusRegister projects={developingProjects} />
         </div>
       )}
-      
+
+      <!-- Documents (ALWAYS show, independent of projects/programs) -->
+      <div class="section-group">
+        <div class="section-header">
+          <h2>Documents</h2>
+          <p class="section-intro">Plans, policies, reports and reference documents related to Environment & Sustainability.</p>
+        </div>
+
+        <DocumentLibrary
+          displayLocation="Environment"
+          title="Environment Documents"
+          subtitle="Plans, policies, reports and reference material"
+        />
+      </div>
+
       {items.length === 0 && (
         <div style="text-align: center; padding: 3rem; color: #6b7280; font-style: italic;">
           <p>Environmental information is being updated. Check back soon.</p>
