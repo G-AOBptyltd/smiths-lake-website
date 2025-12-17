@@ -30,14 +30,21 @@ function getSelectName(prop: any): string {
 }
 
 /**
- * Try multiple possible property names for "description" so you can name it whatever
+ * Helper to safely pull a multi-select array of names.
+ */
+function getMultiSelectNames(prop: any): string[] {
+  return Array.isArray(prop?.multi_select) ? prop.multi_select.map((x: any) => x?.name).filter(Boolean) : [];
+}
+
+/**
+ * Try multiple possible property names for "summary/description" so you can name it whatever
  * you prefer in Notion without breaking the site.
  */
-function getDescriptionFromPage(page: any): string {
+function getSummaryFromPage(page: any): string {
   const props = page?.properties ?? {};
 
   // Preferred names (create any ONE of these in Notion)
-  const candidates = ["Document Summary", "Document Description", "Description"];
+  const candidates = ["Document Summary", "Document Description", "Description", "Summary"];
 
   for (const key of candidates) {
     const value = getPlainText(props?.[key]);
@@ -100,7 +107,8 @@ export async function getDocuments(
     title: getPlainText(page?.properties?.Title) || "Untitled",
     url: getUrl(page?.properties?.["Document URL"]) || "#",
     category: getSelectName(page?.properties?.["Document Category"]),
-    description: getDescriptionFromPage(page),
+    displayLocations: getMultiSelectNames(page?.properties?.["Display Locations"]),
+    summary: getSummaryFromPage(page),
     lastEdited: page.last_edited_time
       ? new Date(page.last_edited_time).toLocaleDateString("en-AU", {
           day: "2-digit",
@@ -113,15 +121,14 @@ export async function getDocuments(
 }
 
 /**
- * Backwards-compatible function used by your About page right now.
- * (So you don’t have to change anything else yet.)
+ * Backwards-compatible function used by existing pages.
  */
 export async function getPublicDocuments(displayLocation: string) {
   return getDocuments(displayLocation, "Public");
 }
 
 /**
- * Convenience function for members-only documents (we’ll wire this into the UI next).
+ * Convenience function for members-only documents (wire into UI later).
  */
 export async function getMemberDocuments(displayLocation: string) {
   return getDocuments(displayLocation, "Members");
