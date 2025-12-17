@@ -23,22 +23,22 @@ if (!fs.existsSync(CACHE_DIR)) {
  */
 function parseProperty(property) {
   if (!property) return null;
-  
+
   switch (property.type) {
     case 'title':
-      return property.title[0]?.plain_text || '';
+      return property.title?.[0]?.plain_text || '';
     case 'rich_text':
-      return property.rich_text[0]?.plain_text || '';
+      return property.rich_text?.[0]?.plain_text || '';
     case 'select':
       return property.select?.name || null;
     case 'multi_select':
-      return property.multi_select?.map(s => s.name) || [];
+      return property.multi_select?.map((s) => s.name) || [];
     case 'status':
       return property.status?.name || null;
     case 'checkbox':
       return property.checkbox || false;
     case 'number':
-      return property.number || null;
+      return property.number ?? null;
     case 'url':
       return property.url || null;
     case 'email':
@@ -51,6 +51,12 @@ function parseProperty(property) {
       // Handle formula result based on type
       if (property.formula?.type === 'string') {
         return property.formula.string || '';
+      }
+      if (property.formula?.type === 'number') {
+        return property.formula.number ?? null;
+      }
+      if (property.formula?.type === 'boolean') {
+        return property.formula.boolean || false;
       }
       return null;
     case 'created_time':
@@ -66,11 +72,11 @@ function parseProperty(property) {
  * Parse Notion page to content item
  */
 function parseNotionPage(page) {
-  const props = page.properties;
-  
+  const props = page.properties || {};
+
   return {
     id: page.id,
-    
+
     // Core fields
     title: parseProperty(props.Title),
     section: parseProperty(props.Section),
@@ -81,48 +87,54 @@ function parseNotionPage(page) {
     slug: parseProperty(props.Slug),
     priorityOrder: parseProperty(props['Priority Order']) || 999,
     notes: parseProperty(props.Notes),
-    
+
     // Meeting fields
     meetingDay: parseProperty(props['Meeting Day']),
     meetingTime: parseProperty(props['Meeting Time']),
     meetingLocation: parseProperty(props['Meeting Location']),
-    
+
     // Contact fields
     contactPerson: parseProperty(props['Contact Person']),
     contactEmail: parseProperty(props['Contact Email']),
     contactPhone: parseProperty(props['Contact Phone']),
     showContactPublicly: parseProperty(props['Show Contact Publicly']),
-    
+
     // Link fields
     websiteUrl: parseProperty(props['Website URL']),
     facebookUrl: parseProperty(props['Facebook URL']),
-    
+
+    // ✅ NEW: Groups - per-card info/docs link (Notion URL property)
+    groupInfoDocumentUrl: parseProperty(props['Group Info Document']),
+
     // Document fields
     driveFolderId: parseProperty(props['Google Drive Folder ID']),
     logoFilename: parseProperty(props['Logo Filename']),
-    
+
     // Emergency fields
     emergencyPhone: parseProperty(props['Emergency Phone']),
     alertLevel: parseProperty(props['Alert Level']),
-    
+
     // Service fields
     serviceType: parseProperty(props['Service Type']),
     operatingHours: parseProperty(props['Operating Hours']),
     address: parseProperty(props['Address']),
     accessibilityInfo: parseProperty(props['Accessibility Info']),
-    
+
+    // (Optional alias in case some pages expect this name)
+    accessibilityFeatures: parseProperty(props['Accessibility Info']),
+
     // Environment fields
     conservationStatus: parseProperty(props['Conservation Status']),
     locationArea: parseProperty(props['Location Area']),
     season: parseProperty(props['Season']),
     partnerOrganisations: parseProperty(props['Partner Organisations']),
-    
+
     // History fields
     yearEra: parseProperty(props['Year Era']),
     historicalCategory: parseProperty(props['Historical Category']),
     sourceAttribution: parseProperty(props['Source Attribution']),
     relatedPeople: parseProperty(props['Related People']),
-    
+
     // Timestamps
     createdTime: parseProperty(props['Created Time']),
     lastEditedTime: parseProperty(props['Last Edited Time']),
@@ -140,32 +152,32 @@ export async function fetchNotionContent(filters = {}) {
         {
           property: 'Show on Website',
           select: {
-            equals: 'TRUE'
-          }
-        }
-      ]
+            equals: 'TRUE',
+          },
+        },
+      ],
     };
-    
+
     // Add section filter if provided
     if (filters.section) {
       notionFilter.and.push({
         property: 'Section',
         select: {
-          equals: filters.section
-        }
+          equals: filters.section,
+        },
       });
     }
-    
+
     // Add category filter if provided
     if (filters.category) {
       notionFilter.and.push({
         property: 'Category',
         select: {
-          equals: filters.category
-        }
+          equals: filters.category,
+        },
       });
     }
-    
+
     // Query database
     const response = await notion.databases.query({
       database_id: DATABASE_ID,
@@ -173,47 +185,53 @@ export async function fetchNotionContent(filters = {}) {
       sorts: [
         {
           property: 'Priority Order',
-          direction: 'ascending'
-        }
-      ]
+          direction: 'ascending',
+        },
+      ],
     });
-    
+
     // Parse pages
     const items = response.results.map(parseNotionPage);
-    
+
     // Cache successful fetch
     try {
-      fs.writeFileSync(CACHE_FILE, JSON.stringify({
-        timestamp: new Date().toISOString(),
-        data: items,
-        filters: filters
-      }, null, 2));
+      fs.writeFileSync(
+        CACHE_FILE,
+        JSON.stringify(
+          {
+            timestamp: new Date().toISOString(),
+            data: items,
+            filters: filters,
+          },
+          null,
+          2
+        )
+      );
     } catch (cacheError) {
       console.warn('Failed to write cache:', cacheError.message);
     }
-    
+
     return items;
-    
   } catch (error) {
     console.error('Error fetching from Notion:', error.message);
-    
+
     // Try to use cached data
     if (fs.existsSync(CACHE_FILE)) {
       console.log('Using cached Notion data');
       const cached = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf-8'));
-      
+
       // Filter cached data if filters provided
-      let data = cached.data;
+      let data = cached.data || [];
       if (filters.section) {
-        data = data.filter(item => item.section === filters.section);
+        data = data.filter((item) => item.section === filters.section);
       }
       if (filters.category) {
-        data = data.filter(item => item.category === filters.category);
+        data = data.filter((item) => item.category === filters.category);
       }
-      
+
       return data;
     }
-    
+
     throw error;
   }
 }
@@ -237,7 +255,7 @@ export async function fetchItemsBySectionAndCategory(sectionName, categoryName) 
  */
 export async function fetchItemBySlug(slug) {
   const allItems = await fetchNotionContent();
-  return allItems.find(item => item.slug === slug);
+  return allItems.find((item) => item.slug === slug);
 }
 
 /**
@@ -245,10 +263,10 @@ export async function fetchItemBySlug(slug) {
  */
 export async function getAllSlugs() {
   const items = await fetchNotionContent();
-  return items.map(item => ({
+  return items.map((item) => ({
     slug: item.slug,
     section: item.section,
-    category: item.category
+    category: item.category,
   }));
 }
 
@@ -257,24 +275,24 @@ export async function getAllSlugs() {
  */
 export async function checkEmergencyAlerts() {
   const emergencyItems = await fetchItemsBySection('Emergency & Safety');
-  
+
   // Find highest priority alert
   const alerts = emergencyItems
-    .filter(item => item.alertLevel && item.alertLevel !== 'Normal')
+    .filter((item) => item.alertLevel && item.alertLevel !== 'Normal')
     .sort((a, b) => {
       const priority = {
-        'Emergency': 3,
-        'Warning': 2,
-        'Watch': 1
+        Emergency: 3,
+        Warning: 2,
+        Watch: 1,
       };
       return (priority[b.alertLevel] || 0) - (priority[a.alertLevel] || 0);
     });
-  
+
   if (alerts.length === 0) return null;
-  
+
   return {
     level: alerts[0].alertLevel,
-    items: alerts
+    items: alerts,
   };
 }
 
@@ -284,5 +302,5 @@ export default {
   fetchItemsBySectionAndCategory,
   fetchItemBySlug,
   getAllSlugs,
-  checkEmergencyAlerts
+  checkEmergencyAlerts,
 };
