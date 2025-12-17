@@ -4,21 +4,22 @@ import Layout from '../../layouts/BaseLayout.astro';
 import CategoryBadge from '../../components/CategoryBadge.astro';
 import StatusBadge from '../../components/StatusBadge.astro';
 import ProjectStatusRegister from '../../components/ProjectStatusRegister.astro';
+import DocumentLibrary from '../../components/DocumentLibrary.astro';
 import { fetchItemsBySection } from '../../lib/notion-unified.js';
 
 // Fetch all Services items
 const items = await fetchItemsBySection('Services');
 
 // Group by service type - anything NOT an amenity is a project
-const amenities = items.filter(item => 
+const amenities = items.filter(item =>
   item.serviceType === 'Amenity' || item.category === 'Amenities'
 );
-const projects = items.filter(item => 
+const projects = items.filter(item =>
   item.serviceType !== 'Amenity' && item.category !== 'Amenities'
 );
 ---
 
-<Layout 
+<Layout
   title="Services"
   description="Community services, amenities, and development projects in Smiths Lake"
 >
@@ -26,7 +27,7 @@ const projects = items.filter(item =>
     .services-page {
       background: #f7f9fc;
     }
-    
+
     /* Hero Section */
     .services-hero {
       background: #1B365D;
@@ -34,39 +35,39 @@ const projects = items.filter(item =>
       padding: 4rem 1rem;
       text-align: center;
     }
-    
+
     .hero-content {
       max-width: 900px;
       margin: 0 auto;
     }
-    
+
     .services-hero h1 {
       color: white;
       font-size: 3rem;
       margin-bottom: 1rem;
       font-weight: 700;
     }
-    
+
     .services-hero p {
       font-size: 1.25rem;
       opacity: 0.95;
     }
-    
+
     /* Content Sections */
     .content-section {
       max-width: 1200px;
       margin: 0 auto;
       padding: 3rem 1rem;
     }
-    
+
     .section-group {
       margin-bottom: 4rem;
     }
-    
+
     .section-header {
       margin-bottom: 2rem;
     }
-    
+
     .section-header h2 {
       color: #1B365D;
       font-size: 1.75rem;
@@ -74,20 +75,20 @@ const projects = items.filter(item =>
       padding-bottom: 0.5rem;
       border-bottom: 3px solid #5B9BD5;
     }
-    
+
     .section-intro {
       color: #4b5563;
       font-size: 1.0625rem;
       line-height: 1.6;
     }
-    
+
     /* Amenities Grid */
     .amenities-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 2rem;
     }
-    
+
     /* Amenity Card */
     .amenity-card {
       background: white;
@@ -100,17 +101,17 @@ const projects = items.filter(item =>
       flex-direction: column;
       height: 100%;
     }
-    
+
     .amenity-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
-    
+
     .card-header {
       padding: 1.5rem;
       border-bottom: 1px solid #f3f4f6;
     }
-    
+
     .card-title {
       font-size: 1.25rem;
       font-weight: 700;
@@ -118,55 +119,55 @@ const projects = items.filter(item =>
       margin: 0 0 0.75rem 0;
       line-height: 1.3;
     }
-    
+
     .card-badges {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
     }
-    
+
     .card-body {
       padding: 1.5rem;
       flex: 1;
     }
-    
+
     .card-description {
       color: #4b5563;
       line-height: 1.6;
       margin-bottom: 1.25rem;
     }
-    
+
     .card-details {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
     }
-    
+
     .detail-row {
       display: flex;
       align-items: flex-start;
       gap: 0.75rem;
       font-size: 0.9375rem;
     }
-    
+
     .detail-icon {
       flex-shrink: 0;
       width: 20px;
       color: #5B9BD5;
       font-size: 1rem;
     }
-    
+
     .detail-content {
       flex: 1;
       color: #374151;
     }
-    
+
     .detail-label {
       font-weight: 600;
       color: #1B365D;
       margin-right: 0.25rem;
     }
-    
+
     .card-footer {
       padding: 1rem 1.5rem;
       background: #f9fafb;
@@ -177,7 +178,7 @@ const projects = items.filter(item =>
       gap: 1rem;
       flex-wrap: wrap;
     }
-    
+
     .contact-link {
       display: inline-flex;
       align-items: center;
@@ -188,11 +189,11 @@ const projects = items.filter(item =>
       font-size: 0.9375rem;
       transition: color 0.2s;
     }
-    
+
     .contact-link:hover {
       color: #1B365D;
     }
-    
+
     .external-link {
       display: inline-flex;
       align-items: center;
@@ -206,11 +207,11 @@ const projects = items.filter(item =>
       font-size: 0.875rem;
       transition: background 0.2s;
     }
-    
+
     .external-link:hover {
       background: #1B365D;
     }
-    
+
     /* Contact CTA Box */
     .contact-cta {
       background: linear-gradient(135deg, #5B9BD5, #1B365D);
@@ -220,19 +221,19 @@ const projects = items.filter(item =>
       text-align: center;
       margin-top: 3rem;
     }
-    
+
     .contact-cta h3 {
       color: white;
       font-size: 1.5rem;
       margin-bottom: 1rem;
     }
-    
+
     .contact-cta p {
       font-size: 1rem;
       opacity: 0.95;
       margin-bottom: 1.5rem;
     }
-    
+
     .cta-button {
       display: inline-block;
       background: white;
@@ -243,22 +244,22 @@ const projects = items.filter(item =>
       font-weight: bold;
       transition: all 0.2s;
     }
-    
+
     .cta-button:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
-    
+
     /* Mobile responsive */
     @media (max-width: 768px) {
       .services-hero h1 {
         font-size: 2rem;
       }
-      
+
       .services-hero p {
         font-size: 1rem;
       }
-      
+
       .amenities-grid {
         grid-template-columns: 1fr;
       }
@@ -273,15 +274,18 @@ const projects = items.filter(item =>
         <p>Facilities, amenities, and community projects in Smiths Lake Village</p>
       </div>
     </div>
-    
+
     <div class="content-section">
       <!-- Existing Amenities -->
       {amenities.length > 0 && (
         <div class="section-group">
           <div class="section-header">
             <h2>Existing Amenities</h2>
-            <p class="section-intro">Smiths Lake Village offers essential services and amenities for residents and visitors.</p>
+            <p class="section-intro">
+              Smiths Lake Village offers essential services and amenities for residents and visitors.
+            </p>
           </div>
+
           <div class="amenities-grid">
             {amenities.map(amenity => (
               <div class="amenity-card">
@@ -292,10 +296,12 @@ const projects = items.filter(item =>
                     {amenity.status && <StatusBadge status={amenity.status} />}
                   </div>
                 </div>
+
                 <div class="card-body">
                   {amenity.description && (
                     <p class="card-description">{amenity.description}</p>
                   )}
+
                   <div class="card-details">
                     {amenity.operatingHours && (
                       <div class="detail-row">
@@ -306,6 +312,7 @@ const projects = items.filter(item =>
                         </div>
                       </div>
                     )}
+
                     {amenity.address && (
                       <div class="detail-row">
                         <span class="detail-icon">📍</span>
@@ -315,6 +322,7 @@ const projects = items.filter(item =>
                         </div>
                       </div>
                     )}
+
                     {amenity.accessibilityFeatures && (
                       <div class="detail-row">
                         <span class="detail-icon">♿</span>
@@ -326,6 +334,7 @@ const projects = items.filter(item =>
                     )}
                   </div>
                 </div>
+
                 {(amenity.contactEmail || amenity.contactPhone || amenity.websiteUrl) && (
                   <div class="card-footer">
                     {amenity.contactEmail && amenity.showContactPublicly && (
@@ -333,11 +342,13 @@ const projects = items.filter(item =>
                         ✉️ {amenity.contactEmail}
                       </a>
                     )}
+
                     {amenity.contactPhone && amenity.showContactPublicly && (
                       <a href={`tel:${amenity.contactPhone}`} class="contact-link">
                         📞 {amenity.contactPhone}
                       </a>
                     )}
+
                     {amenity.websiteUrl && (
                       <a href={amenity.websiteUrl} target="_blank" rel="noopener" class="external-link">
                         Visit Website →
@@ -348,7 +359,7 @@ const projects = items.filter(item =>
               </div>
             ))}
           </div>
-          
+
           <div class="contact-cta">
             <h3>Need More Information?</h3>
             <p>Contact PPCA for inquiries about services and facilities</p>
@@ -356,27 +367,25 @@ const projects = items.filter(item =>
           </div>
         </div>
       )}
-      
+
       <!-- Developing Projects -->
       {projects.length > 0 && (
         <div class="section-group">
           <div class="section-header">
             <h2>Developing Projects</h2>
-            <p class="section-intro">The community is actively working on several projects to improve our village.</p>
+            <p class="section-intro">
+              The community is actively working on several projects to improve our village.
+            </p>
           </div>
-          
+
           <ProjectStatusRegister projects={projects} />
+
+          <DocumentLibrary
+            displayLocation="Services"
+            title="Service Documents"
+            subtitle="Policies, plans and reference material related to local services"
+          />
         </div>
----
-import DocumentLibrary from '../../components/DocumentLibrary.astro';
----
-
-<DocumentLibrary
-  displayLocation="Services"
-  title="Service Documents"
-  subtitle="Policies, plans and reference material related to local services"
-/>
-
       )}
     </div>
   </div>
