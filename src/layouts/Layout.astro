@@ -1,0 +1,198 @@
+---
+// Updated Layout.astro with Emergency Banner and Search
+import EmergencyBanner from '../components/EmergencyBanner.astro';
+import SiteSearch from '../components/SiteSearch.astro';
+import { checkEmergencyAlerts } from '../lib/notion-unified.js';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+
+// Check for emergency alerts
+let emergencyAlert = null;
+try {
+  emergencyAlert = await checkEmergencyAlerts();
+} catch (error) {
+  console.error('Failed to check emergency alerts:', error);
+}
+---
+
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description || "Official community website for Smiths Lake Village, Pacific Palms NSW"} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Google Analytics 4 -->
+    <script is:inline>
+      // Only load GA if cookie consent given
+      if (localStorage.getItem('cookieConsent') === 'accepted') {
+        (function() {
+          var script = document.createElement('script');
+          script.async = true;
+          script.src = 'https://www.googletagmanager.com/gtag/js?id=G-YRM5EQC0JM';
+          document.head.appendChild(script);
+          
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-YRM5EQC0JM', {
+            'anonymize_ip': true,
+            'cookie_flags': 'SameSite=None;Secure'
+          });
+          window.gtag = gtag;
+        })();
+      }
+    </script>
+  </head>
+  <body class="font-sans">
+    <!-- Emergency Banner (if active alerts) -->
+    {emergencyAlert && (
+      <EmergencyBanner 
+        alertLevel={emergencyAlert.level} 
+        items={emergencyAlert.items} 
+      />
+    )}
+    
+    <!-- Header -->
+    <header class="bg-[#1B365D] text-white sticky top-0 z-40 shadow-md">
+      <div class="container mx-auto px-4">
+        <div class="flex items-center justify-between py-4">
+          <!-- Logo -->
+          <a href="/" class="flex items-center gap-3 hover:opacity-90 transition-opacity">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" aria-hidden="true">
+              <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2" fill="none"/>
+              <path d="M8 26 Q14 22, 20 26 T32 26 T44 26" stroke="#F5A623" stroke-width="2.5" fill="none"/>
+              <path d="M4 32 Q12 28, 20 32 T36 32 T48 32" stroke="#5B9BD5" stroke-width="2" fill="none"/>
+              <circle cx="24" cy="14" r="5" fill="#F5A623" opacity="0.6"/>
+            </svg>
+            <div>
+              <div class="font-bold text-xl font-['Roboto_Slab']">Smiths Lake Village</div>
+              <div class="text-sm text-blue-200">Pacific Palms Community</div>
+            </div>
+          </a>
+          
+          <!-- Desktop Navigation -->
+          <nav class="hidden lg:flex items-center gap-1" aria-label="Main navigation">
+            <a href="/" class="px-4 py-2 rounded hover:bg-[#2B4A7D] transition-colors">Home</a>
+            <a href="/about" class="px-4 py-2 rounded hover:bg-[#2B4A7D] transition-colors">About</a>
+            <a href="/emergency" class="px-4 py-2 rounded hover:bg-[#2B4A7D] transition-colors">Emergency</a>
+            <a href="/services" class="px-4 py-2 rounded hover:bg-[#2B4A7D] transition-colors">Services</a>
+            <a href="/groups" class="px-4 py-2 rounded hover:bg-[#2B4A7D] transition-colors">Groups</a>
+            <a href="/environment" class="px-4 py-2 rounded hover:bg-[#2B4A7D] transition-colors">Environment</a>
+            <a href="/history" class="px-4 py-2 rounded hover:bg-[#2B4A7D] transition-colors">History</a>
+          </nav>
+          
+          <!-- Search and Mobile Menu -->
+          <div class="flex items-center gap-3">
+            <SiteSearch />
+            
+            <button 
+              id="mobile-menu-toggle"
+              class="lg:hidden px-3 py-2 border-2 border-white rounded hover:bg-[#2B4A7D] transition-colors"
+              aria-label="Toggle menu"
+              aria-expanded="false"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Mobile Navigation -->
+        <nav 
+          id="mobile-menu"
+          class="hidden lg:hidden pb-4 border-t border-blue-700 mt-2 pt-2"
+          aria-label="Mobile navigation"
+        >
+          <a href="/" class="block px-4 py-3 rounded hover:bg-[#2B4A7D] transition-colors">Home</a>
+          <a href="/about" class="block px-4 py-3 rounded hover:bg-[#2B4A7D] transition-colors">About Our Area</a>
+          <a href="/emergency" class="block px-4 py-3 rounded hover:bg-[#2B4A7D] transition-colors">Emergency & Safety</a>
+          <a href="/services" class="block px-4 py-3 rounded hover:bg-[#2B4A7D] transition-colors">Services</a>
+          <a href="/groups" class="block px-4 py-3 rounded hover:bg-[#2B4A7D] transition-colors">Groups & Activities</a>
+          <a href="/environment" class="block px-4 py-3 rounded hover:bg-[#2B4A7D] transition-colors">Environment</a>
+          <a href="/history" class="block px-4 py-3 rounded hover:bg-[#2B4A7D] transition-colors">History & Culture</a>
+        </nav>
+      </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main>
+      <slot />
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-[#1B365D] text-white py-12 mt-12">
+      <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+          <div>
+            <h3 class="font-bold text-lg mb-4 border-b-2 border-[#F5A623] inline-block pb-1">Quick Links</h3>
+            <ul class="space-y-2 text-blue-200">
+              <li><a href="/about" class="hover:text-white">About Smiths Lake</a></li>
+              <li><a href="/services" class="hover:text-white">Community Services</a></li>
+              <li><a href="/emergency" class="hover:text-white">Emergency Info</a></li>
+              <li><a href="/contact" class="hover:text-white">Contact Us</a></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="font-bold text-lg mb-4 border-b-2 border-[#F5A623] inline-block pb-1">Resources</h3>
+            <ul class="space-y-2 text-blue-200">
+              <li><a href="/groups" class="hover:text-white">Groups & Activities</a></li>
+              <li><a href="/environment" class="hover:text-white">Environment</a></li>
+              <li><a href="/history" class="hover:text-white">Local History</a></li>
+              <li><a href="/documents" class="hover:text-white">Documents</a></li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 class="font-bold text-lg mb-4 border-b-2 border-[#F5A623] inline-block pb-1">Connect</h3>
+            <ul class="space-y-2 text-blue-200">
+              <li><a href="/newsletter" class="hover:text-white">Newsletter</a></li>
+              <li><a href="/feedback" class="hover:text-white">Feedback</a></li>
+              <li><a href="https://www.midcoast.nsw.gov.au/" target="_blank" rel="noopener" class="hover:text-white">MidCoast Council ↗</a></li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="border-t border-blue-700 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-blue-200">
+          <p>© 2025 Pacific Palms Community Association (PPCA). All rights reserved.</p>
+          <div class="flex gap-4">
+            <a href="/privacy" class="hover:text-white">Privacy Policy</a>
+            <a href="/accessibility" class="hover:text-white">Accessibility</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+    
+    <script>
+      // Mobile menu toggle
+      const toggle = document.getElementById('mobile-menu-toggle');
+      const menu = document.getElementById('mobile-menu');
+      
+      toggle?.addEventListener('click', () => {
+        const isOpen = menu?.classList.contains('hidden');
+        if (isOpen) {
+          menu?.classList.remove('hidden');
+          toggle?.setAttribute('aria-expanded', 'true');
+        } else {
+          menu?.classList.add('hidden');
+          toggle?.setAttribute('aria-expanded', 'false');
+        }
+      });
+    </script>
+  </body>
+</html>
