@@ -4,7 +4,8 @@ import Layout from '../../layouts/BaseLayout.astro';
 import { getPublicDocuments } from '../../lib/notionDocuments';
 
 // Pull documents from Notion (controlled via Display Locations + Show on Website)
-const documents = await getPublicDocuments('About – Document Library');
+const documents = await getPublicDocuments('About - Document Library');
+
 ---
 
 <Layout 
