@@ -12,8 +12,8 @@ interface Props {
   noIndex?: boolean;
 }
 
-const { 
-  title, 
+const {
+  title,
   description = "Official community website for Smiths Lake Village, Pacific Palms NSW. Your gateway to coastal living in the Great Lakes region.",
   ogImage = "/images/og-default.jpg",
   canonicalUrl,
@@ -22,86 +22,108 @@ const {
 
 const siteTitle = "Smiths Lake Village";
 const fullTitle = title === "Home" ? siteTitle : `${title} | ${siteTitle}`;
-const canonical = canonicalUrl || Astro.url.href;
+
+// Clean canonical (no query params)
+const canonical = canonicalUrl ?? `${Astro.url.origin}${Astro.url.pathname}`;
+
+// Absolute OG image URL for social sharing
+const ogImageAbs = new URL(ogImage, Astro.url.origin).href;
+
+// 🔐 GA4 Measurement ID (USED ONCE, CONSISTENT)
+const GA_ID = "G-YRM5EQC0JM";
 ---
 
 <!DOCTYPE html>
 <html lang="en-AU">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content={description}>
-  
-  <!-- Canonical URL -->
-  <link rel="canonical" href={canonical}>
-  
-  <!-- Robots -->
-  {noIndex && <meta name="robots" content="noindex, nofollow">}
-  
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content={canonical}>
-  <meta property="og:title" content={fullTitle}>
-  <meta property="og:description" content={description}>
-  <meta property="og:image" content={ogImage}>
-  <meta property="og:locale" content="en_AU">
-  <meta property="og:site_name" content={siteTitle}>
-  
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content={fullTitle}>
-  <meta name="twitter:description" content={description}>
-  <meta name="twitter:image" content={ogImage}>
-  
-  <!-- Favicon -->
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="manifest" href="/site.webmanifest">
-  <meta name="theme-color" content="#1B365D">
-  
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
-  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content={description} />
+
   <title>{fullTitle}</title>
-  
-  <!-- Google Analytics 4 -->
-  <!-- Replace G-XXXXXXXXXX with your actual GA4 Measurement ID -->
+
+  <!-- Canonical -->
+  <link rel="canonical" href={canonical} />
+
+  <!-- Robots -->
+  {noIndex && <meta name="robots" content="noindex, nofollow" />}
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:title" content={fullTitle} />
+  <meta property="og:description" content={description} />
+  <meta property="og:image" content={ogImageAbs} />
+  <meta property="og:locale" content="en_AU" />
+  <meta property="og:site_name" content={siteTitle} />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={fullTitle} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={ogImageAbs} />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/site.webmanifest" />
+  <meta name="theme-color" content="#1B365D" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Roboto+Slab:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Google Analytics 4 (CONSENT-AWARE, SINGLE SOURCE OF TRUTH) -->
   <script is:inline>
-    // Only load GA if cookie consent given
-    if (localStorage.getItem('cookieConsent') === 'accepted') {
-      (function() {
-        var script = document.createElement('script');
-        script.async = true;
-        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX';
-        document.head.appendChild(script);
-        
+    (function () {
+      var GA_ID = "{GA_ID}";
+      var CONSENT_KEY = "cookieConsent";
+      var loaded = false;
+
+      function loadGA() {
+        if (loaded) return;
+        loaded = true;
+
+        var s = document.createElement("script");
+        s.async = true;
+        s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA_ID;
+        document.head.appendChild(s);
+
         window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-YRM5EQC0JM', {
-          'anonymize_ip': true,
-          'cookie_flags': 'SameSite=None;Secure'
-        });
+        function gtag(){ window.dataLayer.push(arguments); }
         window.gtag = gtag;
-      })();
-    }
+
+        gtag("js", new Date());
+        gtag("config", GA_ID, { anonymize_ip: true });
+      }
+
+      // Load immediately if consent already given
+      if (localStorage.getItem(CONSENT_KEY) === "accepted") {
+        loadGA();
+      }
+
+      // Load instantly when user accepts (no refresh needed)
+      window.addEventListener("cookie-consent-accepted", loadGA);
+    })();
   </script>
 </head>
+
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
-  
+
   <Header />
-  
+
   <main id="main-content" role="main">
     <slot />
   </main>
-  
+
   <Footer />
-  
   <CookieConsent />
 </body>
 </html>
