@@ -1,6 +1,22 @@
 ---
 const currentYear = new Date().getFullYear();
 
+type FooterDocument = {
+  id: string;
+  title: string;
+  url: string;
+  category?: string;
+  lastEdited?: string;
+  editedBy?: string;
+  summary?: string;
+};
+
+interface Props {
+  documents?: FooterDocument[];
+}
+
+const { documents = [] } = Astro.props;
+
 const footerSections = [
   {
     title: 'Quick Links',
@@ -20,24 +36,42 @@ const footerSections = [
       { href: '/emergency/#flood', label: 'Flood Preparedness' },
     ]
   },
+  // Step 2: Replace the static "Resources" section with Notion-driven "Key Documents"
   {
-    title: 'Resources',
-    links: [
-      { href: '/environment/', label: 'Environment & Conservation' },
-      { href: '/history/', label: 'Local History' },
-      { href: '/about/#documents', label: 'Document Library' },
-      { href: '/about/#maps', label: 'Maps & Demographics' },
-    ]
+    title: 'Key Documents',
+    links: documents
+      .filter((d) => d?.url && d.url !== '#')
+      .slice(0, 6)
+      .map((d) => ({
+        href: d.url,
+        label: d.title || 'Untitled',
+        external: true
+      }))
   },
   {
     title: 'Connect',
     links: [
       { href: '/newsletter/', label: 'Newsletter Signup' },
       { href: '/feedback/', label: 'Submit Feedback' },
+,
       { href: 'https://www.midcoast.nsw.gov.au/', label: 'MidCoast Council', external: true },
     ]
   }
 ];
+
+// If there are no Notion docs yet, show sensible defaults so the footer doesn't look empty
+const hasKeyDocs = footerSections[2].links.length > 0;
+
+if (!hasKeyDocs) {
+  footerSections[2] = {
+    title: 'Key Documents',
+    links: [
+      { href: '/about/#documents', label: 'Document Library' },
+      { href: '/about/#maps', label: 'Maps & Demographics' },
+      { href: '/privacy/', label: 'Privacy Policy' },
+    ]
+  };
+}
 ---
 
 <footer class="site-footer" role="contentinfo">
@@ -46,6 +80,7 @@ const footerSections = [
       {footerSections.map((section) => (
         <div class="footer-section">
           <h4 class="footer-heading">{section.title}</h4>
+
           <ul class="footer-links">
             {section.links.map((link) => (
               <li>
@@ -62,6 +97,12 @@ const footerSections = [
               </li>
             ))}
           </ul>
+
+          {section.title === 'Key Documents' && documents.length > 0 && (
+            <p class="footer-hint">
+              Managed in Notion via <strong>Display Locations</strong>.
+            </p>
+          )}
         </div>
       ))}
     </div>
@@ -165,6 +206,14 @@ const footerSections = [
   
   .external-icon {
     font-size: 0.75em;
+  }
+
+  .footer-hint {
+    margin-top: var(--space-4);
+    font-size: var(--text-xs);
+    color: var(--color-sky-light);
+    opacity: 0.95;
+    line-height: var(--leading-relaxed);
   }
   
   .footer-bottom {
