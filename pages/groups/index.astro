@@ -8,47 +8,53 @@ import { fetchItemsBySection } from '../../lib/notion-unified.js';
 // Fetch all Groups & Activities items
 const items = await fetchItemsBySection('Groups & Activities');
 
+// Group by category
+const sports = items.filter((item) => item.category === 'Sports');
+const artsAndCulture = items.filter((item) => item.category === 'Arts & Culture');
+const hobbies = items.filter((item) => item.category === 'Hobbies');
+const social = items.filter((item) => item.category === 'Social');
+const service = items.filter((item) => item.category === 'Service');
+
 // Category emoji mapping
 const categoryEmojis = {
-  'Sports': '⚽',
+  Sports: '⚽',
   'Arts & Culture': '🎨',
-  'Hobbies': '🌱',
-  'Social': '☕',
-  'Service': '🤝'
+  Hobbies: '🌱',
+  Social: '☕',
+  Service: '🤝',
 };
 
-// Build category groups once, then render via a single loop (avoids template parse issues)
-const categories = [
-  {
-    key: 'Sports',
-    heading: 'Sports & Recreation',
-    emoji: categoryEmojis['Sports'],
-    groups: items.filter((item) => item.category === 'Sports'),
-  },
-  {
-    key: 'Arts & Culture',
-    heading: 'Arts & Culture',
-    emoji: categoryEmojis['Arts & Culture'],
-    groups: items.filter((item) => item.category === 'Arts & Culture'),
-  },
-  {
-    key: 'Hobbies',
-    heading: 'Hobbies & Interests',
-    emoji: categoryEmojis['Hobbies'],
-    groups: items.filter((item) => item.category === 'Hobbies'),
-  },
-  {
-    key: 'Social',
-    heading: 'Social & Community',
-    emoji: categoryEmojis['Social'],
-    groups: items.filter((item) => item.category === 'Social'),
-  },
-  {
-    key: 'Service',
-    heading: 'Community Service',
-    emoji: categoryEmojis['Service'],
-    groups: items.filter((item) => item.category === 'Service'),
-  },
+// Page path for circular-link protection
+const CURRENT_PATH = '/groups';
+
+// Returns true if the doc URL points back to this Groups page (circular)
+function isCircularDocLink(url) {
+  if (!url || typeof url !== 'string') return false;
+
+  // Relative URLs
+  if (url.startsWith('/')) {
+    const clean = url.split('#')[0].replace(/\/+$/, '');
+    return clean === CURRENT_PATH;
+  }
+
+  // Absolute URLs
+  try {
+    const u = new URL(url);
+    const cleanPath = (u.pathname || '').replace(/\/+$/, '');
+    return cleanPath === CURRENT_PATH;
+  } catch {
+    // If it's not a valid URL, treat it as non-circular and let browser handle it
+    return false;
+  }
+}
+
+// One place to define category sections to render (keeps template clean)
+const sections = [
+  { key: 'Sports', title: 'Sports & Recreation', items: sports },
+  { key: 'Arts & Culture', title: 'Arts & Culture', items: artsAndCulture },
+  { key: 'Hobbies', title: 'Hobbies & Interests', items: hobbies },
+  { key: 'Social', title: 'Social & Community', items: social },
+  { key: 'Service', title: 'Community Service', items: service },
 ];
 ---
 
@@ -64,7 +70,7 @@ const categories = [
     /* Hero Section */
     .groups-hero {
       background: linear-gradient(135deg, rgba(27, 54, 93, 0.95), rgba(91, 155, 213, 0.85)),
-                  url('/images/smiths-lake-aerial.jpg') center/cover;
+        url('/images/smiths-lake-aerial.jpg') center/cover;
       color: white;
       padding: 5rem 1rem;
       text-align: center;
@@ -245,9 +251,9 @@ const categories = [
       background: #f9fafb;
       border-top: 1px solid #e5e7eb;
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
-      gap: 1rem;
+      gap: 0.75rem;
       flex-wrap: wrap;
     }
 
@@ -305,6 +311,22 @@ const categories = [
     .doc-link:hover {
       background: #1B365D;
       color: white;
+    }
+
+    /* If a doc link is circular, we show a disabled-looking pill */
+    .doc-link-disabled {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #eef2f7;
+      color: #6b7280;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.875rem;
+      border: 2px dashed #cbd5e1;
+      white-space: nowrap;
+      cursor: not-allowed;
     }
 
     /* CTA Box */
@@ -396,90 +418,107 @@ const categories = [
     </div>
 
     <div class="content-section">
-      {categories.map((cat) =>
-        cat.groups.length > 0 ? (
+      {sections.map((section) => (
+        section.items.length > 0 && (
           <div class="category-section">
             <div class="category-header">
-              <span class="category-icon">{cat.emoji}</span>
-              <h2>{cat.heading}</h2>
+              <span class="category-icon">{categoryEmojis[section.key] || '🌟'}</span>
+              <h2>{section.title}</h2>
             </div>
 
             <div class="groups-grid">
-              {cat.groups.map((group) => (
-                <div class="group-card">
-                  <div class="card-header">
-                    <h3 class="card-title">{group.title}</h3>
-                    <div class="card-badges">
-                      <CategoryBadge category={group.category} size="sm" />
-                      {group.status && <StatusBadge status={group.status} />}
+              {section.items.map((group) => {
+                const hasContact = Boolean(group.contactEmail && group.showContactPublicly);
+                const hasSite = Boolean(group.websiteUrl);
+                const hasFacebook = Boolean(group.facebookUrl && !group.websiteUrl);
+
+                const hasDoc = Boolean(group.groupInfoDocumentUrl) && !isCircularDocLink(group.groupInfoDocumentUrl);
+                const docIsCircular = Boolean(group.groupInfoDocumentUrl) && isCircularDocLink(group.groupInfoDocumentUrl);
+
+                const hasFooterLinks = Boolean(hasContact || hasDoc || docIsCircular || hasSite || hasFacebook);
+
+                return (
+                  <div class="group-card">
+                    <div class="card-header">
+                      <h3 class="card-title">{group.title}</h3>
+                      <div class="card-badges">
+                        <CategoryBadge category={group.category} size="sm" />
+                        {group.status && <StatusBadge status={group.status} />}
+                      </div>
                     </div>
-                  </div>
 
-                  <div class="card-body">
-                    {group.description && <p class="card-description">{group.description}</p>}
+                    <div class="card-body">
+                      {group.description && (
+                        <p class="card-description">{group.description}</p>
+                      )}
 
-                    <div class="card-details">
-                      {group.meetingDay && (
-                        <div class="detail-row">
-                          <span class="detail-icon">📅</span>
-                          <div class="detail-content">
-                            <span class="detail-label">Meets:</span>
-                            {group.meetingDay}
-                            {group.meetingTime && ` at ${group.meetingTime}`}
+                      <div class="card-details">
+                        {group.meetingDay && (
+                          <div class="detail-row">
+                            <span class="detail-icon">📅</span>
+                            <div class="detail-content">
+                              <span class="detail-label">Meets:</span>
+                              {group.meetingDay}
+                              {group.meetingTime && ` at ${group.meetingTime}`}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      {group.meetingLocation && (
-                        <div class="detail-row">
-                          <span class="detail-icon">📍</span>
-                          <div class="detail-content">
-                            <span class="detail-label">Location:</span>
-                            {group.meetingLocation}
+                        {group.meetingLocation && (
+                          <div class="detail-row">
+                            <span class="detail-icon">📍</span>
+                            <div class="detail-content">
+                              <span class="detail-label">Location:</span>
+                              {group.meetingLocation}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
+
+                    {hasFooterLinks && (
+                      <div class="card-footer">
+                        {hasContact && (
+                          <a href={`mailto:${group.contactEmail}`} class="contact-link">
+                            ✉️ Contact
+                          </a>
+                        )}
+
+                        {hasDoc && (
+                          <a href={group.groupInfoDocumentUrl} target="_blank" rel="noopener" class="doc-link">
+                            📄 Info / Docs →
+                          </a>
+                        )}
+
+                        {docIsCircular && (
+                          <span
+                            class="doc-link-disabled"
+                            title="This link currently points back to the Groups page. Update the Notion ‘Group Info Document’ URL to a PDF/Drive/Notion public page."
+                          >
+                            📄 Info / Docs →
+                          </span>
+                        )}
+
+                        {hasSite && (
+                          <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
+                            Visit Website →
+                          </a>
+                        )}
+
+                        {hasFacebook && (
+                          <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
+                            Facebook →
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  {(
-                    (group.contactEmail && group.showContactPublicly) ||
-                    group.websiteUrl ||
-                    group.facebookUrl ||
-                    group.groupInfoDocumentUrl
-                  ) && (
-                    <div class="card-footer">
-                      {group.contactEmail && group.showContactPublicly && (
-                        <a href={`mailto:${group.contactEmail}`} class="contact-link">
-                          ✉️ Contact
-                        </a>
-                      )}
-
-                      {group.groupInfoDocumentUrl && (
-                        <a href={group.groupInfoDocumentUrl} target="_blank" rel="noopener" class="doc-link">
-                          📄 Info / Docs →
-                        </a>
-                      )}
-
-                      {group.websiteUrl && (
-                        <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
-                          Visit Website →
-                        </a>
-                      )}
-
-                      {group.facebookUrl && !group.websiteUrl && (
-                        <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
-                          Facebook →
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
-        ) : null
-      )}
+        )
+      ))}
 
       {items.length === 0 && (
         <div class="no-groups">
@@ -491,8 +530,8 @@ const categories = [
       <div class="cta-box">
         <h3>Want to Start a New Group?</h3>
         <p>
-          We're always looking to expand our community offerings. If you have an idea for a new group or activity,
-          we'd love to hear from you!
+          We're always looking to expand our community offerings. If you have an idea for a new group or
+          activity, we'd love to hear from you!
         </p>
         <a href="/contact" class="cta-button">Get in Touch</a>
       </div>
