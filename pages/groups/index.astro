@@ -24,29 +24,37 @@ const categoryEmojis = {
   Service: '🤝',
 };
 
-// Page path for circular-link protection
+// Used to avoid circular links in "Info / Docs"
 const CURRENT_PATH = '/groups';
+
+function normalizePathname(p) {
+  return (p || '').split('#')[0].replace(/\/+$/, '');
+}
 
 function isCircularDocLink(url) {
   if (!url || typeof url !== 'string') return false;
 
   // Relative URLs
   if (url.startsWith('/')) {
-    const clean = url.split('#')[0].replace(/\/+$/, '');
-    return clean === CURRENT_PATH;
+    return normalizePathname(url) === CURRENT_PATH;
   }
 
   // Absolute URLs
   try {
     const u = new URL(url);
-    const cleanPath = (u.pathname || '').replace(/\/+$/, '');
-    return cleanPath === CURRENT_PATH;
-  } catch {
+    return normalizePathname(u.pathname || '') === CURRENT_PATH;
+  } catch (e) {
     return false;
   }
 }
 
-// Define sections, then filter out empty ones BEFORE rendering (avoids Astro parser issues)
+function getSafeDocLink(url) {
+  if (!url || typeof url !== 'string') return null;
+  if (isCircularDocLink(url)) return null;
+  return url;
+}
+
+// Define sections once, render via loop
 const sections = [
   { key: 'Sports', title: 'Sports & Recreation', items: sports },
   { key: 'Arts & Culture', title: 'Arts & Culture', items: artsAndCulture },
@@ -56,7 +64,7 @@ const sections = [
 ].filter((s) => Array.isArray(s.items) && s.items.length > 0);
 ---
 
-<Layout 
+<Layout
   title="Groups & Activities"
   description="Join our vibrant community through clubs, groups, and volunteering"
 >
@@ -64,10 +72,10 @@ const sections = [
     .groups-page {
       background: #f7f9fc;
     }
-    
+
     /* Hero Section */
     .groups-hero {
-      background: linear-gradient(135deg, rgba(27, 54, 93, 0.95), rgba(91, 155, 213, 0.85)), 
+      background: linear-gradient(135deg, rgba(27, 54, 93, 0.95), rgba(91, 155, 213, 0.85)),
                   url('/images/smiths-lake-aerial.jpg') center/cover;
       color: white;
       padding: 5rem 1rem;
@@ -75,7 +83,7 @@ const sections = [
       position: relative;
       overflow: hidden;
     }
-    
+
     .groups-hero::before {
       content: '';
       position: absolute;
@@ -91,27 +99,27 @@ const sections = [
         rgba(255, 255, 255, 0.03) 20px
       );
     }
-    
+
     .hero-content {
       position: relative;
       z-index: 1;
       max-width: 800px;
       margin: 0 auto;
     }
-    
+
     .groups-hero h1 {
       color: white;
       font-size: 3rem;
       margin-bottom: 1rem;
       font-weight: 700;
     }
-    
+
     .groups-hero p {
       font-size: 1.25rem;
       opacity: 0.95;
       line-height: 1.6;
     }
-    
+
     /* Intro Section */
     .intro-section {
       max-width: 1200px;
@@ -119,7 +127,7 @@ const sections = [
       padding: 0 1rem;
       text-align: center;
     }
-    
+
     .intro-section p {
       font-size: 1.125rem;
       color: #4b5563;
@@ -127,18 +135,18 @@ const sections = [
       max-width: 900px;
       margin: 0 auto;
     }
-    
+
     /* Content Sections */
     .content-section {
       max-width: 1200px;
       margin: 0 auto 4rem;
       padding: 0 1rem;
     }
-    
+
     .category-section {
       margin-bottom: 4rem;
     }
-    
+
     .category-header {
       display: flex;
       align-items: center;
@@ -147,24 +155,24 @@ const sections = [
       padding-bottom: 1rem;
       border-bottom: 3px solid #1B365D;
     }
-    
+
     .category-icon {
       font-size: 2.5rem;
     }
-    
+
     .category-header h2 {
       color: #1B365D;
       font-size: 1.75rem;
       margin: 0;
     }
-    
+
     /* Card Grid */
     .groups-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 2rem;
     }
-    
+
     /* Group Card */
     .group-card {
       background: white;
@@ -177,17 +185,17 @@ const sections = [
       flex-direction: column;
       height: 100%;
     }
-    
+
     .group-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
-    
+
     .card-header {
       padding: 1.5rem;
       border-bottom: 1px solid #f3f4f6;
     }
-    
+
     .card-title {
       font-size: 1.25rem;
       font-weight: 700;
@@ -195,66 +203,66 @@ const sections = [
       margin: 0 0 0.75rem 0;
       line-height: 1.3;
     }
-    
+
     .card-badges {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
     }
-    
+
     .card-body {
       padding: 1.5rem;
       flex: 1;
     }
-    
+
     .card-description {
       color: #4b5563;
       line-height: 1.6;
       margin-bottom: 1.25rem;
     }
-    
+
     .card-details {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
     }
-    
+
     .detail-row {
       display: flex;
       align-items: flex-start;
       gap: 0.75rem;
       font-size: 0.9375rem;
     }
-    
+
     .detail-icon {
       flex-shrink: 0;
       width: 20px;
       color: #5B9BD5;
       font-size: 1rem;
     }
-    
+
     .detail-content {
       flex: 1;
       color: #374151;
     }
-    
+
     .detail-label {
       font-weight: 600;
       color: #1B365D;
       margin-right: 0.25rem;
     }
-    
+
     .card-footer {
       padding: 1rem 1.5rem;
       background: #f9fafb;
       border-top: 1px solid #e5e7eb;
       display: flex;
-      justify-content: flex-start;
+      justify-content: space-between;
       align-items: center;
-      gap: 0.75rem;
+      gap: 1rem;
       flex-wrap: wrap;
     }
-    
+
     .contact-link {
       display: inline-flex;
       align-items: center;
@@ -265,11 +273,11 @@ const sections = [
       font-size: 0.9375rem;
       transition: color 0.2s;
     }
-    
+
     .contact-link:hover {
       color: #1B365D;
     }
-    
+
     .external-link {
       display: inline-flex;
       align-items: center;
@@ -284,7 +292,7 @@ const sections = [
       transition: background 0.2s;
       white-space: nowrap;
     }
-    
+
     .external-link:hover {
       background: #1B365D;
     }
@@ -311,21 +319,6 @@ const sections = [
       color: white;
     }
 
-    .doc-link-disabled {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: #eef2f7;
-      color: #6b7280;
-      border-radius: 6px;
-      font-weight: 700;
-      font-size: 0.875rem;
-      border: 2px dashed #cbd5e1;
-      white-space: nowrap;
-      cursor: not-allowed;
-    }
-    
     /* CTA Box */
     .cta-box {
       background: linear-gradient(135deg, #5B9BD5, #1B365D);
@@ -337,20 +330,20 @@ const sections = [
       margin: 4rem auto 0;
       box-shadow: 0 8px 24px rgba(27, 54, 93, 0.2);
     }
-    
+
     .cta-box h3 {
       color: white;
       font-size: 2rem;
       margin-bottom: 1rem;
     }
-    
+
     .cta-box p {
       font-size: 1.125rem;
       margin-bottom: 2rem;
       opacity: 0.95;
       line-height: 1.6;
     }
-    
+
     .cta-button {
       display: inline-block;
       background: white;
@@ -363,33 +356,33 @@ const sections = [
       transition: all 0.2s;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
-    
+
     .cta-button:hover {
       transform: translateY(-2px);
       box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
     }
-    
+
     .no-groups {
       text-align: center;
       padding: 3rem;
       color: #6b7280;
       font-style: italic;
     }
-    
+
     /* Mobile responsive */
     @media (max-width: 768px) {
       .groups-hero h1 {
         font-size: 2rem;
       }
-      
+
       .groups-hero p {
         font-size: 1rem;
       }
-      
+
       .groups-grid {
         grid-template-columns: 1fr;
       }
-      
+
       .category-header {
         flex-direction: column;
         align-items: flex-start;
@@ -405,124 +398,118 @@ const sections = [
         <p>Join our vibrant community through clubs, groups, and volunteering.</p>
       </div>
     </div>
-    
+
     <!-- Intro -->
     <div class="intro-section">
       <p>
-        Smiths Lake and the Pacific Palms area have a rich community life with groups catering to all interests. 
+        Smiths Lake and the Pacific Palms area have a rich community life with groups catering to all interests.
         Whether you're into sports, arts, gardening, or community service, there's something for everyone.
       </p>
     </div>
-    
+
     <div class="content-section">
-      {sections.map((section) => (
-        <div class="category-section">
-          <div class="category-header">
-            <span class="category-icon">{categoryEmojis[section.key] || '🌟'}</span>
-            <h2>{section.title}</h2>
-          </div>
+      {sections.length > 0 ? (
+        sections.map((section) => (
+          <div class="category-section">
+            <div class="category-header">
+              <span class="category-icon">{categoryEmojis[section.key] || '🌟'}</span>
+              <h2>{section.title}</h2>
+            </div>
 
-          <div class="groups-grid">
-            {section.items.map((group) => {
-              const hasContact = Boolean(group.contactEmail && group.showContactPublicly);
-              const hasWebsite = Boolean(group.websiteUrl);
-              const hasFacebook = Boolean(group.facebookUrl && !group.websiteUrl);
+            <div class="groups-grid">
+              {section.items.map((group) => {
+                const safeDocLink = getSafeDocLink(group.groupInfoDocumentUrl);
 
-              const docIsCircular = Boolean(group.groupInfoDocumentUrl) && isCircularDocLink(group.groupInfoDocumentUrl);
-              const hasDoc = Boolean(group.groupInfoDocumentUrl) && !docIsCircular;
+                const hasFooterLinks = Boolean(
+                  (group.contactEmail && group.showContactPublicly) ||
+                  safeDocLink ||
+                  group.websiteUrl ||
+                  group.facebookUrl
+                );
 
-              const hasFooterLinks = Boolean(hasContact || hasDoc || docIsCircular || hasWebsite || hasFacebook);
-
-              return (
-                <div class="group-card">
-                  <div class="card-header">
-                    <h3 class="card-title">{group.title}</h3>
-                    <div class="card-badges">
-                      <CategoryBadge category={group.category} size="sm" />
-                      {group.status && <StatusBadge status={group.status} />}
+                return (
+                  <div class="group-card">
+                    <div class="card-header">
+                      <h3 class="card-title">{group.title}</h3>
+                      <div class="card-badges">
+                        <CategoryBadge category={group.category} size="sm" />
+                        {group.status && <StatusBadge status={group.status} />}
+                      </div>
                     </div>
-                  </div>
 
-                  <div class="card-body">
-                    {group.description && <p class="card-description">{group.description}</p>}
+                    <div class="card-body">
+                      {group.description && <p class="card-description">{group.description}</p>}
 
-                    <div class="card-details">
-                      {group.meetingDay && (
-                        <div class="detail-row">
-                          <span class="detail-icon">📅</span>
-                          <div class="detail-content">
-                            <span class="detail-label">Meets:</span>
-                            {group.meetingDay}
-                            {group.meetingTime && ` at ${group.meetingTime}`}
+                      <div class="card-details">
+                        {group.meetingDay && (
+                          <div class="detail-row">
+                            <span class="detail-icon">📅</span>
+                            <div class="detail-content">
+                              <span class="detail-label">Meets:</span>
+                              {group.meetingDay}
+                              {group.meetingTime && ` at ${group.meetingTime}`}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
-                      {group.meetingLocation && (
-                        <div class="detail-row">
-                          <span class="detail-icon">📍</span>
-                          <div class="detail-content">
-                            <span class="detail-label">Location:</span>
-                            {group.meetingLocation}
+                        {group.meetingLocation && (
+                          <div class="detail-row">
+                            <span class="detail-icon">📍</span>
+                            <div class="detail-content">
+                              <span class="detail-label">Location:</span>
+                              {group.meetingLocation}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
+
+                    {hasFooterLinks && (
+                      <div class="card-footer">
+                        {group.contactEmail && group.showContactPublicly && (
+                          <a href={`mailto:${group.contactEmail}`} class="contact-link">
+                            ✉️ Contact
+                          </a>
+                        )}
+
+                        {safeDocLink && (
+                          <a href={safeDocLink} target="_blank" rel="noopener" class="doc-link">
+                            📄 Info / Docs →
+                          </a>
+                        )}
+
+                        {group.websiteUrl && (
+                          <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
+                            Visit Website →
+                          </a>
+                        )}
+
+                        {group.facebookUrl && !group.websiteUrl && (
+                          <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
+                            Facebook →
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  {hasFooterLinks && (
-                    <div class="card-footer">
-                      {hasContact && (
-                        <a href={`mailto:${group.contactEmail}`} class="contact-link">
-                          ✉️ Contact
-                        </a>
-                      )}
-
-                      {hasDoc && (
-                        <a href={group.groupInfoDocumentUrl} target="_blank" rel="noopener" class="doc-link">
-                          📄 Info / Docs →
-                        </a>
-                      )}
-
-                      {docIsCircular && (
-                        <span
-                          class="doc-link-disabled"
-                          title="This link currently points back to the Groups page. Update the Notion ‘Group Info Document’ URL to a PDF/Drive/Notion public page."
-                        >
-                          📄 Info / Docs →
-                        </span>
-                      )}
-
-                      {hasWebsite && (
-                        <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
-                          Visit Website →
-                        </a>
-                      )}
-
-                      {hasFacebook && (
-                        <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
-                          Facebook →
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
-
-      {items.length === 0 && (
+        ))
+      ) : (
         <div class="no-groups">
           <p>Groups information is being updated. Check back soon.</p>
         </div>
       )}
-      
+
       <!-- CTA Box -->
       <div class="cta-box">
         <h3>Want to Start a New Group?</h3>
-        <p>We're always looking to expand our community offerings. If you have an idea for a new group or activity, we'd love to hear from you!</p>
+        <p>
+          We're always looking to expand our community offerings. If you have an idea for a new group or activity,
+          we'd love to hear from you!
+        </p>
         <a href="/contact" class="cta-button">Get in Touch</a>
       </div>
     </div>
