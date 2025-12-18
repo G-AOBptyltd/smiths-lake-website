@@ -8,6 +8,8 @@ Official community website for Smiths Lake Village, Pacific Palms NSW, Australia
 
 This website serves the Pacific Palms Community Association (PPCA) and the residents of Smiths Lake Village. It provides community information, emergency resources, and local services information.
 
+> See `/docs/DEV_NOTES.md` for Astro + Notion implementation notes.
+
 ## Technology Stack
 
 - **Framework:** [Astro](https://astro.build/) 4.x
