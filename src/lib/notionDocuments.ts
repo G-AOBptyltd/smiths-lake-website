@@ -1,37 +1,29 @@
 import { Client } from "@notionhq/client";
 
 const notion = new Client({
-  auth: process.env.NOTION_API_KEY,
+  auth: import.meta.env.NOTION_API_KEY,
 });
 
-const DATABASE_ID = process.env.NOTION_DATABASE_ID as string;
+const DATABASE_ID = import.meta.env.NOTION_DATABASE_ID;
 
-/**
- * Helper to safely pull a plain text value from a Notion "rich_text" or "title" property.
- */
+/** Helper to safely pull a plain text value from rich_text/title */
 function getPlainText(prop: any): string {
   if (!prop) return "";
   const arr = prop?.title ?? prop?.rich_text ?? [];
   return arr?.[0]?.plain_text ?? "";
 }
 
-/**
- * Helper to safely pull a URL from a Notion "url" property.
- */
+/** Helper to safely pull a URL from a Notion url property */
 function getUrl(prop: any): string {
   return prop?.url ?? "";
 }
 
-/**
- * Helper to safely pull a select name.
- */
+/** Helper to safely pull a select name */
 function getSelectName(prop: any): string {
   return prop?.select?.name ?? "";
 }
 
-/**
- * Helper to safely pull a multi-select array of names.
- */
+/** Helper to safely pull multi-select names */
 function getMultiSelectNames(prop: any): string[] {
   return Array.isArray(prop?.multi_select)
     ? prop.multi_select.map((x: any) => x?.name).filter(Boolean)
@@ -39,7 +31,7 @@ function getMultiSelectNames(prop: any): string[] {
 }
 
 /**
- * Try multiple possible property names for "summary/description"
+ * Try multiple possible property names for summary/description
  */
 function getSummaryFromPage(page: any): string {
   const props = page?.properties ?? {};
@@ -53,6 +45,28 @@ function getSummaryFromPage(page: any): string {
 }
 
 /**
+ * Try multiple possible property names for the document link.
+ * Your Notion screenshot shows "Group Info Document" is where the Drive links are.
+ */
+function getDocumentUrlFromPage(page: any): string {
+  const props = page?.properties ?? {};
+
+  const candidates = [
+    "Document URL",          // preferred
+    "Group Info Document",   // what you’re currently using in Notion
+    "URL",
+    "Link",
+  ];
+
+  for (const key of candidates) {
+    const url = getUrl(props?.[key]);
+    if (url) return url;
+  }
+
+  return "";
+}
+
+/**
  * Core fetcher
  * - displayLocation matches a multi-select tag in Notion: "Display Locations"
  * - audience is a select: "Document Audience" = "Public" | "Members"
@@ -62,58 +76,37 @@ export async function getDocuments(
   displayLocation: string,
   audience: "Public" | "Members" = "Public"
 ) {
-  if (!process.env.NOTION_API_KEY) {
-    console.warn("[notionDocuments] Missing NOTION_API_KEY");
-  }
-  if (!DATABASE_ID) {
-    console.warn("[notionDocuments] Missing NOTION_DATABASE_ID");
-  }
-
   const response = await notion.databases.query({
     database_id: DATABASE_ID,
     filter: {
       and: [
-        {
-          property: "Record Type",
-          select: { equals: "Document" },
-        },
-        {
-          property: "Show on Website",
-          select: { equals: "TRUE" },
-        },
-        {
-          property: "Display Locations",
-          multi_select: { contains: displayLocation },
-        },
-        {
-          property: "Document Audience",
-          select: { equals: audience },
-        },
+        { property: "Record Type", select: { equals: "Document" } },
+        { property: "Show on Website", select: { equals: "TRUE" } },
+        { property: "Display Locations", multi_select: { contains: displayLocation } },
+        { property: "Document Audience", select: { equals: audience } },
       ],
     },
-    sorts: [
-      {
-        property: "Document Sort Order",
-        direction: "ascending",
-      },
-    ],
+    sorts: [{ property: "Document Sort Order", direction: "ascending" }],
   });
 
   return response.results.map((page: any) => {
-    const description = getSummaryFromPage(page);
+    const url = getDocumentUrlFromPage(page);
 
     return {
       id: page.id,
       title: getPlainText(page?.properties?.Title) || "Untitled",
-      url: getUrl(page?.properties?.["Document URL"]) || "#",
+
+      // IMPORTANT: Use the Drive URL you actually store
+      url: url || "#",
+
       category: getSelectName(page?.properties?.["Document Category"]),
       displayLocations: getMultiSelectNames(page?.properties?.["Display Locations"]),
 
-      // ✅ Align with DocumentLibrary.astro expectations
-      description,
+      // Your DocumentLibrary.astro reads doc.description, so provide that field
+      description: getSummaryFromPage(page),
 
-      // Keep this too (handy for debugging / future UI)
-      summary: description,
+      // Optional backward-compat if anything else uses summary
+      summary: getSummaryFromPage(page),
 
       lastEdited: page.last_edited_time
         ? new Date(page.last_edited_time).toLocaleDateString("en-AU", {
@@ -127,16 +120,11 @@ export async function getDocuments(
   });
 }
 
-/**
- * Backwards-compatible function used by existing pages.
- */
 export async function getPublicDocuments(displayLocation: string) {
   return getDocuments(displayLocation, "Public");
 }
 
-/**
- * Convenience function for members-only documents (wire into UI later).
- */
 export async function getMemberDocuments(displayLocation: string) {
   return getDocuments(displayLocation, "Members");
 }
+
