@@ -19,6 +19,16 @@ if (!fs.existsSync(CACHE_DIR)) {
 }
 
 /**
+ * Helper: safely get the first existing property from a list of candidate names
+ */
+function getFirstExistingProp(props, candidates = []) {
+  for (const key of candidates) {
+    if (props?.[key]) return props[key];
+  }
+  return null;
+}
+
+/**
  * Parse Notion property to usable value
  */
 function parseProperty(property) {
@@ -48,16 +58,9 @@ function parseProperty(property) {
     case 'date':
       return property.date?.start || null;
     case 'formula':
-      // Handle formula result based on type
-      if (property.formula?.type === 'string') {
-        return property.formula.string || '';
-      }
-      if (property.formula?.type === 'number') {
-        return property.formula.number ?? null;
-      }
-      if (property.formula?.type === 'boolean') {
-        return property.formula.boolean || false;
-      }
+      if (property.formula?.type === 'string') return property.formula.string || '';
+      if (property.formula?.type === 'number') return property.formula.number ?? null;
+      if (property.formula?.type === 'boolean') return property.formula.boolean || false;
       return null;
     case 'created_time':
       return property.created_time || null;
@@ -73,6 +76,15 @@ function parseProperty(property) {
  */
 function parseNotionPage(page) {
   const props = page.properties || {};
+
+  // ✅ Robust Groups Info/Docs link mapping (handles a few possible column name variants)
+  const groupInfoDocProp = getFirstExistingProp(props, [
+    'Group Info Document',
+    'Group Info Document URL',
+    'Group Info Doc',
+    'Info / Docs',
+    'Info Docs Link',
+  ]);
 
   return {
     id: page.id,
@@ -103,8 +115,8 @@ function parseNotionPage(page) {
     websiteUrl: parseProperty(props['Website URL']),
     facebookUrl: parseProperty(props['Facebook URL']),
 
-    // ✅ NEW: Groups - per-card info/docs link (Notion URL property)
-    groupInfoDocumentUrl: parseProperty(props['Group Info Document']),
+    // ✅ Groups - per-card info/docs link (Notion URL property)
+    groupInfoDocumentUrl: parseProperty(groupInfoDocProp),
 
     // Document fields
     driveFolderId: parseProperty(props['Google Drive Folder ID']),
@@ -119,9 +131,7 @@ function parseNotionPage(page) {
     operatingHours: parseProperty(props['Operating Hours']),
     address: parseProperty(props['Address']),
     accessibilityInfo: parseProperty(props['Accessibility Info']),
-
-    // (Optional alias in case some pages expect this name)
-    accessibilityFeatures: parseProperty(props['Accessibility Info']),
+    accessibilityFeatures: parseProperty(props['Accessibility Info']), // optional alias
 
     // Environment fields
     conservationStatus: parseProperty(props['Conservation Status']),
@@ -146,7 +156,6 @@ function parseNotionPage(page) {
  */
 export async function fetchNotionContent(filters = {}) {
   try {
-    // Build Notion filter
     const notionFilter = {
       and: [
         {
@@ -158,7 +167,6 @@ export async function fetchNotionContent(filters = {}) {
       ],
     };
 
-    // Add section filter if provided
     if (filters.section) {
       notionFilter.and.push({
         property: 'Section',
@@ -168,7 +176,6 @@ export async function fetchNotionContent(filters = {}) {
       });
     }
 
-    // Add category filter if provided
     if (filters.category) {
       notionFilter.and.push({
         property: 'Category',
@@ -178,7 +185,6 @@ export async function fetchNotionContent(filters = {}) {
       });
     }
 
-    // Query database
     const response = await notion.databases.query({
       database_id: DATABASE_ID,
       filter: notionFilter,
@@ -190,10 +196,8 @@ export async function fetchNotionContent(filters = {}) {
       ],
     });
 
-    // Parse pages
     const items = response.results.map(parseNotionPage);
 
-    // Cache successful fetch
     try {
       fs.writeFileSync(
         CACHE_FILE,
@@ -215,19 +219,13 @@ export async function fetchNotionContent(filters = {}) {
   } catch (error) {
     console.error('Error fetching from Notion:', error.message);
 
-    // Try to use cached data
     if (fs.existsSync(CACHE_FILE)) {
       console.log('Using cached Notion data');
       const cached = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf-8'));
 
-      // Filter cached data if filters provided
       let data = cached.data || [];
-      if (filters.section) {
-        data = data.filter((item) => item.section === filters.section);
-      }
-      if (filters.category) {
-        data = data.filter((item) => item.category === filters.category);
-      }
+      if (filters.section) data = data.filter((item) => item.section === filters.section);
+      if (filters.category) data = data.filter((item) => item.category === filters.category);
 
       return data;
     }
@@ -236,31 +234,19 @@ export async function fetchNotionContent(filters = {}) {
   }
 }
 
-/**
- * Fetch items by section
- */
 export async function fetchItemsBySection(sectionName) {
   return fetchNotionContent({ section: sectionName });
 }
 
-/**
- * Fetch items by section and category
- */
 export async function fetchItemsBySectionAndCategory(sectionName, categoryName) {
   return fetchNotionContent({ section: sectionName, category: categoryName });
 }
 
-/**
- * Fetch single item by slug
- */
 export async function fetchItemBySlug(slug) {
   const allItems = await fetchNotionContent();
   return allItems.find((item) => item.slug === slug);
 }
 
-/**
- * Get all unique slugs for static path generation
- */
 export async function getAllSlugs() {
   const items = await fetchNotionContent();
   return items.map((item) => ({
@@ -270,21 +256,13 @@ export async function getAllSlugs() {
   }));
 }
 
-/**
- * Check if there are any emergency alerts
- */
 export async function checkEmergencyAlerts() {
   const emergencyItems = await fetchItemsBySection('Emergency & Safety');
 
-  // Find highest priority alert
   const alerts = emergencyItems
     .filter((item) => item.alertLevel && item.alertLevel !== 'Normal')
     .sort((a, b) => {
-      const priority = {
-        Emergency: 3,
-        Warning: 2,
-        Watch: 1,
-      };
+      const priority = { Emergency: 3, Warning: 2, Watch: 1 };
       return (priority[b.alertLevel] || 0) - (priority[a.alertLevel] || 0);
     });
 
