@@ -15,7 +15,7 @@ const earlySettlement = items.filter(item => item.category === 'Early Settlement
 const industryWork = items.filter(item => item.category === 'Industry & Work');
 ---
 
-<Layout 
+<Layout
   title="History & Culture"
   description="Discover the stories that shaped our community and the culture that defines us"
 >
@@ -101,25 +101,40 @@ const industryWork = items.filter(item => item.category === 'Industry & Work');
       grid-template-columns: auto 1fr;
       gap: 1.5rem;
       padding: 1.5rem;
+      align-items: stretch;
     }
 
+    /* Always reserve the timeline column so cards align */
     .card-timeline {
       background: linear-gradient(135deg, #1B365D, #2B4A7D);
       color: white;
       padding: 1rem;
-      min-width: 120px;
+      width: 140px;
       text-align: center;
       border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 92px;
     }
 
     .timeline-era {
       font-size: 0.75rem;
       opacity: 0.9;
+      margin-bottom: 0.25rem;
     }
 
     .timeline-year {
       font-size: 1.5rem;
       font-weight: 700;
+      line-height: 1.1;
+    }
+
+    /* Placeholder state when yearEra is missing */
+    .timeline-year--placeholder {
+      font-size: 1.125rem;
+      font-weight: 700;
+      opacity: 0.95;
     }
 
     .card-title {
@@ -146,6 +161,10 @@ const industryWork = items.filter(item => item.category === 'Industry & Work');
     @media (max-width: 768px) {
       .history-card {
         grid-template-columns: 1fr;
+      }
+
+      .card-timeline {
+        width: 100%;
       }
     }
   </style>
@@ -179,18 +198,23 @@ const industryWork = items.filter(item => item.category === 'Industry & Work');
             Smiths Lake and surrounding lands are the traditional country of the Worimi people.
           </p>
         </div>
+
         <div class="timeline-grid">
           {indigenousHeritage.map(item => (
             <div class="history-card">
-              {item.yearEra && (
-                <div class="card-timeline">
-                  <div class="timeline-era">Ancient</div>
+              <div class="card-timeline">
+                <div class="timeline-era">Ancient</div>
+                {item.yearEra ? (
                   <div class="timeline-year">{item.yearEra}</div>
-                </div>
-              )}
+                ) : (
+                  <div class="timeline-year timeline-year--placeholder">Story</div>
+                )}
+              </div>
+
               <div>
                 <h3 class="card-title">{item.title}</h3>
                 <div class="card-description">{item.description}</div>
+
                 {item.websiteUrl && (
                   <a href={item.websiteUrl} class="card-link" target="_blank" rel="noopener">
                     Learn more →
@@ -209,15 +233,19 @@ const industryWork = items.filter(item => item.category === 'Industry & Work');
         <div class="category-header">
           <h2>Early Settlement</h2>
         </div>
+
         <div class="timeline-grid">
           {earlySettlement.map(item => (
             <div class="history-card">
-              {item.yearEra && (
-                <div class="card-timeline">
-                  <div class="timeline-era">Historic</div>
+              <div class="card-timeline">
+                <div class="timeline-era">Historic</div>
+                {item.yearEra ? (
                   <div class="timeline-year">{item.yearEra}</div>
-                </div>
-              )}
+                ) : (
+                  <div class="timeline-year timeline-year--placeholder">Story</div>
+                )}
+              </div>
+
               <div>
                 <h3 class="card-title">{item.title}</h3>
                 <div class="card-description">{item.description}</div>
@@ -234,15 +262,19 @@ const industryWork = items.filter(item => item.category === 'Industry & Work');
         <div class="category-header">
           <h2>Industry & Work</h2>
         </div>
+
         <div class="timeline-grid">
           {industryWork.map(item => (
             <div class="history-card">
-              {item.yearEra && (
-                <div class="card-timeline">
-                  <div class="timeline-era">Industrial</div>
+              <div class="card-timeline">
+                <div class="timeline-era">Industrial</div>
+                {item.yearEra ? (
                   <div class="timeline-year">{item.yearEra}</div>
-                </div>
-              )}
+                ) : (
+                  <div class="timeline-year timeline-year--placeholder">Story</div>
+                )}
+              </div>
+
               <div>
                 <h3 class="card-title">{item.title}</h3>
                 <div class="card-description">{item.description}</div>
