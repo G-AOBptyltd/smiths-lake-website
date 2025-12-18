@@ -8,13 +8,6 @@ import { fetchItemsBySection } from '../../lib/notion-unified.js';
 // Fetch all Groups & Activities items
 const items = await fetchItemsBySection('Groups & Activities');
 
-// Group by category
-const sports = items.filter((item) => item.category === 'Sports');
-const artsAndCulture = items.filter((item) => item.category === 'Arts & Culture');
-const hobbies = items.filter((item) => item.category === 'Hobbies');
-const social = items.filter((item) => item.category === 'Social');
-const service = items.filter((item) => item.category === 'Service');
-
 // Category emoji mapping
 const categoryEmojis = {
   Sports: '⚽',
@@ -54,24 +47,44 @@ function getSafeDocLink(url) {
   return url;
 }
 
-// Define sections once, render via loop (NO JSX in frontmatter)
-const sections = [
-  { key: 'Sports', title: 'Sports & Recreation', items: sports },
-  { key: 'Arts & Culture', title: 'Arts & Culture', items: artsAndCulture },
-  { key: 'Hobbies', title: 'Hobbies & Interests', items: hobbies },
-  { key: 'Social', title: 'Social & Community', items: social },
-  { key: 'Service', title: 'Community Service', items: service },
-].filter((s) => Array.isArray(s.items) && s.items.length > 0);
+// Build section groups, then enrich each group with safe links + footer flags (NO complex logic in template)
+const categoryDefs = [
+  { key: 'Sports', title: 'Sports & Recreation' },
+  { key: 'Arts & Culture', title: 'Arts & Culture' },
+  { key: 'Hobbies', title: 'Hobbies & Interests' },
+  { key: 'Social', title: 'Social & Community' },
+  { key: 'Service', title: 'Community Service' },
+];
+
+const sections = categoryDefs
+  .map((def) => {
+    const raw = items.filter((i) => i.category === def.key);
+
+    const enriched = raw.map((g) => {
+      const safeDocLink = getSafeDocLink(g.groupInfoDocumentUrl);
+
+      const hasFooterLinks = Boolean(
+        (g.contactEmail && g.showContactPublicly) ||
+          safeDocLink ||
+          g.websiteUrl ||
+          g.facebookUrl
+      );
+
+      return {
+        ...g,
+        _safeDocLink: safeDocLink,
+        _hasFooterLinks: hasFooterLinks,
+      };
+    });
+
+    return { ...def, items: enriched };
+  })
+  .filter((s) => s.items.length > 0);
 ---
 
-<Layout
-  title="Groups & Activities"
-  description="Join our vibrant community through clubs, groups, and volunteering"
->
+<Layout title="Groups & Activities" description="Join our vibrant community through clubs, groups, and volunteering">
   <style>
-    .groups-page {
-      background: #f7f9fc;
-    }
+    .groups-page { background: #f7f9fc; }
 
     /* Hero Section */
     .groups-hero {
@@ -143,9 +156,7 @@ const sections = [
       padding: 0 1rem;
     }
 
-    .category-section {
-      margin-bottom: 4rem;
-    }
+    .category-section { margin-bottom: 4rem; }
 
     .category-header {
       display: flex;
@@ -156,9 +167,7 @@ const sections = [
       border-bottom: 3px solid #1B365D;
     }
 
-    .category-icon {
-      font-size: 2.5rem;
-    }
+    .category-icon { font-size: 2.5rem; }
 
     .category-header h2 {
       color: #1B365D;
@@ -241,10 +250,7 @@ const sections = [
       font-size: 1rem;
     }
 
-    .detail-content {
-      flex: 1;
-      color: #374151;
-    }
+    .detail-content { flex: 1; color: #374151; }
 
     .detail-label {
       font-weight: 600;
@@ -274,9 +280,7 @@ const sections = [
       transition: color 0.2s;
     }
 
-    .contact-link:hover {
-      color: #1B365D;
-    }
+    .contact-link:hover { color: #1B365D; }
 
     .external-link {
       display: inline-flex;
@@ -293,9 +297,7 @@ const sections = [
       white-space: nowrap;
     }
 
-    .external-link:hover {
-      background: #1B365D;
-    }
+    .external-link:hover { background: #1B365D; }
 
     /* Doc link button */
     .doc-link {
@@ -314,10 +316,7 @@ const sections = [
       white-space: nowrap;
     }
 
-    .doc-link:hover {
-      background: #1B365D;
-      color: white;
-    }
+    .doc-link:hover { background: #1B365D; color: white; }
 
     /* CTA Box */
     .cta-box {
@@ -369,29 +368,15 @@ const sections = [
       font-style: italic;
     }
 
-    /* Mobile responsive */
     @media (max-width: 768px) {
-      .groups-hero h1 {
-        font-size: 2rem;
-      }
-
-      .groups-hero p {
-        font-size: 1rem;
-      }
-
-      .groups-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .category-header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
+      .groups-hero h1 { font-size: 2rem; }
+      .groups-hero p { font-size: 1rem; }
+      .groups-grid { grid-template-columns: 1fr; }
+      .category-header { flex-direction: column; align-items: flex-start; }
     }
   </style>
 
   <div class="groups-page">
-    <!-- Hero Section -->
     <div class="groups-hero">
       <div class="hero-content">
         <h1>Groups & Activities</h1>
@@ -399,7 +384,6 @@ const sections = [
       </div>
     </div>
 
-    <!-- Intro -->
     <div class="intro-section">
       <p>
         Smiths Lake and the Pacific Palms area have a rich community life with groups catering to all interests.
@@ -417,83 +401,72 @@ const sections = [
             </div>
 
             <div class="groups-grid">
-              {section.items.map((group) => {
-                const safeDocLink = getSafeDocLink(group.groupInfoDocumentUrl);
-
-                const hasFooterLinks = Boolean(
-                  (group.contactEmail && group.showContactPublicly) ||
-                  safeDocLink ||
-                  group.websiteUrl ||
-                  group.facebookUrl
-                );
-
-                return (
-                  <div class="group-card">
-                    <div class="card-header">
-                      <h3 class="card-title">{group.title}</h3>
-                      <div class="card-badges">
-                        <CategoryBadge category={group.category} size="sm" />
-                        {group.status && <StatusBadge status={group.status} />}
-                      </div>
+              {section.items.map((group) => (
+                <div class="group-card">
+                  <div class="card-header">
+                    <h3 class="card-title">{group.title}</h3>
+                    <div class="card-badges">
+                      <CategoryBadge category={group.category} size="sm" />
+                      {group.status && <StatusBadge status={group.status} />}
                     </div>
-
-                    <div class="card-body">
-                      {group.description && <p class="card-description">{group.description}</p>}
-
-                      <div class="card-details">
-                        {group.meetingDay && (
-                          <div class="detail-row">
-                            <span class="detail-icon">📅</span>
-                            <div class="detail-content">
-                              <span class="detail-label">Meets:</span>
-                              {group.meetingDay}
-                              {group.meetingTime && ` at ${group.meetingTime}`}
-                            </div>
-                          </div>
-                        )}
-
-                        {group.meetingLocation && (
-                          <div class="detail-row">
-                            <span class="detail-icon">📍</span>
-                            <div class="detail-content">
-                              <span class="detail-label">Location:</span>
-                              {group.meetingLocation}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {hasFooterLinks && (
-                      <div class="card-footer">
-                        {group.contactEmail && group.showContactPublicly && (
-                          <a href={`mailto:${group.contactEmail}`} class="contact-link">
-                            ✉️ Contact
-                          </a>
-                        )}
-
-                        {safeDocLink && (
-                          <a href={safeDocLink} target="_blank" rel="noopener" class="doc-link">
-                            📄 Info / Docs →
-                          </a>
-                        )}
-
-                        {group.websiteUrl && (
-                          <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
-                            Visit Website →
-                          </a>
-                        )}
-
-                        {group.facebookUrl && !group.websiteUrl && (
-                          <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
-                            Facebook →
-                          </a>
-                        )}
-                      </div>
-                    )}
                   </div>
-                );
-              })}
+
+                  <div class="card-body">
+                    {group.description && <p class="card-description">{group.description}</p>}
+
+                    <div class="card-details">
+                      {group.meetingDay && (
+                        <div class="detail-row">
+                          <span class="detail-icon">📅</span>
+                          <div class="detail-content">
+                            <span class="detail-label">Meets:</span>
+                            {group.meetingDay}
+                            {group.meetingTime && ` at ${group.meetingTime}`}
+                          </div>
+                        </div>
+                      )}
+
+                      {group.meetingLocation && (
+                        <div class="detail-row">
+                          <span class="detail-icon">📍</span>
+                          <div class="detail-content">
+                            <span class="detail-label">Location:</span>
+                            {group.meetingLocation}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {group._hasFooterLinks && (
+                    <div class="card-footer">
+                      {group.contactEmail && group.showContactPublicly && (
+                        <a href={`mailto:${group.contactEmail}`} class="contact-link">
+                          ✉️ Contact
+                        </a>
+                      )}
+
+                      {group._safeDocLink && (
+                        <a href={group._safeDocLink} target="_blank" rel="noopener" class="doc-link">
+                          📄 Info / Docs →
+                        </a>
+                      )}
+
+                      {group.websiteUrl && (
+                        <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
+                          Visit Website →
+                        </a>
+                      )}
+
+                      {group.facebookUrl && !group.websiteUrl && (
+                        <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
+                          Facebook →
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         ))
@@ -503,7 +476,6 @@ const sections = [
         </div>
       )}
 
-      <!-- CTA Box -->
       <div class="cta-box">
         <h3>Want to Start a New Group?</h3>
         <p>
