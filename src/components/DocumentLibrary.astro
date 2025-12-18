@@ -1,3 +1,4 @@
+---
 /**
  * DocumentLibrary.astro
  * Reusable Notion-powered document list
@@ -32,9 +33,15 @@ const {
   subtitle = "Access official PPCA documents and reference materials.",
   showSummary = true,
   anchorId = "documents",
-} = Astro.props;
+} = Astro.props as Props;
 
 const documents = await getDocuments(displayLocation, audience);
+
+// Precompute flags outside the template to keep the compiler happy
+const docs = (documents || []).map((doc) => ({
+  ...doc,
+  hasUrl: Boolean(doc?.url && String(doc.url).trim().length > 0),
+}));
 ---
 
 <section id={anchorId} class="doclib">
@@ -42,62 +49,49 @@ const documents = await getDocuments(displayLocation, audience);
     <div class="doclib-icon" aria-hidden="true">📚</div>
     <div>
       <h2 class="doclib-title">{title}</h2>
-      {subtitle && <p class="doclib-subtitle">{subtitle}</p>}
+      {subtitle ? <p class="doclib-subtitle">{subtitle}</p> : null}
     </div>
   </header>
 
   <div class="doclib-list">
-    {documents.length > 0 ? (
-      documents.map((doc) => {
-        const hasUrl = Boolean(doc.url && doc.url.trim().length > 0);
+    {docs.length > 0 ? (
+      docs.map((doc) => (
+        <article class="doclib-item">
+          <div class="doclib-fileicon" aria-hidden="true">📄</div>
 
-        return (
-          <article class="doclib-item">
-            <div class="doclib-fileicon" aria-hidden="true">📄</div>
+          <div class="doclib-info">
+            <h3 class="doclib-name">{doc.title}</h3>
 
-            <div class="doclib-info">
-              <h3 class="doclib-name">{doc.title}</h3>
-
-              <div class="doclib-meta">
-                {doc.lastEdited && (
-                  <span>📅 Last updated: {doc.lastEdited}</span>
-                )}
-                {doc.editedBy && (
-                  <span>👤 {doc.editedBy}</span>
-                )}
-                {doc.category && (
-                  <span>🏷️ {doc.category}</span>
-                )}
-              </div>
-
-              {showSummary && doc.summary && (
-                <p class="doclib-summary">{doc.summary}</p>
-              )}
+            <div class="doclib-meta">
+              {doc.lastEdited ? <span>📅 Last updated: {doc.lastEdited}</span> : null}
+              {doc.editedBy ? <span>👤 {doc.editedBy}</span> : null}
+              {doc.category ? <span>🏷️ {doc.category}</span> : null}
             </div>
 
-            {hasUrl ? (
-              <a class="doclib-btn" href={doc.url} target="_blank" rel="noopener">
-                View / Download
-              </a>
-            ) : (
-              <span class="doclib-btn doclib-btn-disabled" aria-disabled="true">
-                No link
-              </span>
-            )}
-          </article>
-        );
-      })
+            {showSummary && doc.summary ? (
+              <p class="doclib-summary">{doc.summary}</p>
+            ) : null}
+          </div>
+
+          {doc.hasUrl ? (
+            <a class="doclib-btn" href={doc.url} target="_blank" rel="noopener">
+              View / Download
+            </a>
+          ) : (
+            <span class="doclib-btn doclib-btn-disabled" aria-disabled="true">
+              No link
+            </span>
+          )}
+        </article>
+      ))
     ) : (
-      <div class="doclib-empty">
-        No documents are currently available.
-      </div>
+      <div class="doclib-empty">No documents are currently available.</div>
     )}
   </div>
 
   <footer class="doclib-footer">
     Documents are managed in Notion using
-    <strong> Show on Website</strong>,
-    <strong> Display Locations</strong>, and
+    <strong> Show on Website</strong>, <strong> Display Locations</strong>, and
     <strong> Document Audience</strong>.
   </footer>
 </section>
@@ -253,4 +247,3 @@ const documents = await getDocuments(displayLocation, audience);
     }
   }
 </style>
-
