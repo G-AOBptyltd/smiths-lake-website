@@ -43,7 +43,7 @@ function isCircularDocLink(url) {
   try {
     const u = new URL(url);
     return normalizePathname(u.pathname || '') === CURRENT_PATH;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -52,6 +52,16 @@ function getSafeDocLink(url) {
   if (!url || typeof url !== 'string') return null;
   if (isCircularDocLink(url)) return null;
   return url;
+}
+
+function hasFooterLinks(group) {
+  const safeDocLink = getSafeDocLink(group?.groupInfoDocumentUrl);
+  return Boolean(
+    (group?.contactEmail && group?.showContactPublicly) ||
+      safeDocLink ||
+      group?.websiteUrl ||
+      group?.facebookUrl
+  );
 }
 
 // Define sections once, render via loop
@@ -410,90 +420,84 @@ const sections = [
     <div class="content-section">
       {sections.length > 0 ? (
         sections.map((section) => (
-          <div class="category-section">
+          <div class="category-section" key={section.key}>
             <div class="category-header">
               <span class="category-icon">{categoryEmojis[section.key] || '🌟'}</span>
               <h2>{section.title}</h2>
             </div>
 
             <div class="groups-grid">
-              {section.items.map((group) => {
-                const safeDocLink = getSafeDocLink(group.groupInfoDocumentUrl);
-
-                const hasFooterLinks = Boolean(
-                  (group.contactEmail && group.showContactPublicly) ||
-                  safeDocLink ||
-                  group.websiteUrl ||
-                  group.facebookUrl
-                );
-
-                return (
-                  <div class="group-card">
-                    <div class="card-header">
-                      <h3 class="card-title">{group.title}</h3>
-                      <div class="card-badges">
-                        <CategoryBadge category={group.category} size="sm" />
-                        {group.status && <StatusBadge status={group.status} />}
-                      </div>
+              {section.items.map((group) => (
+                <div class="group-card" key={group.id || group.title}>
+                  <div class="card-header">
+                    <h3 class="card-title">{group.title}</h3>
+                    <div class="card-badges">
+                      <CategoryBadge category={group.category} size="sm" />
+                      {group.status && <StatusBadge status={group.status} />}
                     </div>
-
-                    <div class="card-body">
-                      {group.description && <p class="card-description">{group.description}</p>}
-
-                      <div class="card-details">
-                        {group.meetingDay && (
-                          <div class="detail-row">
-                            <span class="detail-icon">📅</span>
-                            <div class="detail-content">
-                              <span class="detail-label">Meets:</span>
-                              {group.meetingDay}
-                              {group.meetingTime && ` at ${group.meetingTime}`}
-                            </div>
-                          </div>
-                        )}
-
-                        {group.meetingLocation && (
-                          <div class="detail-row">
-                            <span class="detail-icon">📍</span>
-                            <div class="detail-content">
-                              <span class="detail-label">Location:</span>
-                              {group.meetingLocation}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {hasFooterLinks && (
-                      <div class="card-footer">
-                        {group.contactEmail && group.showContactPublicly && (
-                          <a href={`mailto:${group.contactEmail}`} class="contact-link">
-                            ✉️ Contact
-                          </a>
-                        )}
-
-                        {safeDocLink && (
-                          <a href={safeDocLink} target="_blank" rel="noopener" class="doc-link">
-                            📄 Info / Docs →
-                          </a>
-                        )}
-
-                        {group.websiteUrl && (
-                          <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
-                            Visit Website →
-                          </a>
-                        )}
-
-                        {group.facebookUrl && !group.websiteUrl && (
-                          <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
-                            Facebook →
-                          </a>
-                        )}
-                      </div>
-                    )}
                   </div>
-                );
-              })}
+
+                  <div class="card-body">
+                    {group.description && <p class="card-description">{group.description}</p>}
+
+                    <div class="card-details">
+                      {group.meetingDay && (
+                        <div class="detail-row">
+                          <span class="detail-icon">📅</span>
+                          <div class="detail-content">
+                            <span class="detail-label">Meets:</span>
+                            {group.meetingDay}
+                            {group.meetingTime && ` at ${group.meetingTime}`}
+                          </div>
+                        </div>
+                      )}
+
+                      {group.meetingLocation && (
+                        <div class="detail-row">
+                          <span class="detail-icon">📍</span>
+                          <div class="detail-content">
+                            <span class="detail-label">Location:</span>
+                            {group.meetingLocation}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {hasFooterLinks(group) && (
+                    <div class="card-footer">
+                      {group.contactEmail && group.showContactPublicly && (
+                        <a href={`mailto:${group.contactEmail}`} class="contact-link">
+                          ✉️ Contact
+                        </a>
+                      )}
+
+                      {getSafeDocLink(group.groupInfoDocumentUrl) && (
+                        <a
+                          href={getSafeDocLink(group.groupInfoDocumentUrl)}
+                          target="_blank"
+                          rel="noopener"
+                          class="doc-link"
+                        >
+                          📄 Info / Docs →
+                        </a>
+                      )}
+
+                      {group.websiteUrl && (
+                        <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
+                          Visit Website →
+                        </a>
+                      )}
+
+                      {group.facebookUrl && !group.websiteUrl && (
+                        <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
+                          Facebook →
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         ))
