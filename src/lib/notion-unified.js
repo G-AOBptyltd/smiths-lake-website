@@ -104,6 +104,10 @@ function parseNotionPage(page) {
     meetingDay: parseProperty(props['Meeting Day']),
     meetingTime: parseProperty(props['Meeting Time']),
     meetingLocation: parseProperty(props['Meeting Location']),
+    
+    // NEW: Event scheduling fields (Rob's additions)
+    eventFrequency: parseProperty(props['Event Frequency']),
+    eventCycle: parseProperty(props['Event Cycle']),
 
     // Contact fields
     contactPerson: parseProperty(props['Contact Person']),
@@ -156,19 +160,22 @@ function parseNotionPage(page) {
  */
 export async function fetchNotionContent(filters = {}) {
   try {
-    const notionFilter = {
-      and: [
-        {
-          property: 'Show on Website',
-          select: {
-            equals: 'TRUE',
-          },
+    // Build filter conditions dynamically
+    const filterConditions = [];
+    
+    // Only filter by "Show on Website" if explicitly requested (default: true)
+    if (filters.requireShowOnWebsite !== false) {
+      filterConditions.push({
+        property: 'Show on Website',
+        select: {
+          equals: 'TRUE',
         },
-      ],
-    };
+      });
+    }
 
+    // Add section filter if specified
     if (filters.section) {
-      notionFilter.and.push({
+      filterConditions.push({
         property: 'Section',
         select: {
           equals: filters.section,
@@ -176,14 +183,40 @@ export async function fetchNotionContent(filters = {}) {
       });
     }
 
+    // Add category filter if specified
     if (filters.category) {
-      notionFilter.and.push({
+      filterConditions.push({
         property: 'Category',
         select: {
           equals: filters.category,
         },
       });
     }
+
+    // Add status filter if specified (accepts array of statuses)
+    if (filters.status) {
+      if (Array.isArray(filters.status)) {
+        // Multiple statuses - use OR condition
+        filterConditions.push({
+          or: filters.status.map(s => ({
+            property: 'Status',
+            status: { equals: s }
+          }))
+        });
+      } else {
+        // Single status
+        filterConditions.push({
+          property: 'Status',
+          status: {
+            equals: filters.status,
+          },
+        });
+      }
+    }
+
+    const notionFilter = filterConditions.length > 0 
+      ? { and: filterConditions }
+      : undefined;
 
     const response = await notion.databases.query({
       database_id: DATABASE_ID,
@@ -198,6 +231,7 @@ export async function fetchNotionContent(filters = {}) {
 
     const items = response.results.map(parseNotionPage);
 
+    // Cache the results
     try {
       fs.writeFileSync(
         CACHE_FILE,
@@ -219,13 +253,30 @@ export async function fetchNotionContent(filters = {}) {
   } catch (error) {
     console.error('Error fetching from Notion:', error.message);
 
+    // Try to use cached data
     if (fs.existsSync(CACHE_FILE)) {
       console.log('Using cached Notion data');
       const cached = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf-8'));
 
       let data = cached.data || [];
-      if (filters.section) data = data.filter((item) => item.section === filters.section);
-      if (filters.category) data = data.filter((item) => item.category === filters.category);
+      
+      // Apply filters to cached data
+      if (filters.section) {
+        data = data.filter((item) => item.section === filters.section);
+      }
+      if (filters.category) {
+        data = data.filter((item) => item.category === filters.category);
+      }
+      if (filters.status) {
+        if (Array.isArray(filters.status)) {
+          data = data.filter((item) => filters.status.includes(item.status));
+        } else {
+          data = data.filter((item) => item.status === filters.status);
+        }
+      }
+      if (filters.requireShowOnWebsite !== false) {
+        data = data.filter((item) => item.showOnWebsite === 'TRUE');
+      }
 
       return data;
     }
@@ -234,19 +285,42 @@ export async function fetchNotionContent(filters = {}) {
   }
 }
 
+/**
+ * Fetch items by section (default: requires Show on Website = TRUE)
+ */
 export async function fetchItemsBySection(sectionName) {
   return fetchNotionContent({ section: sectionName });
 }
 
+/**
+ * Fetch items by section and category
+ */
 export async function fetchItemsBySectionAndCategory(sectionName, categoryName) {
   return fetchNotionContent({ section: sectionName, category: categoryName });
 }
 
+/**
+ * NEW: Fetch items by section with multiple accepted statuses
+ * Use this for Groups & Activities to accept: Published, Active, Open to New Participants, Full
+ */
+export async function fetchItemsBySectionWithStatuses(sectionName, acceptedStatuses) {
+  return fetchNotionContent({ 
+    section: sectionName,
+    status: acceptedStatuses
+  });
+}
+
+/**
+ * Fetch item by slug
+ */
 export async function fetchItemBySlug(slug) {
   const allItems = await fetchNotionContent();
   return allItems.find((item) => item.slug === slug);
 }
 
+/**
+ * Get all slugs for static page generation
+ */
 export async function getAllSlugs() {
   const items = await fetchNotionContent();
   return items.map((item) => ({
@@ -256,6 +330,9 @@ export async function getAllSlugs() {
   }));
 }
 
+/**
+ * Check for emergency alerts
+ */
 export async function checkEmergencyAlerts() {
   const emergencyItems = await fetchItemsBySection('Emergency & Safety');
 
@@ -278,6 +355,7 @@ export default {
   fetchNotionContent,
   fetchItemsBySection,
   fetchItemsBySectionAndCategory,
+  fetchItemsBySectionWithStatuses,
   fetchItemBySlug,
   getAllSlugs,
   checkEmergencyAlerts,
