@@ -1,0 +1,419 @@
+---
+// Sitemap HTML Page (User-Friendly Navigation)
+import Layout from '../layouts/BaseLayout.astro';
+---
+
+<Layout 
+  title="Site Map" 
+  description="Complete navigation guide to the Smiths Lake Village community website"
+>
+  <style>
+    .sitemap-page {
+      background: #f7f9fc;
+      padding: 3rem 0;
+    }
+
+    .page-header {
+      background: linear-gradient(135deg, #1B365D 0%, #2B4A7D 100%);
+      color: white;
+      padding: 4rem 1rem 3rem;
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .page-header h1 {
+      color: white;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    .page-header p {
+      font-size: 1.125rem;
+      opacity: 0.95;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .content-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem 4rem;
+    }
+
+    .sitemap-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .sitemap-section {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-top: 4px solid #5B9BD5;
+    }
+
+    .sitemap-section h2 {
+      color: #1B365D;
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section-icon {
+      font-size: 2rem;
+    }
+
+    .sitemap-section ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sitemap-section li {
+      margin-bottom: 0.75rem;
+    }
+
+    .sitemap-section a {
+      color: #5B9BD5;
+      text-decoration: none;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      padding: 0.5rem;
+      border-radius: 6px;
+    }
+
+    .sitemap-section a:hover {
+      background: #F7F9FC;
+      color: #1B365D;
+      padding-left: 1rem;
+    }
+
+    .sitemap-section a::before {
+      content: '→';
+      color: #F5A623;
+      font-weight: bold;
+    }
+
+    .subsection {
+      margin-left: 1.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .subsection li {
+      margin-bottom: 0.5rem;
+    }
+
+    .subsection a {
+      font-size: 0.9375rem;
+      font-weight: 400;
+    }
+
+    .search-box {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 3rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      text-align: center;
+    }
+
+    .search-box h2 {
+      color: #1B365D;
+      margin-bottom: 1rem;
+    }
+
+    .search-box p {
+      color: #6B7280;
+      margin-bottom: 1.5rem;
+    }
+
+    .search-input {
+      max-width: 500px;
+      margin: 0 auto;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .search-input input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 2px solid #E5E7EB;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .search-input input:focus {
+      outline: none;
+      border-color: #5B9BD5;
+    }
+
+    .search-button {
+      padding: 0.75rem 2rem;
+      background: #5B9BD5;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .search-button:hover {
+      background: #1B365D;
+    }
+
+    @media (max-width: 768px) {
+      .page-header h1 {
+        font-size: 2rem;
+      }
+
+      .sitemap-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .search-input {
+        flex-direction: column;
+      }
+    }
+  </style>
+
+  <div class="sitemap-page">
+    <div class="page-header">
+      <h1>Site Map</h1>
+      <p>
+        Complete navigation guide to all pages and resources on the Smiths Lake Village website
+      </p>
+    </div>
+
+    <div class="content-container">
+
+      <!-- Search Box -->
+      <div class="search-box">
+        <h2>Looking for something specific?</h2>
+        <p>Use our search function to quickly find information across the website</p>
+        <div class="search-input">
+          <input type="search" placeholder="Search villagefirst.org.au..." aria-label="Search website">
+          <button class="search-button" type="button">Search</button>
+        </div>
+      </div>
+
+      <!-- Sitemap Grid -->
+      <div class="sitemap-grid">
+
+        <!-- Main Pages -->
+        <div class="sitemap-section">
+          <h2>
+            <span class="section-icon">🏠</span>
+            Main Pages
+          </h2>
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/about/">About Our Area</a></li>
+            <li><a href="/contact/">Contact Us</a></li>
+            <li><a href="/feedback/">Submit Feedback</a></li>
+            <li><a href="/newsletter/">Newsletter Signup</a></li>
+            <li><a href="/news/">News & Updates</a></li>
+          </ul>
+        </div>
+
+        <!-- Emergency & Safety -->
+        <div class="sitemap-section">
+          <h2>
+            <span class="section-icon">🚨</span>
+            Emergency & Safety
+          </h2>
+          <ul>
+            <li><a href="/emergency/">Emergency & Safety Overview</a></li>
+            <ul class="subsection">
+              <li><a href="/emergency/">Emergency Contacts</a></li>
+              <li><a href="/emergency/">Evacuation Plans</a></li>
+              <li><a href="/emergency/">Bushfire Information</a></li>
+              <li><a href="/emergency/">Flood Preparedness</a></li>
+              <li><a href="/emergency/">Medical Services</a></li>
+            </ul>
+          </ul>
+        </div>
+
+        <!-- Services -->
+        <div class="sitemap-section">
+          <h2>
+            <span class="section-icon">🏥</span>
+            Services
+          </h2>
+          <ul>
+            <li><a href="/services/">Community Services Overview</a></li>
+            <ul class="subsection">
+              <li><a href="/services/">Health Services</a></li>
+              <li><a href="/services/">Education</a></li>
+              <li><a href="/services/">Amenities</a></li>
+              <li><a href="/services/">Recreation Facilities</a></li>
+              <li><a href="/services/">Local Businesses</a></li>
+            </ul>
+          </ul>
+        </div>
+
+        <!-- Groups & Activities -->
+        <div class="sitemap-section">
+          <h2>
+            <span class="section-icon">👥</span>
+            Groups & Activities
+          </h2>
+          <ul>
+            <li><a href="/groups/">Groups & Activities Overview</a></li>
+            <ul class="subsection">
+              <li><a href="/groups/">Sports & Recreation</a></li>
+              <li><a href="/groups/">Arts & Culture</a></li>
+              <li><a href="/groups/">Social & Community</a></li>
+              <li><a href="/groups/">Hobbies & Interests</a></li>
+              <li><a href="/groups/">Community Service</a></li>
+            </ul>
+          </ul>
+        </div>
+
+        <!-- Environment -->
+        <div class="sitemap-section">
+          <h2>
+            <span class="section-icon">🌿</span>
+            Environment & Sustainability
+          </h2>
+          <ul>
+            <li><a href="/environment/">Environment Overview</a></li>
+            <ul class="subsection">
+              <li><a href="/environment/">Lake Health Monitoring</a></li>
+              <li><a href="/environment/">Foreshore Management</a></li>
+              <li><a href="/environment/">Wildlife Conservation</a></li>
+              <li><a href="/environment/">Sustainability Programs</a></li>
+              <li><a href="/environment/">Walking Trails</a></li>
+            </ul>
+          </ul>
+        </div>
+
+        <!-- History -->
+        <div class="sitemap-section">
+          <h2>
+            <span class="section-icon">📚</span>
+            History & Culture
+          </h2>
+          <ul>
+            <li><a href="/history/">History & Culture Overview</a></li>
+            <ul class="subsection">
+              <li><a href="/history/">Indigenous Heritage</a></li>
+              <li><a href="/history/">Settlement History</a></li>
+              <li><a href="/history/">Cultural Landmarks</a></li>
+              <li><a href="/history/">Community Timeline</a></li>
+            </ul>
+          </ul>
+        </div>
+
+        <!-- Governance -->
+        <div class="sitemap-section">
+          <h2>
+            <span class="section-icon">📋</span>
+            Governance & Admin
+          </h2>
+          <ul>
+            <li><a href="/governance/">Governance Overview</a></li>
+            <ul class="subsection">
+              <li><a href="/governance/">About PPCA</a></li>
+              <li><a href="/governance/">Committee Members</a></li>
+              <li><a href="/governance/">Meeting Minutes</a></li>
+              <li><a href="/governance/">Policies & Procedures</a></li>
+              <li><a href="/governance/">Financial Reports</a></li>
+            </ul>
+          </ul>
+        </div>
+
+        <!-- Planning & Development -->
+        <div class="sitemap-section">
+          <h2>
+            <span class="section-icon">🏗️</span>
+            Planning & Development
+          </h2>
+          <ul>
+            <li><a href="/planning/">Planning & Development Overview</a></li>
+            <ul class="subsection">
+              <li><a href="/planning/">Community Plans</a></li>
+              <li><a href="/planning/">Development Proposals</a></li>
+              <li><a href="/planning/">Infrastructure Projects</a></li>
+              <li><a href="/planning/">Open Spaces Strategy</a></li>
+            </ul>
+          </ul>
+        </div>
+
+        <!-- Documents & Resources -->
+        <div class="sitemap-section">
+          <h2>
+            <span class="section-icon">📄</span>
+            Documents & Resources
+          </h2>
+          <ul>
+            <li><a href="/documents/">Document Library</a></li>
+            <ul class="subsection">
+              <li><a href="/documents/">Community Plans</a></li>
+              <li><a href="/documents/">Reports & Studies</a></li>
+              <li><a href="/documents/">Maps</a></li>
+              <li><a href="/documents/">Forms & Applications</a></li>
+            </ul>
+          </ul>
+        </div>
+
+        <!-- Legal & Policy -->
+        <div class="sitemap-section">
+          <h2>
+            <span class="section-icon">⚖️</span>
+            Legal & Policy
+          </h2>
+          <ul>
+            <li><a href="/privacy/">Privacy Policy</a></li>
+            <li><a href="/accessibility/">Accessibility Statement</a></li>
+            <li><a href="/sitemap/">Site Map</a></li>
+            <li><a href="/404/">Error Page</a></li>
+          </ul>
+        </div>
+
+        <!-- External Links -->
+        <div class="sitemap-section">
+          <h2>
+            <span class="section-icon">🔗</span>
+            External Resources
+          </h2>
+          <ul>
+            <li><a href="https://www.midcoast.nsw.gov.au/" target="_blank" rel="noopener">MidCoast Council ↗</a></li>
+            <li><a href="https://www.fires.nsw.gov.au/" target="_blank" rel="noopener">NSW Rural Fire Service ↗</a></li>
+            <li><a href="https://www.bom.gov.au/" target="_blank" rel="noopener">Bureau of Meteorology ↗</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Simple search functionality
+    const searchInput = document.querySelector('.search-input input');
+    const searchButton = document.querySelector('.search-button');
+
+    searchButton?.addEventListener('click', () => {
+      const query = searchInput?.value;
+      if (query) {
+        // Redirect to home page with search parameter (if you have search functionality)
+        window.location.href = `/?search=${encodeURIComponent(query)}`;
+      }
+    });
+
+    searchInput?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        searchButton?.click();
+      }
+    });
+  </script>
+</Layout>
