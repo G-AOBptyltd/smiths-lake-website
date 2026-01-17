@@ -1,38 +1,25 @@
 ---
-// Groups & Activities Index Page - Enhanced with Multiple Status Support
+// Groups & Activities Index Page - Uses Multiple Status Values
 import Layout from '../../layouts/BaseLayout.astro';
 import CategoryBadge from '../../components/CategoryBadge.astro';
 import StatusBadge from '../../components/StatusBadge.astro';
-import { fetchAllItems } from '../../lib/notion-unified.js';
+import { fetchItemsBySectionWithStatuses } from '../../lib/notion-unified.js';
 
-// Fetch ALL items from database, then filter for Groups & Activities with accepted statuses
-const allItems = await fetchAllItems();
+// Fetch Groups & Activities with multiple accepted statuses
+const ACCEPTED_STATUSES = ['Published', 'Active', 'Open to New Participants', 'Full'];
+const items = await fetchItemsBySectionWithStatuses('Groups & Activities', ACCEPTED_STATUSES);
 
-// Define accepted status values for displaying Groups & Activities
-// These statuses indicate the group is ready to be shown publicly
-const ACCEPTED_STATUSES = [
-  'Published',
-  'Active', 
-  'Open to New Participants',
-  'Full'  // Groups that are full but still want to be visible
-];
-
-// Filter for Groups & Activities section with accepted status values
-const items = allItems.filter(item => 
-  item.section === 'Groups & Activities' && 
-  ACCEPTED_STATUSES.includes(item.status)
-);
-
-// Category emoji mapping
+// Category emoji mapping  
 const categoryEmojis = {
   'Sports & Exercise': '⚽',
   'Art & Culture': '🎨',
+  'Social & Hobbies': '☕',
   'Hobbies': '🌱',
   'Social': '☕',
   'Service': '🤝',
 };
 
-// Used to avoid circular links in "Info / Docs"
+// Used to avoid circular links
 const CURRENT_PATH = '/groups';
 
 function normalizePathname(p) {
@@ -42,12 +29,10 @@ function normalizePathname(p) {
 function isCircularDocLink(url) {
   if (!url || typeof url !== 'string') return false;
 
-  // Relative URLs
   if (url.startsWith('/')) {
     return normalizePathname(url) === CURRENT_PATH;
   }
 
-  // Absolute URLs
   try {
     const u = new URL(url);
     return normalizePathname(u.pathname || '') === CURRENT_PATH;
@@ -62,16 +47,14 @@ function getSafeDocLink(url) {
   return url;
 }
 
-// Helper function to format meeting schedule from Event Frequency and Event Cycle
+// Helper function to format meeting schedule
 function formatMeetingSchedule(group) {
   const parts = [];
   
-  // If Event Frequency exists, use it (e.g., "Weekly", "Monthly", "Fortnightly")
   if (group.eventFrequency) {
     parts.push(group.eventFrequency);
   }
   
-  // If Event Cycle exists, add it (e.g., "Thursday", "First Monday")
   if (group.eventCycle) {
     if (parts.length > 0) {
       parts.push(`on ${group.eventCycle}`);
@@ -80,12 +63,10 @@ function formatMeetingSchedule(group) {
     }
   }
   
-  // Add meeting time if available
   if (group.meetingTime) {
     parts.push(`at ${group.meetingTime}`);
   }
   
-  // Fallback to legacy meetingDay field if no new fields exist
   if (parts.length === 0 && group.meetingDay) {
     parts.push(group.meetingDay);
     if (group.meetingTime) {
@@ -96,12 +77,12 @@ function formatMeetingSchedule(group) {
   return parts.join(' ');
 }
 
-// Build section groups, then enrich each group with safe links + footer flags
+// Build section groups
 const categoryDefs = [
   { key: 'Sports & Exercise', title: 'Sports & Recreation' },
   { key: 'Art & Culture', title: 'Arts & Culture' },
+  { key: 'Social & Hobbies', title: 'Social & Community' },
   { key: 'Hobbies', title: 'Hobbies & Interests' },
-  { key: 'Social', title: 'Social & Community' },
   { key: 'Service', title: 'Community Service' },
 ];
 
@@ -138,11 +119,8 @@ const sections = categoryDefs
   description="Join our vibrant community through clubs, groups, and volunteering"
 >
   <style>
-    .groups-page {
-      background: #f7f9fc;
-    }
+    .groups-page { background: #f7f9fc; }
 
-    /* Hero Section */
     .groups-hero {
       background: linear-gradient(135deg, rgba(27, 54, 93, 0.95), rgba(91, 155, 213, 0.85)),
                   url('/images/smiths-lake-aerial.jpg') center/cover;
@@ -189,7 +167,6 @@ const sections = categoryDefs
       line-height: 1.6;
     }
 
-    /* Intro Section */
     .intro-section {
       max-width: 1200px;
       margin: 3rem auto;
@@ -205,16 +182,13 @@ const sections = categoryDefs
       margin: 0 auto;
     }
 
-    /* Content Sections */
     .content-section {
       max-width: 1200px;
       margin: 0 auto 4rem;
       padding: 0 1rem;
     }
 
-    .category-section {
-      margin-bottom: 4rem;
-    }
+    .category-section { margin-bottom: 4rem; }
 
     .category-header {
       display: flex;
@@ -225,9 +199,7 @@ const sections = categoryDefs
       border-bottom: 3px solid #1B365D;
     }
 
-    .category-icon {
-      font-size: 2.5rem;
-    }
+    .category-icon { font-size: 2.5rem; }
 
     .category-header h2 {
       color: #1B365D;
@@ -235,14 +207,12 @@ const sections = categoryDefs
       margin: 0;
     }
 
-    /* Card Grid */
     .groups-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 2rem;
     }
 
-    /* Group Card */
     .group-card {
       background: white;
       border-radius: 12px;
@@ -279,7 +249,6 @@ const sections = categoryDefs
       gap: 0.5rem;
     }
 
-    /* Frequency badge styling */
     .frequency-badge {
       display: inline-flex;
       align-items: center;
@@ -323,10 +292,7 @@ const sections = categoryDefs
       font-size: 1rem;
     }
 
-    .detail-content {
-      flex: 1;
-      color: #374151;
-    }
+    .detail-content { flex: 1; color: #374151; }
 
     .detail-label {
       font-weight: 600;
@@ -356,9 +322,7 @@ const sections = categoryDefs
       transition: color 0.2s;
     }
 
-    .contact-link:hover {
-      color: #1B365D;
-    }
+    .contact-link:hover { color: #1B365D; }
 
     .external-link {
       display: inline-flex;
@@ -375,11 +339,8 @@ const sections = categoryDefs
       white-space: nowrap;
     }
 
-    .external-link:hover {
-      background: #1B365D;
-    }
+    .external-link:hover { background: #1B365D; }
 
-    /* Doc link button */
     .doc-link {
       display: inline-flex;
       align-items: center;
@@ -396,12 +357,8 @@ const sections = categoryDefs
       white-space: nowrap;
     }
 
-    .doc-link:hover {
-      background: #1B365D;
-      color: white;
-    }
+    .doc-link:hover { background: #1B365D; color: white; }
 
-    /* CTA Box */
     .cta-box {
       background: linear-gradient(135deg, #5B9BD5, #1B365D);
       color: white;
@@ -451,29 +408,15 @@ const sections = categoryDefs
       font-style: italic;
     }
 
-    /* Mobile responsive */
     @media (max-width: 768px) {
-      .groups-hero h1 {
-        font-size: 2rem;
-      }
-
-      .groups-hero p {
-        font-size: 1rem;
-      }
-
-      .groups-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .category-header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
+      .groups-hero h1 { font-size: 2rem; }
+      .groups-hero p { font-size: 1rem; }
+      .groups-grid { grid-template-columns: 1fr; }
+      .category-header { flex-direction: column; align-items: flex-start; }
     }
   </style>
 
   <div class="groups-page">
-    <!-- Hero Section -->
     <div class="groups-hero">
       <div class="hero-content">
         <h1>Groups & Activities</h1>
@@ -481,7 +424,6 @@ const sections = categoryDefs
       </div>
     </div>
 
-    <!-- Intro -->
     <div class="intro-section">
       <p>
         Smiths Lake and the Pacific Palms area have a rich community life with groups catering to all interests.
@@ -578,7 +520,6 @@ const sections = categoryDefs
         </div>
       )}
 
-      <!-- CTA Box -->
       <div class="cta-box">
         <h3>Want to Start a New Group?</h3>
         <p>
