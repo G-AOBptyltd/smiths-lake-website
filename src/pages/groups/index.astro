@@ -1,5 +1,5 @@
 ---
-// Groups & Activities Index Page - Beautiful Card Layout (+ per-card Info/Docs link)
+// Groups & Activities Index Page - Enhanced with Event Frequency & Event Cycle
 import Layout from '../../layouts/BaseLayout.astro';
 import CategoryBadge from '../../components/CategoryBadge.astro';
 import StatusBadge from '../../components/StatusBadge.astro';
@@ -47,7 +47,41 @@ function getSafeDocLink(url) {
   return url;
 }
 
-// Build section groups, then enrich each group with safe links + footer flags (NO complex logic in template)
+// Helper function to format meeting schedule from Event Frequency and Event Cycle
+function formatMeetingSchedule(group) {
+  const parts = [];
+  
+  // If Event Frequency exists, use it (e.g., "Weekly", "Monthly", "Fortnightly")
+  if (group.eventFrequency) {
+    parts.push(group.eventFrequency);
+  }
+  
+  // If Event Cycle exists, add it (e.g., "Thursday", "First Monday")
+  if (group.eventCycle) {
+    if (parts.length > 0) {
+      parts.push(`on ${group.eventCycle}`);
+    } else {
+      parts.push(group.eventCycle);
+    }
+  }
+  
+  // Add meeting time if available
+  if (group.meetingTime) {
+    parts.push(`at ${group.meetingTime}`);
+  }
+  
+  // Fallback to legacy meetingDay field if no new fields exist
+  if (parts.length === 0 && group.meetingDay) {
+    parts.push(group.meetingDay);
+    if (group.meetingTime) {
+      parts.push(`at ${group.meetingTime}`);
+    }
+  }
+  
+  return parts.join(' ');
+}
+
+// Build section groups, then enrich each group with safe links + footer flags
 const categoryDefs = [
   { key: 'Sports', title: 'Sports & Recreation' },
   { key: 'Arts & Culture', title: 'Arts & Culture' },
@@ -62,6 +96,7 @@ const sections = categoryDefs
 
     const enriched = raw.map((g) => {
       const safeDocLink = getSafeDocLink(g.groupInfoDocumentUrl);
+      const meetingSchedule = formatMeetingSchedule(g);
 
       const hasFooterLinks = Boolean(
         (g.contactEmail && g.showContactPublicly) ||
@@ -74,6 +109,7 @@ const sections = categoryDefs
         ...g,
         _safeDocLink: safeDocLink,
         _hasFooterLinks: hasFooterLinks,
+        _meetingSchedule: meetingSchedule,
       };
     });
 
@@ -258,6 +294,19 @@ const sections = categoryDefs
       margin-right: 0.25rem;
     }
 
+    /* Frequency badge styling */
+    .frequency-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.75rem;
+      background: #F5A623;
+      color: white;
+      border-radius: 12px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+    }
+
     .card-footer {
       padding: 1rem 1.5rem;
       background: #f9fafb;
@@ -408,6 +457,11 @@ const sections = categoryDefs
                     <div class="card-badges">
                       <CategoryBadge category={group.category} size="sm" />
                       {group.status && <StatusBadge status={group.status} />}
+                      {group.eventFrequency && (
+                        <span class="frequency-badge">
+                          🔄 {group.eventFrequency}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -415,13 +469,12 @@ const sections = categoryDefs
                     {group.description && <p class="card-description">{group.description}</p>}
 
                     <div class="card-details">
-                      {group.meetingDay && (
+                      {group._meetingSchedule && (
                         <div class="detail-row">
                           <span class="detail-icon">📅</span>
                           <div class="detail-content">
-                            <span class="detail-label">Meets:</span>
-                            {group.meetingDay}
-                            {group.meetingTime && ` at ${group.meetingTime}`}
+                            <span class="detail-label">Schedule:</span>
+                            {group._meetingSchedule}
                           </div>
                         </div>
                       )}
