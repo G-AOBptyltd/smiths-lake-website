@@ -1,0 +1,429 @@
+---
+// Accessibility Statement Page
+import Layout from '../layouts/BaseLayout.astro';
+---
+
+<Layout 
+  title="Accessibility Statement" 
+  description="Smiths Lake Village website accessibility commitment and compliance information"
+>
+  <style>
+    .accessibility-page {
+      background: #f7f9fc;
+      padding: 3rem 0;
+    }
+
+    .page-header {
+      background: linear-gradient(135deg, #1B365D 0%, #2B4A7D 100%);
+      color: white;
+      padding: 4rem 1rem 3rem;
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .page-header h1 {
+      color: white;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    .page-header p {
+      font-size: 1.125rem;
+      opacity: 0.95;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .content-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 1rem 4rem;
+    }
+
+    .content-section {
+      background: white;
+      border-radius: 12px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .content-section h2 {
+      color: #1B365D;
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 3px solid #F5A623;
+    }
+
+    .content-section h3 {
+      color: #1B365D;
+      font-size: 1.25rem;
+      margin: 2rem 0 1rem;
+    }
+
+    .content-section p {
+      color: #374151;
+      line-height: 1.8;
+      margin-bottom: 1.25rem;
+    }
+
+    .content-section ul {
+      margin: 1rem 0 1.5rem 1.5rem;
+      color: #374151;
+      line-height: 1.8;
+    }
+
+    .content-section li {
+      margin-bottom: 0.75rem;
+    }
+
+    .compliance-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #10B981;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      margin: 1rem 0;
+    }
+
+    .contact-box {
+      background: #F7F9FC;
+      border-left: 4px solid #5B9BD5;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin: 2rem 0;
+    }
+
+    .contact-box h3 {
+      color: #1B365D;
+      margin-top: 0;
+    }
+
+    .contact-box a {
+      color: #5B9BD5;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .contact-box a:hover {
+      color: #1B365D;
+      text-decoration: underline;
+    }
+
+    .standards-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+    }
+
+    .standards-table th {
+      background: #1B365D;
+      color: white;
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .standards-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #E5E7EB;
+    }
+
+    .standards-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin: 1.5rem 0;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: #F7F9FC;
+      border-radius: 8px;
+    }
+
+    .feature-icon {
+      color: #10B981;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 768px) {
+      .page-header h1 {
+        font-size: 2rem;
+      }
+
+      .content-section {
+        padding: 1.5rem;
+      }
+
+      .feature-list {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <div class="accessibility-page">
+    <div class="page-header">
+      <h1>Accessibility Statement</h1>
+      <p>
+        The Pacific Palms Community Association is committed to ensuring digital accessibility 
+        for all community members and visitors.
+      </p>
+    </div>
+
+    <div class="content-container">
+      
+      <!-- Commitment Section -->
+      <div class="content-section">
+        <h2>Our Commitment</h2>
+        <p>
+          The Smiths Lake Village website (villagefirst.org.au) is designed to be accessible to 
+          people of all abilities, including those using assistive technologies. We are committed 
+          to providing an inclusive digital experience that enables everyone to access community 
+          information, services, and resources.
+        </p>
+        <div class="compliance-badge">
+          ✓ WCAG 2.1 Level AA Compliant
+        </div>
+        <p>
+          This website has been developed to meet the Web Content Accessibility Guidelines (WCAG) 
+          2.1 at Level AA standard, as recommended by the Australian Government Digital Service 
+          Standard.
+        </p>
+      </div>
+
+      <!-- Accessibility Features -->
+      <div class="content-section">
+        <h2>Accessibility Features</h2>
+        <p>We have implemented the following features to ensure accessibility:</p>
+
+        <div class="feature-list">
+          <div class="feature-item">
+            <span class="feature-icon">✓</span>
+            <div>
+              <strong>Keyboard Navigation</strong>
+              <p>Full keyboard access to all interactive elements</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <span class="feature-icon">✓</span>
+            <div>
+              <strong>Screen Reader Support</strong>
+              <p>Semantic HTML and ARIA labels throughout</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <span class="feature-icon">✓</span>
+            <div>
+              <strong>Text Alternatives</strong>
+              <p>Alt text for all meaningful images</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <span class="feature-icon">✓</span>
+            <div>
+              <strong>Color Contrast</strong>
+              <p>WCAG AA compliant color ratios</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <span class="feature-icon">✓</span>
+            <div>
+              <strong>Responsive Design</strong>
+              <p>Mobile-friendly layouts on all devices</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <span class="feature-icon">✓</span>
+            <div>
+              <strong>Clear Headings</strong>
+              <p>Logical heading structure for navigation</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <span class="feature-icon">✓</span>
+            <div>
+              <strong>Focus Indicators</strong>
+              <p>Visible focus states for all interactive elements</p>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <span class="feature-icon">✓</span>
+            <div>
+              <strong>Skip Links</strong>
+              <p>Quick navigation to main content</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Standards Compliance -->
+      <div class="content-section">
+        <h2>Standards & Compliance</h2>
+        <p>This website conforms to the following standards:</p>
+
+        <table class="standards-table">
+          <thead>
+            <tr>
+              <th>Standard</th>
+              <th>Compliance Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Web Content Accessibility Guidelines (WCAG) 2.1</td>
+              <td><strong>Level AA</strong></td>
+            </tr>
+            <tr>
+              <td>Australian Government Digital Service Standard</td>
+              <td><strong>Compliant</strong></td>
+            </tr>
+            <tr>
+              <td>Disability Discrimination Act 1992</td>
+              <td><strong>Compliant</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Known Limitations -->
+      <div class="content-section">
+        <h2>Known Limitations</h2>
+        <p>
+          While we strive for full accessibility, some limitations may exist:
+        </p>
+        <ul>
+          <li>
+            <strong>Third-party content:</strong> Some embedded maps, videos, or external documents 
+            may not meet accessibility standards. We are working with providers to improve accessibility.
+          </li>
+          <li>
+            <strong>PDF documents:</strong> Older PDF documents may not be fully accessible. 
+            We are progressively reviewing and updating these documents.
+          </li>
+          <li>
+            <strong>Historical content:</strong> Some archive materials may have limited accessibility 
+            due to their original format and age.
+          </li>
+        </ul>
+        <p>
+          If you encounter any accessibility barriers, please contact us (details below) so we can 
+          address them promptly.
+        </p>
+      </div>
+
+      <!-- Assistive Technologies -->
+      <div class="content-section">
+        <h2>Supported Assistive Technologies</h2>
+        <p>This website has been tested with the following assistive technologies:</p>
+        <ul>
+          <li>NVDA (Windows)</li>
+          <li>JAWS (Windows)</li>
+          <li>VoiceOver (macOS, iOS)</li>
+          <li>TalkBack (Android)</li>
+          <li>Keyboard-only navigation</li>
+          <li>Browser zoom up to 200%</li>
+          <li>High contrast mode</li>
+        </ul>
+      </div>
+
+      <!-- Browser Compatibility -->
+      <div class="content-section">
+        <h2>Browser Compatibility</h2>
+        <p>This website is designed to work with current versions of:</p>
+        <ul>
+          <li>Google Chrome</li>
+          <li>Mozilla Firefox</li>
+          <li>Microsoft Edge</li>
+          <li>Apple Safari</li>
+        </ul>
+        <p>
+          For the best experience, we recommend using the latest version of your preferred browser.
+        </p>
+      </div>
+
+      <!-- Feedback and Contact -->
+      <div class="content-section">
+        <h2>Feedback and Support</h2>
+        <p>
+          We welcome feedback on the accessibility of the Smiths Lake Village website. 
+          If you encounter any accessibility barriers or have suggestions for improvement, 
+          please contact us:
+        </p>
+
+        <div class="contact-box">
+          <h3>Accessibility Coordinator</h3>
+          <p>
+            <strong>Email:</strong> <a href="/contact">via our contact form</a><br>
+            <strong>Response time:</strong> We aim to respond within 5 business days
+          </p>
+          <p>
+            When reporting an accessibility issue, please include:
+          </p>
+          <ul>
+            <li>The web page URL where you experienced the issue</li>
+            <li>A description of the problem</li>
+            <li>Your browser and operating system</li>
+            <li>Any assistive technology you were using</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Ongoing Improvements -->
+      <div class="content-section">
+        <h2>Ongoing Improvements</h2>
+        <p>
+          Accessibility is an ongoing commitment. We regularly review and update our website 
+          to ensure it remains accessible and user-friendly for all visitors.
+        </p>
+        <h3>Recent Updates</h3>
+        <ul>
+          <li><strong>November 2025:</strong> Website redesign with WCAG 2.1 Level AA compliance</li>
+          <li><strong>December 2025:</strong> Added skip navigation links</li>
+          <li><strong>January 2026:</strong> Enhanced keyboard navigation and focus indicators</li>
+        </ul>
+        <h3>Planned Improvements</h3>
+        <ul>
+          <li>Progressive PDF accessibility review and updates</li>
+          <li>Additional language support options</li>
+          <li>Enhanced multimedia accessibility (captions, transcripts)</li>
+        </ul>
+      </div>
+
+      <!-- Statement Date -->
+      <div class="content-section">
+        <h2>Statement Information</h2>
+        <p>
+          <strong>Statement prepared:</strong> January 2026<br>
+          <strong>Last reviewed:</strong> January 17, 2026<br>
+          <strong>Next review:</strong> July 2026
+        </p>
+        <p>
+          This accessibility statement applies to the Smiths Lake Village website 
+          (villagefirst.org.au) operated by the Pacific Palms Community Association (PPCA).
+        </p>
+      </div>
+
+    </div>
+  </div>
+</Layout>
