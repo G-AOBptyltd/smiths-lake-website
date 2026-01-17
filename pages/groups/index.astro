@@ -1,27 +1,35 @@
 ---
-// Groups & Activities Index Page - Beautiful Card Layout (+ per-card Info/Docs link)
+// Groups & Activities Index Page - Enhanced with Multiple Status Support
 import Layout from '../../layouts/BaseLayout.astro';
 import CategoryBadge from '../../components/CategoryBadge.astro';
 import StatusBadge from '../../components/StatusBadge.astro';
-import { fetchItemsBySection } from '../../lib/notion-unified.js';
+import { fetchAllItems } from '../../lib/notion-unified.js';
 
-// Fetch all Groups & Activities items
-const items = await fetchItemsBySection('Groups & Activities');
+// Fetch ALL items from database, then filter for Groups & Activities with accepted statuses
+const allItems = await fetchAllItems();
 
-// Group by category
-const sports = items.filter((item) => item.category === 'Sports');
-const artsAndCulture = items.filter((item) => item.category === 'Arts & Culture');
-const hobbies = items.filter((item) => item.category === 'Hobbies');
-const social = items.filter((item) => item.category === 'Social');
-const service = items.filter((item) => item.category === 'Service');
+// Define accepted status values for displaying Groups & Activities
+// These statuses indicate the group is ready to be shown publicly
+const ACCEPTED_STATUSES = [
+  'Published',
+  'Active', 
+  'Open to New Participants',
+  'Full'  // Groups that are full but still want to be visible
+];
+
+// Filter for Groups & Activities section with accepted status values
+const items = allItems.filter(item => 
+  item.section === 'Groups & Activities' && 
+  ACCEPTED_STATUSES.includes(item.status)
+);
 
 // Category emoji mapping
 const categoryEmojis = {
-  Sports: '⚽',
-  'Arts & Culture': '🎨',
-  Hobbies: '🌱',
-  Social: '☕',
-  Service: '🤝',
+  'Sports & Exercise': '⚽',
+  'Art & Culture': '🎨',
+  'Hobbies': '🌱',
+  'Social': '☕',
+  'Service': '🤝',
 };
 
 // Used to avoid circular links in "Info / Docs"
@@ -54,24 +62,75 @@ function getSafeDocLink(url) {
   return url;
 }
 
-function hasFooterLinks(group) {
-  const safeDocLink = getSafeDocLink(group?.groupInfoDocumentUrl);
-  return Boolean(
-    (group?.contactEmail && group?.showContactPublicly) ||
-      safeDocLink ||
-      group?.websiteUrl ||
-      group?.facebookUrl
-  );
+// Helper function to format meeting schedule from Event Frequency and Event Cycle
+function formatMeetingSchedule(group) {
+  const parts = [];
+  
+  // If Event Frequency exists, use it (e.g., "Weekly", "Monthly", "Fortnightly")
+  if (group.eventFrequency) {
+    parts.push(group.eventFrequency);
+  }
+  
+  // If Event Cycle exists, add it (e.g., "Thursday", "First Monday")
+  if (group.eventCycle) {
+    if (parts.length > 0) {
+      parts.push(`on ${group.eventCycle}`);
+    } else {
+      parts.push(group.eventCycle);
+    }
+  }
+  
+  // Add meeting time if available
+  if (group.meetingTime) {
+    parts.push(`at ${group.meetingTime}`);
+  }
+  
+  // Fallback to legacy meetingDay field if no new fields exist
+  if (parts.length === 0 && group.meetingDay) {
+    parts.push(group.meetingDay);
+    if (group.meetingTime) {
+      parts.push(`at ${group.meetingTime}`);
+    }
+  }
+  
+  return parts.join(' ');
 }
 
-// Define sections once, render via loop
-const sections = [
-  { key: 'Sports', title: 'Sports & Recreation', items: sports },
-  { key: 'Arts & Culture', title: 'Arts & Culture', items: artsAndCulture },
-  { key: 'Hobbies', title: 'Hobbies & Interests', items: hobbies },
-  { key: 'Social', title: 'Social & Community', items: social },
-  { key: 'Service', title: 'Community Service', items: service },
-].filter((s) => Array.isArray(s.items) && s.items.length > 0);
+// Build section groups, then enrich each group with safe links + footer flags
+const categoryDefs = [
+  { key: 'Sports & Exercise', title: 'Sports & Recreation' },
+  { key: 'Art & Culture', title: 'Arts & Culture' },
+  { key: 'Hobbies', title: 'Hobbies & Interests' },
+  { key: 'Social', title: 'Social & Community' },
+  { key: 'Service', title: 'Community Service' },
+];
+
+const sections = categoryDefs
+  .map((def) => {
+    const raw = items.filter((i) => i.category === def.key);
+
+    const enriched = raw.map((g) => {
+      const safeDocLink = getSafeDocLink(g.groupInfoDocumentUrl);
+      const meetingSchedule = formatMeetingSchedule(g);
+
+      const hasFooterLinks = Boolean(
+        (g.contactEmail && g.showContactPublicly) ||
+          safeDocLink ||
+          g.websiteUrl ||
+          g.facebookUrl
+      );
+
+      return {
+        ...g,
+        _safeDocLink: safeDocLink,
+        _hasFooterLinks: hasFooterLinks,
+        _meetingSchedule: meetingSchedule,
+      };
+    });
+
+    return { ...def, items: enriched };
+  })
+  .filter((s) => s.items.length > 0);
 ---
 
 <Layout
@@ -218,6 +277,19 @@ const sections = [
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
+    }
+
+    /* Frequency badge styling */
+    .frequency-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.75rem;
+      background: #F5A623;
+      color: white;
+      border-radius: 12px;
+      font-size: 0.8125rem;
+      font-weight: 600;
     }
 
     .card-body {
@@ -420,7 +492,7 @@ const sections = [
     <div class="content-section">
       {sections.length > 0 ? (
         sections.map((section) => (
-          <div class="category-section" key={section.key}>
+          <div class="category-section">
             <div class="category-header">
               <span class="category-icon">{categoryEmojis[section.key] || '🌟'}</span>
               <h2>{section.title}</h2>
@@ -428,12 +500,17 @@ const sections = [
 
             <div class="groups-grid">
               {section.items.map((group) => (
-                <div class="group-card" key={group.id || group.title}>
+                <div class="group-card">
                   <div class="card-header">
                     <h3 class="card-title">{group.title}</h3>
                     <div class="card-badges">
                       <CategoryBadge category={group.category} size="sm" />
                       {group.status && <StatusBadge status={group.status} />}
+                      {group.eventFrequency && (
+                        <span class="frequency-badge">
+                          🔄 {group.eventFrequency}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -441,13 +518,12 @@ const sections = [
                     {group.description && <p class="card-description">{group.description}</p>}
 
                     <div class="card-details">
-                      {group.meetingDay && (
+                      {group._meetingSchedule && (
                         <div class="detail-row">
                           <span class="detail-icon">📅</span>
                           <div class="detail-content">
-                            <span class="detail-label">Meets:</span>
-                            {group.meetingDay}
-                            {group.meetingTime && ` at ${group.meetingTime}`}
+                            <span class="detail-label">Schedule:</span>
+                            {group._meetingSchedule}
                           </div>
                         </div>
                       )}
@@ -464,7 +540,7 @@ const sections = [
                     </div>
                   </div>
 
-                  {hasFooterLinks(group) && (
+                  {group._hasFooterLinks && (
                     <div class="card-footer">
                       {group.contactEmail && group.showContactPublicly && (
                         <a href={`mailto:${group.contactEmail}`} class="contact-link">
@@ -472,13 +548,8 @@ const sections = [
                         </a>
                       )}
 
-                      {getSafeDocLink(group.groupInfoDocumentUrl) && (
-                        <a
-                          href={getSafeDocLink(group.groupInfoDocumentUrl)}
-                          target="_blank"
-                          rel="noopener"
-                          class="doc-link"
-                        >
+                      {group._safeDocLink && (
+                        <a href={group._safeDocLink} target="_blank" rel="noopener" class="doc-link">
                           📄 Info / Docs →
                         </a>
                       )}
