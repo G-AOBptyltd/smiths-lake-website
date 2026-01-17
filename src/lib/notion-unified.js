@@ -1,5 +1,6 @@
 // Unified Notion Library for PPCA Website
 // Fetches content from single unified database with proper field handling
+// FIXED: Handles Status field as both multi-select (array) and status (string) types
 
 import { Client } from '@notionhq/client';
 import fs from 'fs';
@@ -72,12 +73,33 @@ function parseProperty(property) {
 }
 
 /**
+ * Normalize Status field - handles both multi-select (array) and status (string) field types
+ * The Status field in Notion is configured as multi-select, which returns ['Active'] instead of 'Active'
+ * This function normalizes it to always return a string
+ */
+function normalizeStatus(statusValue) {
+  if (!statusValue) return null;
+  
+  // If it's an array (multi-select), take the first value
+  if (Array.isArray(statusValue)) {
+    return statusValue.length > 0 ? statusValue[0] : null;
+  }
+  
+  // Otherwise return as-is (should be a string)
+  return statusValue;
+}
+
+/**
  * Parse Notion page to content item
  */
 function parseNotionPage(page) {
   const props = page.properties || {};
 
-  // ✅ Robust Groups Info/Docs link mapping (handles a few possible column name variants)
+  // Parse and normalize Status field
+  const rawStatus = parseProperty(props.Status);
+  const status = normalizeStatus(rawStatus);
+
+  // ✅ Robust Groups Info/Docs link mapping
   const groupInfoDocProp = getFirstExistingProp(props, [
     'Group Info Document',
     'Group Info Document URL',
@@ -94,7 +116,7 @@ function parseNotionPage(page) {
     section: parseProperty(props.Section),
     category: parseProperty(props.Category),
     description: parseProperty(props.Description),
-    status: parseProperty(props.Status),
+    status: status, // Normalized status (always string or null, never array)
     showOnWebsite: parseProperty(props['Show on Website']),
     slug: parseProperty(props.Slug),
     priorityOrder: parseProperty(props['Priority Order']) || 999,
@@ -105,7 +127,7 @@ function parseNotionPage(page) {
     meetingTime: parseProperty(props['Meeting Time']),
     meetingLocation: parseProperty(props['Meeting Location']),
     
-    // NEW: Event scheduling fields (Rob's additions)
+    // Event scheduling fields
     eventFrequency: parseProperty(props['Event Frequency']),
     eventCycle: parseProperty(props['Event Cycle']),
 
@@ -119,7 +141,7 @@ function parseNotionPage(page) {
     websiteUrl: parseProperty(props['Website URL']),
     facebookUrl: parseProperty(props['Facebook URL']),
 
-    // ✅ Groups - per-card info/docs link (Notion URL property)
+    // Groups - per-card info/docs link
     groupInfoDocumentUrl: parseProperty(groupInfoDocProp),
 
     // Document fields
@@ -135,7 +157,7 @@ function parseNotionPage(page) {
     operatingHours: parseProperty(props['Operating Hours']),
     address: parseProperty(props['Address']),
     accessibilityInfo: parseProperty(props['Accessibility Info']),
-    accessibilityFeatures: parseProperty(props['Accessibility Info']), // optional alias
+    accessibilityFeatures: parseProperty(props['Accessibility Info']),
 
     // Environment fields
     conservationStatus: parseProperty(props['Conservation Status']),
@@ -163,7 +185,7 @@ export async function fetchNotionContent(filters = {}) {
     // Build filter conditions dynamically
     const filterConditions = [];
     
-    // Only filter by "Show on Website" if explicitly requested (default: true)
+    // Filter by "Show on Website" (default: true)
     if (filters.requireShowOnWebsite !== false) {
       filterConditions.push({
         property: 'Show on Website',
@@ -173,7 +195,7 @@ export async function fetchNotionContent(filters = {}) {
       });
     }
 
-    // Add section filter if specified
+    // Add section filter
     if (filters.section) {
       filterConditions.push({
         property: 'Section',
@@ -183,7 +205,7 @@ export async function fetchNotionContent(filters = {}) {
       });
     }
 
-    // Add category filter if specified
+    // Add category filter
     if (filters.category) {
       filterConditions.push({
         property: 'Category',
@@ -193,26 +215,10 @@ export async function fetchNotionContent(filters = {}) {
       });
     }
 
-    // Add status filter if specified (accepts array of statuses)
-    if (filters.status) {
-      if (Array.isArray(filters.status)) {
-        // Multiple statuses - use OR condition
-        filterConditions.push({
-          or: filters.status.map(s => ({
-            property: 'Status',
-            status: { equals: s }
-          }))
-        });
-      } else {
-        // Single status
-        filterConditions.push({
-          property: 'Status',
-          status: {
-            equals: filters.status,
-          },
-        });
-      }
-    }
+    // NOTE: We don't filter by Status in the Notion API query
+    // because Status is a multi-select field, and Notion's API
+    // doesn't support filtering multi-select with status.equals
+    // Instead, we fetch all matching items and filter by status after parsing
 
     const notionFilter = filterConditions.length > 0 
       ? { and: filterConditions }
@@ -229,7 +235,18 @@ export async function fetchNotionContent(filters = {}) {
       ],
     });
 
-    const items = response.results.map(parseNotionPage);
+    let items = response.results.map(parseNotionPage);
+
+    // Apply status filter after parsing (now that status is normalized to string)
+    if (filters.status) {
+      if (Array.isArray(filters.status)) {
+        // Multiple accepted statuses
+        items = items.filter(item => filters.status.includes(item.status));
+      } else {
+        // Single status
+        items = items.filter(item => item.status === filters.status);
+      }
+    }
 
     // Cache the results
     try {
@@ -300,8 +317,8 @@ export async function fetchItemsBySectionAndCategory(sectionName, categoryName) 
 }
 
 /**
- * NEW: Fetch items by section with multiple accepted statuses
- * Use this for Groups & Activities to accept: Published, Active, Open to New Participants, Full
+ * Fetch items by section with multiple accepted statuses
+ * This is the key function for Groups & Activities!
  */
 export async function fetchItemsBySectionWithStatuses(sectionName, acceptedStatuses) {
   return fetchNotionContent({ 
@@ -314,7 +331,7 @@ export async function fetchItemsBySectionWithStatuses(sectionName, acceptedStatu
  * Fetch item by slug
  */
 export async function fetchItemBySlug(slug) {
-  const allItems = await fetchNotionContent();
+  const allItems = await fetchNotionContent({ requireShowOnWebsite: false });
   return allItems.find((item) => item.slug === slug);
 }
 
