@@ -170,6 +170,7 @@ function parseNotionPage(page) {
     historicalCategory: parseProperty(props['Historical Category']),
     sourceAttribution: parseProperty(props['Source Attribution']),
     relatedPeople: parseProperty(props['Related People']),
+    recordType: parseProperty(props['Record Type']),
 
     // Timestamps
     createdTime: parseProperty(props['Created Time']),
