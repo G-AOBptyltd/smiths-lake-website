@@ -171,6 +171,10 @@ function parseNotionPage(page) {
     sourceAttribution: parseProperty(props['Source Attribution']),
     relatedPeople: parseProperty(props['Related People']),
     recordType: parseProperty(props['Record Type']),
+    
+    // Card display control fields (universal - can be used by any section)
+    cardTemplate: parseProperty(props['Card Template']),
+    cardOptions: parseProperty(props['Card Options']),
 
     // Timestamps
     createdTime: parseProperty(props['Created Time']),
