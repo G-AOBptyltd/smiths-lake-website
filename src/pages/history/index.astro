@@ -1,15 +1,30 @@
 ---
-// History & Culture Page with Visual Timeline
+// History & Culture Page with Dynamic Card Templates
 import Layout from '../../layouts/BaseLayout.astro';
-import { fetchItemsBySection } from '../../lib/notion-unified.js';
+import { fetchNotionContent } from '../../lib/notion-unified.js';
 
-// Fetch published history items
-const allHistoryItems = await fetchItemsBySection('History & Culture');
+// Fetch ALL history items (bypass default Show on Website filter for more control)
+const allHistoryItems = await fetchNotionContent({ 
+  section: 'History & Culture',
+  requireShowOnWebsite: false
+});
 
-// Filter for published items with Show on Website = TRUE
-const publishedItems = allHistoryItems.filter(
-  item => item.status === 'Published' && item.showOnWebsite === 'TRUE'
-);
+// Filter for items with acceptable statuses and Show on Website = TRUE
+// Handle both single status (string) and multi-select status (array)
+const publishedItems = allHistoryItems.filter(item => {
+  if (!item.showOnWebsite || item.showOnWebsite !== 'TRUE') return false;
+  
+  // Handle Status as either string or array
+  const acceptedStatuses = ['Published', 'Active', 'Proposed', 'Plan Approved'];
+  
+  if (Array.isArray(item.status)) {
+    // Multi-select: check if ANY status is in accepted list
+    return item.status.some(s => acceptedStatuses.includes(s));
+  } else {
+    // Single select: direct comparison
+    return acceptedStatuses.includes(item.status);
+  }
+});
 
 // Sort by Year Era (oldest to newest)
 const timelineItems = publishedItems
@@ -24,6 +39,16 @@ const timelineItems = publishedItems
 function getYear(dateString) {
   if (!dateString) return null;
   return new Date(dateString).getFullYear();
+}
+
+// Helper: Format date nicely
+function formatDate(dateString) {
+  if (!dateString) return null;
+  return new Date(dateString).toLocaleDateString('en-AU', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
 }
 
 // Helper: Get category icon
@@ -54,9 +79,86 @@ function getCategoryColor(category) {
   return colors[category] || '#6B7280';
 }
 
+// Helper: Determine what to show based on template and options
+function getCardDisplayConfig(item) {
+  const template = item.cardTemplate || 'Standard';
+  const options = item.cardOptions || [];
+  
+  // Base configuration per template
+  const templateConfig = {
+    'Minimal': {
+      showCategory: false,
+      showYear: false,
+      showSource: false,
+      showPeople: false,
+      showUpdated: false,
+      showAllStatuses: false,
+      largeFormat: false,
+      highlight: false,
+    },
+    'Standard': {
+      showCategory: true,
+      showYear: true,
+      showSource: false,
+      showPeople: false,
+      showUpdated: false,
+      showAllStatuses: false,
+      largeFormat: false,
+      highlight: false,
+    },
+    'Rich': {
+      showCategory: true,
+      showYear: true,
+      showSource: true,
+      showPeople: false,
+      showUpdated: true,
+      showAllStatuses: false,
+      largeFormat: false,
+      highlight: false,
+    },
+    'Detailed': {
+      showCategory: true,
+      showYear: true,
+      showSource: true,
+      showPeople: true,
+      showUpdated: true,
+      showAllStatuses: true,
+      largeFormat: false,
+      highlight: false,
+    },
+    'Featured': {
+      showCategory: true,
+      showYear: true,
+      showSource: true,
+      showPeople: true,
+      showUpdated: true,
+      showAllStatuses: true,
+      largeFormat: true,
+      highlight: true,
+    },
+  };
+  
+  // Get base config from template
+  const config = templateConfig[template] || templateConfig['Standard'];
+  
+  // Apply option overrides
+  if (options.includes('Show Source')) config.showSource = true;
+  if (options.includes('Show People')) config.showPeople = true;
+  if (options.includes('Show Updated Date')) config.showUpdated = true;
+  if (options.includes('Show All Statuses')) config.showAllStatuses = true;
+  if (options.includes('Large Format')) config.largeFormat = true;
+  if (options.includes('Highlight Card')) config.highlight = true;
+  if (options.includes('Hide Description')) config.hideDescription = true;
+  if (options.includes('Compact View')) config.compactView = true;
+  
+  return config;
+}
+
 // Separate documents for the bottom section
 const documentItems = allHistoryItems.filter(
-  item => item.recordType === 'Document' && item.status === 'Published'
+  item => item.recordType === 'Document' && 
+          item.showOnWebsite === 'TRUE' &&
+          (item.status === 'Published' || (Array.isArray(item.status) && item.status.includes('Published')))
 );
 ---
 
@@ -205,7 +307,7 @@ const documentItems = allHistoryItems.filter(
       margin-top: 3rem;
     }
 
-    /* Timeline card */
+    /* Timeline card - base */
     .timeline-card {
       flex: 1;
       max-width: 450px;
@@ -216,6 +318,25 @@ const documentItems = allHistoryItems.filter(
       border-left: 4px solid;
       transition: all 0.3s ease;
       margin: 4rem 2rem 0;
+    }
+
+    /* Large format cards */
+    .timeline-card.large-format {
+      max-width: 500px;
+      padding: 2.5rem;
+    }
+
+    /* Compact view cards */
+    .timeline-card.compact-view {
+      padding: 1.5rem;
+      max-width: 400px;
+    }
+
+    /* Highlighted cards */
+    .timeline-card.highlight {
+      border: 3px solid #F5A623;
+      box-shadow: 0 6px 20px rgba(245, 166, 35, 0.3);
+      background: linear-gradient(to bottom, white 0%, #FFFDF5 100%);
     }
 
     .timeline-item:nth-child(odd) .timeline-card {
@@ -233,6 +354,22 @@ const documentItems = allHistoryItems.filter(
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
 
+    /* Featured banner */
+    .featured-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: linear-gradient(135deg, #F5A623, #D4900F);
+      color: white;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
     /* Card Header */
     .card-icon-wrapper {
       display: flex;
@@ -248,6 +385,10 @@ const documentItems = allHistoryItems.filter(
     .card-icon {
       font-size: 2.5rem;
       line-height: 1;
+    }
+
+    .card-icon.large {
+      font-size: 3.5rem;
     }
 
     .card-type-badge {
@@ -270,6 +411,21 @@ const documentItems = allHistoryItems.filter(
       line-height: 1.3;
     }
 
+    .card-title.large {
+      font-size: 1.875rem;
+    }
+
+    .card-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .timeline-item:nth-child(odd) .card-badges {
+      justify-content: flex-end;
+    }
+
     .card-category {
       display: inline-block;
       padding: 0.375rem 0.875rem;
@@ -277,7 +433,17 @@ const documentItems = allHistoryItems.filter(
       font-size: 0.875rem;
       font-weight: 600;
       color: white;
-      margin-bottom: 1rem;
+    }
+
+    .card-status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.375rem 0.875rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      background: #E5E7EB;
+      color: #374151;
     }
 
     .card-description {
@@ -297,11 +463,46 @@ const documentItems = allHistoryItems.filter(
       display: block;
     }
 
+    /* Card Metadata Section */
+    .card-metadata {
+      border-top: 1px solid #E5E7EB;
+      padding-top: 1rem;
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .metadata-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.9375rem;
+      color: #6B7280;
+    }
+
+    .timeline-item:nth-child(odd) .metadata-row {
+      flex-direction: row-reverse;
+      text-align: right;
+    }
+
+    .metadata-icon {
+      flex-shrink: 0;
+      font-size: 1.125rem;
+    }
+
+    .metadata-label {
+      font-weight: 600;
+      color: #374151;
+      margin-right: 0.25rem;
+    }
+
     /* Card Actions */
     .card-actions {
       display: flex;
       gap: 0.75rem;
       flex-wrap: wrap;
+      margin-top: 1.5rem;
     }
 
     .timeline-item:nth-child(odd) .card-actions {
@@ -440,6 +641,17 @@ const documentItems = allHistoryItems.filter(
         flex-direction: row;
       }
 
+      .timeline-item:nth-child(odd) .card-badges,
+      .timeline-item:nth-child(even) .card-badges {
+        justify-content: flex-start;
+      }
+
+      .timeline-item:nth-child(odd) .metadata-row,
+      .timeline-item:nth-child(even) .metadata-row {
+        flex-direction: row;
+        text-align: left;
+      }
+
       .timeline-year {
         left: 20px;
         transform: translateX(0);
@@ -500,6 +712,21 @@ const documentItems = allHistoryItems.filter(
             const recordIcon = isContent ? '📖' : '📄';
             const recordLabel = isContent ? 'Story' : 'Document';
             
+            // Get display configuration based on template and options
+            const config = getCardDisplayConfig(item);
+            
+            // Build card CSS classes
+            const cardClasses = [
+              'timeline-card',
+              config.largeFormat ? 'large-format' : '',
+              config.compactView ? 'compact-view' : '',
+              config.highlight ? 'highlight' : '',
+            ].filter(Boolean).join(' ');
+            
+            // Get all statuses if multi-select
+            const allStatuses = Array.isArray(item.status) ? item.status : [item.status].filter(Boolean);
+            const primaryStatus = allStatuses[0];
+            
             return (
               <div class="timeline-item">
                 <div 
@@ -514,33 +741,90 @@ const documentItems = allHistoryItems.filter(
                   style={`background: ${categoryColor}; box-shadow: 0 0 0 4px ${categoryColor}20;`}
                 />
                 
-                <div class="timeline-card" style={`border-left-color: ${categoryColor};`}>
+                <div class={cardClasses} style={`border-left-color: ${categoryColor};`}>
+                  {/* Featured banner */}
+                  {config.highlight && (
+                    <div class="featured-banner">
+                      ⭐ Featured
+                    </div>
+                  )}
+
+                  {/* Icon and type badge */}
                   <div class="card-icon-wrapper">
-                    <span class="card-icon">{categoryIcon}</span>
+                    <span class={`card-icon ${config.largeFormat ? 'large' : ''}`}>{categoryIcon}</span>
                     <span class="card-type-badge">
                       {recordIcon} {recordLabel}
                     </span>
                   </div>
 
-                  <h3 class="card-title">{item.title}</h3>
+                  {/* Title */}
+                  <h3 class={`card-title ${config.largeFormat ? 'large' : ''}`}>{item.title}</h3>
 
-                  {item.category && (
-                    <span class="card-category" style={`background: ${categoryColor};`}>
-                      {item.category}
-                    </span>
+                  {/* Badges: Category, Year, Statuses */}
+                  {(config.showCategory || config.showYear || config.showAllStatuses) && (
+                    <div class="card-badges">
+                      {config.showCategory && item.category && (
+                        <span class="card-category" style={`background: ${categoryColor};`}>
+                          {item.category}
+                        </span>
+                      )}
+                      
+                      {config.showAllStatuses && allStatuses.length > 0 && (
+                        allStatuses.map(status => (
+                          <span class="card-status-badge">{status}</span>
+                        ))
+                      )}
+                    </div>
                   )}
 
-                  {item.description && (
+                  {/* Description */}
+                  {item.description && !config.hideDescription && (
                     <div 
-                      class={`card-description ${isContent ? 'collapsed' : ''}`}
+                      class={`card-description ${isContent && !config.largeFormat ? 'collapsed' : ''}`}
                       id={`desc-${index}`}
                     >
                       {item.description}
                     </div>
                   )}
 
+                  {/* Metadata section */}
+                  {(config.showSource || config.showPeople || config.showUpdated) && (
+                    <div class="card-metadata">
+                      {config.showSource && item.sourceAttribution && (
+                        <div class="metadata-row">
+                          <span class="metadata-icon">👤</span>
+                          <div>
+                            <span class="metadata-label">Source:</span>
+                            {item.sourceAttribution}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {config.showPeople && item.relatedPeople && (
+                        <div class="metadata-row">
+                          <span class="metadata-icon">👥</span>
+                          <div>
+                            <span class="metadata-label">Related People:</span>
+                            {item.relatedPeople}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {config.showUpdated && item.lastEditedTime && (
+                        <div class="metadata-row">
+                          <span class="metadata-icon">📅</span>
+                          <div>
+                            <span class="metadata-label">Updated:</span>
+                            {formatDate(item.lastEditedTime)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Action buttons */}
                   <div class="card-actions">
-                    {isContent ? (
+                    {isContent && !config.largeFormat ? (
                       <button 
                         class="btn btn-outline" 
                         onclick={`
@@ -596,13 +880,9 @@ const documentItems = allHistoryItems.filter(
             <div class="document-icon">📄</div>
             <div class="document-content">
               <h3 class="document-title">{doc.title}</h3>
-              {doc.yearEra && (
+              {doc.lastEditedTime && (
                 <div class="document-meta">
-                  📅 Last updated: {new Date(doc.yearEra).toLocaleDateString('en-AU', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
+                  📅 Last updated: {formatDate(doc.lastEditedTime)}
                   {doc.sourceAttribution && ` • 👤 ${doc.sourceAttribution}`}
                 </div>
               )}
