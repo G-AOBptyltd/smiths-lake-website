@@ -1,542 +1,379 @@
----
-// Groups & Activities Index Page - Enhanced with Event Frequency & Event Cycle
-import Layout from '../../layouts/BaseLayout.astro';
-import CategoryBadge from '../../components/CategoryBadge.astro';
-import StatusBadge from '../../components/StatusBadge.astro';
-import { fetchItemsBySection } from '../../lib/notion-unified.js';
+// Unified Notion Library for PPCA Website
+// Fetches content from single unified database with proper field handling
+// FIXED: Handles Status field as both multi-select (array) and status (string) types
 
-// Fetch all Groups & Activities items
-const items = await fetchItemsBySection('Groups & Activities');
+import { Client } from '@notionhq/client';
+import fs from 'fs';
+import path from 'path';
 
-// Category emoji mapping
-const categoryEmojis = {
-  Sports: '⚽',
-  'Arts & Culture': '🎨',
-  Hobbies: '🌱',
-  Social: '☕',
-  Service: '🤝',
-};
+const notion = new Client({
+  auth: process.env.NOTION_API_KEY,
+});
 
-// Used to avoid circular links in "Info / Docs"
-const CURRENT_PATH = '/groups';
+const DATABASE_ID = process.env.NOTION_DATABASE_ID;
+const CACHE_DIR = path.join(process.cwd(), '.cache');
+const CACHE_FILE = path.join(CACHE_DIR, 'notion-data.json');
 
-function normalizePathname(p) {
-  return (p || '').split('#')[0].replace(/\/+$/, '');
+// Ensure cache directory exists
+if (!fs.existsSync(CACHE_DIR)) {
+  fs.mkdirSync(CACHE_DIR, { recursive: true });
 }
 
-function isCircularDocLink(url) {
-  if (!url || typeof url !== 'string') return false;
-
-  // Relative URLs
-  if (url.startsWith('/')) {
-    return normalizePathname(url) === CURRENT_PATH;
+/**
+ * Helper: safely get the first existing property from a list of candidate names
+ */
+function getFirstExistingProp(props, candidates = []) {
+  for (const key of candidates) {
+    if (props?.[key]) return props[key];
   }
+  return null;
+}
 
-  // Absolute URLs
+/**
+ * Parse Notion property to usable value
+ */
+function parseProperty(property) {
+  if (!property) return null;
+
+  switch (property.type) {
+    case 'title':
+      return property.title?.[0]?.plain_text || '';
+    case 'rich_text':
+      return property.rich_text?.[0]?.plain_text || '';
+    case 'select':
+      return property.select?.name || null;
+    case 'multi_select':
+      return property.multi_select?.map((s) => s.name) || [];
+    case 'status':
+      return property.status?.name || null;
+    case 'checkbox':
+      return property.checkbox || false;
+    case 'number':
+      return property.number ?? null;
+    case 'url':
+      return property.url || null;
+    case 'email':
+      return property.email || null;
+    case 'phone_number':
+      return property.phone_number || null;
+    case 'date':
+      return property.date?.start || null;
+    case 'formula':
+      if (property.formula?.type === 'string') return property.formula.string || '';
+      if (property.formula?.type === 'number') return property.formula.number ?? null;
+      if (property.formula?.type === 'boolean') return property.formula.boolean || false;
+      return null;
+    case 'created_time':
+      return property.created_time || null;
+    case 'last_edited_time':
+      return property.last_edited_time || null;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Normalize Status field - handles both multi-select (array) and status (string) field types
+ * The Status field in Notion is configured as multi-select, which returns ['Active'] instead of 'Active'
+ * This function normalizes it to always return a string
+ */
+function normalizeStatus(statusValue) {
+  if (!statusValue) return null;
+  
+  // If it's an array (multi-select), take the first value
+  if (Array.isArray(statusValue)) {
+    return statusValue.length > 0 ? statusValue[0] : null;
+  }
+  
+  // Otherwise return as-is (should be a string)
+  return statusValue;
+}
+
+/**
+ * Parse Notion page to content item
+ */
+function parseNotionPage(page) {
+  const props = page.properties || {};
+
+  // Parse and normalize Status field
+  const rawStatus = parseProperty(props.Status);
+  const status = normalizeStatus(rawStatus);
+
+  // ✅ Robust Groups Info/Docs link mapping
+  const groupInfoDocProp = getFirstExistingProp(props, [
+    'Group Info Document',
+    'Group Info Document URL',
+    'Group Info Doc',
+    'Info / Docs',
+    'Info Docs Link',
+  ]);
+
+  return {
+    id: page.id,
+
+    // Core fields
+    title: parseProperty(props.Title),
+    section: parseProperty(props.Section),
+    category: parseProperty(props.Category),
+    description: parseProperty(props.Description),
+    status: status, // Normalized status (always string or null, never array)
+    showOnWebsite: parseProperty(props['Show on Website']),
+    slug: parseProperty(props.Slug),
+    priorityOrder: parseProperty(props['Priority Order']) || 999,
+    notes: parseProperty(props.Notes),
+
+    // Meeting fields
+    meetingDay: parseProperty(props['Meeting Day']),
+    meetingTime: parseProperty(props['Meeting Time']),
+    meetingLocation: parseProperty(props['Meeting Location']),
+    
+    // Event scheduling fields
+    eventFrequency: parseProperty(props['Event Frequency']),
+    eventCycle: parseProperty(props['Event Cycle']),
+
+    // Contact fields
+    contactPerson: parseProperty(props['Contact Person']),
+    contactEmail: parseProperty(props['Contact Email']),
+    contactPhone: parseProperty(props['Contact Phone']),
+    showContactPublicly: parseProperty(props['Show Contact Publicly']),
+
+    // Link fields
+    websiteUrl: parseProperty(props['Website URL']),
+    facebookUrl: parseProperty(props['Facebook URL']),
+
+    // Groups - per-card info/docs link
+    groupInfoDocumentUrl: parseProperty(groupInfoDocProp),
+
+    // Document fields
+    driveFolderId: parseProperty(props['Google Drive Folder ID']),
+    logoFilename: parseProperty(props['Logo Filename']),
+
+    // Emergency fields
+    emergencyPhone: parseProperty(props['Emergency Phone']),
+    alertLevel: parseProperty(props['Alert Level']),
+
+    // Service fields
+    serviceType: parseProperty(props['Service Type']),
+    operatingHours: parseProperty(props['Operating Hours']),
+    address: parseProperty(props['Address']),
+    accessibilityInfo: parseProperty(props['Accessibility Info']),
+    accessibilityFeatures: parseProperty(props['Accessibility Info']),
+
+    // Environment fields
+    conservationStatus: parseProperty(props['Conservation Status']),
+    locationArea: parseProperty(props['Location Area']),
+    season: parseProperty(props['Season']),
+    partnerOrganisations: parseProperty(props['Partner Organisations']),
+
+    // History fields
+    yearEra: parseProperty(props['Year Era']),
+    historicalCategory: parseProperty(props['Historical Category']),
+    sourceAttribution: parseProperty(props['Source Attribution']),
+    relatedPeople: parseProperty(props['Related People']),
+
+    // Timestamps
+    createdTime: parseProperty(props['Created Time']),
+    lastEditedTime: parseProperty(props['Last Edited Time']),
+  };
+}
+
+/**
+ * Fetch all items from unified database with optional filters
+ */
+export async function fetchNotionContent(filters = {}) {
   try {
-    const u = new URL(url);
-    return normalizePathname(u.pathname || '') === CURRENT_PATH;
-  } catch {
-    return false;
-  }
-}
-
-function getSafeDocLink(url) {
-  if (!url || typeof url !== 'string') return null;
-  if (isCircularDocLink(url)) return null;
-  return url;
-}
-
-// Helper function to format meeting schedule from Event Frequency and Event Cycle
-function formatMeetingSchedule(group) {
-  const parts = [];
-  
-  // If Event Frequency exists, use it (e.g., "Weekly", "Monthly", "Fortnightly")
-  if (group.eventFrequency) {
-    parts.push(group.eventFrequency);
-  }
-  
-  // If Event Cycle exists, add it (e.g., "Thursday", "First Monday")
-  if (group.eventCycle) {
-    if (parts.length > 0) {
-      parts.push(`on ${group.eventCycle}`);
-    } else {
-      parts.push(group.eventCycle);
+    // Build filter conditions dynamically
+    const filterConditions = [];
+    
+    // Filter by "Show on Website" (default: true)
+    if (filters.requireShowOnWebsite !== false) {
+      filterConditions.push({
+        property: 'Show on Website',
+        select: {
+          equals: 'TRUE',
+        },
+      });
     }
-  }
-  
-  // Add meeting time if available
-  if (group.meetingTime) {
-    parts.push(`at ${group.meetingTime}`);
-  }
-  
-  // Fallback to legacy meetingDay field if no new fields exist
-  if (parts.length === 0 && group.meetingDay) {
-    parts.push(group.meetingDay);
-    if (group.meetingTime) {
-      parts.push(`at ${group.meetingTime}`);
+
+    // Add section filter
+    if (filters.section) {
+      filterConditions.push({
+        property: 'Section',
+        select: {
+          equals: filters.section,
+        },
+      });
     }
-  }
-  
-  return parts.join(' ');
-}
 
-// Build section groups, then enrich each group with safe links + footer flags
-const categoryDefs = [
-  { key: 'Sports', title: 'Sports & Recreation' },
-  { key: 'Arts & Culture', title: 'Arts & Culture' },
-  { key: 'Hobbies', title: 'Hobbies & Interests' },
-  { key: 'Social', title: 'Social & Community' },
-  { key: 'Service', title: 'Community Service' },
-];
+    // Add category filter
+    if (filters.category) {
+      filterConditions.push({
+        property: 'Category',
+        select: {
+          equals: filters.category,
+        },
+      });
+    }
 
-const sections = categoryDefs
-  .map((def) => {
-    const raw = items.filter((i) => i.category === def.key);
+    // NOTE: We don't filter by Status in the Notion API query
+    // because Status is a multi-select field, and Notion's API
+    // doesn't support filtering multi-select with status.equals
+    // Instead, we fetch all matching items and filter by status after parsing
 
-    const enriched = raw.map((g) => {
-      const safeDocLink = getSafeDocLink(g.groupInfoDocumentUrl);
-      const meetingSchedule = formatMeetingSchedule(g);
+    const notionFilter = filterConditions.length > 0 
+      ? { and: filterConditions }
+      : undefined;
 
-      const hasFooterLinks = Boolean(
-        (g.contactEmail && g.showContactPublicly) ||
-          safeDocLink ||
-          g.websiteUrl ||
-          g.facebookUrl
-      );
-
-      return {
-        ...g,
-        _safeDocLink: safeDocLink,
-        _hasFooterLinks: hasFooterLinks,
-        _meetingSchedule: meetingSchedule,
-      };
+    const response = await notion.databases.query({
+      database_id: DATABASE_ID,
+      filter: notionFilter,
+      sorts: [
+        {
+          property: 'Priority Order',
+          direction: 'ascending',
+        },
+      ],
     });
 
-    return { ...def, items: enriched };
-  })
-  .filter((s) => s.items.length > 0);
----
+    let items = response.results.map(parseNotionPage);
 
-<Layout title="Groups & Activities" description="Join our vibrant community through clubs, groups, and volunteering">
-  <style>
-    .groups-page { background: #f7f9fc; }
-
-    /* Hero Section */
-    .groups-hero {
-      background: linear-gradient(135deg, rgba(27, 54, 93, 0.95), rgba(91, 155, 213, 0.85)),
-                  url('/images/smiths-lake-aerial.jpg') center/cover;
-      color: white;
-      padding: 5rem 1rem;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
+    // Apply status filter after parsing (now that status is normalized to string)
+    if (filters.status) {
+      if (Array.isArray(filters.status)) {
+        // Multiple accepted statuses
+        items = items.filter(item => filters.status.includes(item.status));
+      } else {
+        // Single status
+        items = items.filter(item => item.status === filters.status);
+      }
     }
 
-    .groups-hero::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 50%;
-      height: 100%;
-      background: repeating-linear-gradient(
-        -60deg,
-        transparent,
-        transparent 10px,
-        rgba(255, 255, 255, 0.03) 10px,
-        rgba(255, 255, 255, 0.03) 20px
+    // Cache the results
+    try {
+      fs.writeFileSync(
+        CACHE_FILE,
+        JSON.stringify(
+          {
+            timestamp: new Date().toISOString(),
+            data: items,
+            filters: filters,
+          },
+          null,
+          2
+        )
       );
+    } catch (cacheError) {
+      console.warn('Failed to write cache:', cacheError.message);
     }
 
-    .hero-content {
-      position: relative;
-      z-index: 1;
-      max-width: 800px;
-      margin: 0 auto;
+    return items;
+  } catch (error) {
+    console.error('Error fetching from Notion:', error.message);
+
+    // Try to use cached data
+    if (fs.existsSync(CACHE_FILE)) {
+      console.log('Using cached Notion data');
+      const cached = JSON.parse(fs.readFileSync(CACHE_FILE, 'utf-8'));
+
+      let data = cached.data || [];
+      
+      // Apply filters to cached data
+      if (filters.section) {
+        data = data.filter((item) => item.section === filters.section);
+      }
+      if (filters.category) {
+        data = data.filter((item) => item.category === filters.category);
+      }
+      if (filters.status) {
+        if (Array.isArray(filters.status)) {
+          data = data.filter((item) => filters.status.includes(item.status));
+        } else {
+          data = data.filter((item) => item.status === filters.status);
+        }
+      }
+      if (filters.requireShowOnWebsite !== false) {
+        data = data.filter((item) => item.showOnWebsite === 'TRUE');
+      }
+
+      return data;
     }
 
-    .groups-hero h1 {
-      color: white;
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      font-weight: 700;
-    }
+    throw error;
+  }
+}
 
-    .groups-hero p {
-      font-size: 1.25rem;
-      opacity: 0.95;
-      line-height: 1.6;
-    }
+/**
+ * Fetch items by section (default: requires Show on Website = TRUE)
+ */
+export async function fetchItemsBySection(sectionName) {
+  return fetchNotionContent({ section: sectionName });
+}
 
-    /* Intro Section */
-    .intro-section {
-      max-width: 1200px;
-      margin: 3rem auto;
-      padding: 0 1rem;
-      text-align: center;
-    }
+/**
+ * Fetch items by section and category
+ */
+export async function fetchItemsBySectionAndCategory(sectionName, categoryName) {
+  return fetchNotionContent({ section: sectionName, category: categoryName });
+}
 
-    .intro-section p {
-      font-size: 1.125rem;
-      color: #4b5563;
-      line-height: 1.8;
-      max-width: 900px;
-      margin: 0 auto;
-    }
+/**
+ * Fetch items by section with multiple accepted statuses
+ * This is the key function for Groups & Activities!
+ */
+export async function fetchItemsBySectionWithStatuses(sectionName, acceptedStatuses) {
+  return fetchNotionContent({ 
+    section: sectionName,
+    status: acceptedStatuses
+  });
+}
 
-    /* Content Sections */
-    .content-section {
-      max-width: 1200px;
-      margin: 0 auto 4rem;
-      padding: 0 1rem;
-    }
+/**
+ * Fetch item by slug
+ */
+export async function fetchItemBySlug(slug) {
+  const allItems = await fetchNotionContent({ requireShowOnWebsite: false });
+  return allItems.find((item) => item.slug === slug);
+}
 
-    .category-section { margin-bottom: 4rem; }
+/**
+ * Get all slugs for static page generation
+ */
+export async function getAllSlugs() {
+  const items = await fetchNotionContent();
+  return items.map((item) => ({
+    slug: item.slug,
+    section: item.section,
+    category: item.category,
+  }));
+}
 
-    .category-header {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 3px solid #1B365D;
-    }
+/**
+ * Check for emergency alerts
+ */
+export async function checkEmergencyAlerts() {
+  const emergencyItems = await fetchItemsBySection('Emergency & Safety');
 
-    .category-icon { font-size: 2.5rem; }
+  const alerts = emergencyItems
+    .filter((item) => item.alertLevel && item.alertLevel !== 'Normal')
+    .sort((a, b) => {
+      const priority = { Emergency: 3, Warning: 2, Watch: 1 };
+      return (priority[b.alertLevel] || 0) - (priority[a.alertLevel] || 0);
+    });
 
-    .category-header h2 {
-      color: #1B365D;
-      font-size: 1.75rem;
-      margin: 0;
-    }
+  if (alerts.length === 0) return null;
 
-    /* Card Grid */
-    .groups-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 2rem;
-    }
+  return {
+    level: alerts[0].alertLevel,
+    items: alerts,
+  };
+}
 
-    /* Group Card */
-    .group-card {
-      background: white;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      transition: all 0.3s ease;
-      border-top: 4px solid #5B9BD5;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-    }
-
-    .group-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    }
-
-    .card-header {
-      padding: 1.5rem;
-      border-bottom: 1px solid #f3f4f6;
-    }
-
-    .card-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #1B365D;
-      margin: 0 0 0.75rem 0;
-      line-height: 1.3;
-    }
-
-    .card-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-
-    .card-body {
-      padding: 1.5rem;
-      flex: 1;
-    }
-
-    .card-description {
-      color: #4b5563;
-      line-height: 1.6;
-      margin-bottom: 1.25rem;
-    }
-
-    .card-details {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .detail-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-      font-size: 0.9375rem;
-    }
-
-    .detail-icon {
-      flex-shrink: 0;
-      width: 20px;
-      color: #5B9BD5;
-      font-size: 1rem;
-    }
-
-    .detail-content { flex: 1; color: #374151; }
-
-    .detail-label {
-      font-weight: 600;
-      color: #1B365D;
-      margin-right: 0.25rem;
-    }
-
-    /* Frequency badge styling */
-    .frequency-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.25rem 0.75rem;
-      background: #F5A623;
-      color: white;
-      border-radius: 12px;
-      font-size: 0.8125rem;
-      font-weight: 600;
-    }
-
-    .card-footer {
-      padding: 1rem 1.5rem;
-      background: #f9fafb;
-      border-top: 1px solid #e5e7eb;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .contact-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: #5B9BD5;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 0.9375rem;
-      transition: color 0.2s;
-    }
-
-    .contact-link:hover { color: #1B365D; }
-
-    .external-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: #5B9BD5;
-      color: white;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 0.875rem;
-      transition: background 0.2s;
-      white-space: nowrap;
-    }
-
-    .external-link:hover { background: #1B365D; }
-
-    /* Doc link button */
-    .doc-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: white;
-      color: #1B365D;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: 700;
-      font-size: 0.875rem;
-      border: 2px solid #1B365D;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-
-    .doc-link:hover { background: #1B365D; color: white; }
-
-    /* CTA Box */
-    .cta-box {
-      background: linear-gradient(135deg, #5B9BD5, #1B365D);
-      color: white;
-      padding: 3rem 2rem;
-      border-radius: 12px;
-      text-align: center;
-      max-width: 1200px;
-      margin: 4rem auto 0;
-      box-shadow: 0 8px 24px rgba(27, 54, 93, 0.2);
-    }
-
-    .cta-box h3 {
-      color: white;
-      font-size: 2rem;
-      margin-bottom: 1rem;
-    }
-
-    .cta-box p {
-      font-size: 1.125rem;
-      margin-bottom: 2rem;
-      opacity: 0.95;
-      line-height: 1.6;
-    }
-
-    .cta-button {
-      display: inline-block;
-      background: white;
-      color: #1B365D;
-      padding: 1rem 2.5rem;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: bold;
-      font-size: 1.0625rem;
-      transition: all 0.2s;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .cta-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    .no-groups {
-      text-align: center;
-      padding: 3rem;
-      color: #6b7280;
-      font-style: italic;
-    }
-
-    @media (max-width: 768px) {
-      .groups-hero h1 { font-size: 2rem; }
-      .groups-hero p { font-size: 1rem; }
-      .groups-grid { grid-template-columns: 1fr; }
-      .category-header { flex-direction: column; align-items: flex-start; }
-    }
-  </style>
-
-  <div class="groups-page">
-    <div class="groups-hero">
-      <div class="hero-content">
-        <h1>Groups & Activities</h1>
-        <p>Join our vibrant community through clubs, groups, and volunteering.</p>
-      </div>
-    </div>
-
-    <div class="intro-section">
-      <p>
-        Smiths Lake and the Pacific Palms area have a rich community life with groups catering to all interests.
-        Whether you're into sports, arts, gardening, or community service, there's something for everyone.
-      </p>
-    </div>
-
-    <div class="content-section">
-      {sections.length > 0 ? (
-        sections.map((section) => (
-          <div class="category-section">
-            <div class="category-header">
-              <span class="category-icon">{categoryEmojis[section.key] || '🌟'}</span>
-              <h2>{section.title}</h2>
-            </div>
-
-            <div class="groups-grid">
-              {section.items.map((group) => (
-                <div class="group-card">
-                  <div class="card-header">
-                    <h3 class="card-title">{group.title}</h3>
-                    <div class="card-badges">
-                      <CategoryBadge category={group.category} size="sm" />
-                      {group.status && <StatusBadge status={group.status} />}
-                      {group.eventFrequency && (
-                        <span class="frequency-badge">
-                          🔄 {group.eventFrequency}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div class="card-body">
-                    {group.description && <p class="card-description">{group.description}</p>}
-
-                    <div class="card-details">
-                      {group._meetingSchedule && (
-                        <div class="detail-row">
-                          <span class="detail-icon">📅</span>
-                          <div class="detail-content">
-                            <span class="detail-label">Schedule:</span>
-                            {group._meetingSchedule}
-                          </div>
-                        </div>
-                      )}
-
-                      {group.meetingLocation && (
-                        <div class="detail-row">
-                          <span class="detail-icon">📍</span>
-                          <div class="detail-content">
-                            <span class="detail-label">Location:</span>
-                            {group.meetingLocation}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {group._hasFooterLinks && (
-                    <div class="card-footer">
-                      {group.contactEmail && group.showContactPublicly && (
-                        <a href={`mailto:${group.contactEmail}`} class="contact-link">
-                          ✉️ Contact
-                        </a>
-                      )}
-
-                      {group._safeDocLink && (
-                        <a href={group._safeDocLink} target="_blank" rel="noopener" class="doc-link">
-                          📄 Info / Docs →
-                        </a>
-                      )}
-
-                      {group.websiteUrl && (
-                        <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
-                          Visit Website →
-                        </a>
-                      )}
-
-                      {group.facebookUrl && !group.websiteUrl && (
-                        <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
-                          Facebook →
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        ))
-      ) : (
-        <div class="no-groups">
-          <p>Groups information is being updated. Check back soon.</p>
-        </div>
-      )}
-
-      <div class="cta-box">
-        <h3>Want to Start a New Group?</h3>
-        <p>
-          We're always looking to expand our community offerings. If you have an idea for a new group or activity,
-          we'd love to hear from you!
-        </p>
-        <a href="/contact" class="cta-button">Get in Touch</a>
-      </div>
-    </div>
-  </div>
-</Layout>
+export default {
+  fetchNotionContent,
+  fetchItemsBySection,
+  fetchItemsBySectionAndCategory,
+  fetchItemsBySectionWithStatuses,
+  fetchItemBySlug,
+  getAllSlugs,
+  checkEmergencyAlerts,
+};
