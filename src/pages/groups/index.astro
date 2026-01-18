@@ -1,14 +1,24 @@
 ---
-// Groups & Activities Index Page - Fixed Syntax
+// Groups & Activities Index Page - Complete Card Template System with Icon Headers
 import Layout from '../../layouts/BaseLayout.astro';
-import CategoryBadge from '../../components/CategoryBadge.astro';
-import StatusBadge from '../../components/StatusBadge.astro';
-import { fetchItemsBySection } from '../../lib/notion-unified.js';
+import { fetchNotionContent } from '../../lib/notion-unified.js';
 
 // Fetch all Groups & Activities items
-const items = await fetchItemsBySection('Groups & Activities');
+const allItems = await fetchNotionContent({ 
+  section: 'Groups & Activities',
+  requireShowOnWebsite: true
+});
 
-// Category emoji mapping - MUST MATCH EXACT NOTION CATEGORY NAMES
+// Filter for published/active items
+const items = allItems.filter(item => {
+  const acceptedStatuses = ['Published', 'Active'];
+  if (Array.isArray(item.status)) {
+    return item.status.some(s => acceptedStatuses.includes(s));
+  }
+  return acceptedStatuses.includes(item.status);
+});
+
+// Category emoji mapping
 const categoryEmojis = {
   'Sports & Exercise': '⚽',
   'Art & Culture': '🎨',
@@ -59,25 +69,7 @@ const categoryDefs = [
 const sections = categoryDefs
   .map((def) => {
     const raw = items.filter((i) => i.category === def.key);
-
-    const enriched = raw.map((g) => {
-      const meetingSchedule = formatMeetingSchedule(g);
-
-      const hasFooterLinks = Boolean(
-        (g.contactEmail && g.showContactPublicly) ||
-          g.groupInfoDocumentUrl ||
-          g.websiteUrl ||
-          g.facebookUrl
-      );
-
-      return {
-        ...g,
-        _hasFooterLinks: hasFooterLinks,
-        _meetingSchedule: meetingSchedule,
-      };
-    });
-
-    return { ...def, items: enriched };
+    return { ...def, items: raw };
   })
   .filter((s) => s.items.length > 0);
 ---
@@ -86,31 +78,13 @@ const sections = categoryDefs
   <style>
     .groups-page { background: #f7f9fc; }
 
-    /* Hero Section */
+    /* Hero Section - Purple/Blue Gradient */
     .groups-hero {
-      background: linear-gradient(135deg, rgba(27, 54, 93, 0.95), rgba(91, 155, 213, 0.85)),
-                  url('/images/smiths-lake-aerial.jpg') center/cover;
+      background: linear-gradient(135deg, #7C3AED 0%, #5B9BD5 100%);
       color: white;
-      padding: 5rem 1rem;
+      padding: 4rem 1rem;
       text-align: center;
       position: relative;
-      overflow: hidden;
-    }
-
-    .groups-hero::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 50%;
-      height: 100%;
-      background: repeating-linear-gradient(
-        -60deg,
-        transparent,
-        transparent 10px,
-        rgba(255, 255, 255, 0.03) 10px,
-        rgba(255, 255, 255, 0.03) 20px
-      );
     }
 
     .hero-content {
@@ -164,7 +138,7 @@ const sections = categoryDefs
       gap: 1rem;
       margin-bottom: 2rem;
       padding-bottom: 1rem;
-      border-bottom: 3px solid #1B365D;
+      border-bottom: 3px solid #7C3AED;
     }
 
     .category-icon { font-size: 2.5rem; }
@@ -189,15 +163,47 @@ const sections = categoryDefs
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       transition: all 0.3s ease;
-      border-top: 4px solid #5B9BD5;
       display: flex;
       flex-direction: column;
       height: 100%;
     }
 
+    .group-card.no-icon-header {
+      border-top: 4px solid #7C3AED;
+    }
+
     .group-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .group-card.featured {
+      border: 3px solid #F5A623;
+      background: linear-gradient(to bottom, #FFF9E6 0%, white 100%);
+    }
+
+    .group-card.highlighted {
+      border-left: 4px solid #F5A623;
+    }
+
+    /* Icon Header */
+    .card-icon-header {
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100px;
+    }
+
+    .card-icon-header.red { background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%); }
+    .card-icon-header.blue { background: linear-gradient(135deg, #5B9BD5 0%, #7BB3E0 100%); }
+    .card-icon-header.green { background: linear-gradient(135deg, #16A34A 0%, #22C55E 100%); }
+    .card-icon-header.orange { background: linear-gradient(135deg, #F5A623 0%, #FB923C 100%); }
+    .card-icon-header.purple { background: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%); }
+    .card-icon-header.gray { background: linear-gradient(135deg, #4B5563 0%, #6B7280 100%); }
+
+    .card-icon-header .icon-display {
+      font-size: 3rem;
     }
 
     .card-header {
@@ -219,125 +225,96 @@ const sections = categoryDefs
       gap: 0.5rem;
     }
 
-    .frequency-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
+    .badge {
+      display: inline-block;
       padding: 0.25rem 0.75rem;
-      background: #F5A623;
-      color: white;
       border-radius: 12px;
-      font-size: 0.8125rem;
+      font-size: 0.75rem;
       font-weight: 600;
+      white-space: nowrap;
     }
+
+    .badge.category { background: #EDE9FE; color: #6B21A8; }
+    .badge.status-published { background: #D1FAE5; color: #065F46; }
+    .badge.status-active { background: #DBEAFE; color: #1E40AF; }
+    .badge.frequency { background: #F5A623; color: white; }
 
     .card-body {
       padding: 1.5rem;
       flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .card-description {
       color: #4b5563;
       line-height: 1.6;
       margin-bottom: 1.25rem;
+      flex: 1;
     }
 
-    .card-details {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
+    .card-metadata {
+      border-top: 1px solid #f3f4f6;
+      padding-top: 1rem;
+      margin-top: auto;
+      font-size: 0.875rem;
     }
 
-    .detail-row {
+    .meta-row {
       display: flex;
       align-items: flex-start;
-      gap: 0.75rem;
-      font-size: 0.9375rem;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      color: #6B7280;
     }
 
-    .detail-icon {
-      flex-shrink: 0;
-      width: 20px;
-      color: #5B9BD5;
+    .meta-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .meta-icon {
       font-size: 1rem;
+      flex-shrink: 0;
     }
 
-    .detail-content { flex: 1; color: #374151; }
-
-    .detail-label {
+    .meta-label {
       font-weight: 600;
       color: #1B365D;
-      margin-right: 0.25rem;
     }
 
-    .card-footer {
-      padding: 1rem 1.5rem;
-      background: #f9fafb;
-      border-top: 1px solid #e5e7eb;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .contact-link {
+    .card-link {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      color: #5B9BD5;
+      color: #7C3AED;
       text-decoration: none;
       font-weight: 600;
-      font-size: 0.9375rem;
+      margin-top: 1rem;
       transition: color 0.2s;
     }
 
-    .contact-link:hover { color: #1B365D; }
-
-    .external-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: #5B9BD5;
-      color: white;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 0.875rem;
-      transition: background 0.2s;
-      white-space: nowrap;
+    .card-link:hover {
+      color: #5B21A8;
     }
 
-    .external-link:hover { background: #1B365D; }
-
-    .doc-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: white;
-      color: #1B365D;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: 700;
-      font-size: 0.875rem;
-      border: 2px solid #1B365D;
-      transition: all 0.2s;
-      white-space: nowrap;
+    .card-link::after {
+      content: '→';
+      transition: transform 0.2s;
     }
 
-    .doc-link:hover { background: #1B365D; color: white; }
+    .card-link:hover::after {
+      transform: translateX(4px);
+    }
 
     .cta-box {
-      background: linear-gradient(135deg, #5B9BD5, #1B365D);
+      background: linear-gradient(135deg, #7C3AED, #5B9BD5);
       color: white;
       padding: 3rem 2rem;
       border-radius: 12px;
       text-align: center;
       max-width: 1200px;
       margin: 4rem auto 0;
-      box-shadow: 0 8px 24px rgba(27, 54, 93, 0.2);
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.2);
     }
 
     .cta-box h3 {
@@ -356,7 +333,7 @@ const sections = categoryDefs
     .cta-button {
       display: inline-block;
       background: white;
-      color: #1B365D;
+      color: #7C3AED;
       padding: 1rem 2.5rem;
       border-radius: 8px;
       text-decoration: none;
@@ -411,76 +388,126 @@ const sections = categoryDefs
             </div>
 
             <div class="groups-grid">
-              {section.items.map((group) => (
-                <div class="group-card">
-                  <div class="card-header">
-                    <h3 class="card-title">{group.title}</h3>
-                    <div class="card-badges">
-                      <CategoryBadge category={group.category} size="sm" />
-                      {group.status && <StatusBadge status={group.status} />}
-                      {group.eventFrequency && (
-                        <span class="frequency-badge">
-                          🔄 {group.eventFrequency}
-                        </span>
-                      )}
+              {section.items.map((group) => {
+                // Determine card template and options
+                const template = group.cardTemplate || 'Standard';
+                const options = group.cardOptions || [];
+                
+                // Build configuration
+                const config = {
+                  showIconHeader: options.includes('Show Icon Header'),
+                  headerColor: options.includes('Red Header') ? 'red' :
+                               options.includes('Blue Header') ? 'blue' :
+                               options.includes('Green Header') ? 'green' :
+                               options.includes('Orange Header') ? 'orange' :
+                               options.includes('Purple Header') ? 'purple' :
+                               options.includes('Gray Header') ? 'gray' : 'purple', // Default to section color
+                  showSource: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Source'),
+                  showPeople: template === 'Detailed' || template === 'Featured' || options.includes('Show People'),
+                  showUpdated: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Updated Date'),
+                  showAllStatuses: template === 'Detailed' || template === 'Featured' || options.includes('Show All Statuses'),
+                  isHighlighted: options.includes('Highlight Card'),
+                  isFeatured: template === 'Featured',
+                  hideDescription: options.includes('Hide Description')
+                };
+
+                const meetingSchedule = formatMeetingSchedule(group);
+
+                return (
+                  <article class={`group-card ${config.isFeatured ? 'featured' : ''} ${config.isHighlighted ? 'highlighted' : ''} ${!config.showIconHeader ? 'no-icon-header' : ''}`}>
+                    
+                    {config.showIconHeader && (
+                      <div class={`card-icon-header ${config.headerColor}`}>
+                        <span class="icon-display">👥</span>
+                      </div>
+                    )}
+
+                    <div class="card-header">
+                      <h3 class="card-title">{group.title}</h3>
+                      <div class="card-badges">
+                        {group.category && (
+                          <span class="badge category">{group.category}</span>
+                        )}
+                        {Array.isArray(group.status) ? (
+                          config.showAllStatuses ? 
+                            group.status.map(s => (
+                              <span class={`badge status-${s.toLowerCase()}`}>{s}</span>
+                            )) :
+                            <span class={`badge status-${group.status[0].toLowerCase()}`}>{group.status[0]}</span>
+                        ) : group.status && (
+                          <span class={`badge status-${group.status.toLowerCase()}`}>{group.status}</span>
+                        )}
+                        {group.eventFrequency && (
+                          <span class="badge frequency">🔄 {group.eventFrequency}</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <div class="card-body">
-                    {group.description && <p class="card-description">{group.description}</p>}
+                    <div class="card-body">
+                      {!config.hideDescription && group.description && (
+                        <p class="card-description">{group.description}</p>
+                      )}
 
-                    <div class="card-details">
-                      {group._meetingSchedule && (
-                        <div class="detail-row">
-                          <span class="detail-icon">📅</span>
-                          <div class="detail-content">
-                            <span class="detail-label">Schedule:</span>
-                            {group._meetingSchedule}
-                          </div>
+                      {(meetingSchedule || group.meetingLocation || (group.contactEmail && group.showContactPublicly === 'TRUE') || config.showSource || config.showPeople || config.showUpdated) && (
+                        <div class="card-metadata">
+                          {meetingSchedule && (
+                            <div class="meta-row">
+                              <span class="meta-icon">📅</span>
+                              <span><span class="meta-label">Schedule:</span> {meetingSchedule}</span>
+                            </div>
+                          )}
+
+                          {group.meetingLocation && (
+                            <div class="meta-row">
+                              <span class="meta-icon">📍</span>
+                              <span><span class="meta-label">Location:</span> {group.meetingLocation}</span>
+                            </div>
+                          )}
+
+                          {group.contactEmail && group.showContactPublicly === 'TRUE' && (
+                            <div class="meta-row">
+                              <span class="meta-icon">✉️</span>
+                              <span><a href={`mailto:${group.contactEmail}`}>{group.contactEmail}</a></span>
+                            </div>
+                          )}
+
+                          {config.showSource && group.sourceAttribution && (
+                            <div class="meta-row">
+                              <span class="meta-icon">👤</span>
+                              <span><span class="meta-label">Source:</span> {group.sourceAttribution}</span>
+                            </div>
+                          )}
+
+                          {config.showPeople && group.relatedPeople && (
+                            <div class="meta-row">
+                              <span class="meta-icon">👥</span>
+                              <span><span class="meta-label">People:</span> {group.relatedPeople}</span>
+                            </div>
+                          )}
+
+                          {config.showUpdated && group.lastEditedTime && (
+                            <div class="meta-row">
+                              <span class="meta-icon">📅</span>
+                              <span><span class="meta-label">Updated:</span> {new Date(group.lastEditedTime).toLocaleDateString('en-AU')}</span>
+                            </div>
+                          )}
                         </div>
                       )}
 
-                      {group.meetingLocation && (
-                        <div class="detail-row">
-                          <span class="detail-icon">📍</span>
-                          <div class="detail-content">
-                            <span class="detail-label">Location:</span>
-                            {group.meetingLocation}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {group._hasFooterLinks && (
-                    <div class="card-footer">
-                      {group.contactEmail && group.showContactPublicly && (
-                        <a href={'mailto:' + group.contactEmail} class="contact-link">
-                          ✉️ Contact
-                        </a>
-                      )}
-
-                      {group.groupInfoDocumentUrl && (
-                        <a href={group.groupInfoDocumentUrl} target="_blank" rel="noopener" class="doc-link">
-                          📄 Info / Docs →
-                        </a>
-                      )}
-
-                      {group.websiteUrl && (
-                        <a href={group.websiteUrl} target="_blank" rel="noopener" class="external-link">
-                          Visit Website →
-                        </a>
-                      )}
-
-                      {group.facebookUrl && !group.websiteUrl && (
-                        <a href={group.facebookUrl} target="_blank" rel="noopener" class="external-link">
-                          Facebook →
+                      {(group.websiteUrl || group.facebookUrl || group.groupInfoDocumentUrl || group.documentUrl) && (
+                        <a 
+                          href={group.websiteUrl || group.facebookUrl || group.groupInfoDocumentUrl || group.documentUrl} 
+                          class="card-link"
+                          target="_blank"
+                          rel="noopener"
+                        >
+                          {group.groupInfoDocumentUrl || group.documentUrl ? 'View Info' : group.facebookUrl ? 'Facebook' : 'Visit Website'}
                         </a>
                       )}
                     </div>
-                  )}
-                </div>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           </div>
         ))
