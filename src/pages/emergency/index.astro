@@ -1,5 +1,5 @@
 ---
-// Emergency & Safety Index Page - Card Template System
+// Emergency & Safety Index Page - Complete Card Template System with Icon Headers
 import Layout from '../../layouts/BaseLayout.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 
@@ -160,10 +160,13 @@ const categoryEmojis = {
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       transition: all 0.3s ease;
-      border-top: 4px solid #dc2626;
       display: flex;
       flex-direction: column;
       height: 100%;
+    }
+    
+    .item-card.no-icon-header {
+      border-top: 4px solid #dc2626;
     }
     
     .item-card:hover {
@@ -178,6 +181,26 @@ const categoryEmojis = {
     
     .item-card.highlighted {
       border-left: 4px solid #F5A623;
+    }
+    
+    /* Icon Header */
+    .card-icon-header {
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100px;
+    }
+    
+    .card-icon-header.red { background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%); }
+    .card-icon-header.blue { background: linear-gradient(135deg, #5B9BD5 0%, #7BB3E0 100%); }
+    .card-icon-header.green { background: linear-gradient(135deg, #16A34A 0%, #22C55E 100%); }
+    .card-icon-header.orange { background: linear-gradient(135deg, #F5A623 0%, #FB923C 100%); }
+    .card-icon-header.purple { background: linear-gradient(135deg, #9333EA 0%, #A855F7 100%); }
+    .card-icon-header.gray { background: linear-gradient(135deg, #4B5563 0%, #6B7280 100%); }
+    
+    .card-icon-header .icon-display {
+      font-size: 3rem;
     }
     
     .card-header {
@@ -366,6 +389,13 @@ const categoryEmojis = {
                 
                 // Build configuration
                 const config = {
+                  showIconHeader: options.includes('Show Icon Header'),
+                  headerColor: options.includes('Red Header') ? 'red' :
+                               options.includes('Blue Header') ? 'blue' :
+                               options.includes('Green Header') ? 'green' :
+                               options.includes('Orange Header') ? 'orange' :
+                               options.includes('Purple Header') ? 'purple' :
+                               options.includes('Gray Header') ? 'gray' : 'red', // Default to section color
                   showSource: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Source'),
                   showPeople: template === 'Detailed' || template === 'Featured' || options.includes('Show People'),
                   showUpdated: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Updated Date'),
@@ -378,7 +408,14 @@ const categoryEmojis = {
                 };
 
                 return (
-                  <article class={`item-card ${config.isFeatured ? 'featured' : ''} ${config.isHighlighted ? 'highlighted' : ''}`}>
+                  <article class={`item-card ${config.isFeatured ? 'featured' : ''} ${config.isHighlighted ? 'highlighted' : ''} ${!config.showIconHeader ? 'no-icon-header' : ''}`}>
+                    
+                    {config.showIconHeader && (
+                      <div class={`card-icon-header ${config.headerColor}`}>
+                        <span class="icon-display">🚨</span>
+                      </div>
+                    )}
+                    
                     <div class="card-header">
                       <h3 class="card-title">{item.title}</h3>
                       <div class="card-badges">
