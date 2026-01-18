@@ -1,16 +1,24 @@
 ---
-// Services Index Page - Beautiful Cards for Amenities + Status Register
+// Services Index Page - Card Template System
 import Layout from '../../layouts/BaseLayout.astro';
-import CategoryBadge from '../../components/CategoryBadge.astro';
-import StatusBadge from '../../components/StatusBadge.astro';
-import ProjectStatusRegister from '../../components/ProjectStatusRegister.astro';
-import DocumentLibrary from '../../components/DocumentLibrary.astro';
-import { fetchItemsBySection } from '../../lib/notion-unified.js';
+import { fetchNotionContent } from '../../lib/notion-unified.js';
 
-// Fetch all Services items
-const items = await fetchItemsBySection('Services');
+// Fetch Services items
+const allItems = await fetchNotionContent({ 
+  section: 'Services',
+  requireShowOnWebsite: true
+});
 
-// Group by service type - anything NOT an amenity is a project
+// Filter for published/active items
+const items = allItems.filter(item => {
+  const acceptedStatuses = ['Published', 'Active'];
+  if (Array.isArray(item.status)) {
+    return item.status.some(s => acceptedStatuses.includes(s));
+  }
+  return acceptedStatuses.includes(item.status);
+});
+
+// Group by service type
 const amenities = items.filter(item =>
   item.serviceType === 'Amenity' || item.category === 'Amenities'
 );
@@ -20,7 +28,7 @@ const projects = items.filter(item =>
 ---
 
 <Layout
-  title="Services"
+  title="Services & Amenities"
   description="Community services, amenities, and development projects in Smiths Lake"
 >
   <style>
@@ -28,9 +36,9 @@ const projects = items.filter(item =>
       background: #f7f9fc;
     }
 
-    /* Hero Section */
+    /* Hero Section - Blue Gradient */
     .services-hero {
-      background: #1B365D;
+      background: linear-gradient(135deg, #5B9BD5 0%, #7BB3E0 100%);
       color: white;
       padding: 4rem 1rem;
       text-align: center;
@@ -82,15 +90,15 @@ const projects = items.filter(item =>
       line-height: 1.6;
     }
 
-    /* Amenities Grid */
-    .amenities-grid {
+    /* Services Grid */
+    .services-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 2rem;
     }
 
-    /* Amenity Card */
-    .amenity-card {
+    /* Dynamic Cards - Using Card Template System */
+    .service-card {
       background: white;
       border-radius: 12px;
       overflow: hidden;
@@ -102,9 +110,18 @@ const projects = items.filter(item =>
       height: 100%;
     }
 
-    .amenity-card:hover {
+    .service-card:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .service-card.featured {
+      border: 3px solid #F5A623;
+      background: linear-gradient(to bottom, #FFF9E6 0%, white 100%);
+    }
+
+    .service-card.highlighted {
+      border-left: 4px solid #F5A623;
     }
 
     .card-header {
@@ -126,90 +143,84 @@ const projects = items.filter(item =>
       gap: 0.5rem;
     }
 
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge.category { background: #DBEAFE; color: #1E40AF; }
+    .badge.status-published { background: #D1FAE5; color: #065F46; }
+    .badge.status-active { background: #DBEAFE; color: #1E40AF; }
+
     .card-body {
       padding: 1.5rem;
       flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .card-description {
       color: #4b5563;
       line-height: 1.6;
       margin-bottom: 1.25rem;
+      flex: 1;
     }
 
-    .card-details {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
+    .card-metadata {
+      border-top: 1px solid #f3f4f6;
+      padding-top: 1rem;
+      margin-top: auto;
+      font-size: 0.875rem;
     }
 
-    .detail-row {
+    .meta-row {
       display: flex;
       align-items: flex-start;
-      gap: 0.75rem;
-      font-size: 0.9375rem;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      color: #6B7280;
     }
 
-    .detail-icon {
-      flex-shrink: 0;
-      width: 20px;
-      color: #5B9BD5;
+    .meta-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .meta-icon {
       font-size: 1rem;
+      flex-shrink: 0;
     }
 
-    .detail-content {
-      flex: 1;
-      color: #374151;
-    }
-
-    .detail-label {
+    .meta-label {
       font-weight: 600;
       color: #1B365D;
-      margin-right: 0.25rem;
     }
 
-    .card-footer {
-      padding: 1rem 1.5rem;
-      background: #f9fafb;
-      border-top: 1px solid #e5e7eb;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .contact-link {
+    .card-link {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
       color: #5B9BD5;
       text-decoration: none;
       font-weight: 600;
-      font-size: 0.9375rem;
+      margin-top: 1rem;
       transition: color 0.2s;
     }
 
-    .contact-link:hover {
+    .card-link:hover {
       color: #1B365D;
     }
 
-    .external-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-      background: #5B9BD5;
-      color: white;
-      text-decoration: none;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 0.875rem;
-      transition: background 0.2s;
+    .card-link::after {
+      content: '→';
+      transition: transform 0.2s;
     }
 
-    .external-link:hover {
-      background: #1B365D;
+    .card-link:hover::after {
+      transform: translateX(4px);
     }
 
     /* Contact CTA Box */
@@ -260,7 +271,7 @@ const projects = items.filter(item =>
         font-size: 1rem;
       }
 
-      .amenities-grid {
+      .services-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -270,94 +281,140 @@ const projects = items.filter(item =>
     <!-- Hero Section -->
     <div class="services-hero">
       <div class="hero-content">
-        <h1>Community Services</h1>
+        <h1>Services & Amenities</h1>
         <p>Facilities, amenities, and community projects in Smiths Lake Village</p>
       </div>
     </div>
 
     <div class="content-section">
-      <!-- Existing Amenities -->
+      <!-- Amenities Section -->
       {amenities.length > 0 && (
         <div class="section-group">
           <div class="section-header">
-            <h2>Existing Amenities</h2>
+            <h2>Community Amenities</h2>
             <p class="section-intro">
               Smiths Lake Village offers essential services and amenities for residents and visitors.
             </p>
           </div>
 
-          <div class="amenities-grid">
-            {amenities.map(amenity => (
-              <div class="amenity-card">
-                <div class="card-header">
-                  <h3 class="card-title">{amenity.title}</h3>
-                  <div class="card-badges">
-                    <CategoryBadge category={amenity.category} size="sm" />
-                    {amenity.status && <StatusBadge status={amenity.status} />}
+          <div class="services-grid">
+            {amenities.map(item => {
+              // Determine card template and options
+              const template = item.cardTemplate || 'Standard';
+              const options = item.cardOptions || [];
+              
+              // Build configuration
+              const config = {
+                showSource: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Source'),
+                showPeople: template === 'Detailed' || template === 'Featured' || options.includes('Show People'),
+                showUpdated: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Updated Date'),
+                showAllStatuses: template === 'Detailed' || template === 'Featured' || options.includes('Show All Statuses'),
+                isHighlighted: options.includes('Highlight Card'),
+                isLarge: template === 'Featured' || options.includes('Large Format'),
+                isFeatured: template === 'Featured',
+                hideDescription: options.includes('Hide Description'),
+                isCompact: options.includes('Compact View')
+              };
+
+              return (
+                <article class={`service-card ${config.isFeatured ? 'featured' : ''} ${config.isHighlighted ? 'highlighted' : ''}`}>
+                  <div class="card-header">
+                    <h3 class="card-title">{item.title}</h3>
+                    <div class="card-badges">
+                      {item.category && (
+                        <span class="badge category">{item.category}</span>
+                      )}
+                      {Array.isArray(item.status) ? (
+                        config.showAllStatuses ? 
+                          item.status.map(s => (
+                            <span class={`badge status-${s.toLowerCase()}`}>{s}</span>
+                          )) :
+                          <span class={`badge status-${item.status[0].toLowerCase()}`}>{item.status[0]}</span>
+                      ) : item.status && (
+                        <span class={`badge status-${item.status.toLowerCase()}`}>{item.status}</span>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                <div class="card-body">
-                  {amenity.description && (
-                    <p class="card-description">{amenity.description}</p>
-                  )}
+                  <div class="card-body">
+                    {!config.hideDescription && item.description && (
+                      <p class="card-description">{item.description}</p>
+                    )}
 
-                  <div class="card-details">
-                    {amenity.operatingHours && (
-                      <div class="detail-row">
-                        <span class="detail-icon">🕐</span>
-                        <div class="detail-content">
-                          <span class="detail-label">Hours:</span>
-                          {amenity.operatingHours}
-                        </div>
+                    {(item.operatingHours || item.address || item.accessibilityInfo || (item.contactPhone && item.showContactPublicly === 'TRUE') || (item.contactEmail && item.showContactPublicly === 'TRUE') || config.showSource || config.showPeople || config.showUpdated) && (
+                      <div class="card-metadata">
+                        {item.operatingHours && (
+                          <div class="meta-row">
+                            <span class="meta-icon">🕐</span>
+                            <span><span class="meta-label">Hours:</span> {item.operatingHours}</span>
+                          </div>
+                        )}
+
+                        {item.address && (
+                          <div class="meta-row">
+                            <span class="meta-icon">📍</span>
+                            <span><span class="meta-label">Location:</span> {item.address}</span>
+                          </div>
+                        )}
+
+                        {item.accessibilityInfo && (
+                          <div class="meta-row">
+                            <span class="meta-icon">♿</span>
+                            <span><span class="meta-label">Accessibility:</span> {item.accessibilityInfo}</span>
+                          </div>
+                        )}
+
+                        {item.contactPhone && item.showContactPublicly === 'TRUE' && (
+                          <div class="meta-row">
+                            <span class="meta-icon">📞</span>
+                            <span><a href={`tel:${item.contactPhone}`}>{item.contactPhone}</a></span>
+                          </div>
+                        )}
+
+                        {item.contactEmail && item.showContactPublicly === 'TRUE' && (
+                          <div class="meta-row">
+                            <span class="meta-icon">✉️</span>
+                            <span><a href={`mailto:${item.contactEmail}`}>{item.contactEmail}</a></span>
+                          </div>
+                        )}
+
+                        {config.showSource && item.sourceAttribution && (
+                          <div class="meta-row">
+                            <span class="meta-icon">👤</span>
+                            <span><span class="meta-label">Source:</span> {item.sourceAttribution}</span>
+                          </div>
+                        )}
+
+                        {config.showPeople && item.relatedPeople && (
+                          <div class="meta-row">
+                            <span class="meta-icon">👥</span>
+                            <span><span class="meta-label">People:</span> {item.relatedPeople}</span>
+                          </div>
+                        )}
+
+                        {config.showUpdated && item.lastEditedTime && (
+                          <div class="meta-row">
+                            <span class="meta-icon">📅</span>
+                            <span><span class="meta-label">Updated:</span> {new Date(item.lastEditedTime).toLocaleDateString('en-AU')}</span>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    {amenity.address && (
-                      <div class="detail-row">
-                        <span class="detail-icon">📍</span>
-                        <div class="detail-content">
-                          <span class="detail-label">Location:</span>
-                          {amenity.address}
-                        </div>
-                      </div>
-                    )}
-
-                    {amenity.accessibilityFeatures && (
-                      <div class="detail-row">
-                        <span class="detail-icon">♿</span>
-                        <div class="detail-content">
-                          <span class="detail-label">Accessibility:</span>
-                          {amenity.accessibilityFeatures}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {(amenity.contactEmail || amenity.contactPhone || amenity.websiteUrl) && (
-                  <div class="card-footer">
-                    {amenity.contactEmail && amenity.showContactPublicly && (
-                      <a href={`mailto:${amenity.contactEmail}`} class="contact-link">
-                        ✉️ {amenity.contactEmail}
-                      </a>
-                    )}
-
-                    {amenity.contactPhone && amenity.showContactPublicly && (
-                      <a href={`tel:${amenity.contactPhone}`} class="contact-link">
-                        📞 {amenity.contactPhone}
-                      </a>
-                    )}
-
-                    {amenity.websiteUrl && (
-                      <a href={amenity.websiteUrl} target="_blank" rel="noopener" class="external-link">
-                        Visit Website →
+                    {(item.websiteUrl || item.documentUrl) && (
+                      <a 
+                        href={item.websiteUrl || item.documentUrl} 
+                        class="card-link"
+                        target={item.documentUrl ? '_blank' : undefined}
+                        rel={item.documentUrl ? 'noopener' : undefined}
+                      >
+                        {item.documentUrl ? 'View Document' : 'Visit Website'}
                       </a>
                     )}
                   </div>
-                )}
-              </div>
-            ))}
+                </article>
+              );
+            })}
           </div>
 
           <div class="contact-cta">
@@ -368,7 +425,7 @@ const projects = items.filter(item =>
         </div>
       )}
 
-      <!-- Developing Projects -->
+      <!-- Developing Projects Section -->
       {projects.length > 0 && (
         <div class="section-group">
           <div class="section-header">
@@ -378,13 +435,88 @@ const projects = items.filter(item =>
             </p>
           </div>
 
-          <ProjectStatusRegister projects={projects} />
+          <div class="services-grid">
+            {projects.map(item => {
+              // Determine card template and options
+              const template = item.cardTemplate || 'Standard';
+              const options = item.cardOptions || [];
+              
+              // Build configuration
+              const config = {
+                showSource: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Source'),
+                showPeople: template === 'Detailed' || template === 'Featured' || options.includes('Show People'),
+                showUpdated: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Updated Date'),
+                showAllStatuses: template === 'Detailed' || template === 'Featured' || options.includes('Show All Statuses'),
+                isHighlighted: options.includes('Highlight Card'),
+                isFeatured: template === 'Featured',
+                hideDescription: options.includes('Hide Description')
+              };
 
-          <DocumentLibrary
-            displayLocation="Services"
-            title="Service Documents"
-            subtitle="Policies, plans and reference material related to local services"
-          />
+              return (
+                <article class={`service-card ${config.isFeatured ? 'featured' : ''} ${config.isHighlighted ? 'highlighted' : ''}`}>
+                  <div class="card-header">
+                    <h3 class="card-title">{item.title}</h3>
+                    <div class="card-badges">
+                      {item.category && (
+                        <span class="badge category">{item.category}</span>
+                      )}
+                      {Array.isArray(item.status) ? (
+                        config.showAllStatuses ? 
+                          item.status.map(s => (
+                            <span class={`badge status-${s.toLowerCase()}`}>{s}</span>
+                          )) :
+                          <span class={`badge status-${item.status[0].toLowerCase()}`}>{item.status[0]}</span>
+                      ) : item.status && (
+                        <span class={`badge status-${item.status.toLowerCase()}`}>{item.status}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div class="card-body">
+                    {!config.hideDescription && item.description && (
+                      <p class="card-description">{item.description}</p>
+                    )}
+
+                    {(config.showSource || config.showPeople || config.showUpdated) && (
+                      <div class="card-metadata">
+                        {config.showSource && item.sourceAttribution && (
+                          <div class="meta-row">
+                            <span class="meta-icon">👤</span>
+                            <span><span class="meta-label">Source:</span> {item.sourceAttribution}</span>
+                          </div>
+                        )}
+
+                        {config.showPeople && item.relatedPeople && (
+                          <div class="meta-row">
+                            <span class="meta-icon">👥</span>
+                            <span><span class="meta-label">People:</span> {item.relatedPeople}</span>
+                          </div>
+                        )}
+
+                        {config.showUpdated && item.lastEditedTime && (
+                          <div class="meta-row">
+                            <span class="meta-icon">📅</span>
+                            <span><span class="meta-label">Updated:</span> {new Date(item.lastEditedTime).toLocaleDateString('en-AU')}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {(item.websiteUrl || item.documentUrl) && (
+                      <a 
+                        href={item.websiteUrl || item.documentUrl} 
+                        class="card-link"
+                        target={item.documentUrl ? '_blank' : undefined}
+                        rel={item.documentUrl ? 'noopener' : undefined}
+                      >
+                        {item.documentUrl ? 'View Document' : 'Learn More'}
+                      </a>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
