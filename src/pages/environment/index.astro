@@ -1,22 +1,22 @@
 ---
-// Environment & Sustainability Index Page - Cards + Register + Documents
+// Environment & Sustainability Index Page - Complete Card Template System with Icon Headers
 import Layout from '../../layouts/BaseLayout.astro';
-import CategoryBadge from '../../components/CategoryBadge.astro';
-import StatusBadge from '../../components/StatusBadge.astro';
-import ProjectStatusRegister from '../../components/ProjectStatusRegister.astro';
-import DocumentLibrary from '../../components/DocumentLibrary.astro';
-import { fetchItemsBySection } from '../../lib/notion-unified.js';
+import { fetchNotionContent } from '../../lib/notion-unified.js';
 
-// Fetch ALL Environment items
-const items = await fetchItemsBySection('Environment');
+// Fetch Environment items
+const allItems = await fetchNotionContent({ 
+  section: 'Environment & Sustainability',
+  requireShowOnWebsite: true
+});
 
-// Separate into active programs and projects
-const activePrograms = items.filter(item =>
-  item.status === 'Active' || item.status === 'Published'
-);
-const developingProjects = items.filter(item =>
-  item.status !== 'Active' && item.status !== 'Published'
-);
+// Filter for published/active items
+const items = allItems.filter(item => {
+  const acceptedStatuses = ['Published', 'Active'];
+  if (Array.isArray(item.status)) {
+    return item.status.some(s => acceptedStatuses.includes(s));
+  }
+  return acceptedStatuses.includes(item.status);
+});
 ---
 
 <Layout
@@ -28,31 +28,13 @@ const developingProjects = items.filter(item =>
       background: #f7f9fc;
     }
 
-    /* Hero Section */
+    /* Hero Section - Green Gradient */
     .environment-hero {
-      background: linear-gradient(135deg, rgba(22, 163, 74, 0.95), rgba(34, 197, 94, 0.9)),
-                  url('/images/smiths-lake-aerial.jpg') center/cover;
+      background: linear-gradient(135deg, #16A34A 0%, #22C55E 100%);
       color: white;
-      padding: 5rem 1rem;
+      padding: 4rem 1rem;
       text-align: center;
       position: relative;
-      overflow: hidden;
-    }
-
-    .environment-hero::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 50%;
-      height: 100%;
-      background: repeating-linear-gradient(
-        -60deg,
-        transparent,
-        transparent 10px,
-        rgba(255, 255, 255, 0.03) 10px,
-        rgba(255, 255, 255, 0.03) 20px
-      );
     }
 
     .hero-content {
@@ -118,10 +100,13 @@ const developingProjects = items.filter(item =>
       overflow: hidden;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
       transition: all 0.3s ease;
-      border-top: 4px solid #16a34a;
       display: flex;
       flex-direction: column;
       height: 100%;
+    }
+
+    .program-card.no-icon-header {
+      border-top: 4px solid #16a34a;
     }
 
     .program-card:hover {
@@ -129,23 +114,40 @@ const developingProjects = items.filter(item =>
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
 
+    .program-card.featured {
+      border: 3px solid #F5A623;
+      background: linear-gradient(to bottom, #FFF9E6 0%, white 100%);
+    }
+
+    .program-card.highlighted {
+      border-left: 4px solid #F5A623;
+    }
+
+    /* Icon Header */
     .card-icon-header {
-      background: linear-gradient(135deg, #16a34a, #22c55e);
-      color: white;
-      padding: 2rem;
+      padding: 1.5rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 140px;
+      min-height: 100px;
     }
 
-    .card-icon {
-      font-size: 4rem;
+    .card-icon-header.red { background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%); }
+    .card-icon-header.blue { background: linear-gradient(135deg, #5B9BD5 0%, #7BB3E0 100%); }
+    .card-icon-header.green { background: linear-gradient(135deg, #16A34A 0%, #22C55E 100%); }
+    .card-icon-header.orange { background: linear-gradient(135deg, #F5A623 0%, #FB923C 100%); }
+    .card-icon-header.purple { background: linear-gradient(135deg, #9333EA 0%, #A855F7 100%); }
+    .card-icon-header.gray { background: linear-gradient(135deg, #4B5563 0%, #6B7280 100%); }
+
+    .card-icon-header .icon-display {
+      font-size: 3rem;
     }
 
     .card-content {
       padding: 1.5rem;
       flex: 1;
+      display: flex;
+      flex-direction: column;
     }
 
     .card-title {
@@ -163,67 +165,85 @@ const developingProjects = items.filter(item =>
       margin-bottom: 1rem;
     }
 
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge.category { background: #D1FAE5; color: #065F46; }
+    .badge.status-published { background: #D1FAE5; color: #065F46; }
+    .badge.status-active { background: #DBEAFE; color: #1E40AF; }
+
     .card-description {
       color: #4b5563;
       line-height: 1.6;
       margin-bottom: 1rem;
+      flex: 1;
     }
 
-    .card-details {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      font-size: 0.9375rem;
+    .card-metadata {
+      border-top: 1px solid #f3f4f6;
+      padding-top: 1rem;
+      margin-top: auto;
+      font-size: 0.875rem;
     }
 
-    .detail-row {
+    .meta-row {
       display: flex;
       align-items: flex-start;
-      gap: 0.75rem;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      color: #6B7280;
     }
 
-    .detail-icon {
+    .meta-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .meta-icon {
+      font-size: 1rem;
       flex-shrink: 0;
-      width: 20px;
-      color: #16a34a;
     }
 
-    .detail-content {
-      flex: 1;
-      color: #374151;
-    }
-
-    .detail-label {
+    .meta-label {
       font-weight: 600;
-      color: #16a34a;
-      margin-right: 0.25rem;
+      color: #1B365D;
     }
 
-    .card-footer {
-      padding: 1rem 1.5rem;
-      background: #f9fafb;
-      border-top: 1px solid #e5e7eb;
-    }
-
-    .external-link {
-      color: #16a34a;
-      text-decoration: none;
-      font-weight: 600;
+    .card-link {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
+      color: #16a34a;
+      text-decoration: none;
+      font-weight: 600;
+      margin-top: 1rem;
       transition: color 0.2s;
     }
 
-    .external-link:hover {
+    .card-link:hover {
       color: #15803d;
     }
 
-    /* Category Icons */
-    .icon-waterways::before { content: '💧'; }
-    .icon-conservation::before { content: '🌿'; }
-    .icon-sustainability::before { content: '♻️'; }
-    .icon-bushland::before { content: '🌳'; }
+    .card-link::after {
+      content: '→';
+      transition: transform 0.2s;
+    }
+
+    .card-link:hover::after {
+      transform: translateX(4px);
+    }
+
+    .no-items {
+      text-align: center;
+      padding: 3rem;
+      color: #6b7280;
+      font-style: italic;
+    }
 
     /* Mobile responsive */
     @media (max-width: 768px) {
@@ -251,106 +271,130 @@ const developingProjects = items.filter(item =>
     </div>
 
     <div class="content-section">
-      <!-- Active Programs -->
-      {activePrograms.length > 0 && (
+      {items.length > 0 ? (
         <div class="section-group">
           <div class="section-header">
             <h2>Active Programs</h2>
             <p class="section-intro">Our ongoing environmental initiatives and conservation efforts to protect and enhance Smiths Lake's natural environment.</p>
           </div>
           <div class="programs-grid">
-            {activePrograms.map(program => (
-              <div class="program-card">
-                <div class="card-icon-header">
-                  <div class="card-icon icon-{program.category?.toLowerCase() || 'conservation'}">
-                    {program.category === 'Waterways' && '💧'}
-                    {program.category === 'Conservation' && '🌿'}
-                    {program.category === 'Sustainability' && '♻️'}
-                    {program.category === 'Bushland' && '🌳'}
-                    {!['Waterways', 'Conservation', 'Sustainability', 'Bushland'].includes(program.category) && '🌍'}
-                  </div>
-                </div>
-                <div class="card-content">
-                  <h3 class="card-title">{program.title}</h3>
-                  <div class="card-badges">
-                    <CategoryBadge category={program.category} size="sm" />
-                    {program.status && <StatusBadge status={program.status} />}
-                  </div>
-                  {program.description && (
-                    <p class="card-description">{program.description}</p>
+            {items.map(program => {
+              // Determine card template and options
+              const template = program.cardTemplate || 'Standard';
+              const options = program.cardOptions || [];
+              
+              // Build configuration
+              const config = {
+                showIconHeader: options.includes('Show Icon Header'),
+                headerColor: options.includes('Red Header') ? 'red' :
+                             options.includes('Blue Header') ? 'blue' :
+                             options.includes('Green Header') ? 'green' :
+                             options.includes('Orange Header') ? 'orange' :
+                             options.includes('Purple Header') ? 'purple' :
+                             options.includes('Gray Header') ? 'gray' : 'green', // Default to section color
+                showSource: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Source'),
+                showPeople: template === 'Detailed' || template === 'Featured' || options.includes('Show People'),
+                showUpdated: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Updated Date'),
+                showAllStatuses: template === 'Detailed' || template === 'Featured' || options.includes('Show All Statuses'),
+                isHighlighted: options.includes('Highlight Card'),
+                isFeatured: template === 'Featured',
+                hideDescription: options.includes('Hide Description')
+              };
+
+              return (
+                <article class={`program-card ${config.isFeatured ? 'featured' : ''} ${config.isHighlighted ? 'highlighted' : ''} ${!config.showIconHeader ? 'no-icon-header' : ''}`}>
+                  
+                  {config.showIconHeader && (
+                    <div class={`card-icon-header ${config.headerColor}`}>
+                      <span class="icon-display">🌍</span>
+                    </div>
                   )}
-                  <div class="card-details">
-                    {program.locationArea && (
-                      <div class="detail-row">
-                        <span class="detail-icon">📍</span>
-                        <div class="detail-content">
-                          <span class="detail-label">Location:</span>
-                          {program.locationArea}
-                        </div>
+
+                  <div class="card-content">
+                    <h3 class="card-title">{program.title}</h3>
+                    <div class="card-badges">
+                      {program.category && (
+                        <span class="badge category">{program.category}</span>
+                      )}
+                      {Array.isArray(program.status) ? (
+                        config.showAllStatuses ? 
+                          program.status.map(s => (
+                            <span class={`badge status-${s.toLowerCase()}`}>{s}</span>
+                          )) :
+                          <span class={`badge status-${program.status[0].toLowerCase()}`}>{program.status[0]}</span>
+                      ) : program.status && (
+                        <span class={`badge status-${program.status.toLowerCase()}`}>{program.status}</span>
+                      )}
+                    </div>
+                    
+                    {!config.hideDescription && program.description && (
+                      <p class="card-description">{program.description}</p>
+                    )}
+                    
+                    {(program.locationArea || program.partnerOrganisations || program.meetingDay || config.showSource || config.showPeople || config.showUpdated) && (
+                      <div class="card-metadata">
+                        {program.locationArea && (
+                          <div class="meta-row">
+                            <span class="meta-icon">📍</span>
+                            <span><span class="meta-label">Location:</span> {program.locationArea}</span>
+                          </div>
+                        )}
+                        
+                        {program.partnerOrganisations && (
+                          <div class="meta-row">
+                            <span class="meta-icon">🤝</span>
+                            <span><span class="meta-label">Partners:</span> {program.partnerOrganisations}</span>
+                          </div>
+                        )}
+                        
+                        {program.meetingDay && (
+                          <div class="meta-row">
+                            <span class="meta-icon">📅</span>
+                            <span><span class="meta-label">When:</span> {program.meetingDay}{program.meetingTime && ` at ${program.meetingTime}`}</span>
+                          </div>
+                        )}
+
+                        {config.showSource && program.sourceAttribution && (
+                          <div class="meta-row">
+                            <span class="meta-icon">👤</span>
+                            <span><span class="meta-label">Source:</span> {program.sourceAttribution}</span>
+                          </div>
+                        )}
+
+                        {config.showPeople && program.relatedPeople && (
+                          <div class="meta-row">
+                            <span class="meta-icon">👥</span>
+                            <span><span class="meta-label">People:</span> {program.relatedPeople}</span>
+                          </div>
+                        )}
+
+                        {config.showUpdated && program.lastEditedTime && (
+                          <div class="meta-row">
+                            <span class="meta-icon">📅</span>
+                            <span><span class="meta-label">Updated:</span> {new Date(program.lastEditedTime).toLocaleDateString('en-AU')}</span>
+                          </div>
+                        )}
                       </div>
                     )}
-                    {program.partnerOrganisations && (
-                      <div class="detail-row">
-                        <span class="detail-icon">🤝</span>
-                        <div class="detail-content">
-                          <span class="detail-label">Partners:</span>
-                          {program.partnerOrganisations}
-                        </div>
-                      </div>
-                    )}
-                    {program.meetingDay && (
-                      <div class="detail-row">
-                        <span class="detail-icon">📅</span>
-                        <div class="detail-content">
-                          <span class="detail-label">When:</span>
-                          {program.meetingDay}
-                          {program.meetingTime && ` at ${program.meetingTime}`}
-                        </div>
-                      </div>
+                    
+                    {(program.websiteUrl || program.documentUrl) && (
+                      <a 
+                        href={program.websiteUrl || program.documentUrl} 
+                        class="card-link"
+                        target={program.documentUrl ? '_blank' : undefined}
+                        rel={program.documentUrl ? 'noopener' : undefined}
+                      >
+                        {program.documentUrl ? 'View Document' : 'Learn More'}
+                      </a>
                     )}
                   </div>
-                </div>
-                {program.websiteUrl && (
-                  <div class="card-footer">
-                    <a href={program.websiteUrl} target="_blank" rel="noopener" class="external-link">
-                      Learn More →
-                    </a>
-                  </div>
-                )}
-              </div>
-            ))}
+                </article>
+              );
+            })}
           </div>
         </div>
-      )}
-
-      <!-- Developing Projects -->
-      {developingProjects.length > 0 && (
-        <div class="section-group">
-          <div class="section-header">
-            <h2>Environmental Projects</h2>
-            <p class="section-intro">Initiatives in planning and development stages to further enhance our environmental stewardship.</p>
-          </div>
-
-          <ProjectStatusRegister projects={developingProjects} />
-        </div>
-      )}
-
-      <!-- Documents (ALWAYS show, independent of projects/programs) -->
-      <div class="section-group">
-        <div class="section-header">
-          <h2>Documents</h2>
-          <p class="section-intro">Plans, policies, reports and reference documents related to Environment & Sustainability.</p>
-        </div>
-
-        <DocumentLibrary
-          displayLocation="Environment"
-          title="Environment Documents"
-          subtitle="Plans, policies, reports and reference material"
-        />
-      </div>
-
-      {items.length === 0 && (
-        <div style="text-align: center; padding: 3rem; color: #6b7280; font-style: italic;">
+      ) : (
+        <div class="no-items">
           <p>Environmental information is being updated. Check back soon.</p>
         </div>
       )}
