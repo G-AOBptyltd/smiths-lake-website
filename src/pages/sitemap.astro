@@ -1,419 +1,817 @@
 ---
-// Sitemap HTML Page (User-Friendly Navigation)
+// Dynamic Sitemap Page - Phase 1
+// Shows static pages + filterable Notion content using Card Template system
 import Layout from '../layouts/BaseLayout.astro';
+import { fetchNotionContent } from '../lib/notion-unified.js';
+
+// Fetch all published content from Notion
+const allContent = await fetchNotionContent({ 
+  requireShowOnWebsite: true
+});
+
+// Filter for published/active items only
+const publishedContent = allContent.filter(item => {
+  const acceptedStatuses = ['Published', 'Active'];
+  if (Array.isArray(item.status)) {
+    return item.status.some(s => acceptedStatuses.includes(s));
+  }
+  return acceptedStatuses.includes(item.status);
+});
+
+// Group content by section for initial display
+const contentBySection = publishedContent.reduce((acc, item) => {
+  const section = item.section || 'Other';
+  if (!acc[section]) acc[section] = [];
+  acc[section].push(item);
+  return acc;
+}, {});
+
+// Get unique values for filters
+const allSections = [...new Set(publishedContent.map(item => item.section).filter(Boolean))].sort();
+const allCategories = [...new Set(publishedContent.map(item => item.category).filter(Boolean))].sort();
+const allStatuses = [...new Set(publishedContent.flatMap(item => 
+  Array.isArray(item.status) ? item.status : [item.status]
+).filter(Boolean))].sort();
+const allTypes = [...new Set(publishedContent.map(item => item.recordType).filter(Boolean))].sort();
 ---
 
 <Layout 
-  title="Site Map" 
-  description="Complete navigation guide to the Smiths Lake Village community website"
+  title="Site Map & Content Directory" 
+  description="Complete navigation and content directory for Smiths Lake Village community website"
 >
   <style>
-    .sitemap-page {
-      background: #f7f9fc;
-      padding: 3rem 0;
+    :root {
+      --navy-blue: #1B365D;
+      --sky-blue: #5B9BD5;
+      --golden-orange: #F5A623;
+      --off-white: #F7F9FC;
+      --light-gray: #E8EDF3;
+      --medium-gray: #6B7280;
     }
 
-    .page-header {
-      background: linear-gradient(135deg, #1B365D 0%, #2B4A7D 100%);
+    .sitemap-container {
+      background: var(--off-white);
+      min-height: 100vh;
+    }
+
+    /* Hero Section */
+    .hero-section {
+      background: linear-gradient(135deg, var(--navy-blue) 0%, #2B4A7D 100%);
       color: white;
-      padding: 4rem 1rem 3rem;
+      padding: 3rem 1rem;
       text-align: center;
-      margin-bottom: 3rem;
     }
 
-    .page-header h1 {
+    .hero-section h1 {
       color: white;
       font-size: 2.5rem;
       margin-bottom: 1rem;
       font-weight: 700;
     }
 
-    .page-header p {
+    .hero-section p {
       font-size: 1.125rem;
       opacity: 0.95;
       max-width: 800px;
       margin: 0 auto;
     }
 
-    .content-container {
-      max-width: 1200px;
+    .content-wrapper {
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 0 1rem 4rem;
+      padding: 3rem 1rem;
     }
 
-    .sitemap-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
-    }
-
-    .sitemap-section {
-      background: white;
-      border-radius: 12px;
-      padding: 2rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      border-top: 4px solid #5B9BD5;
-    }
-
-    .sitemap-section h2 {
-      color: #1B365D;
-      font-size: 1.5rem;
-      margin-bottom: 1.5rem;
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .section-icon {
-      font-size: 2rem;
-    }
-
-    .sitemap-section ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .sitemap-section li {
-      margin-bottom: 0.75rem;
-    }
-
-    .sitemap-section a {
-      color: #5B9BD5;
-      text-decoration: none;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: all 0.2s;
-      padding: 0.5rem;
-      border-radius: 6px;
-    }
-
-    .sitemap-section a:hover {
-      background: #F7F9FC;
-      color: #1B365D;
-      padding-left: 1rem;
-    }
-
-    .sitemap-section a::before {
-      content: '→';
-      color: #F5A623;
-      font-weight: bold;
-    }
-
-    .subsection {
-      margin-left: 1.5rem;
-      margin-top: 0.5rem;
-    }
-
-    .subsection li {
-      margin-bottom: 0.5rem;
-    }
-
-    .subsection a {
-      font-size: 0.9375rem;
-      font-weight: 400;
-    }
-
-    .search-box {
+    /* Static Pages Section */
+    .static-pages {
       background: white;
       border-radius: 12px;
       padding: 2rem;
       margin-bottom: 3rem;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      text-align: center;
     }
 
-    .search-box h2 {
-      color: #1B365D;
-      margin-bottom: 1rem;
-    }
-
-    .search-box p {
-      color: #6B7280;
+    .static-pages h2 {
+      color: var(--navy-blue);
+      font-size: 1.75rem;
       margin-bottom: 1.5rem;
-    }
-
-    .search-input {
-      max-width: 500px;
-      margin: 0 auto;
       display: flex;
+      align-items: center;
       gap: 0.5rem;
     }
 
-    .search-input input {
-      flex: 1;
-      padding: 0.75rem 1rem;
-      border: 2px solid #E5E7EB;
+    .static-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+    }
+
+    .static-category h3 {
+      color: var(--navy-blue);
+      font-size: 1.125rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--sky-blue);
+    }
+
+    .static-category ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .static-category li {
+      margin-bottom: 0.5rem;
+    }
+
+    .static-category a {
+      color: var(--sky-blue);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .static-category a:hover {
+      background: var(--off-white);
+      color: var(--navy-blue);
+      padding-left: 1rem;
+    }
+
+    .static-category a::before {
+      content: '→';
+      color: var(--golden-orange);
+      font-weight: bold;
+    }
+
+    /* Search and Filter Section */
+    .filter-section {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .search-box {
+      margin-bottom: 1.5rem;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      border: 2px solid var(--light-gray);
       border-radius: 8px;
       font-size: 1rem;
+      font-family: inherit;
     }
 
-    .search-input input:focus {
+    .search-box input:focus {
       outline: none;
-      border-color: #5B9BD5;
+      border-color: var(--sky-blue);
     }
 
-    .search-button {
-      padding: 0.75rem 2rem;
-      background: #5B9BD5;
-      color: white;
-      border: none;
-      border-radius: 8px;
+    .basic-filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .filter-group label {
+      display: block;
       font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
+      color: var(--navy-blue);
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
     }
 
-    .search-button:hover {
-      background: #1B365D;
+    .filter-group select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid var(--light-gray);
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: inherit;
+      background: white;
+    }
+
+    .filter-group select:focus {
+      outline: none;
+      border-color: var(--sky-blue);
+    }
+
+    .advanced-toggle {
+      margin-top: 1rem;
+      text-align: center;
+    }
+
+    .advanced-toggle button {
+      background: transparent;
+      border: 2px solid var(--sky-blue);
+      color: var(--sky-blue);
+      padding: 0.5rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .advanced-toggle button:hover {
+      background: var(--sky-blue);
+      color: white;
+    }
+
+    .advanced-filters {
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--light-gray);
+    }
+
+    .advanced-filters.visible {
+      display: grid;
+    }
+
+    .results-summary {
+      padding: 1rem;
+      background: var(--off-white);
+      border-radius: 6px;
+      text-align: center;
+      font-weight: 600;
+      color: var(--navy-blue);
+    }
+
+    /* Dynamic Content Cards */
+    .content-directory {
+      margin-top: 2rem;
+    }
+
+    .content-directory h2 {
+      color: var(--navy-blue);
+      font-size: 1.75rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .section-group {
+      margin-bottom: 3rem;
+    }
+
+    .section-header {
+      color: var(--navy-blue);
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 3px solid var(--sky-blue);
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* Card Templates - Same as History */
+    .content-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .content-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    /* Featured Cards */
+    .content-card.featured {
+      border: 3px solid var(--golden-orange);
+      background: linear-gradient(to bottom, #FFF9E6 0%, white 100%);
+    }
+
+    /* Highlighted Cards */
+    .content-card.highlighted {
+      border-left: 4px solid var(--golden-orange);
+    }
+
+    .card-icon {
+      background: linear-gradient(135deg, var(--navy-blue) 0%, #2B4A7D 100%);
+      color: white;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 80px;
+    }
+
+    .card-icon.green { background: linear-gradient(135deg, #16A34A 0%, #22C55E 100%); }
+    .card-icon.red { background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%); }
+    .card-icon.blue { background: linear-gradient(135deg, var(--sky-blue) 0%, #7BB3E0 100%); }
+    .card-icon.orange { background: linear-gradient(135deg, var(--golden-orange) 0%, #FB923C 100%); }
+
+    .card-icon svg,
+    .card-icon .icon-text {
+      font-size: 2.5rem;
+    }
+
+    .card-body {
+      padding: 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-header {
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      color: var(--navy-blue);
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      line-height: 1.3;
+    }
+
+    .card-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge.category { background: #DBEAFE; color: #1E40AF; }
+    .badge.status-published { background: #D1FAE5; color: #065F46; }
+    .badge.status-active { background: #DBEAFE; color: #1E40AF; }
+    .badge.year { background: #FEF3C7; color: #92400E; }
+
+    .card-description {
+      color: var(--medium-gray);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      flex: 1;
+    }
+
+    .card-metadata {
+      border-top: 1px solid var(--light-gray);
+      padding-top: 1rem;
+      margin-top: auto;
+      font-size: 0.875rem;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--medium-gray);
+    }
+
+    .meta-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .meta-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .meta-label {
+      font-weight: 600;
+      color: var(--navy-blue);
+    }
+
+    .card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--golden-orange);
+      text-decoration: none;
+      font-weight: 600;
+      margin-top: 1rem;
+      transition: color 0.2s;
+    }
+
+    .card-link:hover {
+      color: #D4900F;
+    }
+
+    .card-link::after {
+      content: '→';
+      transition: transform 0.2s;
+    }
+
+    .card-link:hover::after {
+      transform: translateX(4px);
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 3rem;
+      color: var(--medium-gray);
     }
 
     @media (max-width: 768px) {
-      .page-header h1 {
+      .hero-section h1 {
         font-size: 2rem;
       }
 
-      .sitemap-grid {
+      .static-grid {
         grid-template-columns: 1fr;
       }
 
-      .search-input {
-        flex-direction: column;
+      .basic-filters,
+      .advanced-filters {
+        grid-template-columns: 1fr;
+      }
+
+      .cards-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
 
-  <div class="sitemap-page">
-    <div class="page-header">
-      <h1>Site Map</h1>
+  <div class="sitemap-container">
+    <!-- Hero Section -->
+    <div class="hero-section">
+      <h1>Site Map & Content Directory</h1>
       <p>
-        Complete navigation guide to all pages and resources on the Smiths Lake Village website
+        Browse all pages and resources on the Smiths Lake Village website
       </p>
     </div>
 
-    <div class="content-container">
+    <div class="content-wrapper">
+      
+      <!-- Static Pages Section -->
+      <div class="static-pages">
+        <h2>📍 Site Pages</h2>
+        <div class="static-grid">
+          
+          <div class="static-category">
+            <h3>Main Pages</h3>
+            <ul>
+              <li><a href="/">Home</a></li>
+              <li><a href="/about/">About Our Area</a></li>
+              <li><a href="/contact/">Contact Us</a></li>
+              <li><a href="/feedback/">Submit Feedback</a></li>
+              <li><a href="/newsletter/">Newsletter Signup</a></li>
+            </ul>
+          </div>
 
-      <!-- Search Box -->
-      <div class="search-box">
-        <h2>Looking for something specific?</h2>
-        <p>Use our search function to quickly find information across the website</p>
-        <div class="search-input">
-          <input type="search" placeholder="Search villagefirst.org.au..." aria-label="Search website">
-          <button class="search-button" type="button">Search</button>
+          <div class="static-category">
+            <h3>Section Pages</h3>
+            <ul>
+              <li><a href="/emergency/">Emergency & Safety</a></li>
+              <li><a href="/services/">Services & Amenities</a></li>
+              <li><a href="/groups/">Groups & Activities</a></li>
+              <li><a href="/environment/">Environment & Conservation</a></li>
+              <li><a href="/history/">History & Culture</a></li>
+              <li><a href="/governance/">Governance & Admin</a></li>
+              <li><a href="/planning/">Planning & Development</a></li>
+            </ul>
+          </div>
+
+          <div class="static-category">
+            <h3>Legal & Info</h3>
+            <ul>
+              <li><a href="/privacy/">Privacy Policy</a></li>
+              <li><a href="/accessibility/">Accessibility Statement</a></li>
+              <li><a href="/sitemap/">Site Map</a></li>
+            </ul>
+          </div>
+
+          <div class="static-category">
+            <h3>External Resources</h3>
+            <ul>
+              <li><a href="https://www.midcoast.nsw.gov.au/" target="_blank" rel="noopener">MidCoast Council ↗</a></li>
+              <li><a href="https://www.rfs.nsw.gov.au/" target="_blank" rel="noopener">NSW Rural Fire Service ↗</a></li>
+              <li><a href="https://www.bom.gov.au/" target="_blank" rel="noopener">Bureau of Meteorology ↗</a></li>
+            </ul>
+          </div>
+          
         </div>
       </div>
 
-      <!-- Sitemap Grid -->
-      <div class="sitemap-grid">
-
-        <!-- Main Pages -->
-        <div class="sitemap-section">
-          <h2>
-            <span class="section-icon">🏠</span>
-            Main Pages
-          </h2>
-          <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="/about/">About Our Area</a></li>
-            <li><a href="/contact/">Contact Us</a></li>
-            <li><a href="/feedback/">Submit Feedback</a></li>
-            <li><a href="/newsletter/">Newsletter Signup</a></li>
-            <li><a href="/news/">News & Updates</a></li>
-          </ul>
+      <!-- Search and Filter Section -->
+      <div class="filter-section">
+        <div class="search-box">
+          <input 
+            type="search" 
+            id="searchInput" 
+            placeholder="Search content by title or description..."
+            aria-label="Search content"
+          />
         </div>
 
-        <!-- Emergency & Safety -->
-        <div class="sitemap-section">
-          <h2>
-            <span class="section-icon">🚨</span>
-            Emergency & Safety
-          </h2>
-          <ul>
-            <li><a href="/emergency/">Emergency & Safety Overview</a></li>
-            <ul class="subsection">
-              <li><a href="/emergency/">Emergency Contacts</a></li>
-              <li><a href="/emergency/">Evacuation Plans</a></li>
-              <li><a href="/emergency/">Bushfire Information</a></li>
-              <li><a href="/emergency/">Flood Preparedness</a></li>
-              <li><a href="/emergency/">Medical Services</a></li>
-            </ul>
-          </ul>
+        <div class="basic-filters">
+          <div class="filter-group">
+            <label for="sectionFilter">Section</label>
+            <select id="sectionFilter" aria-label="Filter by section">
+              <option value="">All Sections</option>
+              {allSections.map(section => (
+                <option value={section}>{section}</option>
+              ))}
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="categoryFilter">Category</label>
+            <select id="categoryFilter" aria-label="Filter by category">
+              <option value="">All Categories</option>
+              {allCategories.map(category => (
+                <option value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <!-- Services -->
-        <div class="sitemap-section">
-          <h2>
-            <span class="section-icon">🏥</span>
-            Services
-          </h2>
-          <ul>
-            <li><a href="/services/">Community Services Overview</a></li>
-            <ul class="subsection">
-              <li><a href="/services/">Health Services</a></li>
-              <li><a href="/services/">Education</a></li>
-              <li><a href="/services/">Amenities</a></li>
-              <li><a href="/services/">Recreation Facilities</a></li>
-              <li><a href="/services/">Local Businesses</a></li>
-            </ul>
-          </ul>
+        <div class="advanced-toggle">
+          <button id="advancedToggle" aria-expanded="false" aria-controls="advancedFilters">
+            Show Advanced Filters
+          </button>
         </div>
 
-        <!-- Groups & Activities -->
-        <div class="sitemap-section">
-          <h2>
-            <span class="section-icon">👥</span>
-            Groups & Activities
-          </h2>
-          <ul>
-            <li><a href="/groups/">Groups & Activities Overview</a></li>
-            <ul class="subsection">
-              <li><a href="/groups/">Sports & Recreation</a></li>
-              <li><a href="/groups/">Arts & Culture</a></li>
-              <li><a href="/groups/">Social & Community</a></li>
-              <li><a href="/groups/">Hobbies & Interests</a></li>
-              <li><a href="/groups/">Community Service</a></li>
-            </ul>
-          </ul>
+        <div id="advancedFilters" class="advanced-filters" aria-hidden="true">
+          <div class="filter-group">
+            <label for="statusFilter">Status</label>
+            <select id="statusFilter" aria-label="Filter by status">
+              <option value="">All Statuses</option>
+              {allStatuses.map(status => (
+                <option value={status}>{status}</option>
+              ))}
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="typeFilter">Type</label>
+            <select id="typeFilter" aria-label="Filter by type">
+              <option value="">All Types</option>
+              {allTypes.map(type => (
+                <option value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        <!-- Environment -->
-        <div class="sitemap-section">
-          <h2>
-            <span class="section-icon">🌿</span>
-            Environment & Sustainability
-          </h2>
-          <ul>
-            <li><a href="/environment/">Environment Overview</a></li>
-            <ul class="subsection">
-              <li><a href="/environment/">Lake Health Monitoring</a></li>
-              <li><a href="/environment/">Foreshore Management</a></li>
-              <li><a href="/environment/">Wildlife Conservation</a></li>
-              <li><a href="/environment/">Sustainability Programs</a></li>
-              <li><a href="/environment/">Walking Trails</a></li>
-            </ul>
-          </ul>
+        <div class="results-summary" id="resultsSummary">
+          Showing {publishedContent.length} items
+        </div>
+      </div>
+
+      <!-- Dynamic Content Directory -->
+      <div class="content-directory">
+        <h2>📚 Content Directory</h2>
+        
+        <div id="contentContainer">
+          {Object.entries(contentBySection).map(([section, items]) => (
+            <div class="section-group" data-section={section}>
+              <h3 class="section-header">{section}</h3>
+              <div class="cards-grid">
+                {items.map(item => {
+                  // Determine card template and options
+                  const template = item.cardTemplate || 'Standard';
+                  const options = item.cardOptions || [];
+                  
+                  // Build configuration
+                  const config = {
+                    showSource: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Source'),
+                    showPeople: template === 'Detailed' || template === 'Featured' || options.includes('Show People'),
+                    showUpdated: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Updated Date'),
+                    showAllStatuses: template === 'Detailed' || template === 'Featured' || options.includes('Show All Statuses'),
+                    isHighlighted: options.includes('Highlight Card'),
+                    isLarge: template === 'Featured' || options.includes('Large Format'),
+                    isFeatured: template === 'Featured',
+                    hideDescription: options.includes('Hide Description'),
+                    isCompact: options.includes('Compact View')
+                  };
+
+                  // Determine icon color based on section
+                  let iconColor = 'blue';
+                  if (section === 'Emergency & Safety') iconColor = 'red';
+                  else if (section === 'Environment & Sustainability') iconColor = 'green';
+                  else if (section === 'History & Culture') iconColor = 'orange';
+
+                  return (
+                    <article 
+                      class={`content-card ${config.isFeatured ? 'featured' : ''} ${config.isHighlighted ? 'highlighted' : ''}`}
+                      data-title={item.title?.toLowerCase()}
+                      data-description={item.description?.toLowerCase()}
+                      data-section={item.section}
+                      data-category={item.category}
+                      data-status={Array.isArray(item.status) ? item.status.join(',') : item.status}
+                      data-type={item.recordType}
+                    >
+                      <div class={`card-icon ${iconColor}`}>
+                        <span class="icon-text">{
+                          section === 'Emergency & Safety' ? '🚨' :
+                          section === 'Services & Amenities' ? '🏥' :
+                          section === 'Groups & Activities' ? '👥' :
+                          section === 'Environment & Sustainability' ? '🌿' :
+                          section === 'History & Culture' ? '📚' :
+                          section === 'Governance & Admin' ? '📋' :
+                          section === 'Planning & Development' ? '🏗️' : '📄'
+                        }</span>
+                      </div>
+
+                      <div class="card-body">
+                        <div class="card-header">
+                          <h4 class="card-title">{item.title}</h4>
+                          
+                          <div class="card-badges">
+                            {item.category && (
+                              <span class="badge category">{item.category}</span>
+                            )}
+                            {item.yearEra && (
+                              <span class="badge year">{item.yearEra}</span>
+                            )}
+                            {Array.isArray(item.status) ? (
+                              config.showAllStatuses ? 
+                                item.status.map(s => (
+                                  <span class={`badge status-${s.toLowerCase()}`}>{s}</span>
+                                )) :
+                                <span class={`badge status-${item.status[0].toLowerCase()}`}>{item.status[0]}</span>
+                            ) : item.status && (
+                              <span class={`badge status-${item.status.toLowerCase()}`}>{item.status}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {!config.hideDescription && item.description && (
+                          <p class="card-description">{item.description}</p>
+                        )}
+
+                        {(config.showSource || config.showPeople || config.showUpdated || item.address || item.operatingHours || item.contactPhone) && (
+                          <div class="card-metadata">
+                            {config.showSource && item.sourceAttribution && (
+                              <div class="meta-row">
+                                <span class="meta-icon">👤</span>
+                                <span><span class="meta-label">Source:</span> {item.sourceAttribution}</span>
+                              </div>
+                            )}
+                            
+                            {config.showPeople && item.relatedPeople && (
+                              <div class="meta-row">
+                                <span class="meta-icon">👥</span>
+                                <span><span class="meta-label">People:</span> {item.relatedPeople}</span>
+                              </div>
+                            )}
+
+                            {item.address && (
+                              <div class="meta-row">
+                                <span class="meta-icon">📍</span>
+                                <span>{item.address}</span>
+                              </div>
+                            )}
+
+                            {item.operatingHours && (
+                              <div class="meta-row">
+                                <span class="meta-icon">🕐</span>
+                                <span>{item.operatingHours}</span>
+                              </div>
+                            )}
+
+                            {item.contactPhone && item.showContactPublicly === 'TRUE' && (
+                              <div class="meta-row">
+                                <span class="meta-icon">📞</span>
+                                <span>{item.contactPhone}</span>
+                              </div>
+                            )}
+
+                            {config.showUpdated && item.lastEditedTime && (
+                              <div class="meta-row">
+                                <span class="meta-icon">📅</span>
+                                <span><span class="meta-label">Updated:</span> {new Date(item.lastEditedTime).toLocaleDateString('en-AU')}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {(item.websiteUrl || item.documentUrl) && (
+                          <a 
+                            href={item.websiteUrl || item.documentUrl} 
+                            class="card-link"
+                            target={item.documentUrl ? '_blank' : undefined}
+                            rel={item.documentUrl ? 'noopener' : undefined}
+                          >
+                            {item.documentUrl ? 'View Document' : 'Learn More'}
+                          </a>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
-        <!-- History -->
-        <div class="sitemap-section">
-          <h2>
-            <span class="section-icon">📚</span>
-            History & Culture
-          </h2>
-          <ul>
-            <li><a href="/history/">History & Culture Overview</a></li>
-            <ul class="subsection">
-              <li><a href="/history/">Indigenous Heritage</a></li>
-              <li><a href="/history/">Settlement History</a></li>
-              <li><a href="/history/">Cultural Landmarks</a></li>
-              <li><a href="/history/">Community Timeline</a></li>
-            </ul>
-          </ul>
+        <div id="noResults" class="no-results" style="display: none;">
+          <p>No items match your search criteria. Try adjusting your filters.</p>
         </div>
-
-        <!-- Governance -->
-        <div class="sitemap-section">
-          <h2>
-            <span class="section-icon">📋</span>
-            Governance & Admin
-          </h2>
-          <ul>
-            <li><a href="/governance/">Governance Overview</a></li>
-            <ul class="subsection">
-              <li><a href="/governance/">About PPCA</a></li>
-              <li><a href="/governance/">Committee Members</a></li>
-              <li><a href="/governance/">Meeting Minutes</a></li>
-              <li><a href="/governance/">Policies & Procedures</a></li>
-              <li><a href="/governance/">Financial Reports</a></li>
-            </ul>
-          </ul>
-        </div>
-
-        <!-- Planning & Development -->
-        <div class="sitemap-section">
-          <h2>
-            <span class="section-icon">🏗️</span>
-            Planning & Development
-          </h2>
-          <ul>
-            <li><a href="/planning/">Planning & Development Overview</a></li>
-            <ul class="subsection">
-              <li><a href="/planning/">Community Plans</a></li>
-              <li><a href="/planning/">Development Proposals</a></li>
-              <li><a href="/planning/">Infrastructure Projects</a></li>
-              <li><a href="/planning/">Open Spaces Strategy</a></li>
-            </ul>
-          </ul>
-        </div>
-
-        <!-- Documents & Resources -->
-        <div class="sitemap-section">
-          <h2>
-            <span class="section-icon">📄</span>
-            Documents & Resources
-          </h2>
-          <ul>
-            <li><a href="/documents/">Document Library</a></li>
-            <ul class="subsection">
-              <li><a href="/documents/">Community Plans</a></li>
-              <li><a href="/documents/">Reports & Studies</a></li>
-              <li><a href="/documents/">Maps</a></li>
-              <li><a href="/documents/">Forms & Applications</a></li>
-            </ul>
-          </ul>
-        </div>
-
-        <!-- Legal & Policy -->
-        <div class="sitemap-section">
-          <h2>
-            <span class="section-icon">⚖️</span>
-            Legal & Policy
-          </h2>
-          <ul>
-            <li><a href="/privacy/">Privacy Policy</a></li>
-            <li><a href="/accessibility/">Accessibility Statement</a></li>
-            <li><a href="/sitemap/">Site Map</a></li>
-            <li><a href="/404/">Error Page</a></li>
-          </ul>
-        </div>
-
-        <!-- External Links -->
-        <div class="sitemap-section">
-          <h2>
-            <span class="section-icon">🔗</span>
-            External Resources
-          </h2>
-          <ul>
-            <li><a href="https://www.midcoast.nsw.gov.au/" target="_blank" rel="noopener">MidCoast Council ↗</a></li>
-            <li><a href="https://www.rfs.nsw.gov.au/" target="_blank" rel="noopener">NSW Rural Fire Service ↗</a></li>
-            <li><a href="https://www.bom.gov.au/" target="_blank" rel="noopener">Bureau of Meteorology ↗</a></li>
-          </ul>
-        </div>
-
       </div>
 
     </div>
   </div>
 
   <script>
-    // Simple search functionality
-    const searchInput = document.querySelector('.search-input input');
-    const searchButton = document.querySelector('.search-button');
+    // Search and filter functionality
+    const searchInput = document.getElementById('searchInput');
+    const sectionFilter = document.getElementById('sectionFilter');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const typeFilter = document.getElementById('typeFilter');
+    const advancedToggle = document.getElementById('advancedToggle');
+    const advancedFilters = document.getElementById('advancedFilters');
+    const resultsSummary = document.getElementById('resultsSummary');
+    const contentContainer = document.getElementById('contentContainer');
+    const noResults = document.getElementById('noResults');
 
-    searchButton?.addEventListener('click', () => {
-      const query = searchInput?.value;
-      if (query) {
-        // Redirect to home page with search parameter (if you have search functionality)
-        window.location.href = `/?search=${encodeURIComponent(query)}`;
-      }
+    // Toggle advanced filters
+    advancedToggle?.addEventListener('click', () => {
+      const isVisible = advancedFilters.classList.toggle('visible');
+      advancedToggle.setAttribute('aria-expanded', isVisible);
+      advancedFilters.setAttribute('aria-hidden', !isVisible);
+      advancedToggle.textContent = isVisible ? 'Hide Advanced Filters' : 'Show Advanced Filters';
     });
 
-    searchInput?.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        searchButton?.click();
+    // Filter function
+    function filterContent() {
+      const searchTerm = searchInput?.value.toLowerCase() || '';
+      const selectedSection = sectionFilter?.value || '';
+      const selectedCategory = categoryFilter?.value || '';
+      const selectedStatus = statusFilter?.value || '';
+      const selectedType = typeFilter?.value || '';
+
+      const cards = document.querySelectorAll('.content-card');
+      const sectionGroups = document.querySelectorAll('.section-group');
+      let visibleCount = 0;
+
+      // Filter cards
+      cards.forEach(card => {
+        const title = card.dataset.title || '';
+        const description = card.dataset.description || '';
+        const section = card.dataset.section || '';
+        const category = card.dataset.category || '';
+        const status = card.dataset.status || '';
+        const type = card.dataset.type || '';
+
+        const matchesSearch = !searchTerm || title.includes(searchTerm) || description.includes(searchTerm);
+        const matchesSection = !selectedSection || section === selectedSection;
+        const matchesCategory = !selectedCategory || category === selectedCategory;
+        const matchesStatus = !selectedStatus || status.includes(selectedStatus);
+        const matchesType = !selectedType || type === selectedType;
+
+        const isVisible = matchesSearch && matchesSection && matchesCategory && matchesStatus && matchesType;
+        
+        card.style.display = isVisible ? '' : 'none';
+        if (isVisible) visibleCount++;
+      });
+
+      // Hide empty section groups
+      sectionGroups.forEach(group => {
+        const visibleCards = group.querySelectorAll('.content-card:not([style*="display: none"])');
+        group.style.display = visibleCards.length > 0 ? '' : 'none';
+      });
+
+      // Update results summary
+      if (resultsSummary) {
+        resultsSummary.textContent = `Showing ${visibleCount} items`;
       }
-    });
+
+      // Show/hide no results message
+      if (contentContainer && noResults) {
+        contentContainer.style.display = visibleCount > 0 ? '' : 'none';
+        noResults.style.display = visibleCount === 0 ? '' : 'none';
+      }
+    }
+
+    // Attach event listeners
+    searchInput?.addEventListener('input', filterContent);
+    sectionFilter?.addEventListener('change', filterContent);
+    categoryFilter?.addEventListener('change', filterContent);
+    statusFilter?.addEventListener('change', filterContent);
+    typeFilter?.addEventListener('change', filterContent);
+
+    // Initial filter
+    filterContent();
   </script>
 </Layout>
