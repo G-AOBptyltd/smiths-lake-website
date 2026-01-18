@@ -53,7 +53,6 @@ const footerSections = [
     links: [
       { href: '/newsletter/', label: 'Newsletter Signup' },
       { href: '/feedback/', label: 'Submit Feedback' },
-,
       { href: 'https://www.midcoast.nsw.gov.au/', label: 'MidCoast Council', external: true },
     ]
   }
@@ -116,6 +115,13 @@ if (!hasKeyDocs) {
         <a href="/accessibility/">Accessibility</a>
         <a href="/sitemap/">Site Map</a>
       </nav>
+    </div>
+    
+    <!-- Agility Ops Sponsorship Credit -->
+    <div class="footer-sponsor">
+      <p>
+        Website powered by <a href="http://agilityopsbusinessptyltd.com/" target="_blank" rel="noopener noreferrer" class="sponsor-link">Agility Ops Business Pty Ltd</a> | AI transformation, agile training & coaching
+      </p>
     </div>
     
     <div class="footer-acknowledgement">
@@ -258,6 +264,39 @@ if (!hasKeyDocs) {
   }
   
   .footer-legal a:focus-visible {
+    outline: 2px solid var(--color-golden);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+  
+  /* Sponsor Credit Section */
+  .footer-sponsor {
+    border-top: 1px solid var(--color-navy-light);
+    padding-top: var(--space-6);
+    margin-bottom: var(--space-6);
+    text-align: center;
+  }
+  
+  .footer-sponsor p {
+    font-size: var(--text-sm);
+    color: var(--color-sky-light);
+    margin: 0;
+    line-height: var(--leading-relaxed);
+  }
+  
+  .sponsor-link {
+    color: var(--color-golden);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color var(--transition-fast);
+  }
+  
+  .sponsor-link:hover {
+    color: var(--color-white);
+    text-decoration: underline;
+  }
+  
+  .sponsor-link:focus-visible {
     outline: 2px solid var(--color-golden);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
