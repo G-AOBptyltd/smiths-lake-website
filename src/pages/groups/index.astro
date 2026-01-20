@@ -1,22 +1,18 @@
 ---
-// Groups & Activities Index Page - Complete Card Template System with Icon Headers
+// Groups & Activities Index Page - UPDATED 2026-01-21
+// Updated for Status on Web, Status/Stage/Phase, Event Frequency, Event Cycle fields
 import Layout from '../../layouts/BaseLayout.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 
 // Fetch all Groups & Activities items
-const allItems = await fetchNotionContent({ 
+// ✅ UPDATED: fetchNotionContent now filters by Status on Web = "Published" automatically
+const items = await fetchNotionContent({ 
   section: 'Groups & Activities',
   requireShowOnWebsite: true
 });
 
-// Filter for published/active items
-const items = allItems.filter(item => {
-  const acceptedStatuses = ['Published', 'Active'];
-  if (Array.isArray(item.status)) {
-    return item.status.some(s => acceptedStatuses.includes(s));
-  }
-  return acceptedStatuses.includes(item.status);
-});
+// ✅ REMOVED: No longer filtering by status values
+// All items with Status on Web = "Published" will display
 
 // Category emoji mapping
 const categoryEmojis = {
@@ -235,8 +231,9 @@ const sections = categoryDefs
     }
 
     .badge.category { background: #EDE9FE; color: #6B21A8; }
-    .badge.status-published { background: #D1FAE5; color: #065F46; }
-    .badge.status-active { background: #DBEAFE; color: #1E40AF; }
+    
+    /* ✅ UPDATED: Generic status badge styling (all statuses shown) */
+    .badge.status { background: #DBEAFE; color: #1E40AF; }
     .badge.frequency { background: #F5A623; color: white; }
 
     .card-body {
@@ -428,15 +425,15 @@ const sections = categoryDefs
                         {group.category && (
                           <span class="badge category">{group.category}</span>
                         )}
-                        {Array.isArray(group.status) ? (
+                        {/* ✅ UPDATED: Display ALL status values from Status / Stage / Phase array */}
+                        {Array.isArray(group.status) && group.status.length > 0 && (
                           config.showAllStatuses ? 
                             group.status.map(s => (
-                              <span class={`badge status-${s.toLowerCase()}`}>{s}</span>
+                              <span class="badge status">{s}</span>
                             )) :
-                            <span class={`badge status-${group.status[0].toLowerCase()}`}>{group.status[0]}</span>
-                        ) : group.status && (
-                          <span class={`badge status-${group.status.toLowerCase()}`}>{group.status}</span>
+                            <span class="badge status">{group.status[0]}</span>
                         )}
+                        {/* ✅ NEW: Display Event Frequency badge */}
                         {group.eventFrequency && (
                           <span class="badge frequency">🔄 {group.eventFrequency}</span>
                         )}
