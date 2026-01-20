@@ -1,6 +1,6 @@
 // Unified Notion Library for PPCA Website
 // Fetches content from single unified database with proper field handling
-// FIXED: Handles Status field as both multi-select (array) and status (string) types
+// UPDATED 2026-01-21: Field name changes (Status on Web, Status/Stage/Phase)
 
 import { Client } from '@notionhq/client';
 import fs from 'fs';
@@ -73,31 +73,17 @@ function parseProperty(property) {
 }
 
 /**
- * Normalize Status field - handles both multi-select (array) and status (string) field types
- * The Status field in Notion is configured as multi-select, which returns ['Active'] instead of 'Active'
- * This function normalizes it to always return a string
- */
-function normalizeStatus(statusValue) {
-  if (!statusValue) return null;
-  
-  // If it's an array (multi-select), take the first value
-  if (Array.isArray(statusValue)) {
-    return statusValue.length > 0 ? statusValue[0] : null;
-  }
-  
-  // Otherwise return as-is (should be a string)
-  return statusValue;
-}
-
-/**
  * Parse Notion page to content item
  */
 function parseNotionPage(page) {
   const props = page.properties || {};
 
-  // Parse and normalize Status field
-  const rawStatus = parseProperty(props.Status);
-  const status = normalizeStatus(rawStatus);
+  // ✅ NEW: Parse Status on Web (replaces Show on Website)
+  const statusOnWeb = parseProperty(props['Status on Web']);
+  
+  // ✅ NEW: Parse Status / Stage / Phase (replaces Status)
+  // Keep as array (multi-select) for displaying multiple badges publicly
+  const statusStagePhase = parseProperty(props['Status / Stage / Phase']) || [];
 
   // ✅ Robust Groups Info/Docs link mapping
   const groupInfoDocProp = getFirstExistingProp(props, [
@@ -116,10 +102,14 @@ function parseNotionPage(page) {
     section: parseProperty(props.Section),
     category: parseProperty(props.Category),
     description: parseProperty(props.Description),
-    status: status, // Normalized status (always string or null, never array)
-    showOnWebsite: parseProperty(props['Show on Website']),
+    
+    // ✅ NEW: Updated status fields
+    statusOnWeb: statusOnWeb, // "Published", "Approved", "Pending", "UnPublished"
+    status: statusStagePhase, // Array: ["Active", "Open to New Participants", etc.]
+    
     slug: parseProperty(props.Slug),
     priorityOrder: parseProperty(props['Priority Order']) || 999,
+    priority: parseProperty(props.Priority), // ✅ NEW field
     notes: parseProperty(props.Notes),
 
     // Meeting fields
@@ -127,7 +117,7 @@ function parseNotionPage(page) {
     meetingTime: parseProperty(props['Meeting Time']),
     meetingLocation: parseProperty(props['Meeting Location']),
     
-    // Event scheduling fields
+    // ✅ NEW: Event scheduling fields (now extracted)
     eventFrequency: parseProperty(props['Event Frequency']),
     eventCycle: parseProperty(props['Event Cycle']),
 
@@ -140,6 +130,7 @@ function parseNotionPage(page) {
     // Link fields
     websiteUrl: parseProperty(props['Website URL']),
     facebookUrl: parseProperty(props['Facebook URL']),
+    documentUrl: parseProperty(props['Document URL']),
 
     // Groups - per-card info/docs link
     groupInfoDocumentUrl: parseProperty(groupInfoDocProp),
@@ -190,12 +181,12 @@ export async function fetchNotionContent(filters = {}) {
     // Build filter conditions dynamically
     const filterConditions = [];
     
-    // Filter by "Show on Website" (default: true)
+    // ✅ UPDATED: Filter by "Status on Web" (default: only show "Published" items)
     if (filters.requireShowOnWebsite !== false) {
       filterConditions.push({
-        property: 'Show on Website',
+        property: 'Status on Web',
         select: {
-          equals: 'TRUE',
+          equals: 'Published',
         },
       });
     }
@@ -220,10 +211,9 @@ export async function fetchNotionContent(filters = {}) {
       });
     }
 
-    // NOTE: We don't filter by Status in the Notion API query
-    // because Status is a multi-select field, and Notion's API
-    // doesn't support filtering multi-select with status.equals
-    // Instead, we fetch all matching items and filter by status after parsing
+    // NOTE: We don't filter by Status / Stage / Phase in the Notion API query
+    // because it's a multi-select field used for PUBLIC DISPLAY of all statuses
+    // All status values should be shown as badges to website visitors
 
     const notionFilter = filterConditions.length > 0 
       ? { and: filterConditions }
@@ -242,16 +232,9 @@ export async function fetchNotionContent(filters = {}) {
 
     let items = response.results.map(parseNotionPage);
 
-    // Apply status filter after parsing (now that status is normalized to string)
-    if (filters.status) {
-      if (Array.isArray(filters.status)) {
-        // Multiple accepted statuses
-        items = items.filter(item => filters.status.includes(item.status));
-      } else {
-        // Single status
-        items = items.filter(item => item.status === filters.status);
-      }
-    }
+    // ✅ REMOVED: Status filtering after parsing
+    // Status / Stage / Phase is for public display, not filtering
+    // All items with Status on Web = "Published" should appear
 
     // Cache the results
     try {
@@ -289,15 +272,9 @@ export async function fetchNotionContent(filters = {}) {
       if (filters.category) {
         data = data.filter((item) => item.category === filters.category);
       }
-      if (filters.status) {
-        if (Array.isArray(filters.status)) {
-          data = data.filter((item) => filters.status.includes(item.status));
-        } else {
-          data = data.filter((item) => item.status === filters.status);
-        }
-      }
+      // ✅ UPDATED: Filter by Status on Web
       if (filters.requireShowOnWebsite !== false) {
-        data = data.filter((item) => item.showOnWebsite === 'TRUE');
+        data = data.filter((item) => item.statusOnWeb === 'Published');
       }
 
       return data;
@@ -308,7 +285,7 @@ export async function fetchNotionContent(filters = {}) {
 }
 
 /**
- * Fetch items by section (default: requires Show on Website = TRUE)
+ * Fetch items by section (default: requires Status on Web = "Published")
  */
 export async function fetchItemsBySection(sectionName) {
   return fetchNotionContent({ section: sectionName });
@@ -322,14 +299,13 @@ export async function fetchItemsBySectionAndCategory(sectionName, categoryName) 
 }
 
 /**
- * Fetch items by section with multiple accepted statuses
- * This is the key function for Groups & Activities!
+ * ✅ DEPRECATED: This function is no longer needed
+ * Status / Stage / Phase is for public display, not filtering
+ * Keeping for backward compatibility but now just calls fetchItemsBySection
  */
 export async function fetchItemsBySectionWithStatuses(sectionName, acceptedStatuses) {
-  return fetchNotionContent({ 
-    section: sectionName,
-    status: acceptedStatuses
-  });
+  console.warn('fetchItemsBySectionWithStatuses is deprecated - Status/Stage/Phase is for display only');
+  return fetchNotionContent({ section: sectionName });
 }
 
 /**
