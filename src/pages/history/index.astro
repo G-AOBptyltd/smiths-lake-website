@@ -1,35 +1,35 @@
 ---
-// History & Culture Page with Dynamic Card Templates - UPDATED 2026-01-21
+// History & Culture Page - UPDATED 2026-01-21
 // Updated for Status on Web and Status/Stage/Phase fields
 import Layout from '../../layouts/BaseLayout.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 
 // Fetch History & Culture items
-// ✅ UPDATED: fetchNotionContent now filters by Status on Web = "Published" automatically
 const allHistoryItems = await fetchNotionContent({ 
   section: 'History & Culture',
   requireShowOnWebsite: true
 });
 
-// ✅ REMOVED: No longer filtering by status values
-// All items with Status on Web = "Published" will display
-
 // Sort by Year Era (oldest to newest)
 const timelineItems = allHistoryItems
-  .filter(item => item.yearEra) // Only items with dates
+  .filter(item => item.yearEra)
   .sort((a, b) => {
     const dateA = new Date(a.yearEra);
     const dateB = new Date(b.yearEra);
     return dateA - dateB;
   });
 
-// Helper: Extract year from date
+// Separate documents for the bottom section
+const documentItems = allHistoryItems.filter(
+  item => item.recordType === 'Document'
+);
+
+// Helper functions
 function getYear(dateString) {
   if (!dateString) return null;
   return new Date(dateString).getFullYear();
 }
 
-// Helper: Format date nicely
 function formatDate(dateString) {
   if (!dateString) return null;
   return new Date(dateString).toLocaleDateString('en-AU', { 
@@ -39,7 +39,6 @@ function formatDate(dateString) {
   });
 }
 
-// Helper: Get category icon
 function getCategoryIcon(category) {
   const icons = {
     'Indigenous Heritage': '🏛️',
@@ -53,7 +52,6 @@ function getCategoryIcon(category) {
   return icons[category] || '📍';
 }
 
-// Helper: Get category color
 function getCategoryColor(category) {
   const colors = {
     'Indigenous Heritage': '#D2691E',
@@ -67,12 +65,10 @@ function getCategoryColor(category) {
   return colors[category] || '#6B7280';
 }
 
-// Helper: Determine what to show based on template and options
 function getCardDisplayConfig(item) {
   const template = item.cardTemplate || 'Standard';
   const options = item.cardOptions || [];
   
-  // Base configuration per template
   const templateConfig = {
     'Minimal': {
       showCategory: false,
@@ -126,10 +122,8 @@ function getCardDisplayConfig(item) {
     },
   };
   
-  // Get base config from template
   const config = templateConfig[template] || templateConfig['Standard'];
   
-  // Apply option overrides
   if (options.includes('Show Source')) config.showSource = true;
   if (options.includes('Show People')) config.showPeople = true;
   if (options.includes('Show Updated Date')) config.showUpdated = true;
@@ -141,42 +135,33 @@ function getCardDisplayConfig(item) {
   
   return config;
 }
-
-// Separate documents for the bottom section
-const documentItems = allHistoryItems.filter(
-  item => item.recordType === 'Document'
-);
 ---
 
 <Layout title="History & Culture" description="Discover the stories that shaped our community">
   <style>
-    .history-page {
-      background: #f7f9fc;
-    }
-
-    /* Hero */
+    .history-page { background: #f7f9fc; }
+    
     .history-hero {
       background: linear-gradient(135deg, rgba(27, 54, 93, 0.95), rgba(91, 155, 213, 0.85));
       color: white;
       padding: 5rem 1rem;
       text-align: center;
     }
-
+    
     .history-hero h1 {
       color: white;
       font-size: 3rem;
       margin-bottom: 1rem;
       font-weight: 700;
     }
-
+    
     .history-hero p {
       font-size: 1.25rem;
       opacity: 0.95;
       max-width: 800px;
       margin: 0 auto;
     }
-
-    /* Acknowledgement of Country */
+    
     .acknowledgement {
       background: #1B365D;
       color: white;
@@ -187,49 +172,46 @@ const documentItems = allHistoryItems.filter(
       text-align: center;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
-
+    
     .acknowledgement h2 {
       color: #F5A623;
       font-size: 2rem;
       margin-bottom: 1.5rem;
     }
-
+    
     .acknowledgement p {
       font-size: 1.125rem;
       line-height: 1.8;
       opacity: 0.95;
     }
-
-    /* Timeline Section */
+    
     .timeline-section {
       max-width: 1000px;
       margin: 4rem auto;
       padding: 0 1rem;
     }
-
+    
     .timeline-header {
       text-align: center;
       margin-bottom: 4rem;
     }
-
+    
     .timeline-header h2 {
       color: #1B365D;
       font-size: 2.5rem;
       margin-bottom: 1rem;
     }
-
+    
     .timeline-header p {
       color: #6B7280;
       font-size: 1.125rem;
     }
-
-    /* Timeline Container */
+    
     .timeline {
       position: relative;
       padding: 2rem 0;
     }
-
-    /* Central vertical line */
+    
     .timeline::before {
       content: '';
       position: absolute;
@@ -240,31 +222,18 @@ const documentItems = allHistoryItems.filter(
       background: linear-gradient(to bottom, #5B9BD5, #1B365D);
       transform: translateX(-50%);
     }
-
-    /* Timeline Item */
+    
     .timeline-item {
       position: relative;
       margin-bottom: 4rem;
       display: flex;
       align-items: center;
     }
-
-    .timeline-item:last-child {
-      margin-bottom: 0;
-    }
-
-    /* Alternating layout */
-    .timeline-item:nth-child(odd) {
-      flex-direction: row;
-      text-align: right;
-    }
-
-    .timeline-item:nth-child(even) {
-      flex-direction: row-reverse;
-      text-align: left;
-    }
-
-    /* Year marker */
+    
+    .timeline-item:last-child { margin-bottom: 0; }
+    .timeline-item:nth-child(odd) { flex-direction: row; text-align: right; }
+    .timeline-item:nth-child(even) { flex-direction: row-reverse; text-align: left; }
+    
     .timeline-year {
       position: absolute;
       left: 50%;
@@ -278,8 +247,7 @@ const documentItems = allHistoryItems.filter(
       z-index: 10;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
-
-    /* Timeline dot/node */
+    
     .timeline-dot {
       position: absolute;
       left: 50%;
@@ -292,8 +260,7 @@ const documentItems = allHistoryItems.filter(
       box-shadow: 0 0 0 4px;
       margin-top: 3rem;
     }
-
-    /* Timeline card - base */
+    
     .timeline-card {
       flex: 1;
       max-width: 450px;
@@ -305,42 +272,19 @@ const documentItems = allHistoryItems.filter(
       transition: all 0.3s ease;
       margin: 4rem 2rem 0;
     }
-
-    /* Large format cards */
-    .timeline-card.large-format {
-      max-width: 500px;
-      padding: 2.5rem;
-    }
-
-    /* Compact view cards */
-    .timeline-card.compact-view {
-      padding: 1.5rem;
-      max-width: 400px;
-    }
-
-    /* Highlighted cards */
+    
+    .timeline-card.large-format { max-width: 500px; padding: 2.5rem; }
+    .timeline-card.compact-view { padding: 1.5rem; max-width: 400px; }
     .timeline-card.highlight {
       border: 3px solid #F5A623;
       box-shadow: 0 6px 20px rgba(245, 166, 35, 0.3);
       background: linear-gradient(to bottom, white 0%, #FFFDF5 100%);
     }
-
-    .timeline-item:nth-child(odd) .timeline-card {
-      margin-right: auto;
-      margin-left: 2rem;
-    }
-
-    .timeline-item:nth-child(even) .timeline-card {
-      margin-left: auto;
-      margin-right: 2rem;
-    }
-
-    .timeline-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    }
-
-    /* Featured banner */
+    
+    .timeline-item:nth-child(odd) .timeline-card { margin-right: auto; margin-left: 2rem; }
+    .timeline-item:nth-child(even) .timeline-card { margin-left: auto; margin-right: 2rem; }
+    .timeline-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15); }
+    
     .featured-banner {
       display: inline-flex;
       align-items: center;
@@ -355,28 +299,18 @@ const documentItems = allHistoryItems.filter(
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-
-    /* Card Header */
+    
     .card-icon-wrapper {
       display: flex;
       align-items: center;
       gap: 1rem;
       margin-bottom: 1rem;
     }
-
-    .timeline-item:nth-child(odd) .card-icon-wrapper {
-      flex-direction: row-reverse;
-    }
-
-    .card-icon {
-      font-size: 2.5rem;
-      line-height: 1;
-    }
-
-    .card-icon.large {
-      font-size: 3.5rem;
-    }
-
+    
+    .timeline-item:nth-child(odd) .card-icon-wrapper { flex-direction: row-reverse; }
+    .card-icon { font-size: 2.5rem; line-height: 1; }
+    .card-icon.large { font-size: 3.5rem; }
+    
     .card-type-badge {
       display: inline-flex;
       align-items: center;
@@ -388,7 +322,7 @@ const documentItems = allHistoryItems.filter(
       font-weight: 600;
       color: #374151;
     }
-
+    
     .card-title {
       color: #1B365D;
       font-size: 1.5rem;
@@ -396,22 +330,18 @@ const documentItems = allHistoryItems.filter(
       margin: 0 0 1rem;
       line-height: 1.3;
     }
-
-    .card-title.large {
-      font-size: 1.875rem;
-    }
-
+    
+    .card-title.large { font-size: 1.875rem; }
+    
     .card-badges {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
       margin-bottom: 1rem;
     }
-
-    .timeline-item:nth-child(odd) .card-badges {
-      justify-content: flex-end;
-    }
-
+    
+    .timeline-item:nth-child(odd) .card-badges { justify-content: flex-end; }
+    
     .card-category {
       display: inline-block;
       padding: 0.375rem 0.875rem;
@@ -420,7 +350,7 @@ const documentItems = allHistoryItems.filter(
       font-weight: 600;
       color: white;
     }
-
+    
     .card-status-badge {
       display: inline-flex;
       align-items: center;
@@ -431,25 +361,22 @@ const documentItems = allHistoryItems.filter(
       background: #E5E7EB;
       color: #374151;
     }
-
+    
     .card-description {
       color: #374151;
       line-height: 1.7;
       margin-bottom: 1.5rem;
     }
-
+    
     .card-description.collapsed {
       display: -webkit-box;
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
-
-    .card-description.expanded {
-      display: block;
-    }
-
-    /* Card Metadata Section */
+    
+    .card-description.expanded { display: block; }
+    
     .card-metadata {
       border-top: 1px solid #E5E7EB;
       padding-top: 1rem;
@@ -458,7 +385,7 @@ const documentItems = allHistoryItems.filter(
       flex-direction: column;
       gap: 0.75rem;
     }
-
+    
     .metadata-row {
       display: flex;
       align-items: flex-start;
@@ -466,35 +393,24 @@ const documentItems = allHistoryItems.filter(
       font-size: 0.9375rem;
       color: #6B7280;
     }
-
+    
     .timeline-item:nth-child(odd) .metadata-row {
       flex-direction: row-reverse;
       text-align: right;
     }
-
-    .metadata-icon {
-      flex-shrink: 0;
-      font-size: 1.125rem;
-    }
-
-    .metadata-label {
-      font-weight: 600;
-      color: #374151;
-      margin-right: 0.25rem;
-    }
-
-    /* Card Actions */
+    
+    .metadata-icon { flex-shrink: 0; font-size: 1.125rem; }
+    .metadata-label { font-weight: 600; color: #374151; margin-right: 0.25rem; }
+    
     .card-actions {
       display: flex;
       gap: 0.75rem;
       flex-wrap: wrap;
       margin-top: 1.5rem;
     }
-
-    .timeline-item:nth-child(odd) .card-actions {
-      justify-content: flex-end;
-    }
-
+    
+    .timeline-item:nth-child(odd) .card-actions { justify-content: flex-end; }
+    
     .btn {
       display: inline-flex;
       align-items: center;
@@ -508,34 +424,18 @@ const documentItems = allHistoryItems.filter(
       border: none;
       font-size: 0.9375rem;
     }
-
-    .btn-primary {
-      background: #5B9BD5;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #1B365D;
-    }
-
-    .btn-outline {
-      background: white;
-      color: #1B365D;
-      border: 2px solid #1B365D;
-    }
-
-    .btn-outline:hover {
-      background: #1B365D;
-      color: white;
-    }
-
-    /* Documents Section */
+    
+    .btn-primary { background: #5B9BD5; color: white; }
+    .btn-primary:hover { background: #1B365D; }
+    .btn-outline { background: white; color: #1B365D; border: 2px solid #1B365D; }
+    .btn-outline:hover { background: #1B365D; color: white; }
+    
     .documents-section {
       max-width: 900px;
       margin: 4rem auto;
       padding: 0 1rem 4rem;
     }
-
+    
     .documents-header {
       display: flex;
       align-items: center;
@@ -544,13 +444,9 @@ const documentItems = allHistoryItems.filter(
       padding-bottom: 1rem;
       border-bottom: 3px solid #1B365D;
     }
-
-    .documents-header h2 {
-      color: #1B365D;
-      font-size: 1.75rem;
-      margin: 0;
-    }
-
+    
+    .documents-header h2 { color: #1B365D; font-size: 1.75rem; margin: 0; }
+    
     .document-card {
       background: white;
       border-radius: 12px;
@@ -562,35 +458,12 @@ const documentItems = allHistoryItems.filter(
       gap: 1.5rem;
       border-left: 4px solid #5B9BD5;
     }
-
-    .document-icon {
-      font-size: 2.5rem;
-      flex-shrink: 0;
-    }
-
-    .document-content {
-      flex: 1;
-    }
-
-    .document-title {
-      color: #1B365D;
-      font-size: 1.125rem;
-      font-weight: 700;
-      margin: 0 0 0.5rem;
-    }
-
-    .document-meta {
-      font-size: 0.875rem;
-      color: #6B7280;
-      margin-bottom: 0.75rem;
-    }
-
-    .document-description {
-      color: #374151;
-      line-height: 1.6;
-      margin-bottom: 1rem;
-    }
-
+    
+    .document-icon { font-size: 2.5rem; flex-shrink: 0; }
+    .document-content { flex: 1; }
+    .document-title { color: #1B365D; font-size: 1.125rem; font-weight: 700; margin: 0 0 0.5rem; }
+    .document-meta { font-size: 0.875rem; color: #6B7280; margin-bottom: 0.75rem; }
+    .document-description { color: #374151; line-height: 1.6; margin-bottom: 1rem; }
     .document-link {
       display: inline-flex;
       align-items: center;
@@ -600,79 +473,40 @@ const documentItems = allHistoryItems.filter(
       font-weight: 600;
       font-size: 0.9375rem;
     }
-
-    .document-link:hover {
-      color: #1B365D;
-      text-decoration: underline;
-    }
-
-    /* Mobile responsive */
+    .document-link:hover { color: #1B365D; text-decoration: underline; }
+    
     @media (max-width: 768px) {
-      .history-hero h1 {
-        font-size: 2rem;
-      }
-
-      .timeline::before {
-        left: 20px;
-      }
-
+      .history-hero h1 { font-size: 2rem; }
+      .timeline::before { left: 20px; }
       .timeline-item {
         flex-direction: column !important;
         text-align: left !important;
         padding-left: 50px;
       }
-
       .timeline-item:nth-child(odd) .card-icon-wrapper,
-      .timeline-item:nth-child(even) .card-icon-wrapper {
-        flex-direction: row;
-      }
-
+      .timeline-item:nth-child(even) .card-icon-wrapper { flex-direction: row; }
       .timeline-item:nth-child(odd) .card-badges,
-      .timeline-item:nth-child(even) .card-badges {
-        justify-content: flex-start;
-      }
-
+      .timeline-item:nth-child(even) .card-badges { justify-content: flex-start; }
       .timeline-item:nth-child(odd) .metadata-row,
       .timeline-item:nth-child(even) .metadata-row {
         flex-direction: row;
         text-align: left;
       }
-
-      .timeline-year {
-        left: 20px;
-        transform: translateX(0);
-      }
-
-      .timeline-dot {
-        left: 20px;
-        transform: translateX(-50%);
-      }
-
-      .timeline-card {
-        margin: 4rem 0 0 0 !important;
-        max-width: 100%;
-      }
-
+      .timeline-year { left: 20px; transform: translateX(0); }
+      .timeline-dot { left: 20px; transform: translateX(-50%); }
+      .timeline-card { margin: 4rem 0 0 0 !important; max-width: 100%; }
       .timeline-item:nth-child(odd) .card-actions,
-      .timeline-item:nth-child(even) .card-actions {
-        justify-content: flex-start;
-      }
-
-      .document-card {
-        flex-direction: column;
-        gap: 1rem;
-      }
+      .timeline-item:nth-child(even) .card-actions { justify-content: flex-start; }
+      .document-card { flex-direction: column; gap: 1rem; }
     }
   </style>
 
   <div class="history-page">
-    <!-- Hero -->
     <div class="history-hero">
       <h1>History & Culture</h1>
       <p>Discover the stories that shaped our community.</p>
     </div>
 
-    <!-- Acknowledgement of Country -->
     <div class="acknowledgement">
       <h2>Acknowledgement of Country</h2>
       <p>
@@ -681,7 +515,6 @@ const documentItems = allHistoryItems.filter(
       </p>
     </div>
 
-    <!-- Timeline Section -->
     {timelineItems.length > 0 && (
       <div class="timeline-section">
         <div class="timeline-header">
@@ -697,11 +530,8 @@ const documentItems = allHistoryItems.filter(
             const isContent = item.recordType === 'Content';
             const recordIcon = isContent ? '📖' : '📄';
             const recordLabel = isContent ? 'Story' : 'Document';
-            
-            // Get display configuration based on template and options
             const config = getCardDisplayConfig(item);
             
-            // Build card CSS classes
             const cardClasses = [
               'timeline-card',
               config.largeFormat ? 'large-format' : '',
@@ -709,134 +539,76 @@ const documentItems = allHistoryItems.filter(
               config.highlight ? 'highlight' : '',
             ].filter(Boolean).join(' ');
             
-            // ✅ UPDATED: Handle Status / Stage / Phase as array
             const allStatuses = Array.isArray(item.status) ? item.status : (item.status ? [item.status] : []);
             
             return (
               <div class="timeline-item">
-                <div 
-                  class="timeline-year" 
-                  style={`border-color: ${categoryColor}; color: ${categoryColor};`}
-                >
+                <div class="timeline-year" style:border-color={categoryColor} style:color={categoryColor}>
                   {year}
                 </div>
                 
-                <div 
-                  class="timeline-dot" 
-                  style={`background: ${categoryColor}; box-shadow: 0 0 0 4px ${categoryColor}20;`}
-                />
+                <div class="timeline-dot" style:background={categoryColor} style:box-shadow={`0 0 0 4px ${categoryColor}20`} />
                 
-                <div class={cardClasses} style={`border-left-color: ${categoryColor};`}>
-                  {/* Featured banner */}
+                <div class={cardClasses} style:border-left-color={categoryColor}>
                   {config.highlight && (
-                    <div class="featured-banner">
-                      ⭐ Featured
-                    </div>
+                    <div class="featured-banner">⭐ Featured</div>
                   )}
 
-                  {/* Icon and type badge */}
                   <div class="card-icon-wrapper">
-                    <span class={`card-icon ${config.largeFormat ? 'large' : ''}`}>{categoryIcon}</span>
-                    <span class="card-type-badge">
-                      {recordIcon} {recordLabel}
-                    </span>
+                    <span class={config.largeFormat ? 'card-icon large' : 'card-icon'}>{categoryIcon}</span>
+                    <span class="card-type-badge">{recordIcon} {recordLabel}</span>
                   </div>
 
-                  {/* Title */}
-                  <h3 class={`card-title ${config.largeFormat ? 'large' : ''}`}>{item.title}</h3>
+                  <h3 class={config.largeFormat ? 'card-title large' : 'card-title'}>{item.title}</h3>
 
-                  {/* Badges: Category, Year, Statuses */}
                   {(config.showCategory || config.showYear || config.showAllStatuses) && (
                     <div class="card-badges">
                       {config.showCategory && item.category && (
-                        <span class="card-category" style={`background: ${categoryColor};`}>
-                          {item.category}
-                        </span>
+                        <span class="card-category" style:background={categoryColor}>{item.category}</span>
                       )}
-                      
-                      {/* ✅ UPDATED: Display ALL status values from Status / Stage / Phase array */}
                       {config.showAllStatuses && allStatuses.length > 0 && (
-                        allStatuses.map(status => (
-                          <span class="card-status-badge">{status}</span>
-                        ))
+                        allStatuses.map(status => <span class="card-status-badge">{status}</span>)
                       )}
                     </div>
                   )}
 
-                  {/* Description */}
                   {item.description && !config.hideDescription && (
-                    <div 
-                      class={`card-description ${isContent && !config.largeFormat ? 'collapsed' : ''}`}
-                      id={`desc-${index}`}
-                    >
+                    <div class={isContent && !config.largeFormat ? 'card-description collapsed' : 'card-description'} id={`desc-${index}`}>
                       {item.description}
                     </div>
                   )}
 
-                  {/* Metadata section */}
                   {(config.showSource || config.showPeople || config.showUpdated) && (
                     <div class="card-metadata">
                       {config.showSource && item.sourceAttribution && (
                         <div class="metadata-row">
                           <span class="metadata-icon">👤</span>
-                          <div>
-                            <span class="metadata-label">Source:</span>
-                            {item.sourceAttribution}
-                          </div>
+                          <div><span class="metadata-label">Source:</span>{item.sourceAttribution}</div>
                         </div>
                       )}
-                      
                       {config.showPeople && item.relatedPeople && (
                         <div class="metadata-row">
                           <span class="metadata-icon">👥</span>
-                          <div>
-                            <span class="metadata-label">Related People:</span>
-                            {item.relatedPeople}
-                          </div>
+                          <div><span class="metadata-label">Related People:</span>{item.relatedPeople}</div>
                         </div>
                       )}
-                      
                       {config.showUpdated && item.lastEditedTime && (
                         <div class="metadata-row">
                           <span class="metadata-icon">📅</span>
-                          <div>
-                            <span class="metadata-label">Updated:</span>
-                            {formatDate(item.lastEditedTime)}
-                          </div>
+                          <div><span class="metadata-label">Updated:</span>{formatDate(item.lastEditedTime)}</div>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Action buttons */}
                   <div class="card-actions">
                     {isContent && !config.largeFormat ? (
-                      <button 
-                        class="btn btn-outline" 
-                        onclick={`
-                          const desc = document.getElementById('desc-${index}');
-                          const btn = this;
-                          if (desc.classList.contains('collapsed')) {
-                            desc.classList.remove('collapsed');
-                            desc.classList.add('expanded');
-                            btn.innerHTML = '📖 Show Less ↑';
-                          } else {
-                            desc.classList.add('collapsed');
-                            desc.classList.remove('expanded');
-                            btn.innerHTML = '📖 Read More ↓';
-                          }
-                        `}
-                      >
+                      <button class="btn btn-outline" onclick={`const desc=document.getElementById('desc-${index}');const btn=this;if(desc.classList.contains('collapsed')){desc.classList.remove('collapsed');desc.classList.add('expanded');btn.innerHTML='📖 Show Less ↑';}else{desc.classList.add('collapsed');desc.classList.remove('expanded');btn.innerHTML='📖 Read More ↓';}`}>
                         📖 Read More ↓
                       </button>
                     ) : (
                       item.groupInfoDocumentUrl && (
-                        <a 
-                          href={item.groupInfoDocumentUrl} 
-                          target="_blank" 
-                          rel="noopener" 
-                          class="btn btn-primary"
-                        >
+                        <a href={item.groupInfoDocumentUrl} target="_blank" rel="noopener" class="btn btn-primary">
                           📄 View Document →
                         </a>
                       )
@@ -846,11 +618,10 @@ const documentItems = allHistoryItems.filter(
               </div>
             );
           })}
-        )}
+        </div>
       </div>
     )}
 
-    <!-- Historical Documents & References -->
     {documentItems.length > 0 && (
       <div class="documents-section">
         <div class="documents-header">
@@ -874,14 +645,9 @@ const documentItems = allHistoryItems.filter(
               )}
               {doc.description && (
                 <p class="document-description">{doc.description}</p>
-              </div>
+              )}
               {doc.groupInfoDocumentUrl && (
-                <a 
-                  href={doc.groupInfoDocumentUrl} 
-                  target="_blank" 
-                  rel="noopener" 
-                  class="document-link"
-                >
+                <a href={doc.groupInfoDocumentUrl} target="_blank" rel="noopener" class="document-link">
                   View / Download →
                 </a>
               )}
