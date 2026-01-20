@@ -1,22 +1,19 @@
 ---
-// Emergency & Safety Index Page - Complete Card Template System with Icon Headers
+// Emergency & Safety Index Page - UPDATED 2026-01-21
+// Updated for Status on Web and Status/Stage/Phase fields
 import Layout from '../../layouts/BaseLayout.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 
 // Fetch Emergency & Safety items
-const allItems = await fetchNotionContent({ 
+// ✅ UPDATED: fetchNotionContent now filters by Status on Web = "Published" automatically
+const items = await fetchNotionContent({ 
   section: 'Emergency & Safety',
   requireShowOnWebsite: true
 });
 
-// Filter for published/active items only
-const items = allItems.filter(item => {
-  const acceptedStatuses = ['Published', 'Active'];
-  if (Array.isArray(item.status)) {
-    return item.status.some(s => acceptedStatuses.includes(s));
-  }
-  return acceptedStatuses.includes(item.status);
-});
+// ✅ REMOVED: No longer filtering by status values
+// All items with Status on Web = "Published" will display
+// Status / Stage / Phase values are shown as badges for public information
 
 // Group by category for organization
 const categories = {
@@ -232,8 +229,9 @@ const categoryEmojis = {
     }
     
     .badge.category { background: #FEE2E2; color: #991B1B; }
-    .badge.status-published { background: #D1FAE5; color: #065F46; }
-    .badge.status-active { background: #DBEAFE; color: #1E40AF; }
+    
+    /* ✅ UPDATED: Generic status badge styling (all statuses shown) */
+    .badge.status { background: #DBEAFE; color: #1E40AF; }
     .badge.year { background: #FEF3C7; color: #92400E; }
     
     .card-body {
@@ -422,14 +420,13 @@ const categoryEmojis = {
                         {item.category && (
                           <span class="badge category">{item.category}</span>
                         )}
-                        {Array.isArray(item.status) ? (
+                        {/* ✅ UPDATED: Display ALL status values from Status / Stage / Phase array */}
+                        {Array.isArray(item.status) && item.status.length > 0 && (
                           config.showAllStatuses ? 
                             item.status.map(s => (
-                              <span class={`badge status-${s.toLowerCase()}`}>{s}</span>
+                              <span class="badge status">{s}</span>
                             )) :
-                            <span class={`badge status-${item.status[0].toLowerCase()}`}>{item.status[0]}</span>
-                        ) : item.status && (
-                          <span class={`badge status-${item.status.toLowerCase()}`}>{item.status}</span>
+                            <span class="badge status">{item.status[0]}</span>
                         )}
                       </div>
                     </div>
