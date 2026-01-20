@@ -348,7 +348,7 @@ const projects = items.filter(item =>
                   
                   {config.showIconHeader && (
                     <div class={`card-icon-header ${config.headerColor}`}>
-                      <span class="icon-display">🏥</span>
+                      <span class="icon-display">{getSmartIcon(item)}</span>
                     </div>
                   )}
 
@@ -399,7 +399,7 @@ const projects = items.filter(item =>
 
                         {item.contactPhone && item.showContactPublicly === 'TRUE' && (
                           <div class="meta-row">
-                            <span class="meta-icon">📞</span>
+                            <span class="meta-icon">{getSmartIcon(item)}</span>
                             <span><a href={`tel:${item.contactPhone}`}>{item.contactPhone}</a></span>
                           </div>
                         )}
@@ -413,21 +413,21 @@ const projects = items.filter(item =>
 
                         {config.showSource && item.sourceAttribution && (
                           <div class="meta-row">
-                            <span class="meta-icon">👤</span>
+                            <span class="meta-icon">{getSmartIcon(item)}</span>
                             <span><span class="meta-label">Source:</span> {item.sourceAttribution}</span>
                           </div>
                         )}
 
                         {config.showPeople && item.relatedPeople && (
                           <div class="meta-row">
-                            <span class="meta-icon">👥</span>
+                            <span class="meta-icon">{getSmartIcon(item)}</span>
                             <span><span class="meta-label">People:</span> {item.relatedPeople}</span>
                           </div>
                         )}
 
                         {config.showUpdated && item.lastEditedTime && (
                           <div class="meta-row">
-                            <span class="meta-icon">📅</span>
+                            <span class="meta-icon">{getSmartIcon(item)}</span>
                             <span><span class="meta-label">Updated:</span> {new Date(item.lastEditedTime).toLocaleDateString('en-AU')}</span>
                           </div>
                         )}
@@ -527,21 +527,21 @@ const projects = items.filter(item =>
                       <div class="card-metadata">
                         {config.showSource && item.sourceAttribution && (
                           <div class="meta-row">
-                            <span class="meta-icon">👤</span>
+                            <span class="meta-icon">{getSmartIcon(item)}</span>
                             <span><span class="meta-label">Source:</span> {item.sourceAttribution}</span>
                           </div>
                         )}
 
                         {config.showPeople && item.relatedPeople && (
                           <div class="meta-row">
-                            <span class="meta-icon">👥</span>
+                            <span class="meta-icon">{getSmartIcon(item)}</span>
                             <span><span class="meta-label">People:</span> {item.relatedPeople}</span>
                           </div>
                         )}
 
                         {config.showUpdated && item.lastEditedTime && (
                           <div class="meta-row">
-                            <span class="meta-icon">📅</span>
+                            <span class="meta-icon">{getSmartIcon(item)}</span>
                             <span><span class="meta-label">Updated:</span> {new Date(item.lastEditedTime).toLocaleDateString('en-AU')}</span>
                           </div>
                         )}
