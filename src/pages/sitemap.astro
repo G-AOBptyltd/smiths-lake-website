@@ -1,8 +1,9 @@
 ---
-// Dynamic Sitemap Page - Phase 1
+// Dynamic Sitemap Page - Phase 1 with Smart Icon System
 // Shows static pages + filterable Notion content using Card Template system
 import Layout from '../layouts/BaseLayout.astro';
 import { fetchNotionContent } from '../lib/notion-unified.js';
+import { getSmartIcon } from '../lib/icon-matcher.js';  // ← ADD THIS LINE
 
 // Fetch all published content from Notion
 const allContent = await fetchNotionContent({ 
@@ -610,6 +611,9 @@ const allTypes = [...new Set(publishedContent.map(item => item.recordType).filte
                   else if (section === 'Environment & Sustainability') iconColor = 'green';
                   else if (section === 'History & Culture') iconColor = 'orange';
 
+                  // Get smart icon for this item
+                  const smartIcon = getSmartIcon(item);  // ← THIS IS THE KEY CHANGE
+
                   return (
                     <article 
                       class={`content-card ${config.isFeatured ? 'featured' : ''} ${config.isHighlighted ? 'highlighted' : ''}`}
@@ -621,15 +625,10 @@ const allTypes = [...new Set(publishedContent.map(item => item.recordType).filte
                       data-type={item.recordType}
                     >
                       <div class={`card-icon ${iconColor}`}>
-                        <span class="icon-text">{
-                          section === 'Emergency & Safety' ? '🚨' :
-                          section === 'Services & Amenities' ? '🏥' :
-                          section === 'Groups & Activities' ? '👥' :
-                          section === 'Environment & Sustainability' ? '🌿' :
-                          section === 'History & Culture' ? '📚' :
-                          section === 'Governance & Admin' ? '📋' :
-                          section === 'Planning & Development' ? '🏗️' : '📄'
-                        }</span>
+                        {/* CHANGED: Now using smart icon instead of hardcoded section icons */}
+                        <span class="icon-text" role="img" aria-label={item.category || item.section}>
+                          {smartIcon}
+                        </span>
                       </div>
 
                       <div class="card-body">
