@@ -1,33 +1,21 @@
 ---
-// History & Culture Page with Dynamic Card Templates
+// History & Culture Page with Dynamic Card Templates - UPDATED 2026-01-21
+// Updated for Status on Web and Status/Stage/Phase fields
 import Layout from '../../layouts/BaseLayout.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 
-// Fetch ALL history items (bypass default Show on Website filter for more control)
+// Fetch History & Culture items
+// ✅ UPDATED: fetchNotionContent now filters by Status on Web = "Published" automatically
 const allHistoryItems = await fetchNotionContent({ 
   section: 'History & Culture',
-  requireShowOnWebsite: false
+  requireShowOnWebsite: true
 });
 
-// Filter for items with acceptable statuses and Show on Website = TRUE
-// Handle both single status (string) and multi-select status (array)
-const publishedItems = allHistoryItems.filter(item => {
-  if (!item.showOnWebsite || item.showOnWebsite !== 'TRUE') return false;
-  
-  // Handle Status as either string or array
-  const acceptedStatuses = ['Published', 'Active', 'Proposed', 'Plan Approved'];
-  
-  if (Array.isArray(item.status)) {
-    // Multi-select: check if ANY status is in accepted list
-    return item.status.some(s => acceptedStatuses.includes(s));
-  } else {
-    // Single select: direct comparison
-    return acceptedStatuses.includes(item.status);
-  }
-});
+// ✅ REMOVED: No longer filtering by status values
+// All items with Status on Web = "Published" will display
 
 // Sort by Year Era (oldest to newest)
-const timelineItems = publishedItems
+const timelineItems = allHistoryItems
   .filter(item => item.yearEra) // Only items with dates
   .sort((a, b) => {
     const dateA = new Date(a.yearEra);
@@ -156,9 +144,7 @@ function getCardDisplayConfig(item) {
 
 // Separate documents for the bottom section
 const documentItems = allHistoryItems.filter(
-  item => item.recordType === 'Document' && 
-          item.showOnWebsite === 'TRUE' &&
-          (item.status === 'Published' || (Array.isArray(item.status) && item.status.includes('Published')))
+  item => item.recordType === 'Document'
 );
 ---
 
@@ -723,9 +709,8 @@ const documentItems = allHistoryItems.filter(
               config.highlight ? 'highlight' : '',
             ].filter(Boolean).join(' ');
             
-            // Get all statuses if multi-select
-            const allStatuses = Array.isArray(item.status) ? item.status : [item.status].filter(Boolean);
-            const primaryStatus = allStatuses[0];
+            // ✅ UPDATED: Handle Status / Stage / Phase as array
+            const allStatuses = Array.isArray(item.status) ? item.status : (item.status ? [item.status] : []);
             
             return (
               <div class="timeline-item">
@@ -769,6 +754,7 @@ const documentItems = allHistoryItems.filter(
                         </span>
                       )}
                       
+                      {/* ✅ UPDATED: Display ALL status values from Status / Stage / Phase array */}
                       {config.showAllStatuses && allStatuses.length > 0 && (
                         allStatuses.map(status => (
                           <span class="card-status-badge">{status}</span>
@@ -888,7 +874,7 @@ const documentItems = allHistoryItems.filter(
               )}
               {doc.description && (
                 <p class="document-description">{doc.description}</p>
-              )}
+              </div>
               {doc.groupInfoDocumentUrl && (
                 <a 
                   href={doc.groupInfoDocumentUrl} 
