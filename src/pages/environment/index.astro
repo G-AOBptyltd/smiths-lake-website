@@ -1,22 +1,18 @@
 ---
-// Environment & Sustainability Index Page - Complete Card Template System with Icon Headers
+// Environment & Sustainability Index Page - UPDATED 2026-01-21
+// Updated for Status on Web and Status/Stage/Phase fields
 import Layout from '../../layouts/BaseLayout.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 
 // Fetch Environment items
-const allItems = await fetchNotionContent({ 
+// ✅ UPDATED: fetchNotionContent now filters by Status on Web = "Published" automatically
+const items = await fetchNotionContent({ 
   section: 'Environment & Sustainability',
   requireShowOnWebsite: true
 });
 
-// Filter for published/active items
-const items = allItems.filter(item => {
-  const acceptedStatuses = ['Published', 'Active'];
-  if (Array.isArray(item.status)) {
-    return item.status.some(s => acceptedStatuses.includes(s));
-  }
-  return acceptedStatuses.includes(item.status);
-});
+// ✅ REMOVED: No longer filtering by status values
+// All items with Status on Web = "Published" will display
 ---
 
 <Layout
@@ -175,8 +171,9 @@ const items = allItems.filter(item => {
     }
 
     .badge.category { background: #D1FAE5; color: #065F46; }
-    .badge.status-published { background: #D1FAE5; color: #065F46; }
-    .badge.status-active { background: #DBEAFE; color: #1E40AF; }
+    
+    /* ✅ UPDATED: Generic status badge styling (all statuses shown) */
+    .badge.status { background: #DBEAFE; color: #1E40AF; }
 
     .card-description {
       color: #4b5563;
@@ -316,14 +313,13 @@ const items = allItems.filter(item => {
                       {program.category && (
                         <span class="badge category">{program.category}</span>
                       )}
-                      {Array.isArray(program.status) ? (
+                      {/* ✅ UPDATED: Display ALL status values from Status / Stage / Phase array */}
+                      {Array.isArray(program.status) && program.status.length > 0 && (
                         config.showAllStatuses ? 
                           program.status.map(s => (
-                            <span class={`badge status-${s.toLowerCase()}`}>{s}</span>
+                            <span class="badge status">{s}</span>
                           )) :
-                          <span class={`badge status-${program.status[0].toLowerCase()}`}>{program.status[0]}</span>
-                      ) : program.status && (
-                        <span class={`badge status-${program.status.toLowerCase()}`}>{program.status}</span>
+                          <span class="badge status">{program.status[0]}</span>
                       )}
                     </div>
                     
