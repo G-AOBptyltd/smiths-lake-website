@@ -582,19 +582,19 @@ function getCardDisplayConfig(item) {
                     <div class="card-metadata">
                       {config.showSource && item.sourceAttribution && (
                         <div class="metadata-row">
-                          <span class="metadata-icon">👤</span>
+                          <span class="metadata-icon">{getSmartIcon(item)}</span>
                           <div><span class="metadata-label">Source:</span>{item.sourceAttribution}</div>
                         </div>
                       )}
                       {config.showPeople && item.relatedPeople && (
                         <div class="metadata-row">
-                          <span class="metadata-icon">👥</span>
+                          <span class="metadata-icon">{getSmartIcon(item)}</span>
                           <div><span class="metadata-label">Related People:</span>{item.relatedPeople}</div>
                         </div>
                       )}
                       {config.showUpdated && item.lastEditedTime && (
                         <div class="metadata-row">
-                          <span class="metadata-icon">📅</span>
+                          <span class="metadata-icon">{getSmartIcon(item)}</span>
                           <div><span class="metadata-label">Updated:</span>{formatDate(item.lastEditedTime)}</div>
                         </div>
                       )}
