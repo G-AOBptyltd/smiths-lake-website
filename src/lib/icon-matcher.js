@@ -317,30 +317,3 @@ export function getCategoryColor(category) {
   
   return categoryColors[category?.toLowerCase()] || '#1B365D'; // Default navy blue
 }
-
-/**
- * Validate icon mapping configuration
- * Useful for debugging and ensuring all sections have proper coverage
- * 
- * @returns {Object} Validation report
- */
-export function validateIconMappings() {
-  const report = {
-    totalExactMatches: Object.keys(exactMatches).length,
-    totalKeywordGroups: keywordMatches.length,
-    totalCategories: Object.keys(categoryFallbacks).length,
-    totalSections: Object.keys(sectionDefaults).length,
-    coverage: 'Good',
-  };
-  
-  console.table(report);
-  return report;
-}
-
-// Export for testing and validation
-export const iconMappings = {
-  exact: exactMatches,
-  keywords: keywordMatches,
-  categories: categoryFallbacks,
-  sections: sectionDefaults,
-};
