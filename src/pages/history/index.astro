@@ -556,7 +556,7 @@ function getCardDisplayConfig(item) {
                   )}
 
                   <div class="card-icon-wrapper">
-                    <span class={config.largeFormat ? 'card-icon large' : 'card-icon'}>{categoryIcon}</span>
+                    <span class={config.largeFormat ? 'card-icon large' : 'card-icon'}>{getSmartIcon(item)}</span>
                     <span class="card-type-badge">{recordIcon} {recordLabel}</span>
                   </div>
 
