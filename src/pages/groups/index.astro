@@ -3,6 +3,7 @@
 // Updated for Status on Web, Status/Stage/Phase, Event Frequency, Event Cycle fields
 import Layout from '../../layouts/BaseLayout.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
+import { getSmartIcon } from '../../lib/icon-matcher.js';
 
 // Fetch all Groups & Activities items
 // ✅ UPDATED: fetchNotionContent now filters by Status on Web = "Published" automatically
