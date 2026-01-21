@@ -4,7 +4,7 @@
 import Layout from '../layouts/BaseLayout.astro';
 import { fetchNotionContent } from '../lib/notion-unified.js';
 //import { getSmartIcon } from '../lib/icon-matcher.js';  // ← ADD THIS LINE
-import { getSmartIcon } from '../../lib/icon-matcher.js';
+import { getSmartIcon } from '../lib/icon-matcher.js';
 
 // Fetch all published content from Notion
 const allContent = await fetchNotionContent({ 
