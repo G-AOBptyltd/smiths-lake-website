@@ -304,7 +304,7 @@ const items = await fetchNotionContent({
                   
                   {config.showIconHeader && (
                     <div class={`card-icon-header ${config.headerColor}`}>
-                      <span class="icon-display">{getSmartIcon(item)}</span>
+                      <span class="icon-display">{getSmartIcon(program)}</span>
                     </div>
                   )}
 
@@ -346,28 +346,28 @@ const items = await fetchNotionContent({
                         
                         {program.meetingDay && (
                           <div class="meta-row">
-                            <span class="meta-icon">{getSmartIcon(item)}</span>
+                            <span class="meta-icon">{getSmartIcon(program)}</span>
                             <span><span class="meta-label">When:</span> {program.meetingDay}{program.meetingTime && ` at ${program.meetingTime}`}</span>
                           </div>
                         )}
 
                         {config.showSource && program.sourceAttribution && (
                           <div class="meta-row">
-                            <span class="meta-icon">{getSmartIcon(item)}</span>
+                            <span class="meta-icon">{getSmartIcon(program)}</span>
                             <span><span class="meta-label">Source:</span> {program.sourceAttribution}</span>
                           </div>
                         )}
 
                         {config.showPeople && program.relatedPeople && (
                           <div class="meta-row">
-                            <span class="meta-icon">{getSmartIcon(item)}</span>
+                            <span class="meta-icon">{getSmartIcon(program)}</span>
                             <span><span class="meta-label">People:</span> {program.relatedPeople}</span>
                           </div>
                         )}
 
                         {config.showUpdated && program.lastEditedTime && (
                           <div class="meta-row">
-                            <span class="meta-icon">{getSmartIcon(item)}</span>
+                            <span class="meta-icon">{getSmartIcon(program)}</span>
                             <span><span class="meta-label">Updated:</span> {new Date(program.lastEditedTime).toLocaleDateString('en-AU')}</span>
                           </div>
                         )}
