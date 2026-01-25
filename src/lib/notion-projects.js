@@ -249,25 +249,33 @@ function extractFileUrl(fileField) {
 }
 
 /**
- * Parse line-separated documents into array
+ * Parse documents from semicolon-separated fields
+ * @param {string} titles - Semicolon-separated document titles
+ * @param {string} urls - Semicolon-separated document URLs
+ * @param {string} sizes - Semicolon-separated file sizes
+ * @returns {Array} Array of document objects
  */
 function parseDocuments(titles, urls, sizes) {
-  const titleLines = (titles || '').split('\n').filter(Boolean);
-  const urlLines = (urls || '').split('\n').filter(Boolean);
-  const sizeLines = (sizes || '').split('\n').filter(Boolean);
+  // Support both semicolon (;) and newline (\n) as separators
+  const splitPattern = /[;\n]/;
+  
+  const titleLines = (titles || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
+  const urlLines = (urls || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
+  const sizeLines = (sizes || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
 
   const documents = [];
   const maxLength = Math.max(titleLines.length, urlLines.length);
 
   for (let i = 0; i < maxLength; i++) {
-    const title = titleLines[i] ? titleLines[i].trim() : '';
-    const url = urlLines[i] ? urlLines[i].trim() : '';
+    const title = titleLines[i] || '';
+    const url = urlLines[i] || '';
     
+    // Only add document if we have both title and URL
     if (title && url) {
       documents.push({
         title,
         url,
-        size: sizeLines[i] ? sizeLines[i].trim() : 'Size not specified'
+        size: sizeLines[i] || ''
       });
     }
   }
