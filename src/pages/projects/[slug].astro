@@ -1,0 +1,957 @@
+---
+/**
+ * Project Detail Page - Dynamic Route
+ * 
+ * Displays complete project information:
+ * - Angled hero with image
+ * - Breadcrumb navigation
+ * - About/Changes/FAQs tabs
+ * - Document library sidebar
+ * - Key features
+ * - Subscription form
+ * - Smart deadline banner
+ * 
+ * @version 2.0 - Improved security, accessibility, and error handling
+ * @updated 26 January 2026
+ */
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { fetchProjects, fetchProjectBySlug, getProjectSubmissionCount } from '../../lib/notion-projects.js';
+
+// Get the slug from the URL
+export async function getStaticPaths() {
+  let projects = [];
+  
+  try {
+    projects = await fetchProjects({ requireShowOnWebsite: true });
+  } catch (error) {
+    console.error('Error fetching projects for static paths:', error);
+  }
+  
+  return projects.map(project => ({
+    params: { slug: project.slug },
+    props: { project }
+  }));
+}
+
+const { project } = Astro.props;
+
+// Handle missing project gracefully
+if (!project) {
+  return Astro.redirect('/projects/');
+}
+
+// Get submission count for this project
+let submissionCount = 0;
+try {
+  submissionCount = await getProjectSubmissionCount(project.title);
+} catch (error) {
+  console.error('Error fetching submission count:', error);
+}
+
+// Format deadline date
+const deadlineFormatted = project.submissionDeadline
+  ? new Date(project.submissionDeadline).toLocaleDateString('en-AU', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  : null;
+
+// Calculate days until deadline
+let daysUntilDeadline = null;
+if (project.submissionDeadline && !project.deadlinePassed) {
+  const deadline = new Date(project.submissionDeadline);
+  const today = new Date();
+  daysUntilDeadline = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+}
+
+// Check if any content tabs should be shown
+const hasAbout = project.aboutContent && project.aboutContent.trim().length > 0;
+const hasChanges = project.changesContent && project.changesContent.trim().length > 0;
+const hasFAQs = project.faqsContent && project.faqsContent.trim().length > 0;
+const showTabs = (hasAbout && (hasChanges || hasFAQs)) || (hasChanges && hasFAQs);
+
+// Determine which tab is initially active
+const initialTab = hasAbout ? 'about' : (hasChanges ? 'changes' : 'faqs');
+
+// Page metadata
+const pageTitle = `${project.title} | Community Projects`;
+const pageDescription = project.description || `Community project: ${project.title}. View details, download documents, and submit your feedback.`;
+
+/**
+ * Sanitize content for safe HTML rendering
+ * Basic XSS protection - converts special characters but allows safe markdown-like formatting
+ */
+function sanitizeContent(content) {
+  if (!content) return '';
+  
+  const paragraphs = content.split(/\n\n+/).filter(p => p.trim());
+  
+  return paragraphs
+    .map(p => {
+      const escaped = p
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+      
+      const withBreaks = escaped.replace(/\n/g, '<br>');
+      
+      return `<p>${withBreaks}</p>`;
+    })
+    .join('\n');
+}
+
+// Pre-sanitize content
+const sanitizedAbout = sanitizeContent(project.aboutContent);
+const sanitizedChanges = sanitizeContent(project.changesContent);
+const sanitizedFAQs = sanitizeContent(project.faqsContent);
+---
+
+<BaseLayout 
+  title={pageTitle}
+  description={pageDescription}
+>
+  <main class="project-detail-page" id="main-content">
+    
+    <!-- Hero Section with Angled Design -->
+    <section class="project-hero" aria-labelledby="project-title">
+      <div class="hero-diagonal" aria-hidden="true"></div>
+      {project.heroImageFile ? (
+        <div 
+          class="hero-image" 
+          style={`background-image: url(${project.heroImageFile})`}
+          role="img"
+          aria-label={`Hero image for ${project.title}`}
+        ></div>
+      ) : (
+        <div class="hero-image hero-placeholder" aria-hidden="true"></div>
+      )}
+      <div class="hero-content">
+        <span class={`hero-badge status-${project.statusBadge.type}`}>
+          {project.statusBadge.label}
+        </span>
+        <h1 id="project-title" class="hero-title">{project.title}</h1>
+        {project.description && (
+          <p class="hero-description">{project.description}</p>
+        )}
+        {!project.deadlinePassed && project.submissionDeadline && (
+          <div class="hero-deadline">
+            <span class="deadline-icon" aria-hidden="true">📅</span>
+            <span>
+              <strong>Submissions close:</strong> {deadlineFormatted}
+              {daysUntilDeadline !== null && daysUntilDeadline <= 14 && (
+                <span class="deadline-urgent">
+                  ({daysUntilDeadline === 0 ? 'Today!' : 
+                    daysUntilDeadline === 1 ? '1 day left' : 
+                    `${daysUntilDeadline} days left`})
+                </span>
+              )}
+            </span>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb navigation">
+      <div class="breadcrumb-container">
+        <ol class="breadcrumb-list">
+          <li><a href="/">Home</a></li>
+          <li><a href="/projects/">Projects</a></li>
+          <li aria-current="page">{project.title}</li>
+        </ol>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="content-wrapper">
+      <article class="main-content">
+        
+        <!-- About Section -->
+        <section class="content-section" id="about-section" aria-labelledby="about-heading">
+          <h2 id="about-heading">About This Project</h2>
+          {hasAbout ? (
+            <div class="content-text" set:html={sanitizedAbout}></div>
+          ) : (
+            <p class="placeholder-text">Project details will be added soon.</p>
+          )}
+        </section>
+
+        <!-- Key Features -->
+        {project.features && project.features.length > 0 && (
+          <section class="content-section" aria-labelledby="features-heading">
+            <h2 id="features-heading">Key Features</h2>
+            <ul class="features-grid" role="list">
+              {project.features.map((feature) => (
+                <li class="feature-card">
+                  <div class="feature-icon" aria-hidden="true">✓</div>
+                  <p class="feature-text">{feature}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <!-- Tabbed Content -->
+        {showTabs && (
+          <section class="tabs-section" aria-labelledby="tabs-heading">
+            <h2 id="tabs-heading" class="visually-hidden">Additional Information</h2>
+            
+            <div class="tabs" role="tablist">
+              {hasAbout && (
+                <button 
+                  class={`tab ${initialTab === 'about' ? 'active' : ''}`}
+                  role="tab"
+                  id="tab-about"
+                  aria-controls="panel-about"
+                  aria-selected={initialTab === 'about' ? 'true' : 'false'}
+                  data-tab="about"
+                >
+                  Overview
+                </button>
+              )}
+              {hasChanges && (
+                <button 
+                  class={`tab ${initialTab === 'changes' ? 'active' : ''}`}
+                  role="tab"
+                  id="tab-changes"
+                  aria-controls="panel-changes"
+                  aria-selected={initialTab === 'changes' ? 'true' : 'false'}
+                  data-tab="changes"
+                >
+                  Key Changes
+                </button>
+              )}
+              {hasFAQs && (
+                <button 
+                  class={`tab ${initialTab === 'faqs' ? 'active' : ''}`}
+                  role="tab"
+                  id="tab-faqs"
+                  aria-controls="panel-faqs"
+                  aria-selected={initialTab === 'faqs' ? 'true' : 'false'}
+                  data-tab="faqs"
+                >
+                  FAQs
+                </button>
+              )}
+            </div>
+
+            {hasAbout && (
+              <div class={`tab-content ${initialTab === 'about' ? 'active' : ''}`} role="tabpanel" id="panel-about" aria-labelledby="tab-about" tabindex="0">
+                <div class="content-text" set:html={sanitizedAbout}></div>
+              </div>
+            )}
+            {hasChanges && (
+              <div class={`tab-content ${initialTab === 'changes' ? 'active' : ''}`} role="tabpanel" id="panel-changes" aria-labelledby="tab-changes" tabindex="0">
+                <h3>Changes to the Draft Document</h3>
+                <div class="content-text" set:html={sanitizedChanges}></div>
+              </div>
+            )}
+            {hasFAQs && (
+              <div class={`tab-content ${initialTab === 'faqs' ? 'active' : ''}`} role="tabpanel" id="panel-faqs" aria-labelledby="tab-faqs" tabindex="0">
+                <h3>Frequently Asked Questions</h3>
+                <div class="content-text" set:html={sanitizedFAQs}></div>
+              </div>
+            )}
+          </section>
+        )}
+
+        <!-- Deadline Banner -->
+        {project.submissionDeadline && (
+          <div class={`deadline-banner ${project.deadlinePassed ? 'deadline-passed' : 'deadline-active'}`} role="status">
+            {project.deadlinePassed ? (
+              <>
+                <div class="deadline-banner-icon" aria-hidden="true">✓</div>
+                <div class="deadline-banner-content">
+                  <h3>Consultation Closed</h3>
+                  <p>This project is under review. Outcomes will be published when available.</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div class="deadline-banner-icon" aria-hidden="true">⏰</div>
+                <div class="deadline-banner-content">
+                  <h3>Submissions Close Soon</h3>
+                  <p>Deadline: <strong>{deadlineFormatted}</strong></p>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        <!-- Subscription Form -->
+        <section class="subscription-section" id="have-your-say" aria-labelledby="form-heading">
+          <div class="cta-box">
+            <h2 id="form-heading">{project.deadlinePassed ? 'Stay Updated' : 'Have Your Say'}</h2>
+            <p>Subscribe to receive updates about this project.</p>
+            
+            <form name="project-subscription" method="POST" data-netlify="true" netlify-honeypot="bot-field" class="subscription-form" id="subscription-form">
+              <input type="hidden" name="form-name" value="project-subscription" />
+              <input type="hidden" name="project" value={project.title} />
+              <input type="hidden" name="projectSlug" value={project.slug} />
+              
+              <div class="form-field-hidden" aria-hidden="true">
+                <label>Don't fill this out: <input name="bot-field" tabindex="-1" /></label>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="firstName">First Name <span class="required">*</span></label>
+                  <input type="text" id="firstName" name="firstName" required autocomplete="given-name" />
+                </div>
+                <div class="form-group">
+                  <label for="lastName">Last Name <span class="required">*</span></label>
+                  <input type="text" id="lastName" name="lastName" required autocomplete="family-name" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="email">Email Address <span class="required">*</span></label>
+                <input type="email" id="email" name="email" required autocomplete="email" />
+              </div>
+
+              <div class="form-group">
+                <label for="phone">Phone <span class="optional">(optional)</span></label>
+                <input type="tel" id="phone" name="phone" autocomplete="tel" />
+              </div>
+
+              <div class="form-group checkbox-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="agreeToUpdates" value="yes" required />
+                  <span>I agree to receive email updates about this project</span>
+                </label>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block">Subscribe to Updates</button>
+
+              <p class="form-note">
+                <span class="required">*</span> Required fields. 
+                <a href="/privacy/">Privacy policy</a>.
+              </p>
+            </form>
+
+            <div class="success-message" id="success-message" hidden>
+              <div class="success-icon" aria-hidden="true">✓</div>
+              <h3>Thank You!</h3>
+              <p>You've subscribed to updates for <strong>{project.title}</strong>.</p>
+              <a href="/projects/" class="btn btn-outline">Back to Projects</a>
+            </div>
+          </div>
+        </section>
+
+      </article>
+
+      <!-- Sidebar -->
+      <aside class="sidebar" aria-label="Project information">
+        
+        <div class="sidebar-section">
+          <h3>Project Info</h3>
+          <dl class="info-list">
+            <div class="info-row">
+              <dt>Status</dt>
+              <dd><span class={`status-badge status-${project.statusBadge.type}`}>{project.statusBadge.label}</span></dd>
+            </div>
+            {project.category && (
+              <div class="info-row">
+                <dt>Category</dt>
+                <dd>{project.category}</dd>
+              </div>
+            )}
+            {project.submissionDeadline && (
+              <div class="info-row">
+                <dt>{project.deadlinePassed ? 'Closed' : 'Closes'}</dt>
+                <dd>{new Date(project.submissionDeadline).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}</dd>
+              </div>
+            )}
+            {submissionCount > 0 && (
+              <div class="info-row">
+                <dt>Submissions</dt>
+                <dd>{submissionCount}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+
+        {project.documents && project.documents.length > 0 && (
+          <div class="sidebar-section">
+            <h3>Documents</h3>
+            <ul class="document-list">
+              {project.documents.map(doc => (
+                <li class="document-item">
+                  <div class="document-icon" aria-hidden="true">📄</div>
+                  <div class="document-info">
+                    <span class="document-title">{doc.title}</span>
+                    <span class="document-meta">{doc.size}</span>
+                  </div>
+                  <a href={doc.url} class="document-link" target="_blank" rel="noopener noreferrer" aria-label={`Download ${doc.title}`}>↓</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div class="sidebar-section">
+          <h3>Actions</h3>
+          <div class="sidebar-actions">
+            <a href="#have-your-say" class="btn btn-primary btn-block">Have Your Say</a>
+            <button type="button" class="btn btn-outline btn-block share-button">Share Project</button>
+          </div>
+        </div>
+
+        <div class="sidebar-section sidebar-section-minimal">
+          <a href="/projects/" class="back-link">← Back to All Projects</a>
+        </div>
+
+      </aside>
+    </div>
+
+  </main>
+</BaseLayout>
+
+<style>
+  :root {
+    --navy-blue: #1B365D;
+    --navy-blue-dark: #142847;
+    --teal-accent: #4db8b8;
+    --teal-dark: #2d8b8b;
+    --sky-blue: #5B9BD5;
+    --golden-orange: #F5A623;
+    --white: #FFFFFF;
+    --off-white: #F7F9FC;
+    --light-gray: #E8EDF3;
+    --medium-gray: #6B7280;
+    --dark-gray: #374151;
+    --black: #1F2937;
+    --success-green: #2ecc71;
+    --warning-orange: #f39c12;
+    --muted-gray: #95a5a6;
+    --error-red: #e74c3c;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  [hidden] { display: none !important; }
+
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 3px solid var(--golden-orange);
+    outline-offset: 2px;
+  }
+
+  /* Hero Section */
+  .project-hero {
+    position: relative;
+    min-height: 400px;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--navy-blue) 0%, #1e3d4a 100%);
+    display: flex;
+    align-items: center;
+  }
+
+  .hero-diagonal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 60%;
+    height: 100%;
+    background: #1e3d4a;
+    transform: skewX(-15deg);
+    transform-origin: top left;
+    z-index: 1;
+  }
+
+  .hero-image {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 55%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%);
+    z-index: 2;
+  }
+
+  .hero-placeholder {
+    background: linear-gradient(135deg, var(--sky-blue) 0%, var(--navy-blue) 100%);
+    opacity: 0.3;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 3;
+    color: var(--white);
+    padding: 3rem 2rem;
+    max-width: 700px;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    padding: 0.35rem 1rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .hero-title {
+    font-size: clamp(1.75rem, 5vw, 2.75rem);
+    color: var(--white);
+    margin: 0 0 1rem;
+    line-height: 1.2;
+  }
+
+  .hero-description {
+    font-size: 1.1rem;
+    opacity: 0.95;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-deadline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+  }
+
+  .deadline-icon { font-size: 1.5rem; }
+  .deadline-urgent { color: var(--golden-orange); font-weight: 600; }
+
+  /* Status Badges */
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .status-open { background: var(--success-green); color: var(--white); }
+  .status-closed { background: var(--muted-gray); color: var(--white); }
+  .status-review { background: var(--warning-orange); color: var(--white); }
+  .status-default { background: var(--medium-gray); color: var(--white); }
+
+  /* Breadcrumb */
+  .breadcrumb {
+    background: var(--off-white);
+    border-bottom: 1px solid var(--light-gray);
+    padding: 0.75rem 1rem;
+  }
+
+  .breadcrumb-container { max-width: 1200px; margin: 0 auto; }
+
+  .breadcrumb-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.875rem;
+  }
+
+  .breadcrumb-list li { display: flex; align-items: center; }
+  .breadcrumb-list li:not(:last-child)::after {
+    content: '/';
+    margin-left: 0.5rem;
+    color: var(--medium-gray);
+  }
+
+  .breadcrumb-list a { color: var(--teal-accent); text-decoration: none; }
+  .breadcrumb-list a:hover { text-decoration: underline; }
+  .breadcrumb-list [aria-current="page"] { color: var(--dark-gray); font-weight: 500; }
+
+  /* Content Wrapper */
+  .content-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 2rem;
+  }
+
+  .main-content { min-width: 0; }
+
+  /* Content Sections */
+  .content-section { margin-bottom: 3rem; }
+
+  .content-section h2 {
+    font-size: 1.5rem;
+    color: var(--navy-blue);
+    margin: 0 0 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 3px solid var(--teal-accent);
+  }
+
+  .content-text { color: var(--dark-gray); line-height: 1.8; }
+  .content-text p { margin-bottom: 1rem; }
+  .content-text p:last-child { margin-bottom: 0; }
+  .placeholder-text { color: var(--medium-gray); font-style: italic; }
+
+  /* Features Grid */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .feature-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--off-white);
+    border-radius: 8px;
+    border-left: 4px solid var(--teal-accent);
+  }
+
+  .feature-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--teal-accent);
+    color: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+  }
+
+  .feature-text { margin: 0; color: var(--dark-gray); }
+
+  /* Tabs */
+  .tabs-section { margin-bottom: 3rem; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid var(--light-gray);
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--medium-gray);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+
+  .tab:hover { color: var(--navy-blue); background: var(--off-white); }
+  .tab.active { color: var(--navy-blue); border-bottom-color: var(--teal-accent); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .tab-content h3 { font-size: 1.25rem; color: var(--navy-blue); margin: 0 0 1rem; }
+
+  /* Deadline Banner */
+  .deadline-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 3rem;
+  }
+
+  .deadline-active {
+    background: linear-gradient(135deg, #fff7e6 0%, #ffedcc 100%);
+    border: 1px solid var(--warning-orange);
+  }
+
+  .deadline-passed {
+    background: var(--off-white);
+    border: 1px solid var(--light-gray);
+  }
+
+  .deadline-banner-icon { font-size: 2rem; flex-shrink: 0; }
+  .deadline-banner-content h3 { margin: 0 0 0.5rem; color: var(--navy-blue); font-size: 1.1rem; }
+  .deadline-banner-content p { margin: 0; color: var(--dark-gray); }
+
+  /* Subscription Section */
+  .subscription-section { margin: 3rem 0; }
+
+  .cta-box {
+    background: var(--off-white);
+    border: 2px solid var(--teal-accent);
+    border-radius: 8px;
+    padding: 2rem;
+  }
+
+  .cta-box h2 { color: var(--navy-blue); margin: 0 0 0.75rem; font-size: 1.5rem; }
+  .cta-box > p { color: var(--dark-gray); margin: 0 0 2rem; }
+
+  /* Form Styles */
+  .subscription-form { max-width: 500px; }
+  .form-field-hidden { position: absolute; left: -9999px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-group { margin-bottom: 1.25rem; }
+  .form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--dark-gray); }
+  .required { color: var(--error-red); }
+  .optional { color: var(--medium-gray); font-weight: 400; font-size: 0.875rem; }
+
+  .form-group input[type="text"],
+  .form-group input[type="email"],
+  .form-group input[type="tel"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--light-gray);
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: inherit;
+  }
+
+  .form-group input:focus {
+    border-color: var(--teal-accent);
+    box-shadow: 0 0 0 3px rgba(77, 184, 184, 0.15);
+    outline: none;
+  }
+
+  .checkbox-group { margin-top: 1rem; }
+  .checkbox-label { display: flex; align-items: flex-start; gap: 0.75rem; cursor: pointer; }
+  .checkbox-label input { width: 1.25rem; height: 1.25rem; margin-top: 0.1rem; }
+  .checkbox-label span { color: var(--dark-gray); line-height: 1.5; }
+
+  .form-note { font-size: 0.85rem; color: var(--medium-gray); margin-top: 1.25rem; }
+  .form-note a { color: var(--teal-accent); }
+
+  /* Success Message */
+  .success-message { text-align: center; padding: 2rem; }
+  .success-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--success-green);
+    color: var(--white);
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+  }
+  .success-message h3 { color: var(--navy-blue); font-size: 1.5rem; margin: 0 0 0.75rem; }
+  .success-message p { color: var(--dark-gray); margin: 0 0 0.5rem; }
+  .success-message .btn { margin-top: 1.5rem; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    cursor: pointer;
+    min-height: 44px;
+  }
+
+  .btn-primary { background: var(--navy-blue); color: var(--white); border-color: var(--navy-blue); }
+  .btn-primary:hover { background: var(--navy-blue-dark); border-color: var(--navy-blue-dark); }
+  .btn-outline { background: transparent; color: var(--navy-blue); border-color: var(--navy-blue); }
+  .btn-outline:hover { background: var(--navy-blue); color: var(--white); }
+  .btn-block { display: flex; width: 100%; }
+
+  /* Sidebar */
+  .sidebar { position: sticky; top: 100px; height: fit-content; }
+
+  .sidebar-section {
+    background: var(--white);
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .sidebar-section-minimal {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    text-align: center;
+  }
+
+  .sidebar-section h3 {
+    font-size: 1rem;
+    color: var(--navy-blue);
+    margin: 0 0 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .info-list { margin: 0; }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--light-gray);
+  }
+  .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .info-row dt { font-weight: 600; color: var(--medium-gray); font-size: 0.9rem; }
+  .info-row dd { margin: 0; color: var(--dark-gray); font-weight: 600; }
+
+  /* Document List */
+  .document-list { list-style: none; padding: 0; margin: 0; }
+  .document-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--off-white);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
+  }
+  .document-item:last-child { margin-bottom: 0; }
+  .document-item:hover { background: var(--light-gray); transform: translateX(4px); }
+  .document-icon { font-size: 1.75rem; flex-shrink: 0; }
+  .document-info { flex: 1; min-width: 0; }
+  .document-title {
+    display: block;
+    font-weight: 600;
+    color: var(--navy-blue);
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .document-meta { font-size: 0.8rem; color: var(--medium-gray); }
+  .document-link {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--teal-accent);
+    color: var(--white);
+    border-radius: 50%;
+    text-decoration: none;
+    font-size: 1.25rem;
+  }
+  .document-link:hover { background: var(--teal-dark); }
+
+  .sidebar-actions { display: flex; flex-direction: column; gap: 0.75rem; }
+  .back-link { color: var(--teal-accent); text-decoration: none; font-weight: 500; font-size: 0.9rem; }
+  .back-link:hover { text-decoration: underline; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .content-wrapper { grid-template-columns: 1fr; }
+    .sidebar { position: static; order: -1; }
+  }
+
+  @media (max-width: 768px) {
+    .project-hero { min-height: 300px; }
+    .hero-diagonal { width: 100%; transform: none; }
+    .hero-image { width: 100%; clip-path: none; opacity: 0.25; }
+    .hero-content { padding: 2rem 1rem; }
+    .form-row { grid-template-columns: 1fr; }
+    .features-grid { grid-template-columns: 1fr; }
+    .tabs { flex-wrap: wrap; }
+    .tab { flex: 1 1 auto; min-width: 100px; text-align: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn, .document-item, .tab, .form-group input { transition: none; }
+    .document-item:hover { transform: none; }
+  }
+</style>
+
+<script>
+  // Tab switching
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabId = tab.getAttribute('data-tab');
+        
+        tabs.forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        const targetPanel = document.getElementById(`panel-${tabId}`);
+        if (targetPanel) {
+          targetPanel.classList.add('active');
+        }
+      });
+    });
+
+    // Share button
+    const shareButton = document.querySelector('.share-button');
+    if (shareButton) {
+      shareButton.addEventListener('click', async () => {
+        const pageUrl = window.location.href;
+        
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: document.title, url: pageUrl });
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              copyToClipboard(pageUrl);
+            }
+          }
+        } else {
+          copyToClipboard(pageUrl);
+        }
+      });
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.share-button');
+        if (btn) {
+          const original = btn.textContent;
+          btn.textContent = '✓ Link Copied!';
+          setTimeout(() => { btn.textContent = original; }, 2000);
+        }
+      }).catch(() => {
+        alert('Link: ' + text);
+      });
+    }
+  });
+</script>
