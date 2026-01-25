@@ -376,8 +376,15 @@ function parseFeatures(featureText) {
  * @param {string|Array} status - Status value from Notion (can be array from multi-select)
  * @returns {Object} Badge config with type and label
  */
+/**
+ * Get status badge configuration based on Status/Stage/Phase value
+ * @param {string|Array} status - Status value from Notion (can be array from multi-select)
+ * @returns {Object} Badge config with type and label
+ */
 function getStatusBadge(status) {
-  if (!status) return { type: 'default', label: 'Status Unknown' };
+  if (!status || (Array.isArray(status) && status.length === 0)) {
+    return { type: 'default', label: 'Status Unknown' };
+  }
 
   // Handle array (multi-select) - join into single string for checking
   const statusStr = Array.isArray(status) ? status.join(' ').toLowerCase() : status.toLowerCase();
@@ -411,7 +418,6 @@ function getStatusBadge(status) {
   const label = Array.isArray(status) ? status[0] : status;
   return { type: 'default', label: label || 'Status Unknown' };
 }
-
 /**
  * Generate URL slug from title
  * @param {string} title - Project title
