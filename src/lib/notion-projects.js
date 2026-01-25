@@ -2,89 +2,11 @@
  * Project Hub - Notion Integration
  * Fetches project data with all new fields for Project Hub system
  * 
- * FIELD NAME FIX: Notion uses "Title Case With Spaces" for field names
- * This file handles both camelCase and space-separated field names
- * 
- * @version 2.0 - Field name reconciliation applied
+ * @version 2.1 - Fixed field mapping from notion-unified.js
  * @updated 26 January 2026
  */
 
 import { fetchNotionContent } from './notion-unified.js';
-
-/**
- * Helper function to safely get field value regardless of naming convention
- * Tries camelCase first, then space-separated variations
- * @param {Object} obj - The object to get the field from
- * @param {string} camelCase - The camelCase version of the field name
- * @param {string} spaceSeparated - The space-separated version (Title Case)
- * @param {*} defaultValue - Default value if field not found
- * @returns {*} The field value or default
- */
-function getField(obj, camelCase, spaceSeparated, defaultValue = '') {
-  // Try camelCase first (from notion-unified.js normalization)
-  if (obj[camelCase] !== undefined && obj[camelCase] !== null) {
-    return obj[camelCase];
-  }
-  // Try space-separated (raw Notion field name)
-  if (obj[spaceSeparated] !== undefined && obj[spaceSeparated] !== null) {
-    return obj[spaceSeparated];
-  }
-  // Try lowercase with underscores (another possible format)
-  const underscored = spaceSeparated.toLowerCase().replace(/\s+/g, '_');
-  if (obj[underscored] !== undefined && obj[underscored] !== null) {
-    return obj[underscored];
-  }
-  return defaultValue;
-}
-
-/**
- * Extract URL from Notion file attachment
- * Handles various formats: direct URL, object with url property, array of files
- * @param {*} fileField - The file field from Notion
- * @returns {string|null} The extracted URL or null
- */
-function extractFileUrl(fileField) {
-  if (!fileField) return null;
-  
-  // Direct string URL
-  if (typeof fileField === 'string') {
-    return fileField;
-  }
-  
-  // Array of file objects (most common Notion format)
-  if (Array.isArray(fileField) && fileField.length > 0) {
-    const firstFile = fileField[0];
-    // External URL format
-    if (firstFile.external?.url) {
-      return firstFile.external.url;
-    }
-    // File hosted by Notion
-    if (firstFile.file?.url) {
-      return firstFile.file.url;
-    }
-    // Direct URL in object
-    if (firstFile.url) {
-      return firstFile.url;
-    }
-  }
-  
-  // Single object with url property
-  if (fileField.url) {
-    return fileField.url;
-  }
-  
-  // Object with external.url
-  if (fileField.external?.url) {
-    return fileField.external.url;
-  }
-  
-  // Object with file.url
-  if (fileField.file?.url) {
-    return fileField.file.url;
-  }
-  
-  return null;
-}
 
 /**
  * Fetch all projects from Notion
@@ -104,15 +26,18 @@ export async function fetchProjects({ status = null, requireShowOnWebsite = true
     // Filter by status if specified
     if (status) {
       projects = projects.filter(project => {
-        const projectStatus = getField(project, 'statusStagePhase', 'Status/Stage/Phase', '');
+        const projectStatus = project.status || [];
+        if (Array.isArray(projectStatus)) {
+          return projectStatus.some(s => s.toLowerCase().includes(status.toLowerCase()));
+        }
         return projectStatus === status;
       });
     }
 
     // Sort by Priority field (lower number = higher priority)
     projects.sort((a, b) => {
-      const priorityA = getField(a, 'priority', 'Priority', 999);
-      const priorityB = getField(b, 'priority', 'Priority', 999);
+      const priorityA = a.priority || 999;
+      const priorityB = b.priority || 999;
       return priorityA - priorityB;
     });
 
@@ -131,26 +56,17 @@ export async function fetchProjects({ status = null, requireShowOnWebsite = true
  */
 export async function fetchProjectBySlug(slug) {
   const projects = await fetchProjects({ requireShowOnWebsite: true });
-  
-  // Find project with matching slug
-  const project = projects.find(p => p.slug === slug);
-  
-  return project || null;
+  return projects.find(p => p.slug === slug) || null;
 }
 
 /**
  * Fetch all projects for dynamic checkbox generation
- * Groups projects by section for subscription forms
  * @returns {Promise<Object>} Projects grouped by section
  */
 export async function fetchProjectsForSubscription() {
   try {
-    // Fetch all published items across ALL sections (except Admin)
-    const allItems = await fetchNotionContent({
-      requireShowOnWebsite: true
-    });
+    const allItems = await fetchNotionContent({ requireShowOnWebsite: true });
 
-    // Group by section
     const grouped = {
       projects: [],
       services: [],
@@ -161,11 +77,10 @@ export async function fetchProjectsForSubscription() {
     };
 
     allItems.forEach(item => {
-      const section = getField(item, 'section', 'Section', '');
-      const title = getField(item, 'title', 'Title', '');
-      const mailchimpTag = getField(item, 'mailchimpTag', 'MailChimp Tag', title);
+      const section = item.section || '';
+      const title = item.title || '';
+      const mailchimpTag = item.mailchimpTag || title;
       
-      // Skip items without titles
       if (!title) return;
       
       const itemData = { title, mailchimpTag: mailchimpTag || title };
@@ -206,8 +121,6 @@ export async function fetchProjectsForSubscription() {
 export async function getTotalEngagementCount() {
   try {
     // TODO: Connect to Community Inbox database when ready
-    // For now, return 0 - the UI handles this gracefully
-    // To implement: Query Notion "Community Inbox" database and count rows
     return 0;
   } catch (error) {
     console.error('Error fetching engagement count:', error);
@@ -223,8 +136,6 @@ export async function getTotalEngagementCount() {
 export async function getProjectSubmissionCount(projectTitle) {
   try {
     // TODO: Connect to Community Inbox database and filter by project
-    // For now, return 0 - the UI handles this gracefully
-    // To implement: Query Notion "Community Inbox" database with filter
     return 0;
   } catch (error) {
     console.error('Error fetching submission count:', error);
@@ -234,65 +145,53 @@ export async function getProjectSubmissionCount(projectTitle) {
 
 /**
  * Enrich project data with processed fields
- * @param {Object} project - Raw project data from Notion
+ * @param {Object} project - Raw project data from Notion (via notion-unified.js)
  * @returns {Object} Enriched project data
  */
 function enrichProjectData(project) {
-  // Get title first (needed for slug generation)
-  const title = getField(project, 'title', 'Title', 'Untitled Project');
+  // Title (with fallback)
+  const title = project.title || 'Untitled Project';
   
-  // Generate slug from title (first time only, then locked)
-  const existingSlug = getField(project, 'slug', 'Slug', '');
-  const slug = existingSlug || generateSlug(title);
+  // Slug - use existing or generate from title
+  const slug = project.slug || generateSlug(title);
 
-  // Get status for badge generation
-  // notion-unified.js returns this as 'status' (array from multi-select)
+  // Status badge from multi-select status field
   const statusStagePhase = project.status || [];
   const statusBadge = getStatusBadge(statusStagePhase);
 
-  // Get deadline and check if passed
-  const submissionDeadline = getField(project, 'submissionDeadline', 'Submission Deadline', null);
+  // Deadline handling
+  const submissionDeadline = project.submissionDeadline || null;
   const deadlinePassed = submissionDeadline 
     ? new Date(submissionDeadline) < new Date()
     : false;
 
-  // Extract hero image URL (handles various Notion formats)
-  const heroImageRaw = getField(project, 'heroImageFile', 'Hero Image File', null);
-  const heroImageFile = extractFileUrl(heroImageRaw);
+  // Hero image URL extraction
+  const heroImageFile = extractFileUrl(project.heroImageFile);
 
-  // Get content fields with fallbacks
-  // Get content fields - check direct property first (from notion-unified.js), then fallbacks
-  const aboutContent = project.projhubAboutContent || 
-                       getField(project, 'projhubAboutContent', 'ProjHub About Content', '') ||
-                       getField(project, 'aboutContent', 'About Content', '');
-  const changesContent = getField(project, 'projhubChangesContent', 'ProjHub Changes Content', '') ||
-                         getField(project, 'changesContent', 'Changes Content', '');
-  const faqsContent = getField(project, 'projhubFAQsContent', 'ProjHub FAQs Content', '') ||
-                      getField(project, 'faqsContent', 'FAQs Content', '');
+  // Content fields - directly from notion-unified.js
+  // These are the key fields that were not working before
+  const aboutContent = project.projhubAboutContent || '';
+  const changesContent = project.projhubChangesContent || '';
+  const faqsContent = project.projhubFAQsContent || '';
 
-  // Parse line-separated fields
-  const documentTitle = getField(project, 'documentTitle', 'Document Title', '');
-  const documentURL = getField(project, 'documentURL', 'Document URL', '');
-  const documentSize = getField(project, 'documentSize', 'Document Size', '');
-  const documents = parseDocuments(documentTitle, documentURL, documentSize);
+  // Parse documents from line-separated fields
+  const documents = parseDocuments(
+    project.documentTitle || '',
+    project.documentUrl || '',
+    project.documentSize || ''
+  );
 
-  const featureField = getField(project, 'feature', 'Feature', '');
-  const features = parseFeatures(featureField);
-
-  // Get other fields
-  const description = getField(project, 'description', 'Description', '');
-  const category = getField(project, 'category', 'Category', '');
-  const priority = getField(project, 'priority', 'Priority', 999);
-  const mailchimpTag = getField(project, 'mailchimpTag', 'MailChimp Tag', title);
+  // Parse features from line-separated field
+  const features = parseFeatures(project.feature || '');
 
   return {
     // Core identification
     id: project.id,
     title,
     slug,
-    description,
-    category,
-    priority,
+    description: project.description || '',
+    category: project.category || '',
+    priority: project.priority || 999,
     
     // Status and timing
     statusStagePhase,
@@ -300,7 +199,7 @@ function enrichProjectData(project) {
     submissionDeadline,
     deadlinePassed,
     
-    // Content
+    // Content - THE FIX: these now come directly from notion-unified.js
     aboutContent,
     changesContent,
     faqsContent,
@@ -313,7 +212,7 @@ function enrichProjectData(project) {
     heroImageFile,
     
     // Email integration
-    mailchimpTag: mailchimpTag || title,
+    mailchimpTag: project.mailchimpTag || title,
     
     // Preserve original data for debugging
     _raw: project
@@ -321,11 +220,36 @@ function enrichProjectData(project) {
 }
 
 /**
+ * Extract URL from Notion file attachment
+ * @param {*} fileField - The file field from Notion
+ * @returns {string|null} The extracted URL or null
+ */
+function extractFileUrl(fileField) {
+  if (!fileField) return null;
+  
+  // Direct string URL
+  if (typeof fileField === 'string') {
+    return fileField;
+  }
+  
+  // Array of file objects (from notion-unified.js files type)
+  if (Array.isArray(fileField) && fileField.length > 0) {
+    const firstFile = fileField[0];
+    if (firstFile.url) return firstFile.url;
+    if (firstFile.external?.url) return firstFile.external.url;
+    if (firstFile.file?.url) return firstFile.file.url;
+  }
+  
+  // Single object with url
+  if (fileField.url) return fileField.url;
+  if (fileField.external?.url) return fileField.external.url;
+  if (fileField.file?.url) return fileField.file.url;
+  
+  return null;
+}
+
+/**
  * Parse line-separated documents into array
- * @param {string} titles - Line-separated document titles
- * @param {string} urls - Line-separated document URLs
- * @param {string} sizes - Line-separated file sizes
- * @returns {Array} Array of document objects
  */
 function parseDocuments(titles, urls, sizes) {
   const titleLines = (titles || '').split('\n').filter(Boolean);
@@ -339,7 +263,6 @@ function parseDocuments(titles, urls, sizes) {
     const title = titleLines[i] ? titleLines[i].trim() : '';
     const url = urlLines[i] ? urlLines[i].trim() : '';
     
-    // Only add document if we have both title and URL
     if (title && url) {
       documents.push({
         title,
@@ -354,8 +277,6 @@ function parseDocuments(titles, urls, sizes) {
 
 /**
  * Parse line-separated features into array
- * @param {string} featureText - Line-separated features
- * @returns {Array} Array of feature strings (max 5)
  */
 function parseFeatures(featureText) {
   if (!featureText) return [];
@@ -365,19 +286,9 @@ function parseFeatures(featureText) {
     .filter(Boolean)
     .map(f => f.trim())
     .filter(f => f.length > 0)
-    .slice(0, 5); // Max 5 features
+    .slice(0, 5);
 }
 
-/**
- * Get status badge configuration based on Status/Stage/Phase value
- * @param {string} status - Status value from Notion
- * @returns {Object} Badge config with type and label
- */
-/**
- * Get status badge configuration based on Status/Stage/Phase value
- * @param {string|Array} status - Status value from Notion (can be array from multi-select)
- * @returns {Object} Badge config with type and label
- */
 /**
  * Get status badge configuration based on Status/Stage/Phase value
  * @param {string|Array} status - Status value from Notion (can be array from multi-select)
@@ -416,14 +327,13 @@ function getStatusBadge(status) {
     return { type: 'review', label: 'Under Review' };
   }
 
-  // Default - show the first status if array, or the status itself
+  // Default - show the first status if array
   const label = Array.isArray(status) ? status[0] : status;
   return { type: 'default', label: label || 'Status Unknown' };
 }
+
 /**
  * Generate URL slug from title
- * @param {string} title - Project title
- * @returns {string} URL-friendly slug
  */
 function generateSlug(title) {
   if (!title) return 'untitled';
@@ -432,5 +342,5 @@ function generateSlug(title) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .substring(0, 100); // Limit slug length
+    .substring(0, 100);
 }
