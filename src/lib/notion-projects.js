@@ -370,38 +370,45 @@ function parseFeatures(featureText) {
  * @param {string} status - Status value from Notion
  * @returns {Object} Badge config with type and label
  */
+/**
+ * Get status badge configuration based on Status/Stage/Phase value
+ * @param {string|Array} status - Status value from Notion (can be array from multi-select)
+ * @returns {Object} Badge config with type and label
+ */
 function getStatusBadge(status) {
   if (!status) return { type: 'default', label: 'Status Unknown' };
 
-  const statusLower = status.toLowerCase();
+  // Handle array (multi-select) - join into single string for checking
+  const statusStr = Array.isArray(status) ? status.join(' ').toLowerCase() : status.toLowerCase();
 
-  // OPEN badges (green)
-  if (statusLower.includes('open for comment') || 
-      statusLower.includes('open to new participants') ||
-      statusLower === 'active') {
+  // OPEN badges (green) - check these first as they take priority
+  if (statusStr.includes('open for comment') || 
+      statusStr.includes('open to new participants') ||
+      statusStr.includes('active')) {
     return { type: 'open', label: 'Open' };
   }
 
   // CLOSED badges (gray)
-  if (statusLower === 'not active' || 
-      statusLower === 'full' ||
-      statusLower === 'closed' ||
-      statusLower === 'completed') {
+  if (statusStr.includes('not active') || 
+      statusStr.includes('full') ||
+      statusStr.includes('closed') ||
+      statusStr.includes('completed')) {
     return { type: 'closed', label: 'Closed' };
   }
 
   // UNDER REVIEW badges (orange)
-  if (statusLower === 'proposed' ||
-      statusLower === 'concept plan' ||
-      statusLower === 'project planning' ||
-      statusLower === 'plan approved' ||
-      statusLower === 'under review' ||
-      statusLower === 'in progress') {
+  if (statusStr.includes('proposed') ||
+      statusStr.includes('concept plan') ||
+      statusStr.includes('project planning') ||
+      statusStr.includes('plan approved') ||
+      statusStr.includes('under review') ||
+      statusStr.includes('in progress')) {
     return { type: 'review', label: 'Under Review' };
   }
 
-  // Default - show the actual status
-  return { type: 'default', label: status };
+  // Default - show the first status if array, or the status itself
+  const label = Array.isArray(status) ? status[0] : status;
+  return { type: 'default', label: label || 'Status Unknown' };
 }
 
 /**
