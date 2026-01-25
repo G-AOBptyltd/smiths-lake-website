@@ -246,7 +246,8 @@ function enrichProjectData(project) {
   const slug = existingSlug || generateSlug(title);
 
   // Get status for badge generation
-  const statusStagePhase = getField(project, 'statusStagePhase', 'Status/Stage/Phase', '');
+  // notion-unified.js returns this as 'status' (array from multi-select)
+  const statusStagePhase = project.status || [];
   const statusBadge = getStatusBadge(statusStagePhase);
 
   // Get deadline and check if passed
