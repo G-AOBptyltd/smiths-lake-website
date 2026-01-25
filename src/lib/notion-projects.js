@@ -2,7 +2,7 @@
  * Project Hub - Notion Integration
  * Fetches project data with all new fields for Project Hub system
  * 
- * @version 2.1 - Fixed field mapping from notion-unified.js
+ * @version 2.2 - Semicolon separator support for documents and features
  * @updated 26 January 2026
  */
 
@@ -169,19 +169,18 @@ function enrichProjectData(project) {
   const heroImageFile = extractFileUrl(project.heroImageFile);
 
   // Content fields - directly from notion-unified.js
-  // These are the key fields that were not working before
   const aboutContent = project.projhubAboutContent || '';
   const changesContent = project.projhubChangesContent || '';
   const faqsContent = project.projhubFAQsContent || '';
 
-  // Parse documents from line-separated fields
+  // Parse documents from semicolon-separated fields
   const documents = parseDocuments(
     project.documentTitle || '',
     project.documentUrl || '',
     project.documentSize || ''
   );
 
-  // Parse features from line-separated field
+  // Parse features from semicolon-separated field
   const features = parseFeatures(project.feature || '');
 
   return {
@@ -199,7 +198,7 @@ function enrichProjectData(project) {
     submissionDeadline,
     deadlinePassed,
     
-    // Content - THE FIX: these now come directly from notion-unified.js
+    // Content
     aboutContent,
     changesContent,
     faqsContent,
@@ -250,32 +249,33 @@ function extractFileUrl(fileField) {
 
 /**
  * Parse documents from semicolon-separated fields
+ * Supports both semicolon (;) and newline (\n) as separators
  * @param {string} titles - Semicolon-separated document titles
  * @param {string} urls - Semicolon-separated document URLs
- * @param {string} sizes - Semicolon-separated file sizes
+ * @param {string} sizes - Semicolon-separated file sizes (optional)
  * @returns {Array} Array of document objects
  */
 function parseDocuments(titles, urls, sizes) {
   // Support both semicolon (;) and newline (\n) as separators
   const splitPattern = /[;\n]/;
   
-  const titleLines = (titles || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
-  const urlLines = (urls || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
-  const sizeLines = (sizes || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
+  const titleList = (titles || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
+  const urlList = (urls || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
+  const sizeList = (sizes || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
 
   const documents = [];
-  const maxLength = Math.max(titleLines.length, urlLines.length);
+  const maxLength = Math.max(titleList.length, urlList.length);
 
   for (let i = 0; i < maxLength; i++) {
-    const title = titleLines[i] || '';
-    const url = urlLines[i] || '';
+    const title = titleList[i] || '';
+    const url = urlList[i] || '';
     
     // Only add document if we have both title and URL
     if (title && url) {
       documents.push({
         title,
         url,
-        size: sizeLines[i] || ''
+        size: sizeList[i] || ''
       });
     }
   }
@@ -284,14 +284,16 @@ function parseDocuments(titles, urls, sizes) {
 }
 
 /**
- * Parse line-separated features into array
+ * Parse features from semicolon or newline-separated field
+ * @param {string} featureText - Semicolon or newline-separated features
+ * @returns {Array} Array of feature strings (max 5)
  */
 function parseFeatures(featureText) {
   if (!featureText) return [];
   
+  // Support both semicolon (;) and newline (\n) as separators
   return featureText
-    .split('\n')
-    .filter(Boolean)
+    .split(/[;\n]/)
     .map(f => f.trim())
     .filter(f => f.length > 0)
     .slice(0, 5);
