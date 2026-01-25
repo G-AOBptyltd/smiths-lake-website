@@ -36,6 +36,16 @@ export async function getStaticPaths() {
 
 const { project } = Astro.props;
 
+// DEBUG - remove after testing
+console.log('=== PROJECT DEBUG ===');
+console.log('Title:', project?.title);
+console.log('aboutContent:', project?.aboutContent);
+console.log('projhubAboutContent raw:', project?.projhubAboutContent);
+console.log('All project keys:', Object.keys(project || {}));
+console.log('=== END DEBUG ===');
+
+// Handle missing project gracefully
+
 // Handle missing project gracefully
 if (!project) {
   return Astro.redirect('/projects/');
