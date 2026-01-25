@@ -261,7 +261,9 @@ function enrichProjectData(project) {
   const heroImageFile = extractFileUrl(heroImageRaw);
 
   // Get content fields with fallbacks
-  const aboutContent = getField(project, 'projhubAboutContent', 'ProjHub About Content', '') ||
+  // Get content fields - check direct property first (from notion-unified.js), then fallbacks
+  const aboutContent = project.projhubAboutContent || 
+                       getField(project, 'projhubAboutContent', 'ProjHub About Content', '') ||
                        getField(project, 'aboutContent', 'About Content', '');
   const changesContent = getField(project, 'projhubChangesContent', 'ProjHub Changes Content', '') ||
                          getField(project, 'changesContent', 'Changes Content', '');
