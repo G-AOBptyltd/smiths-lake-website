@@ -40,8 +40,8 @@ const { project } = Astro.props;
 console.log('=== PROJECT DEBUG ===');
 console.log('Title:', project?.title);
 console.log('aboutContent:', project?.aboutContent);
-console.log('projhubAboutContent raw:', project?.projhubAboutContent);
-console.log('All project keys:', Object.keys(project || {}));
+console.log('_raw.projhubAboutContent:', project?._raw?.projhubAboutContent);
+console.log('_raw keys:', Object.keys(project?._raw || {}));
 console.log('=== END DEBUG ===');
 
 // Handle missing project gracefully
