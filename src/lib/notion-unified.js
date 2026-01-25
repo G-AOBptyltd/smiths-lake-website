@@ -167,6 +167,17 @@ function parseNotionPage(page) {
     cardTemplate: parseProperty(props['Card Template']),
     cardOptions: parseProperty(props['Card Options']),
 
+    // Project Hub specific fields
+    projhubAboutContent: parseProperty(props['ProjHub About Content']),
+    projhubChangesContent: parseProperty(props['ProjHub Changes Content']),
+    projhubFAQsContent: parseProperty(props['ProjHub FAQs Content']),
+    submissionDeadline: parseProperty(props['Submission Deadline']),
+    feature: parseProperty(props['Feature']),
+    documentTitle: parseProperty(props['Document Title']),
+    documentSize: parseProperty(props['Document Size']),
+    heroImageFile: parseProperty(props['Hero Image File']),
+    mailchimpTag: parseProperty(props['MailChimp Tag']),
+
     // Timestamps
     createdTime: parseProperty(props['Created Time']),
     lastEditedTime: parseProperty(props['Last Edited Time']),
