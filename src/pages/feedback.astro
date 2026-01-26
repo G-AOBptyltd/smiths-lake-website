@@ -6,59 +6,52 @@
  * URL Parameters:
  * - project: Pre-fills the project field when linked from Project Hub
  * 
+ * Note: Uses client-side JS to read URL params since Astro static builds
+ * don't have access to runtime URL parameters
+ * 
  * @updated 26 January 2026
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
-
-// Get project parameter from URL (passed from Project Hub pages)
-const projectParam = Astro.url.searchParams.get('project') || '';
-const hasProject = projectParam.length > 0;
-
-// Customize page based on whether it's project-specific
-const pageTitle = hasProject ? `Feedback: ${projectParam}` : 'Submit Feedback';
-const pageSubtitle = hasProject 
-  ? `Share your thoughts on the ${projectParam}`
-  : 'Your ideas help shape our community\'s future.';
 ---
 
 <BaseLayout 
-  title={pageTitle}
+  title="Submit Feedback"
   description="Share your ideas and suggestions for improving Smiths Lake Village."
 >
   <Hero 
     title="Submit Feedback"
-    subtitle={pageSubtitle}
+    subtitle="Your ideas help shape our community's future."
     size="small"
   />
   
   <section class="section">
     <div class="container container--narrow">
       <div class="feedback-intro">
-        {hasProject ? (
-          <div class="project-context">
-            <p class="project-badge">
-              📋 Providing feedback on: <strong>{projectParam}</strong>
-            </p>
-            <p>
-              Your feedback on this project will be reviewed by the PPCA committee 
-              and may influence the final outcomes. All submissions are valued.
-            </p>
-          </div>
-        ) : (
-          <>
-            <p>
-              We want to hear from you! Share your ideas, suggestions, or concerns about 
-              our community. Your feedback helps PPCA understand what matters most to 
-              residents and guides our advocacy efforts.
-            </p>
-            <p>
-              <strong>What happens to your feedback?</strong> All submissions are reviewed 
-              by the PPCA committee. Ideas that align with community priorities may be 
-              developed into formal submissions to MidCoast Council.
-            </p>
-          </>
-        )}
+        <!-- Project context - shown via JS when ?project= parameter exists -->
+        <div id="project-context" class="project-context" style="display: none;">
+          <p class="project-badge">
+            📋 Providing feedback on: <strong id="project-name-display"></strong>
+          </p>
+          <p>
+            Your feedback on this project will be reviewed by the PPCA committee 
+            and may influence the final outcomes. All submissions are valued.
+          </p>
+        </div>
+        
+        <!-- General intro - hidden via JS when project parameter exists -->
+        <div id="general-intro">
+          <p>
+            We want to hear from you! Share your ideas, suggestions, or concerns about 
+            our community. Your feedback helps PPCA understand what matters most to 
+            residents and guides our advocacy efforts.
+          </p>
+          <p>
+            <strong>What happens to your feedback?</strong> All submissions are reviewed 
+            by the PPCA committee. Ideas that align with community priorities may be 
+            developed into formal submissions to MidCoast Council.
+          </p>
+        </div>
       </div>
       
       <form 
@@ -68,31 +61,28 @@ const pageSubtitle = hasProject
         netlify-honeypot="bot-field"
         class="feedback-form"
         action="/thank-you/"
+        id="feedback-form"
       >
         <input type="hidden" name="form-name" value="feedback" />
         <p class="hidden">
           <label>Don't fill this out: <input name="bot-field" /></label>
         </p>
         
-        <!-- Project field (visible when linked from Project Hub) -->
-        {hasProject && (
-          <div class="form-group">
-            <label for="project" class="form-label">Related Project</label>
-            <input 
-              type="text" 
-              id="project" 
-              name="project" 
-              class="form-input form-input--readonly" 
-              value={projectParam}
-              readonly
-            />
-          </div>
-        )}
+        <!-- Project field - shown via JS when ?project= parameter exists -->
+        <div id="project-field-group" class="form-group" style="display: none;">
+          <label for="project" class="form-label">Related Project</label>
+          <input 
+            type="text" 
+            id="project" 
+            name="project" 
+            class="form-input form-input--readonly" 
+            value="General Feedback"
+            readonly
+          />
+        </div>
         
-        <!-- Hidden project field for non-project feedback -->
-        {!hasProject && (
-          <input type="hidden" name="project" value="General Feedback" />
-        )}
+        <!-- Hidden project field for non-project feedback (default) -->
+        <input type="hidden" id="project-hidden" name="project-default" value="General Feedback" />
         
         <div class="form-row">
           <div class="form-group">
@@ -120,27 +110,25 @@ const pageSubtitle = hasProject
           </div>
         </div>
         
-        {!hasProject && (
-          <div class="form-group">
-            <label for="category" class="form-label form-label--required">Category</label>
-            <select id="category" name="category" class="form-select" required>
-              <option value="">Please select...</option>
-              <option value="project-hub">Community Project</option>
-              <option value="services">Services & Amenities</option>
-              <option value="environment">Environment & Conservation</option>
-              <option value="safety">Safety & Emergency</option>
-              <option value="groups">Groups & Activities</option>
-              <option value="infrastructure">Roads & Infrastructure</option>
-              <option value="council">Council Submission Idea</option>
-              <option value="website">Website Feedback</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-        )}
+        <!-- Category dropdown - hidden via JS when project parameter exists -->
+        <div id="category-group" class="form-group">
+          <label for="category" class="form-label form-label--required">Category</label>
+          <select id="category" name="category" class="form-select" required>
+            <option value="">Please select...</option>
+            <option value="project-hub">Community Project</option>
+            <option value="services">Services & Amenities</option>
+            <option value="environment">Environment & Conservation</option>
+            <option value="safety">Safety & Emergency</option>
+            <option value="groups">Groups & Activities</option>
+            <option value="infrastructure">Roads & Infrastructure</option>
+            <option value="council">Council Submission Idea</option>
+            <option value="website">Website Feedback</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
         
-        {hasProject && (
-          <input type="hidden" name="category" value="project-hub" />
-        )}
+        <!-- Hidden category for project feedback -->
+        <input type="hidden" id="category-hidden" name="category-default" value="" disabled />
         
         <div class="form-group">
           <label for="title" class="form-label form-label--required">Feedback Title</label>
@@ -150,7 +138,7 @@ const pageSubtitle = hasProject
             name="title" 
             class="form-input" 
             required 
-            placeholder={hasProject ? `Your feedback on ${projectParam}` : 'Brief summary of your idea or concern'}
+            placeholder="Brief summary of your idea or concern"
           />
         </div>
         
@@ -162,9 +150,7 @@ const pageSubtitle = hasProject
             class="form-textarea" 
             rows="8" 
             required
-            placeholder={hasProject 
-              ? 'Share your thoughts, suggestions, concerns, or questions about this project...'
-              : 'Describe your idea, suggestion, or concern in detail...'}
+            placeholder="Describe your idea, suggestion, or concern in detail..."
           ></textarea>
         </div>
         
@@ -181,7 +167,7 @@ const pageSubtitle = hasProject
         <div class="form-group form-group--checkbox">
           <label class="checkbox-label">
             <input type="checkbox" name="subscribe" value="yes" />
-            <span>Email me updates about {hasProject ? 'this project' : 'community initiatives'}</span>
+            <span id="subscribe-label">Email me updates about community initiatives</span>
           </label>
         </div>
         
@@ -189,13 +175,10 @@ const pageSubtitle = hasProject
           <button type="submit" class="btn btn--primary btn--lg btn--full">Submit Feedback</button>
         </div>
         
-        {hasProject && (
-          <p class="form-back">
-            <a href={`/projects/${projectParam.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}/`}>
-              ← Back to {projectParam}
-            </a>
-          </p>
-        )}
+        <!-- Back to project link - shown via JS when project parameter exists -->
+        <p id="back-link" class="form-back" style="display: none;">
+          <a href="/projects/" id="back-link-anchor">← Back to Projects</a>
+        </p>
       </form>
       
       <aside class="feedback-note">
@@ -436,3 +419,96 @@ const pageSubtitle = hasProject
     color: white;
   }
 </style>
+
+<script>
+  // Client-side script to handle URL parameters
+  document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectParam = urlParams.get('project');
+    
+    if (projectParam && projectParam.trim() !== '') {
+      // We have a project parameter - customize the form
+      const projectName = decodeURIComponent(projectParam);
+      
+      // Show project context banner
+      const projectContext = document.getElementById('project-context');
+      if (projectContext) {
+        projectContext.style.display = 'block';
+      }
+      
+      // Set project name in banner
+      const projectNameDisplay = document.getElementById('project-name-display');
+      if (projectNameDisplay) {
+        projectNameDisplay.textContent = projectName;
+      }
+      
+      // Hide general intro
+      const generalIntro = document.getElementById('general-intro');
+      if (generalIntro) {
+        generalIntro.style.display = 'none';
+      }
+      
+      // Show and populate project field
+      const projectFieldGroup = document.getElementById('project-field-group');
+      const projectInput = document.getElementById('project');
+      if (projectFieldGroup && projectInput) {
+        projectFieldGroup.style.display = 'block';
+        projectInput.value = projectName;
+        projectInput.name = 'project'; // Ensure it's named correctly for form submission
+      }
+      
+      // Disable the hidden default project field
+      const projectHidden = document.getElementById('project-hidden');
+      if (projectHidden) {
+        projectHidden.disabled = true;
+      }
+      
+      // Hide category dropdown and set hidden category value
+      const categoryGroup = document.getElementById('category-group');
+      const categorySelect = document.getElementById('category');
+      const categoryHidden = document.getElementById('category-hidden');
+      
+      if (categoryGroup && categorySelect && categoryHidden) {
+        categoryGroup.style.display = 'none';
+        categorySelect.removeAttribute('required');
+        categorySelect.disabled = true;
+        categorySelect.name = 'category-disabled';
+        
+        categoryHidden.disabled = false;
+        categoryHidden.name = 'category';
+        categoryHidden.value = 'project-hub';
+      }
+      
+      // Update placeholder text
+      const titleInput = document.getElementById('title');
+      if (titleInput) {
+        titleInput.placeholder = `Your feedback on ${projectName}`;
+      }
+      
+      const detailsTextarea = document.getElementById('details');
+      if (detailsTextarea) {
+        detailsTextarea.placeholder = 'Share your thoughts, suggestions, concerns, or questions about this project...';
+      }
+      
+      // Update subscribe label
+      const subscribeLabel = document.getElementById('subscribe-label');
+      if (subscribeLabel) {
+        subscribeLabel.textContent = 'Email me updates about this project';
+      }
+      
+      // Show and configure back link
+      const backLink = document.getElementById('back-link');
+      const backLinkAnchor = document.getElementById('back-link-anchor');
+      if (backLink && backLinkAnchor) {
+        backLink.style.display = 'block';
+        // Create slug from project name
+        const slug = projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        backLinkAnchor.href = `/projects/${slug}/`;
+        backLinkAnchor.textContent = `← Back to ${projectName}`;
+      }
+      
+      // Update page title
+      document.title = `Feedback: ${projectName} | Smiths Lake Village`;
+    }
+  });
+</script>
