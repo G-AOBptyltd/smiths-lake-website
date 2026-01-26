@@ -1,8 +1,8 @@
 /**
- * Project Hub - Notion Integration 0
+ * Project Hub - Notion Integration
  * Fetches project data with all new fields for Project Hub system
  * 
- * @version 2.2 - Semicolon separator support for documents and features
+ * @version 2.3 - Added submissionOpens and engagementViews
  * @updated 26 January 2026
  */
 
@@ -165,6 +165,12 @@ function enrichProjectData(project) {
     ? new Date(submissionDeadline) < new Date()
     : false;
 
+  // Opens date handling
+  const submissionOpens = project.submissionOpens || null;
+
+  // Engagement views
+  const engagementViews = project.engagementViews || null;
+
   // Hero image URL extraction
   const heroImageFile = extractFileUrl(project.heroImageFile);
 
@@ -196,7 +202,9 @@ function enrichProjectData(project) {
     statusStagePhase,
     statusBadge,
     submissionDeadline,
+    submissionOpens,      // <-- ADDED
     deadlinePassed,
+    engagementViews,      // <-- ADDED
     
     // Content
     aboutContent,
