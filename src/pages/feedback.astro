@@ -1,10 +1,22 @@
 ---
+/**
+ * Feedback Form Page
+ * Accepts general community feedback and project-specific feedback
+ * 
+ * URL Parameters:
+ * - project: Pre-fills the project field when linked from Project Hub
+ * 
+ * Note: Uses client-side JS to read URL params since Astro static builds
+ * don't have access to runtime URL parameters
+ * 
+ * @updated 26 January 2026
+ */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 ---
 
 <BaseLayout 
-  title="Submit Feedback" 
+  title="Submit Feedback"
   description="Share your ideas and suggestions for improving Smiths Lake Village."
 >
   <Hero 
@@ -16,16 +28,30 @@ import Hero from '../components/Hero.astro';
   <section class="section">
     <div class="container container--narrow">
       <div class="feedback-intro">
-        <p>
-          We want to hear from you! Share your ideas, suggestions, or concerns about 
-          our community. Your feedback helps PPCA understand what matters most to 
-          residents and guides our advocacy efforts.
-        </p>
-        <p>
-          <strong>What happens to your feedback?</strong> All submissions are reviewed 
-          by the PPCA committee. Ideas that align with community priorities may be 
-          developed into formal submissions to MidCoast Council.
-        </p>
+        <!-- Project context - shown via JS when ?project= parameter exists -->
+        <div id="project-context" class="project-context" style="display: none;">
+          <p class="project-badge">
+            📋 Providing feedback on: <strong id="project-name-display"></strong>
+          </p>
+          <p>
+            Your feedback on this project will be reviewed by the PPCA committee 
+            and may influence the final outcomes. All submissions are valued.
+          </p>
+        </div>
+        
+        <!-- General intro - hidden via JS when project parameter exists -->
+        <div id="general-intro">
+          <p>
+            We want to hear from you! Share your ideas, suggestions, or concerns about 
+            our community. Your feedback helps PPCA understand what matters most to 
+            residents and guides our advocacy efforts.
+          </p>
+          <p>
+            <strong>What happens to your feedback?</strong> All submissions are reviewed 
+            by the PPCA committee. Ideas that align with community priorities may be 
+            developed into formal submissions to MidCoast Council.
+          </p>
+        </div>
       </div>
       
       <form 
@@ -34,49 +60,75 @@ import Hero from '../components/Hero.astro';
         data-netlify="true" 
         netlify-honeypot="bot-field"
         class="feedback-form"
+        action="/thank-you/"
+        id="feedback-form"
       >
         <input type="hidden" name="form-name" value="feedback" />
         <p class="hidden">
           <label>Don't fill this out: <input name="bot-field" /></label>
         </p>
         
-        <div class="form-group">
-          <label for="name" class="form-label">Your Name (optional)</label>
+        <!-- Project field - shown via JS when ?project= parameter exists -->
+        <div id="project-field-group" class="form-group" style="display: none;">
+          <label for="project" class="form-label">Related Project</label>
           <input 
             type="text" 
-            id="name" 
-            name="name" 
-            class="form-input" 
-            autocomplete="name"
+            id="project" 
+            name="project" 
+            class="form-input form-input--readonly" 
+            value="General Feedback"
+            readonly
           />
-          <p class="form-help">Leave blank to submit anonymously.</p>
         </div>
         
-        <div class="form-group">
-          <label for="email" class="form-label">Email Address (optional)</label>
-          <input 
-            type="email" 
-            id="email" 
-            name="email" 
-            class="form-input" 
-            autocomplete="email"
-          />
-          <p class="form-help">Provide if you'd like updates on your suggestion.</p>
+        <!-- Hidden project field for non-project feedback (default) -->
+        <input type="hidden" id="project-hidden" name="project-default" value="General Feedback" />
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name" class="form-label">Your Name (optional)</label>
+            <input 
+              type="text" 
+              id="name" 
+              name="name" 
+              class="form-input" 
+              autocomplete="name"
+            />
+            <p class="form-help">Leave blank to submit anonymously.</p>
+          </div>
+          
+          <div class="form-group">
+            <label for="email" class="form-label">Email Address (optional)</label>
+            <input 
+              type="email" 
+              id="email" 
+              name="email" 
+              class="form-input" 
+              autocomplete="email"
+            />
+            <p class="form-help">Provide if you'd like a response.</p>
+          </div>
         </div>
         
-        <div class="form-group">
+        <!-- Category dropdown - hidden via JS when project parameter exists -->
+        <div id="category-group" class="form-group">
           <label for="category" class="form-label form-label--required">Category</label>
           <select id="category" name="category" class="form-select" required>
             <option value="">Please select...</option>
+            <option value="project-hub">Community Project</option>
             <option value="services">Services & Amenities</option>
             <option value="environment">Environment & Conservation</option>
             <option value="safety">Safety & Emergency</option>
             <option value="groups">Groups & Activities</option>
             <option value="infrastructure">Roads & Infrastructure</option>
             <option value="council">Council Submission Idea</option>
+            <option value="website">Website Feedback</option>
             <option value="other">Other</option>
           </select>
         </div>
+        
+        <!-- Hidden category for project feedback -->
+        <input type="hidden" id="category-hidden" name="category-default" value="" disabled />
         
         <div class="form-group">
           <label for="title" class="form-label form-label--required">Feedback Title</label>
@@ -112,13 +164,25 @@ import Hero from '../components/Hero.astro';
           </select>
         </div>
         
-        <div class="form-group">
-          <button type="submit" class="btn btn--primary btn--lg">Submit Feedback</button>
+        <div class="form-group form-group--checkbox">
+          <label class="checkbox-label">
+            <input type="checkbox" name="subscribe" value="yes" />
+            <span id="subscribe-label">Email me updates about community initiatives</span>
+          </label>
         </div>
+        
+        <div class="form-group">
+          <button type="submit" class="btn btn--primary btn--lg btn--full">Submit Feedback</button>
+        </div>
+        
+        <!-- Back to project link - shown via JS when project parameter exists -->
+        <p id="back-link" class="form-back" style="display: none;">
+          <a href="/projects/" id="back-link-anchor">← Back to Projects</a>
+        </p>
       </form>
       
       <aside class="feedback-note">
-        <h2>Privacy Note</h2>
+        <h2>🔒 Privacy Note</h2>
         <p>
           Your feedback is stored securely and reviewed only by PPCA committee members. 
           Anonymous submissions are welcome. We will never share your personal 
@@ -133,44 +197,214 @@ import Hero from '../components/Hero.astro';
 </BaseLayout>
 
 <style>
+  .container--narrow {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  
+  .section {
+    padding: 3rem 0;
+  }
+  
   .feedback-intro {
     max-width: 700px;
-    margin: 0 auto var(--space-10);
+    margin: 0 auto 2rem;
   }
   
   .feedback-intro p {
-    font-size: var(--text-lg);
-    color: var(--color-gray-700);
-    line-height: var(--leading-relaxed);
+    font-size: 1.1rem;
+    color: #374151;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+  }
+  
+  .project-context {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 2px solid #0ea5e9;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .project-badge {
+    font-size: 1.1rem;
+    color: #0369a1;
+    margin-bottom: 0.75rem;
+  }
+  
+  .project-context p:last-child {
+    margin-bottom: 0;
+    color: #374151;
   }
   
   .feedback-form {
-    background: var(--color-off-white);
-    padding: var(--space-8);
-    border-radius: var(--radius-lg);
-    margin-bottom: var(--space-10);
+    background: #f8fafc;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    border: 1px solid #e2e8f0;
   }
   
   .hidden {
     display: none;
   }
   
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  
+  @media (max-width: 600px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-group--checkbox {
+    margin-top: 0.5rem;
+  }
+  
+  .form-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #1f2937;
+  }
+  
+  .form-label--required::after {
+    content: ' *';
+    color: #dc2626;
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    outline: none;
+    border-color: #4db8b8;
+    box-shadow: 0 0 0 3px rgba(77, 184, 184, 0.15);
+  }
+  
+  .form-input--readonly {
+    background-color: #f1f5f9;
+    color: #1B365D;
+    font-weight: 600;
+    cursor: not-allowed;
+  }
+  
+  .form-textarea {
+    resize: vertical;
+    min-height: 150px;
+  }
+  
+  .form-help {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+  }
+  
+  .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+  }
+  
+  .checkbox-label input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.1rem;
+  }
+  
+  .checkbox-label span {
+    color: #374151;
+    line-height: 1.5;
+  }
+  
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    text-decoration: none;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .btn--primary {
+    background: #1B365D;
+    color: white;
+    border-color: #1B365D;
+  }
+  
+  .btn--primary:hover {
+    background: #142847;
+    border-color: #142847;
+  }
+  
+  .btn--lg {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+  }
+  
+  .btn--full {
+    width: 100%;
+  }
+  
+  .form-back {
+    text-align: center;
+    margin-top: 1rem;
+  }
+  
+  .form-back a {
+    color: #4db8b8;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .form-back a:hover {
+    text-decoration: underline;
+  }
+  
   .feedback-note {
-    background: var(--color-navy);
-    color: var(--color-white);
-    padding: var(--space-6);
-    border-radius: var(--radius-lg);
+    background: #1B365D;
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
   }
   
   .feedback-note h2 {
-    color: var(--color-white);
-    font-size: var(--text-lg);
-    margin-bottom: var(--space-3);
+    color: white;
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
   }
   
   .feedback-note p {
-    color: var(--color-gray-200);
-    margin-bottom: var(--space-3);
+    color: #cbd5e1;
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
   }
   
   .feedback-note p:last-child {
@@ -178,10 +412,103 @@ import Hero from '../components/Hero.astro';
   }
   
   .feedback-note a {
-    color: var(--color-sky-light);
+    color: #7dd3fc;
   }
   
   .feedback-note a:hover {
-    color: var(--color-white);
+    color: white;
   }
 </style>
+
+<script>
+  // Client-side script to handle URL parameters
+  document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectParam = urlParams.get('project');
+    
+    if (projectParam && projectParam.trim() !== '') {
+      // We have a project parameter - customize the form
+      const projectName = decodeURIComponent(projectParam);
+      
+      // Show project context banner
+      const projectContext = document.getElementById('project-context');
+      if (projectContext) {
+        projectContext.style.display = 'block';
+      }
+      
+      // Set project name in banner
+      const projectNameDisplay = document.getElementById('project-name-display');
+      if (projectNameDisplay) {
+        projectNameDisplay.textContent = projectName;
+      }
+      
+      // Hide general intro
+      const generalIntro = document.getElementById('general-intro');
+      if (generalIntro) {
+        generalIntro.style.display = 'none';
+      }
+      
+      // Show and populate project field
+      const projectFieldGroup = document.getElementById('project-field-group');
+      const projectInput = document.getElementById('project');
+      if (projectFieldGroup && projectInput) {
+        projectFieldGroup.style.display = 'block';
+        projectInput.value = projectName;
+        projectInput.name = 'project'; // Ensure it's named correctly for form submission
+      }
+      
+      // Disable the hidden default project field
+      const projectHidden = document.getElementById('project-hidden');
+      if (projectHidden) {
+        projectHidden.disabled = true;
+      }
+      
+      // Hide category dropdown and set hidden category value
+      const categoryGroup = document.getElementById('category-group');
+      const categorySelect = document.getElementById('category');
+      const categoryHidden = document.getElementById('category-hidden');
+      
+      if (categoryGroup && categorySelect && categoryHidden) {
+        categoryGroup.style.display = 'none';
+        categorySelect.removeAttribute('required');
+        categorySelect.disabled = true;
+        categorySelect.name = 'category-disabled';
+        
+        categoryHidden.disabled = false;
+        categoryHidden.name = 'category';
+        categoryHidden.value = 'project-hub';
+      }
+      
+      // Update placeholder text
+      const titleInput = document.getElementById('title');
+      if (titleInput) {
+        titleInput.placeholder = `Your feedback on ${projectName}`;
+      }
+      
+      const detailsTextarea = document.getElementById('details');
+      if (detailsTextarea) {
+        detailsTextarea.placeholder = 'Share your thoughts, suggestions, concerns, or questions about this project...';
+      }
+      
+      // Update subscribe label
+      const subscribeLabel = document.getElementById('subscribe-label');
+      if (subscribeLabel) {
+        subscribeLabel.textContent = 'Email me updates about this project';
+      }
+      
+      // Show and configure back link
+      const backLink = document.getElementById('back-link');
+      const backLinkAnchor = document.getElementById('back-link-anchor');
+      if (backLink && backLinkAnchor) {
+        backLink.style.display = 'block';
+        // Create slug from project name
+        const slug = projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        backLinkAnchor.href = `/projects/${slug}/`;
+        backLinkAnchor.textContent = `← Back to ${projectName}`;
+      }
+      
+      // Update page title
+      document.title = `Feedback: ${projectName} | Smiths Lake Village`;
+    }
+  });
+</script>

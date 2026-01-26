@@ -1,0 +1,364 @@
+/**
+ * Project Hub - Notion Integration
+ * Fetches project data with all new fields for Project Hub system
+ * 
+ * @version 2.3 - Added submissionOpens and engagementViews
+ * @updated 26 January 2026
+ */
+
+import { fetchNotionContent } from './notion-unified.js';
+
+/**
+ * Fetch all projects from Notion
+ * @param {Object} options - Filter options
+ * @param {string} options.status - Filter by Status/Stage/Phase
+ * @param {boolean} options.requireShowOnWebsite - Only show published items
+ * @returns {Promise<Array>} Array of project objects
+ */
+export async function fetchProjects({ status = null, requireShowOnWebsite = true } = {}) {
+  try {
+    // Fetch items where Section = "Project Hub"
+    let projects = await fetchNotionContent({
+      section: 'Project Hub',
+      requireShowOnWebsite
+    });
+
+    // Filter by status if specified
+    if (status) {
+      projects = projects.filter(project => {
+        const projectStatus = project.status || [];
+        if (Array.isArray(projectStatus)) {
+          return projectStatus.some(s => s.toLowerCase().includes(status.toLowerCase()));
+        }
+        return projectStatus === status;
+      });
+    }
+
+    // Sort by Priority field (lower number = higher priority)
+    projects.sort((a, b) => {
+      const priorityA = a.priority || 999;
+      const priorityB = b.priority || 999;
+      return priorityA - priorityB;
+    });
+
+    // Process and enrich project data
+    return projects.map(project => enrichProjectData(project));
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch single project by slug
+ * @param {string} slug - URL slug
+ * @returns {Promise<Object|null>} Project object or null
+ */
+export async function fetchProjectBySlug(slug) {
+  const projects = await fetchProjects({ requireShowOnWebsite: true });
+  return projects.find(p => p.slug === slug) || null;
+}
+
+/**
+ * Fetch all projects for dynamic checkbox generation
+ * @returns {Promise<Object>} Projects grouped by section
+ */
+export async function fetchProjectsForSubscription() {
+  try {
+    const allItems = await fetchNotionContent({ requireShowOnWebsite: true });
+
+    const grouped = {
+      projects: [],
+      services: [],
+      groups: [],
+      environment: [],
+      history: [],
+      emergency: []
+    };
+
+    allItems.forEach(item => {
+      const section = item.section || '';
+      const title = item.title || '';
+      const mailchimpTag = item.mailchimpTag || title;
+      
+      if (!title) return;
+      
+      const itemData = { title, mailchimpTag: mailchimpTag || title };
+      
+      if (section === 'Project Hub') {
+        grouped.projects.push(itemData);
+      } else if (section === 'Services' || section === 'Services & Amenities') {
+        grouped.services.push(itemData);
+      } else if (section === 'Groups & Activities') {
+        grouped.groups.push(itemData);
+      } else if (section === 'Environment & Sustainability') {
+        grouped.environment.push(itemData);
+      } else if (section === 'History & Culture') {
+        grouped.history.push(itemData);
+      } else if (section === 'Emergency & Safety') {
+        grouped.emergency.push(itemData);
+      }
+    });
+
+    return grouped;
+  } catch (error) {
+    console.error('Error fetching subscription items:', error);
+    return {
+      projects: [],
+      services: [],
+      groups: [],
+      environment: [],
+      history: [],
+      emergency: []
+    };
+  }
+}
+
+/**
+ * Get total engagement count from Community Inbox
+ * @returns {Promise<number>} Total count of submissions
+ */
+export async function getTotalEngagementCount() {
+  try {
+    // TODO: Connect to Community Inbox database when ready
+    return 0;
+  } catch (error) {
+    console.error('Error fetching engagement count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Get submission count for specific project
+ * @param {string} projectTitle - Project title to filter by
+ * @returns {Promise<number>} Count of submissions
+ */
+export async function getProjectSubmissionCount(projectTitle) {
+  try {
+    // TODO: Connect to Community Inbox database and filter by project
+    return 0;
+  } catch (error) {
+    console.error('Error fetching submission count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Enrich project data with processed fields
+ * @param {Object} project - Raw project data from Notion (via notion-unified.js)
+ * @returns {Object} Enriched project data
+ */
+function enrichProjectData(project) {
+  // Title (with fallback)
+  const title = project.title || 'Untitled Project';
+  
+  // Slug - use existing or generate from title
+  const slug = project.slug || generateSlug(title);
+
+  // Status badge from multi-select status field
+  const statusStagePhase = project.status || [];
+  const statusBadge = getStatusBadge(statusStagePhase);
+
+  // Deadline handling
+  const submissionDeadline = project.submissionDeadline || null;
+  const deadlinePassed = submissionDeadline 
+    ? new Date(submissionDeadline) < new Date()
+    : false;
+
+  // Opens date handling
+  const submissionOpens = project.submissionOpens || null;
+
+  // Engagement views
+  const engagementViews = project.engagementViews || null;
+
+  // Hero image URL extraction
+  const heroImageFile = extractFileUrl(project.heroImageFile);
+
+  // Content fields - directly from notion-unified.js
+  const aboutContent = project.projhubAboutContent || '';
+  const changesContent = project.projhubChangesContent || '';
+  const faqsContent = project.projhubFAQsContent || '';
+
+  // Parse documents from semicolon-separated fields
+  const documents = parseDocuments(
+    project.documentTitle || '',
+    project.documentUrl || '',
+    project.documentSize || ''
+  );
+
+  // Parse features from semicolon-separated field
+  const features = parseFeatures(project.feature || '');
+
+  return {
+    // Core identification
+    id: project.id,
+    title,
+    slug,
+    description: project.description || '',
+    category: project.category || '',
+    priority: project.priority || 999,
+    
+    // Status and timing
+    statusStagePhase,
+    statusBadge,
+    submissionDeadline,
+    submissionOpens,      // <-- ADDED
+    deadlinePassed,
+    engagementViews,      // <-- ADDED
+    
+    // Content
+    aboutContent,
+    changesContent,
+    faqsContent,
+    
+    // Parsed arrays
+    documents,
+    features,
+    
+    // Media
+    heroImageFile,
+    
+    // Email integration
+    mailchimpTag: project.mailchimpTag || title,
+    
+    // Preserve original data for debugging
+    _raw: project
+  };
+}
+
+/**
+ * Extract URL from Notion file attachment
+ * @param {*} fileField - The file field from Notion
+ * @returns {string|null} The extracted URL or null
+ */
+function extractFileUrl(fileField) {
+  if (!fileField) return null;
+  
+  // Direct string URL
+  if (typeof fileField === 'string') {
+    return fileField;
+  }
+  
+  // Array of file objects (from notion-unified.js files type)
+  if (Array.isArray(fileField) && fileField.length > 0) {
+    const firstFile = fileField[0];
+    if (firstFile.url) return firstFile.url;
+    if (firstFile.external?.url) return firstFile.external.url;
+    if (firstFile.file?.url) return firstFile.file.url;
+  }
+  
+  // Single object with url
+  if (fileField.url) return fileField.url;
+  if (fileField.external?.url) return fileField.external.url;
+  if (fileField.file?.url) return fileField.file.url;
+  
+  return null;
+}
+
+/**
+ * Parse documents from semicolon-separated fields
+ * Supports both semicolon (;) and newline (\n) as separators
+ * @param {string} titles - Semicolon-separated document titles
+ * @param {string} urls - Semicolon-separated document URLs
+ * @param {string} sizes - Semicolon-separated file sizes (optional)
+ * @returns {Array} Array of document objects
+ */
+function parseDocuments(titles, urls, sizes) {
+  // Support both semicolon (;) and newline (\n) as separators
+  const splitPattern = /[;\n]/;
+  
+  const titleList = (titles || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
+  const urlList = (urls || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
+  const sizeList = (sizes || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
+
+  const documents = [];
+  const maxLength = Math.max(titleList.length, urlList.length);
+
+  for (let i = 0; i < maxLength; i++) {
+    const title = titleList[i] || '';
+    const url = urlList[i] || '';
+    
+    // Only add document if we have both title and URL
+    if (title && url) {
+      documents.push({
+        title,
+        url,
+        size: sizeList[i] || ''
+      });
+    }
+  }
+
+  return documents;
+}
+
+/**
+ * Parse features from semicolon or newline-separated field
+ * @param {string} featureText - Semicolon or newline-separated features
+ * @returns {Array} Array of feature strings (max 5)
+ */
+function parseFeatures(featureText) {
+  if (!featureText) return [];
+  
+  // Support both semicolon (;) and newline (\n) as separators
+  return featureText
+    .split(/[;\n]/)
+    .map(f => f.trim())
+    .filter(f => f.length > 0)
+    .slice(0, 5);
+}
+
+/**
+ * Get status badge configuration based on Status/Stage/Phase value
+ * @param {string|Array} status - Status value from Notion (can be array from multi-select)
+ * @returns {Object} Badge config with type and label
+ */
+function getStatusBadge(status) {
+  if (!status || (Array.isArray(status) && status.length === 0)) {
+    return { type: 'default', label: 'Status Unknown' };
+  }
+
+  // Handle array (multi-select) - join into single string for checking
+  const statusStr = Array.isArray(status) ? status.join(' ').toLowerCase() : status.toLowerCase();
+
+  // OPEN badges (green) - check these first as they take priority
+  if (statusStr.includes('open for comment') || 
+      statusStr.includes('open to new participants') ||
+      statusStr.includes('active')) {
+    return { type: 'open', label: 'Open' };
+  }
+
+  // CLOSED badges (gray)
+  if (statusStr.includes('not active') || 
+      statusStr.includes('full') ||
+      statusStr.includes('closed') ||
+      statusStr.includes('completed')) {
+    return { type: 'closed', label: 'Closed' };
+  }
+
+  // UNDER REVIEW badges (orange)
+  if (statusStr.includes('proposed') ||
+      statusStr.includes('concept plan') ||
+      statusStr.includes('project planning') ||
+      statusStr.includes('plan approved') ||
+      statusStr.includes('under review') ||
+      statusStr.includes('in progress')) {
+    return { type: 'review', label: 'Under Review' };
+  }
+
+  // Default - show the first status if array
+  const label = Array.isArray(status) ? status[0] : status;
+  return { type: 'default', label: label || 'Status Unknown' };
+}
+
+/**
+ * Generate URL slug from title
+ */
+function generateSlug(title) {
+  if (!title) return 'untitled';
+  
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 100);
+}

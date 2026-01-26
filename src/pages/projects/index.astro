@@ -1,0 +1,909 @@
+---
+/**
+ * Projects Hub - Landing Page
+ * 
+ * Displays all community projects with:
+ * - Engagement statistics
+ * - Open projects grid (Open + Under Review)
+ * - Past projects grid (Closed)
+ * - Subscription CTA
+ * 
+ * @version 2.0 - Improved accessibility, error handling, and branding
+ * @updated 26 January 2026
+ */
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { fetchProjects, getTotalEngagementCount } from '../../lib/notion-projects.js';
+import { getSmartIcon } from '../../lib/icon-matcher.js';
+
+// Fetch all projects with error handling
+let allProjects = [];
+let totalEngagement = 0;
+let fetchError = null;
+
+try {
+  allProjects = await fetchProjects({ requireShowOnWebsite: true });
+  totalEngagement = await getTotalEngagementCount();
+} catch (error) {
+  console.error('Error loading projects:', error);
+  fetchError = error.message;
+}
+
+// Separate open and closed projects
+const openProjects = allProjects.filter(p => 
+  p.statusBadge.type === 'open' || p.statusBadge.type === 'review'
+);
+const closedProjects = allProjects.filter(p => p.statusBadge.type === 'closed');
+
+// Format engagement count with appropriate messaging
+const engagementText = totalEngagement > 0 
+  ? `${totalEngagement.toLocaleString()} community interactions have helped shape local decisions`
+  : 'Join your neighbours in shaping the future of our community';
+
+// Page metadata
+const pageTitle = "Community Projects | Smiths Lake Village";
+const pageDescription = "Have your say on community projects and development proposals. View open consultations, download documents, and submit feedback on initiatives affecting Smiths Lake Village.";
+---
+
+<BaseLayout 
+  title={pageTitle}
+  description={pageDescription}
+>
+  <main class="projects-page" id="main-content">
+    
+    <!-- Hero Section -->
+    <section class="hero-section" aria-labelledby="hero-title">
+      <div class="container">
+        <h1 id="hero-title" class="hero-title">Have Your Say</h1>
+        <p class="hero-subtitle">{engagementText}</p>
+        <p class="hero-description">
+          Your feedback helps shape decisions that affect our community. 
+          Browse current projects, download documents, and share your views.
+        </p>
+        <div class="hero-actions">
+          <a href="#open-projects" class="btn btn-primary">
+            View Open Projects
+            <span class="visually-hidden"> - skip to current consultations</span>
+          </a>
+          {closedProjects.length > 0 && (
+            <a href="#past-projects" class="btn btn-secondary">
+              Past Projects
+              <span class="visually-hidden"> - view completed consultations</span>
+            </a>
+          )}
+        </div>
+      </div>
+    </section>
+
+    <!-- Error State -->
+    {fetchError && (
+      <section class="error-section" role="alert">
+        <div class="container">
+          <div class="error-message">
+            <span class="error-icon" aria-hidden="true">⚠️</span>
+            <div>
+              <h2>Unable to Load Projects</h2>
+              <p>We're having trouble loading project information. Please try refreshing the page or check back later.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- Open Projects Section -->
+    <section class="projects-section" id="open-projects" aria-labelledby="open-heading">
+      <div class="container">
+        <header class="section-header">
+          <h2 id="open-heading">Open for Comment</h2>
+          <p>Current projects accepting community feedback and submissions</p>
+        </header>
+
+        {!fetchError && openProjects.length > 0 ? (
+          <div class="projects-grid" role="list">
+            {openProjects.map((project) => {
+              const icon = getSmartIcon(project);
+              const cardId = `project-${project.slug}`;
+              
+              return (
+                <article 
+                  class="project-card" 
+                  role="listitem"
+                  aria-labelledby={`${cardId}-title`}
+                >
+                  <!-- Project Image/Icon -->
+                  <div class="card-image">
+                    {project.heroImageFile ? (
+                      <img 
+                        src={project.heroImageFile} 
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div class="card-icon-placeholder" aria-hidden="true">
+                        <span class="icon-large">{icon}</span>
+                      </div>
+                    )}
+                    <!-- Status Badge -->
+                    <span 
+                      class={`status-badge status-${project.statusBadge.type}`}
+                      aria-label={`Status: ${project.statusBadge.label}`}
+                    >
+                      {project.statusBadge.label}
+                    </span>
+                  </div>
+
+                  <!-- Card Content -->
+                  <div class="card-content">
+                    <h3 id={`${cardId}-title`} class="card-title">
+                      {project.title}
+                    </h3>
+                    
+                    <!-- Meta Info -->
+                    <div class="card-meta">
+                      {project.submissionDeadline && !project.deadlinePassed && (
+                        <span class="meta-item deadline">
+                          <span aria-hidden="true">📅</span>
+                          <span class="visually-hidden">Submissions close:</span>
+                          {new Date(project.submissionDeadline).toLocaleDateString('en-AU', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </span>
+                      )}
+                      {project.category && (
+                        <span class="meta-item category">
+                          <span aria-hidden="true">📁</span>
+                          <span class="visually-hidden">Category:</span>
+                          {project.category}
+                        </span>
+                      )}
+                    </div>
+
+                    <!-- Description -->
+                    {project.description && (
+                      <p class="card-description">{project.description}</p>
+                    )}
+
+                    <!-- Learn More Link -->
+                    <a 
+                      href={`/projects/${project.slug}/`} 
+                      class="card-link"
+                      aria-describedby={`${cardId}-title`}
+                    >
+                      Learn more & have your say
+                      <span class="link-arrow" aria-hidden="true">→</span>
+                    </a>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : !fetchError && (
+          <div class="empty-state" role="status">
+            <div class="empty-icon" aria-hidden="true">📋</div>
+            <h3>No Open Consultations</h3>
+            <p>There are no projects currently open for community feedback. Check back soon or subscribe to receive updates when new projects are announced.</p>
+            <a href="#subscribe" class="btn btn-outline">Subscribe to Updates</a>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section" id="subscribe" aria-labelledby="cta-heading">
+      <div class="container">
+        <div class="cta-content">
+          <h2 id="cta-heading">Stay Informed</h2>
+          <p>Subscribe to receive email notifications when new projects are announced or when deadlines are approaching.</p>
+          <div class="cta-buttons">
+            <a href="/newsletter/" class="btn btn-primary">
+              Subscribe to Updates
+            </a>
+            <a href="/about/" class="btn btn-outline">
+              About Our Community
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Past Projects Section -->
+    {closedProjects.length > 0 && (
+      <section class="projects-section past-projects" id="past-projects" aria-labelledby="past-heading">
+        <div class="container">
+          <header class="section-header">
+            <h2 id="past-heading">Completed Consultations</h2>
+            <p>Previous projects and their outcomes</p>
+          </header>
+
+          <div class="projects-grid projects-grid-compact" role="list">
+            {closedProjects.map((project) => {
+              const icon = getSmartIcon(project);
+              const cardId = `past-${project.slug}`;
+              
+              return (
+                <article 
+                  class="project-card project-card-compact" 
+                  role="listitem"
+                  aria-labelledby={`${cardId}-title`}
+                >
+                  <!-- Project Image/Icon -->
+                  <div class="card-image card-image-compact">
+                    {project.heroImageFile ? (
+                      <img 
+                        src={project.heroImageFile} 
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div class="card-icon-placeholder" aria-hidden="true">
+                        <span class="icon-large">{icon}</span>
+                      </div>
+                    )}
+                    <!-- Status Badge -->
+                    <span 
+                      class={`status-badge status-${project.statusBadge.type}`}
+                      aria-label={`Status: ${project.statusBadge.label}`}
+                    >
+                      {project.statusBadge.label}
+                    </span>
+                  </div>
+
+                  <!-- Card Content -->
+                  <div class="card-content">
+                    <h3 id={`${cardId}-title`} class="card-title">{project.title}</h3>
+                    
+                    <!-- Meta Info -->
+                    <div class="card-meta">
+                      {project.submissionDeadline && (
+                        <span class="meta-item">
+                          <span aria-hidden="true">📅</span>
+                          <span class="visually-hidden">Consultation closed:</span>
+                          {new Date(project.submissionDeadline).toLocaleDateString('en-AU', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </span>
+                      )}
+                    </div>
+
+                    <!-- Description -->
+                    {project.description && (
+                      <p class="card-description">{project.description}</p>
+                    )}
+
+                    <!-- View Outcomes Link -->
+                    <a 
+                      href={`/projects/${project.slug}/`} 
+                      class="card-link"
+                      aria-describedby={`${cardId}-title`}
+                    >
+                      View outcomes
+                      <span class="link-arrow" aria-hidden="true">→</span>
+                    </a>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- Back to Top -->
+    <div class="back-to-top">
+      <a href="#main-content" class="back-to-top-link">
+        <span aria-hidden="true">↑</span>
+        Back to top
+      </a>
+    </div>
+
+  </main>
+</BaseLayout>
+
+<style>
+  /* ============================================
+     CSS Custom Properties (Brand Colours)
+     ============================================ */
+  :root {
+    --navy-blue: #1B365D;
+    --navy-blue-dark: #142847;
+    --navy-blue-light: #2B4A7D;
+    --sky-blue: #5B9BD5;
+    --sky-blue-light: #7BB3E0;
+    --golden-orange: #F5A623;
+    --golden-orange-dark: #D4900F;
+    --teal-accent: #4db8b8;
+    --teal-dark: #2d8b8b;
+    
+    --white: #FFFFFF;
+    --off-white: #F7F9FC;
+    --light-gray: #E8EDF3;
+    --medium-gray: #6B7280;
+    --dark-gray: #374151;
+    --black: #1F2937;
+    
+    --success-green: #2ecc71;
+    --warning-orange: #f39c12;
+    --muted-gray: #95a5a6;
+    --error-red: #e74c3c;
+  }
+
+  /* ============================================
+     Accessibility
+     ============================================ */
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Focus styles for accessibility */
+  a:focus-visible,
+  button:focus-visible {
+    outline: 3px solid var(--golden-orange);
+    outline-offset: 2px;
+  }
+
+  /* ============================================
+     Layout
+     ============================================ */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  .projects-page {
+    min-height: 100vh;
+  }
+
+  /* ============================================
+     Hero Section
+     ============================================ */
+  .hero-section {
+    background: linear-gradient(135deg, var(--teal-accent) 0%, var(--teal-dark) 100%);
+    color: var(--white);
+    padding: 4rem 1rem;
+    text-align: center;
+  }
+
+  .hero-title {
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    color: var(--white);
+  }
+
+  .hero-subtitle {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    opacity: 0.95;
+  }
+
+  .hero-description {
+    font-size: 1rem;
+    max-width: 600px;
+    margin: 0 auto 2rem;
+    opacity: 0.9;
+    line-height: 1.6;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* ============================================
+     Buttons
+     ============================================ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 2rem;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    cursor: pointer;
+    min-height: 44px; /* Touch target size */
+  }
+
+  .btn-primary {
+    background: var(--navy-blue);
+    color: var(--white);
+    border-color: var(--navy-blue);
+  }
+
+  .btn-primary:hover {
+    background: var(--navy-blue-dark);
+    border-color: var(--navy-blue-dark);
+    transform: translateY(-2px);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--white);
+    border-color: var(--white);
+  }
+
+  .btn-secondary:hover {
+    background: var(--white);
+    color: var(--navy-blue);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--navy-blue);
+    border-color: var(--navy-blue);
+  }
+
+  .btn-outline:hover {
+    background: var(--navy-blue);
+    color: var(--white);
+  }
+
+  /* ============================================
+     Error State
+     ============================================ */
+  .error-section {
+    padding: 2rem 1rem;
+    background: #fef2f2;
+    border-bottom: 1px solid #fecaca;
+  }
+
+  .error-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    background: var(--white);
+    border-radius: 8px;
+    border-left: 4px solid var(--error-red);
+  }
+
+  .error-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+  }
+
+  .error-message h2 {
+    color: var(--error-red);
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+  }
+
+  .error-message p {
+    color: var(--dark-gray);
+    margin: 0;
+  }
+
+  /* ============================================
+     Projects Section
+     ============================================ */
+  .projects-section {
+    padding: 4rem 1rem;
+  }
+
+  .past-projects {
+    background: var(--off-white);
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .section-header h2 {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    color: var(--navy-blue);
+    margin-bottom: 0.5rem;
+  }
+
+  .section-header p {
+    color: var(--medium-gray);
+    font-size: 1.1rem;
+  }
+
+  /* ============================================
+     Projects Grid
+     ============================================ */
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 2rem;
+  }
+
+  .projects-grid-compact {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+
+  /* ============================================
+     Project Card
+     ============================================ */
+  .project-card {
+    background: var(--white);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .project-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .project-card:focus-within {
+    box-shadow: 0 0 0 3px var(--golden-orange);
+  }
+
+  .project-card-compact {
+    /* Slightly smaller for past projects */
+  }
+
+  /* Card Image */
+  .card-image {
+    width: 100%;
+    height: 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-image-compact {
+    height: 60px;
+  }
+
+  .card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .project-card:hover .card-image img {
+    transform: scale(1.05);
+  }
+
+  .card-icon-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--sky-blue) 0%, var(--navy-blue) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .icon-large {
+    font-size: 2rem;
+    filter: brightness(0) invert(1);
+  }
+
+  /* Status Badge */
+  .status-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-open {
+    background: var(--success-green);
+    color: var(--white);
+  }
+
+  .status-closed {
+    background: var(--muted-gray);
+    color: var(--white);
+  }
+
+  .status-review {
+    background: var(--warning-orange);
+    color: var(--white);
+  }
+
+  .status-default {
+    background: var(--medium-gray);
+    color: var(--white);
+  }
+
+  /* Card Content */
+  .card-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .card-title {
+    font-size: 1.25rem;
+    color: var(--navy-blue);
+    margin: 0 0 0.75rem 0;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .card-meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--medium-gray);
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .meta-item.deadline {
+    color: var(--warning-orange);
+    font-weight: 600;
+  }
+
+  .card-description {
+    color: var(--dark-gray);
+    margin-bottom: 1rem;
+    line-height: 1.6;
+    flex-grow: 1;
+  }
+
+  .card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--teal-accent);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-top: auto;
+  }
+
+  .card-link:hover {
+    color: var(--teal-dark);
+    text-decoration: underline;
+  }
+
+  .link-arrow {
+    transition: transform 0.2s ease;
+  }
+
+  .card-link:hover .link-arrow {
+    transform: translateX(4px);
+  }
+
+  /* ============================================
+     CTA Section
+     ============================================ */
+  .cta-section {
+    background: linear-gradient(135deg, var(--navy-blue) 0%, var(--navy-blue-light) 100%);
+    color: var(--white);
+    padding: 4rem 2rem;
+    text-align: center;
+  }
+
+  .cta-content h2 {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    margin-bottom: 1rem;
+    color: var(--white);
+  }
+
+  .cta-content p {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    opacity: 0.95;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .cta-section .btn-primary {
+    background: var(--golden-orange);
+    border-color: var(--golden-orange);
+    color: var(--navy-blue);
+  }
+
+  .cta-section .btn-primary:hover {
+    background: var(--golden-orange-dark);
+    border-color: var(--golden-orange-dark);
+  }
+
+  .cta-section .btn-outline {
+    color: var(--white);
+    border-color: var(--white);
+  }
+
+  .cta-section .btn-outline:hover {
+    background: var(--white);
+    color: var(--navy-blue);
+  }
+
+  /* ============================================
+     Empty State
+     ============================================ */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--white);
+    border-radius: 8px;
+    border: 2px dashed var(--light-gray);
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .empty-state h3 {
+    color: var(--navy-blue);
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state p {
+    color: var(--medium-gray);
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* ============================================
+     Back to Top
+     ============================================ */
+  .back-to-top {
+    text-align: center;
+    padding: 2rem 1rem;
+    background: var(--off-white);
+    border-top: 1px solid var(--light-gray);
+  }
+
+  .back-to-top-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--medium-gray);
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .back-to-top-link:hover {
+    color: var(--navy-blue);
+    background: var(--light-gray);
+  }
+
+  /* ============================================
+     Responsive Design
+     ============================================ */
+  @media (max-width: 768px) {
+    .hero-section {
+      padding: 3rem 1rem;
+    }
+
+    .hero-title {
+      font-size: 1.75rem;
+    }
+
+    .hero-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .projects-section {
+      padding: 3rem 1rem;
+    }
+
+    .projects-grid,
+    .projects-grid-compact {
+      grid-template-columns: 1fr;
+    }
+
+    .cta-section {
+      padding: 3rem 1rem;
+    }
+
+    .cta-buttons {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .btn {
+      text-align: center;
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .card-meta {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+
+  /* ============================================
+     Print Styles
+     ============================================ */
+  @media print {
+    .hero-section {
+      background: none;
+      color: var(--black);
+      padding: 1rem 0;
+    }
+
+    .btn {
+      display: none;
+    }
+
+    .project-card {
+      box-shadow: none;
+      border: 1px solid var(--light-gray);
+      break-inside: avoid;
+    }
+
+    .cta-section,
+    .back-to-top {
+      display: none;
+    }
+  }
+
+  /* ============================================
+     Reduced Motion
+     ============================================ */
+  @media (prefers-reduced-motion: reduce) {
+    .btn,
+    .project-card,
+    .card-image img,
+    .card-link,
+    .link-arrow {
+      transition: none;
+    }
+
+    .project-card:hover {
+      transform: none;
+    }
+
+    .project-card:hover .card-image img {
+      transform: none;
+    }
+  }
+</style>

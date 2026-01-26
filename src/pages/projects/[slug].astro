@@ -1,0 +1,1391 @@
+---
+/**
+ * Project Detail Page - Dynamic Route
+ * 
+ * Displays complete project information:
+ * - Angled hero with status badge
+ * - Breadcrumb navigation
+ * - Key Features cards with icons
+ * - About/Changes/FAQs tabs (FAQs as accordion)
+ * - Document library sidebar (no file sizes)
+ * - Project Info with Opens/Closes dates
+ * - Submit Feedback button (links to /feedback/)
+ * 
+ * FAQ Format in Notion:
+ * Q: Question text here
+ * A: Answer text here
+ * 
+ * Q: Another question
+ * A: Another answer
+ * 
+ * @version 5.0 - Proper FAQ accordion
+ * @updated 26 January 2026
+ */
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { fetchProjects, fetchProjectBySlug } from '../../lib/notion-projects.js';
+import { getSmartIcon } from '../../lib/icon-matcher.js';
+
+// Get the slug from the URL
+export async function getStaticPaths() {
+  let projects = [];
+  
+  try {
+    projects = await fetchProjects({ requireShowOnWebsite: true });
+  } catch (error) {
+    console.error('Error fetching projects for static paths:', error);
+  }
+  
+  return projects.map(project => ({
+    params: { slug: project.slug },
+    props: { project }
+  }));
+}
+
+const { project } = Astro.props;
+
+// Handle missing project gracefully
+if (!project) {
+  return Astro.redirect('/projects/');
+}
+
+// Format deadline/closes date
+const closesFormatted = project.submissionDeadline
+  ? new Date(project.submissionDeadline).toLocaleDateString('en-AU', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    })
+  : null;
+
+// Format opens date
+const opensFormatted = project.submissionOpens
+  ? new Date(project.submissionOpens).toLocaleDateString('en-AU', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    })
+  : null;
+
+// Full deadline for banner
+const deadlineFullFormatted = project.submissionDeadline
+  ? new Date(project.submissionDeadline).toLocaleDateString('en-AU', {
+      weekday: 'long',
+      day: 'numeric', 
+      month: 'long',
+      year: 'numeric'
+    })
+  : null;
+
+// Calculate days until deadline
+let daysUntilDeadline = null;
+if (project.submissionDeadline && !project.deadlinePassed) {
+  const deadline = new Date(project.submissionDeadline);
+  const today = new Date();
+  daysUntilDeadline = Math.ceil((deadline - today) / (1000 * 60 * 60 * 24));
+}
+
+// Check if any content tabs should be shown
+const hasAbout = project.aboutContent && project.aboutContent.trim().length > 0;
+const hasChanges = project.changesContent && project.changesContent.trim().length > 0;
+const hasFAQs = project.faqsContent && project.faqsContent.trim().length > 0;
+const showTabs = hasAbout || hasChanges || hasFAQs;
+
+// Determine which tab is initially active
+const initialTab = hasAbout ? 'about' : (hasChanges ? 'changes' : 'faqs');
+
+// Page metadata
+const pageTitle = `${project.title} | Community Projects`;
+const pageDescription = project.description || `Community project: ${project.title}. View details, download documents, and submit your feedback.`;
+
+// Feedback form URL with project parameter
+const feedbackUrl = `/feedback/?project=${encodeURIComponent(project.title)}`;
+
+/**
+ * Sanitize content for safe HTML rendering
+ */
+function sanitizeContent(content) {
+  if (!content) return '';
+  
+  const paragraphs = content.split(/\n\n+/).filter(p => p.trim());
+  
+  return paragraphs
+    .map(p => {
+      const escaped = p
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+      
+      const withBreaks = escaped.replace(/\n/g, '<br>');
+      
+      return `<p>${withBreaks}</p>`;
+    })
+    .join('\n');
+}
+
+/**
+ * Parse FAQ content into Q&A pairs
+ * Supports format:
+ * Q: Question text
+ * A: Answer text
+ * 
+ * Also supports semicolon format for backwards compatibility:
+ * Q: Question; A: Answer; Q: Question2; A: Answer2
+ */
+function parseFAQs(content) {
+  if (!content) return [];
+  
+  const faqs = [];
+  
+  // First try Q:/A: format with line breaks
+  const qaPairs = content.split(/(?=Q\s*:)/i).filter(pair => pair.trim());
+  
+  for (const pair of qaPairs) {
+    // Match Q: followed by content, then A: followed by content
+    const match = pair.match(/Q\s*:\s*([\s\S]*?)(?:A\s*:\s*([\s\S]*))?$/i);
+    
+    if (match) {
+      const question = match[1]?.trim();
+      let answer = match[2]?.trim() || '';
+      
+      // Clean up answer - remove trailing Q: if present (from next question)
+      answer = answer.replace(/\s*Q\s*:[\s\S]*$/i, '').trim();
+      
+      if (question) {
+        faqs.push({
+          question: escapeHtml(question),
+          answer: escapeHtml(answer)
+        });
+      }
+    }
+  }
+  
+  // If no Q:/A: format found, try semicolon format as fallback
+  if (faqs.length === 0 && content.includes(';')) {
+    const parts = content.split(';').map(p => p.trim()).filter(p => p);
+    
+    for (let i = 0; i < parts.length; i += 2) {
+      const question = parts[i]?.replace(/^Q\s*:\s*/i, '').trim();
+      const answer = parts[i + 1]?.replace(/^A\s*:\s*/i, '').trim() || '';
+      
+      if (question) {
+        faqs.push({
+          question: escapeHtml(question),
+          answer: escapeHtml(answer)
+        });
+      }
+    }
+  }
+  
+  // If still no FAQs, treat entire content as single item
+  if (faqs.length === 0 && content.trim()) {
+    faqs.push({
+      question: 'Information',
+      answer: escapeHtml(content.trim())
+    });
+  }
+  
+  return faqs;
+}
+
+/**
+ * Escape HTML entities
+ */
+function escapeHtml(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Pre-sanitize content
+const sanitizedAbout = sanitizeContent(project.aboutContent);
+const sanitizedChanges = sanitizeContent(project.changesContent);
+const parsedFAQs = parseFAQs(project.faqsContent);
+
+// Default icons to cycle through for features
+const defaultFeatureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
+
+/**
+ * Get appropriate icon for a feature using the smart icon matcher
+ */
+function getFeatureIcon(featureText, index) {
+  // Use the smart icon matcher with feature text as title
+  const icon = getSmartIcon({ 
+    title: featureText,
+    category: project.category || '',
+    section: 'Project Hub'
+  });
+  
+  // If icon matcher returns generic fallback, use cycling icons instead
+  if (icon === '📋') {
+    return defaultFeatureIcons[index % defaultFeatureIcons.length];
+  }
+  
+  return icon;
+}
+
+/**
+ * Parse feature into title and description
+ */
+function parseFeature(feature) {
+  if (feature.includes(':')) {
+    const parts = feature.split(':');
+    return {
+      title: parts[0].trim(),
+      description: parts.slice(1).join(':').trim()
+    };
+  }
+  return {
+    title: feature.trim(),
+    description: ''
+  };
+}
+---
+
+<BaseLayout 
+  title={pageTitle}
+  description={pageDescription}
+>
+  <main class="project-detail-page" id="main-content">
+    
+    <!-- Hero Section with Angled Design -->
+    <section class="project-hero" aria-labelledby="project-title">
+      <div class="hero-diagonal" aria-hidden="true"></div>
+      {project.heroImageFile ? (
+        <div 
+          class="hero-image" 
+          style={`background-image: url(${project.heroImageFile})`}
+          role="img"
+          aria-label={`Hero image for ${project.title}`}
+        ></div>
+      ) : (
+        <div class="hero-image hero-placeholder" aria-hidden="true"></div>
+      )}
+      <div class="hero-content">
+        <span class={`hero-badge status-${project.statusBadge.type}`}>
+          {project.statusBadge.label}
+        </span>
+        <h1 id="project-title" class="hero-title">{project.title}</h1>
+        {project.description && (
+          <p class="hero-description">{project.description}</p>
+        )}
+      </div>
+    </section>
+
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb" aria-label="Breadcrumb navigation">
+      <div class="breadcrumb-container">
+        <ol class="breadcrumb-list">
+          <li><a href="/">Home</a></li>
+          <li><a href="/projects/">Projects</a></li>
+          <li aria-current="page">{project.title}</li>
+        </ol>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="content-wrapper">
+      <article class="main-content">
+        
+        <!-- Key Features Section -->
+        {project.features && project.features.length > 0 && (
+          <section class="features-section" aria-labelledby="features-heading">
+            <h2 id="features-heading">Key Features</h2>
+            <div class="features-grid">
+              {project.features.slice(0, 5).map((feature, index) => {
+                const parsed = parseFeature(feature);
+                const icon = getFeatureIcon(feature, index);
+                return (
+                  <div class="feature-card">
+                    <div class="feature-icon">{icon}</div>
+                    <h3>{parsed.title}</h3>
+                    {parsed.description && <p>{parsed.description}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        <!-- Tabbed Content Section -->
+        {showTabs && (
+          <section class="tabs-section" aria-labelledby="content-heading">
+            <h2 id="content-heading" class="visually-hidden">Project Information</h2>
+            
+            <div class="tabs" role="tablist">
+              {hasAbout && (
+                <button 
+                  class={`tab ${initialTab === 'about' ? 'active' : ''}`}
+                  role="tab"
+                  id="tab-about"
+                  aria-controls="panel-about"
+                  aria-selected={initialTab === 'about' ? 'true' : 'false'}
+                  data-tab="about"
+                >
+                  About the Plan
+                </button>
+              )}
+              {hasChanges && (
+                <button 
+                  class={`tab ${initialTab === 'changes' ? 'active' : ''}`}
+                  role="tab"
+                  id="tab-changes"
+                  aria-controls="panel-changes"
+                  aria-selected={initialTab === 'changes' ? 'true' : 'false'}
+                  data-tab="changes"
+                >
+                  Key Changes
+                </button>
+              )}
+              {hasFAQs && (
+                <button 
+                  class={`tab ${initialTab === 'faqs' ? 'active' : ''}`}
+                  role="tab"
+                  id="tab-faqs"
+                  aria-controls="panel-faqs"
+                  aria-selected={initialTab === 'faqs' ? 'true' : 'false'}
+                  data-tab="faqs"
+                >
+                  FAQs
+                </button>
+              )}
+            </div>
+
+            {hasAbout && (
+              <div class={`tab-content ${initialTab === 'about' ? 'active' : ''}`} role="tabpanel" id="panel-about" aria-labelledby="tab-about" tabindex="0">
+                <div class="content-text" set:html={sanitizedAbout}></div>
+              </div>
+            )}
+            {hasChanges && (
+              <div class={`tab-content ${initialTab === 'changes' ? 'active' : ''}`} role="tabpanel" id="panel-changes" aria-labelledby="tab-changes" tabindex="0">
+                <div class="content-text" set:html={sanitizedChanges}></div>
+              </div>
+            )}
+            {hasFAQs && (
+              <div class={`tab-content ${initialTab === 'faqs' ? 'active' : ''}`} role="tabpanel" id="panel-faqs" aria-labelledby="tab-faqs" tabindex="0">
+                <div class="faq-accordion">
+                  <h3 class="faq-title">Frequently Asked Questions</h3>
+                  {parsedFAQs.map((faq, index) => (
+                    <div class="faq-item">
+                      <button 
+                        class="faq-question" 
+                        aria-expanded="false"
+                        aria-controls={`faq-answer-${index}`}
+                        id={`faq-question-${index}`}
+                      >
+                        <span class="faq-question-text">{faq.question}</span>
+                        <span class="faq-icon" aria-hidden="true">▼</span>
+                      </button>
+                      <div 
+                        class="faq-answer" 
+                        id={`faq-answer-${index}`}
+                        aria-labelledby={`faq-question-${index}`}
+                        hidden
+                      >
+                        <p>{faq.answer}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        <!-- No Content Fallback -->
+        {!showTabs && (
+          <section class="content-section">
+            <h2>About This Project</h2>
+            <p class="placeholder-text">Project details will be added soon. Subscribe below to be notified when more information is available.</p>
+          </section>
+        )}
+
+        <!-- Deadline Banner -->
+        {project.submissionDeadline && !project.deadlinePassed && (
+          <div class="deadline-banner deadline-active" role="status">
+            <div class="deadline-banner-content">
+              <h3>⏰ Submissions Close Soon</h3>
+              <p>Deadline: <strong>4:30pm {deadlineFullFormatted}</strong></p>
+            </div>
+          </div>
+        )}
+
+        {project.submissionDeadline && project.deadlinePassed && (
+          <div class="deadline-banner deadline-passed" role="status">
+            <div class="deadline-banner-content">
+              <h3>✓ Consultation Closed</h3>
+              <p>This project is now under review. Outcomes will be published when available.</p>
+            </div>
+          </div>
+        )}
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+          <h2>Ready to Have Your Say?</h2>
+          <p>Join our community to submit your formal feedback on this project</p>
+          <div class="cta-buttons">
+            <a href="/newsletter/" class="btn btn-outline">Sign Up</a>
+            <a href={feedbackUrl} class="btn btn-primary">Login & Submit</a>
+          </div>
+        </section>
+
+      </article>
+
+      <!-- Sidebar -->
+      <aside class="sidebar" aria-label="Project information">
+        
+        <!-- Project Info -->
+        <div class="sidebar-section">
+          <h3>Project Info</h3>
+          <dl class="info-list">
+            <div class="info-row">
+              <dt>Status:</dt>
+              <dd><span class={`status-badge status-${project.statusBadge.type}`}>{project.statusBadge.label}</span></dd>
+            </div>
+            {opensFormatted && (
+              <div class="info-row">
+                <dt>Opens:</dt>
+                <dd>{opensFormatted}</dd>
+              </div>
+            )}
+            {closesFormatted && !project.deadlinePassed && (
+              <div class="info-row">
+                <dt>Closes:</dt>
+                <dd>{closesFormatted}</dd>
+              </div>
+            )}
+            {closesFormatted && project.deadlinePassed && (
+              <div class="info-row">
+                <dt>Closed:</dt>
+                <dd>{closesFormatted}</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+
+        <!-- Document Library -->
+        {project.documents && project.documents.length > 0 && (
+          <div class="sidebar-section">
+            <h3>Document Library</h3>
+            <ul class="document-list">
+              {project.documents.map(doc => (
+                <li class="document-item">
+                  <div class="document-icon" aria-hidden="true">📄</div>
+                  <div class="document-info">
+                    <span class="document-title">{doc.title}</span>
+                  </div>
+                  <a href={doc.url} class="document-link" target="_blank" rel="noopener noreferrer" aria-label={`Download ${doc.title}`}>
+                    <span class="download-icon">↓</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <!-- Quick Actions -->
+        <div class="sidebar-section">
+          <h3>Quick Actions</h3>
+          <div class="sidebar-actions">
+            <a href={feedbackUrl} class="btn btn-primary btn-block">Submit Feedback</a>
+            <button type="button" class="btn btn-outline btn-block share-button">Share Project</button>
+          </div>
+        </div>
+
+        <div class="sidebar-back">
+          <a href="/projects/" class="back-link">← Back to All Projects</a>
+        </div>
+
+      </aside>
+    </div>
+
+  </main>
+</BaseLayout>
+
+<style>
+  :root {
+    --navy-blue: #1B365D;
+    --navy-blue-dark: #142847;
+    --navy-blue-light: #2B4A7D;
+    --teal-accent: #4db8b8;
+    --teal-dark: #2d8b8b;
+    --sky-blue: #5B9BD5;
+    --golden-orange: #F5A623;
+    --white: #FFFFFF;
+    --off-white: #F7F9FC;
+    --light-gray: #E8EDF3;
+    --medium-gray: #6B7280;
+    --dark-gray: #374151;
+    --black: #1F2937;
+    --success-green: #2ecc71;
+    --warning-orange: #f39c12;
+    --muted-gray: #95a5a6;
+    --error-red: #e74c3c;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 3px solid var(--golden-orange);
+    outline-offset: 2px;
+  }
+
+  /* ========================================
+     HERO SECTION
+     ======================================== */
+  .project-hero {
+    position: relative;
+    min-height: 300px;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--navy-blue) 0%, #1e3d4a 100%);
+    display: flex;
+    align-items: center;
+  }
+
+  .hero-diagonal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 65%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--navy-blue) 0%, #1e3d4a 100%);
+    transform: skewX(-15deg);
+    transform-origin: top left;
+    z-index: 1;
+  }
+
+  .hero-image {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    clip-path: polygon(20% 0, 100% 0, 100% 100%, 0 100%);
+    z-index: 0;
+  }
+
+  .hero-placeholder {
+    background: linear-gradient(135deg, var(--sky-blue) 0%, var(--navy-blue) 100%);
+    opacity: 0.4;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    color: var(--white);
+    padding: 3rem 2rem;
+    max-width: 600px;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    padding: 0.35rem 1rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1rem;
+  }
+
+  .hero-title {
+    font-size: clamp(1.5rem, 4vw, 2.25rem);
+    color: var(--teal-accent);
+    margin: 0 0 1rem;
+    line-height: 1.2;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .hero-description {
+    font-size: 1rem;
+    opacity: 0.95;
+    margin-bottom: 0;
+    line-height: 1.6;
+  }
+
+  /* Status Badges */
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-open { background: var(--success-green); color: var(--white); }
+  .status-closed { background: var(--muted-gray); color: var(--white); }
+  .status-review { background: var(--warning-orange); color: var(--white); }
+  .status-default { background: var(--medium-gray); color: var(--white); }
+
+  /* ========================================
+     BREADCRUMB
+     ======================================== */
+  .breadcrumb {
+    background: var(--off-white);
+    border-bottom: 1px solid var(--light-gray);
+    padding: 0.75rem 2rem;
+  }
+
+  .breadcrumb-container { 
+    max-width: 1200px; 
+    margin: 0 auto; 
+  }
+
+  .breadcrumb-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.875rem;
+  }
+
+  .breadcrumb-list li { 
+    display: flex; 
+    align-items: center; 
+  }
+
+  .breadcrumb-list li:not(:last-child)::after {
+    content: '/';
+    margin-left: 0.5rem;
+    color: var(--medium-gray);
+  }
+
+  .breadcrumb-list a { 
+    color: var(--teal-accent); 
+    text-decoration: none; 
+  }
+
+  .breadcrumb-list a:hover { 
+    text-decoration: underline; 
+  }
+
+  .breadcrumb-list [aria-current="page"] { 
+    color: var(--dark-gray); 
+    font-weight: 500; 
+  }
+
+  /* ========================================
+     CONTENT WRAPPER - TWO COLUMN LAYOUT
+     ======================================== */
+  .content-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 3rem;
+  }
+
+  .main-content { 
+    min-width: 0; 
+  }
+
+  /* ========================================
+     KEY FEATURES SECTION
+     ======================================== */
+  .features-section {
+    margin-bottom: 2.5rem;
+  }
+
+  .features-section h2 {
+    font-size: 1.25rem;
+    color: var(--navy-blue);
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 3px solid var(--teal-accent);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+
+  .feature-card {
+    background: var(--white);
+    border: 1px solid var(--light-gray);
+    border-radius: 12px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .feature-card .feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  .feature-card h3 {
+    font-size: 0.95rem;
+    color: var(--navy-blue);
+    margin: 0 0 0.5rem;
+    font-weight: 700;
+  }
+
+  .feature-card p {
+    font-size: 0.85rem;
+    color: var(--medium-gray);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* ========================================
+     TABS SECTION
+     ======================================== */
+  .tabs-section { 
+    margin-bottom: 2rem; 
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--light-gray);
+    margin-bottom: 1.5rem;
+  }
+
+  .tab {
+    padding: 0.875rem 1.5rem;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--medium-gray);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+
+  .tab:hover { 
+    color: var(--navy-blue); 
+    background: var(--off-white); 
+  }
+
+  .tab.active { 
+    color: var(--navy-blue); 
+    border-bottom-color: var(--teal-accent); 
+  }
+
+  .tab-content { 
+    display: none; 
+  }
+
+  .tab-content.active { 
+    display: block; 
+  }
+
+  .content-text { 
+    color: var(--dark-gray); 
+    line-height: 1.8; 
+  }
+
+  .content-text p { 
+    margin-bottom: 1rem; 
+  }
+
+  .content-text p:last-child { 
+    margin-bottom: 0; 
+  }
+
+  .placeholder-text { 
+    color: var(--medium-gray); 
+    font-style: italic; 
+  }
+
+  /* Content Section (non-tabbed) */
+  .content-section {
+    margin-bottom: 2rem;
+  }
+
+  .content-section h2 {
+    font-size: 1.25rem;
+    color: var(--navy-blue);
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 3px solid var(--teal-accent);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  /* ========================================
+     FAQ ACCORDION
+     ======================================== */
+  .faq-accordion {
+    margin: 0;
+  }
+
+  .faq-title {
+    font-size: 1.1rem;
+    color: var(--navy-blue);
+    margin: 0 0 1.25rem;
+    font-weight: 700;
+  }
+
+  .faq-item {
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+    background: var(--white);
+  }
+
+  .faq-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .faq-question {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: var(--off-white);
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--navy-blue);
+    transition: background 0.2s;
+  }
+
+  .faq-question:hover {
+    background: var(--light-gray);
+  }
+
+  .faq-question[aria-expanded="true"] {
+    background: var(--navy-blue);
+    color: var(--white);
+  }
+
+  .faq-question[aria-expanded="true"] .faq-icon {
+    transform: rotate(180deg);
+  }
+
+  .faq-question-text {
+    flex: 1;
+    padding-right: 1rem;
+  }
+
+  .faq-icon {
+    font-size: 0.75rem;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+
+  .faq-answer {
+    padding: 1.25rem;
+    background: var(--white);
+    border-top: 1px solid var(--light-gray);
+  }
+
+  .faq-answer[hidden] {
+    display: none;
+  }
+
+  .faq-answer p {
+    margin: 0;
+    color: var(--dark-gray);
+    line-height: 1.7;
+  }
+
+  /* ========================================
+     DEADLINE BANNER
+     ======================================== */
+  .deadline-banner {
+    padding: 1.25rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .deadline-active {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: var(--white);
+  }
+
+  .deadline-passed {
+    background: var(--off-white);
+    border: 1px solid var(--light-gray);
+    color: var(--dark-gray);
+  }
+
+  .deadline-banner-content h3 { 
+    margin: 0 0 0.25rem; 
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .deadline-banner-content p { 
+    margin: 0; 
+    font-size: 0.95rem;
+  }
+
+  .deadline-active h3,
+  .deadline-active p {
+    color: var(--white);
+  }
+
+  /* ========================================
+     CTA SECTION
+     ======================================== */
+  .cta-section {
+    background: var(--navy-blue);
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    margin-top: 2rem;
+  }
+
+  .cta-section h2 {
+    color: var(--white);
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .cta-section > p {
+    color: rgba(255, 255, 255, 0.85);
+    margin: 0 0 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* ========================================
+     BUTTONS
+     ======================================== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    cursor: pointer;
+    min-height: 44px;
+  }
+
+  .btn-primary { 
+    background: var(--navy-blue); 
+    color: var(--white); 
+    border-color: var(--navy-blue); 
+  }
+
+  .btn-primary:hover { 
+    background: var(--navy-blue-dark); 
+    border-color: var(--navy-blue-dark); 
+  }
+
+  .btn-outline { 
+    background: transparent; 
+    color: var(--navy-blue); 
+    border-color: var(--navy-blue); 
+  }
+
+  .btn-outline:hover { 
+    background: var(--navy-blue); 
+    color: var(--white); 
+  }
+
+  /* CTA section button variants */
+  .cta-section .btn-outline {
+    color: var(--white);
+    border-color: var(--white);
+  }
+
+  .cta-section .btn-outline:hover {
+    background: var(--white);
+    color: var(--navy-blue);
+  }
+
+  .cta-section .btn-primary {
+    background: var(--teal-accent);
+    border-color: var(--teal-accent);
+    color: var(--white);
+  }
+
+  .cta-section .btn-primary:hover {
+    background: var(--teal-dark);
+    border-color: var(--teal-dark);
+  }
+
+  .btn-block { 
+    display: flex; 
+    width: 100%; 
+  }
+
+  /* ========================================
+     SIDEBAR
+     ======================================== */
+  .sidebar { 
+    position: sticky; 
+    top: 100px; 
+    height: fit-content; 
+  }
+
+  .sidebar-section {
+    background: var(--white);
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .sidebar-section h3 {
+    font-size: 0.8rem;
+    color: var(--navy-blue);
+    margin: 0 0 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.75px;
+    font-weight: 700;
+  }
+
+  /* Project Info List */
+  .info-list { 
+    margin: 0; 
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--light-gray);
+  }
+
+  .info-row:last-child { 
+    border-bottom: none; 
+    padding-bottom: 0; 
+  }
+
+  .info-row dt { 
+    font-weight: 500; 
+    color: var(--medium-gray); 
+    font-size: 0.9rem; 
+  }
+
+  .info-row dd { 
+    margin: 0; 
+    color: var(--dark-gray); 
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  /* Document List */
+  .document-list { 
+    list-style: none; 
+    padding: 0; 
+    margin: 0; 
+  }
+
+  .document-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    background: var(--off-white);
+    border-radius: 6px;
+    margin-bottom: 0.625rem;
+    transition: all 0.2s ease;
+  }
+
+  .document-item:last-child { 
+    margin-bottom: 0; 
+  }
+
+  .document-item:hover { 
+    background: var(--light-gray); 
+  }
+
+  .document-icon { 
+    font-size: 1.25rem; 
+    flex-shrink: 0; 
+    opacity: 0.7;
+  }
+
+  .document-info { 
+    flex: 1; 
+    min-width: 0; 
+  }
+
+  .document-title {
+    display: block;
+    font-weight: 600;
+    color: var(--navy-blue);
+    font-size: 0.9rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.4;
+  }
+
+  .document-link {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--teal-accent);
+    color: var(--white);
+    border-radius: 50%;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: background 0.2s;
+  }
+
+  .document-link:hover { 
+    background: var(--teal-dark); 
+  }
+
+  .download-icon {
+    font-weight: bold;
+  }
+
+  /* Sidebar Actions */
+  .sidebar-actions { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 0.625rem; 
+  }
+
+  .sidebar-back {
+    text-align: center;
+    padding-top: 0.5rem;
+  }
+
+  .back-link { 
+    color: var(--teal-accent); 
+    text-decoration: none; 
+    font-weight: 500; 
+    font-size: 0.9rem; 
+  }
+
+  .back-link:hover { 
+    text-decoration: underline; 
+  }
+
+  /* ========================================
+     RESPONSIVE DESIGN
+     ======================================== */
+  @media (max-width: 1024px) {
+    .features-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .content-wrapper { 
+      grid-template-columns: 1fr;
+      padding: 1.5rem;
+    }
+
+    .sidebar { 
+      position: static; 
+      order: -1; 
+    }
+
+    .features-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .project-hero { 
+      min-height: 250px; 
+    }
+
+    .hero-diagonal { 
+      width: 100%; 
+      transform: none; 
+    }
+
+    .hero-image { 
+      width: 100%; 
+      clip-path: none; 
+      opacity: 0.2; 
+    }
+
+    .hero-content { 
+      padding: 2rem 1.5rem; 
+    }
+
+    .breadcrumb {
+      padding: 0.75rem 1.5rem;
+    }
+
+    .features-grid { 
+      grid-template-columns: 1fr; 
+    }
+
+    .tabs { 
+      flex-wrap: wrap; 
+    }
+
+    .tab { 
+      flex: 1 1 auto; 
+      min-width: 100px; 
+      text-align: center;
+      padding: 0.75rem 1rem;
+    }
+
+    .cta-buttons { 
+      flex-direction: column; 
+    }
+
+    .cta-buttons .btn { 
+      width: 100%; 
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn, .document-item, .tab, .feature-card, .faq-question, .faq-icon { 
+      transition: none; 
+    }
+
+    .feature-card:hover { 
+      transform: none; 
+    }
+  }
+</style>
+
+<script>
+  // Tab switching functionality
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabId = tab.getAttribute('data-tab');
+        
+        // Update tab states
+        tabs.forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+        
+        // Update panel visibility
+        tabContents.forEach(content => content.classList.remove('active'));
+        
+        const targetPanel = document.getElementById(`panel-${tabId}`);
+        if (targetPanel) {
+          targetPanel.classList.add('active');
+        }
+      });
+    });
+
+    // FAQ accordion functionality
+    const faqQuestions = document.querySelectorAll('.faq-question');
+    
+    faqQuestions.forEach(question => {
+      question.addEventListener('click', () => {
+        const isExpanded = question.getAttribute('aria-expanded') === 'true';
+        const answerId = question.getAttribute('aria-controls');
+        const answer = document.getElementById(answerId);
+        
+        if (isExpanded) {
+          // Close this FAQ
+          question.setAttribute('aria-expanded', 'false');
+          if (answer) answer.hidden = true;
+        } else {
+          // Open this FAQ (optionally close others)
+          // Uncomment below to close others when opening one:
+          // faqQuestions.forEach(q => {
+          //   q.setAttribute('aria-expanded', 'false');
+          //   const a = document.getElementById(q.getAttribute('aria-controls'));
+          //   if (a) a.hidden = true;
+          // });
+          
+          question.setAttribute('aria-expanded', 'true');
+          if (answer) answer.hidden = false;
+        }
+      });
+    });
+
+    // Share button functionality
+    const shareButtons = document.querySelectorAll('.share-button');
+    shareButtons.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const pageUrl = window.location.href;
+        const pageTitle = document.title;
+        
+        if (navigator.share) {
+          try {
+            await navigator.share({ 
+              title: pageTitle, 
+              url: pageUrl 
+            });
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              copyToClipboard(pageUrl, btn);
+            }
+          }
+        } else {
+          copyToClipboard(pageUrl, btn);
+        }
+      });
+    });
+
+    function copyToClipboard(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        const original = btn.textContent;
+        btn.textContent = '✓ Link Copied!';
+        setTimeout(() => { 
+          btn.textContent = original; 
+        }, 2000);
+      }).catch(() => {
+        alert('Link: ' + text);
+      });
+    }
+  });
+</script>

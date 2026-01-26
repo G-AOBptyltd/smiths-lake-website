@@ -1,0 +1,822 @@
+---
+/**
+ * Comprehensive Subscription Form Component
+ * 
+ * Features:
+ * - Dynamic checkboxes from ALL Notion sections
+ * - Netlify Forms integration
+ * - Mailchimp tag support via Zapier
+ * - Accessibility compliant (WCAG 2.1 AA)
+ * - Spam protection with honeypot
+ * - Success message handling
+ * 
+ * @version 2.0 - Improved accessibility and error handling
+ * @updated 26 January 2026
+ */
+
+import { fetchProjectsForSubscription } from '../lib/notion-projects.js';
+
+// Props for customization
+interface Props {
+  formTitle?: string;
+  formDescription?: string;
+  showAllSections?: boolean;
+  preselectedProject?: string;
+}
+
+const { 
+  formTitle = "Stay Connected",
+  formDescription = "Subscribe to receive updates about community projects and activities.",
+  showAllSections = true,
+  preselectedProject = ""
+} = Astro.props;
+
+// Fetch all items for checkbox generation
+let subscriptionItems = {
+  projects: [],
+  services: [],
+  groups: [],
+  environment: [],
+  history: [],
+  emergency: []
+};
+
+let fetchError = null;
+
+try {
+  subscriptionItems = await fetchProjectsForSubscription();
+} catch (error) {
+  console.error('Error fetching subscription items:', error);
+  fetchError = error.message;
+}
+
+// Check if we have any dynamic items
+const hasProjects = subscriptionItems.projects.length > 0;
+const hasServices = subscriptionItems.services.length > 0;
+const hasGroups = subscriptionItems.groups.length > 0;
+const hasEnvironment = subscriptionItems.environment.length > 0;
+const hasHistory = subscriptionItems.history.length > 0;
+const hasEmergency = subscriptionItems.emergency.length > 0;
+
+const hasDynamicItems = hasProjects || hasServices || hasGroups || hasEnvironment || hasHistory || hasEmergency;
+
+// Generate unique form ID for accessibility
+const formId = `subscription-form-${Math.random().toString(36).substr(2, 9)}`;
+---
+
+<div class="subscription-form-wrapper">
+  
+  <!-- Form Header -->
+  <div class="form-header">
+    <h2 id={`${formId}-title`}>{formTitle}</h2>
+    <p id={`${formId}-desc`}>{formDescription}</p>
+  </div>
+
+  <!-- Error State -->
+  {fetchError && (
+    <div class="form-error" role="alert">
+      <p>Unable to load subscription options. Please try again later.</p>
+    </div>
+  )}
+
+  <!-- Subscription Form -->
+  <form 
+    name="comprehensive-subscription" 
+    method="POST" 
+    data-netlify="true"
+    netlify-honeypot="bot-field"
+    class="subscription-form"
+    id={formId}
+    aria-labelledby={`${formId}-title`}
+    aria-describedby={`${formId}-desc`}
+    action="/thank-you/"
+  >
+    <!-- Hidden fields for Netlify -->
+    <input type="hidden" name="form-name" value="comprehensive-subscription" />
+    <input type="hidden" name="submittedAt" value="" class="js-submitted-at" />
+    <input type="hidden" name="pageUrl" value="" class="js-page-url" />
+    
+    <!-- Honeypot for spam prevention -->
+    <div class="form-field-hidden" aria-hidden="true">
+      <label>
+        Don't fill this out if you're human:
+        <input name="bot-field" tabindex="-1" autocomplete="off" />
+      </label>
+    </div>
+
+    <!-- Personal Information Section -->
+    <fieldset class="form-section">
+      <legend class="form-section-title">Your Details</legend>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for={`${formId}-firstName`}>
+            First Name <span class="required" aria-label="required">*</span>
+          </label>
+          <input 
+            type="text" 
+            id={`${formId}-firstName`}
+            name="firstName" 
+            required 
+            autocomplete="given-name"
+            placeholder="Jane"
+            aria-required="true"
+          />
+        </div>
+        <div class="form-group">
+          <label for={`${formId}-lastName`}>
+            Last Name <span class="required" aria-label="required">*</span>
+          </label>
+          <input 
+            type="text" 
+            id={`${formId}-lastName`}
+            name="lastName" 
+            required 
+            autocomplete="family-name"
+            placeholder="Smith"
+            aria-required="true"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for={`${formId}-email`}>
+          Email Address <span class="required" aria-label="required">*</span>
+        </label>
+        <input 
+          type="email" 
+          id={`${formId}-email`}
+          name="email" 
+          required 
+          autocomplete="email"
+          placeholder="jane.smith@example.com"
+          aria-required="true"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for={`${formId}-phone`}>
+            Phone Number <span class="optional">(optional)</span>
+          </label>
+          <input 
+            type="tel" 
+            id={`${formId}-phone`}
+            name="phone" 
+            autocomplete="tel"
+            placeholder="0412 345 678"
+          />
+        </div>
+        <div class="form-group">
+          <label for={`${formId}-residentType`}>
+            Connection to Smiths Lake
+          </label>
+          <select id={`${formId}-residentType`} name="residentType">
+            <option value="">Select one...</option>
+            <option value="Permanent Resident">Permanent Resident</option>
+            <option value="Holiday Visitor">Holiday Visitor</option>
+            <option value="Property Owner">Property Owner (non-resident)</option>
+            <option value="Local Business">Local Business</option>
+            <option value="Interested Party">Interested Party</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Subscription Preferences Section -->
+    <fieldset class="form-section">
+      <legend class="form-section-title">What Would You Like Updates About?</legend>
+      <p class="form-section-description">Select all topics that interest you</p>
+
+      <!-- Static Core Options -->
+      <div class="checkbox-section">
+        <h4 class="checkbox-section-title">Essential Updates</h4>
+        <div class="checkbox-group" role="group" aria-label="Essential updates">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              name="interests" 
+              value="Community Newsletter"
+              checked
+            />
+            <span class="checkbox-text">
+              <strong>Community Newsletter</strong>
+              <small>Monthly updates about community news and events</small>
+            </span>
+          </label>
+          <label class="checkbox-label checkbox-highlight">
+            <input 
+              type="checkbox" 
+              name="interests" 
+              value="Emergency Alerts"
+            />
+            <span class="checkbox-text">
+              <strong>Emergency Alerts</strong>
+              <small>Critical safety information (bushfire, flood, severe weather)</small>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      {showAllSections && hasDynamicItems && (
+        <>
+          <!-- Dynamic Projects -->
+          {hasProjects && (
+            <div class="checkbox-section">
+              <h4 class="checkbox-section-title">Community Projects</h4>
+              <div class="checkbox-group" role="group" aria-label="Community projects">
+                {subscriptionItems.projects.map(item => (
+                  <label class="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      name="interests" 
+                      value={item.mailchimpTag || item.title}
+                      checked={preselectedProject === item.title}
+                    />
+                    <span class="checkbox-text">{item.title}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <!-- Dynamic Groups & Activities -->
+          {hasGroups && (
+            <div class="checkbox-section">
+              <h4 class="checkbox-section-title">Groups & Activities</h4>
+              <div class="checkbox-group" role="group" aria-label="Groups and activities">
+                {subscriptionItems.groups.map(item => (
+                  <label class="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      name="interests" 
+                      value={item.mailchimpTag || item.title}
+                    />
+                    <span class="checkbox-text">{item.title}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <!-- Dynamic Services -->
+          {hasServices && (
+            <div class="checkbox-section">
+              <h4 class="checkbox-section-title">Services & Amenities</h4>
+              <div class="checkbox-group" role="group" aria-label="Services and amenities">
+                {subscriptionItems.services.map(item => (
+                  <label class="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      name="interests" 
+                      value={item.mailchimpTag || item.title}
+                    />
+                    <span class="checkbox-text">{item.title}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <!-- Dynamic Environment -->
+          {hasEnvironment && (
+            <div class="checkbox-section">
+              <h4 class="checkbox-section-title">Environment & Sustainability</h4>
+              <div class="checkbox-group" role="group" aria-label="Environment and sustainability">
+                {subscriptionItems.environment.map(item => (
+                  <label class="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      name="interests" 
+                      value={item.mailchimpTag || item.title}
+                    />
+                    <span class="checkbox-text">{item.title}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <!-- Dynamic History -->
+          {hasHistory && (
+            <div class="checkbox-section">
+              <h4 class="checkbox-section-title">History & Culture</h4>
+              <div class="checkbox-group" role="group" aria-label="History and culture">
+                {subscriptionItems.history.map(item => (
+                  <label class="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      name="interests" 
+                      value={item.mailchimpTag || item.title}
+                    />
+                    <span class="checkbox-text">{item.title}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <!-- Dynamic Emergency -->
+          {hasEmergency && (
+            <div class="checkbox-section">
+              <h4 class="checkbox-section-title">Emergency & Safety Resources</h4>
+              <div class="checkbox-group" role="group" aria-label="Emergency and safety resources">
+                {subscriptionItems.emergency.map(item => (
+                  <label class="checkbox-label">
+                    <input 
+                      type="checkbox" 
+                      name="interests" 
+                      value={item.mailchimpTag || item.title}
+                    />
+                    <span class="checkbox-text">{item.title}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </fieldset>
+
+    <!-- Consent and Submit -->
+    <div class="form-actions">
+      <div class="form-group consent-group">
+        <label class="checkbox-label consent-checkbox">
+          <input 
+            type="checkbox" 
+            name="consent" 
+            value="yes"
+            required
+            aria-required="true"
+          />
+          <span class="checkbox-text">
+            I agree to receive email communications from Pacific Palms Community Association. 
+            I understand I can unsubscribe at any time.
+          </span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg">
+        Subscribe to Updates
+      </button>
+
+      <p class="form-note">
+        <span class="required">*</span> Required fields. 
+        Your information is protected under our 
+        <a href="/privacy/">privacy policy</a> in accordance with Australian Privacy Act requirements.
+      </p>
+    </div>
+  </form>
+
+  <!-- Success Message (hidden by default) -->
+  <div class="success-message" id={`${formId}-success`} hidden aria-live="polite">
+    <div class="success-icon" aria-hidden="true">✓</div>
+    <h3>Thank You for Subscribing!</h3>
+    <p>You've successfully subscribed to community updates.</p>
+    <p>Check your inbox for a confirmation email.</p>
+    <div class="success-actions">
+      <a href="/projects/" class="btn btn-primary">Explore Projects</a>
+      <a href="/" class="btn btn-outline">Return Home</a>
+    </div>
+  </div>
+</div>
+
+<style>
+  :root {
+    --navy-blue: #1B365D;
+    --navy-blue-dark: #142847;
+    --teal-accent: #4db8b8;
+    --teal-dark: #2d8b8b;
+    --golden-orange: #F5A623;
+    --white: #FFFFFF;
+    --off-white: #F7F9FC;
+    --light-gray: #E8EDF3;
+    --medium-gray: #6B7280;
+    --dark-gray: #374151;
+    --success-green: #2ecc71;
+    --error-red: #e74c3c;
+    --warning-bg: #fff7e6;
+  }
+
+  .subscription-form-wrapper {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  /* Form Header */
+  .form-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .form-header h2 {
+    color: var(--navy-blue);
+    font-size: 1.75rem;
+    margin: 0 0 0.5rem;
+  }
+
+  .form-header p {
+    color: var(--medium-gray);
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  /* Error State */
+  .form-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .form-error p {
+    color: var(--error-red);
+    margin: 0;
+  }
+
+  /* Form Styles */
+  .subscription-form {
+    background: var(--white);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .form-field-hidden {
+    position: absolute;
+    left: -9999px;
+  }
+
+  /* Form Sections */
+  .form-section {
+    border: none;
+    padding: 0;
+    margin: 0 0 2rem;
+  }
+
+  .form-section-title {
+    font-size: 1.25rem;
+    color: var(--navy-blue);
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--teal-accent);
+  }
+
+  .form-section-description {
+    color: var(--medium-gray);
+    margin: 0 0 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  /* Form Layout */
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--dark-gray);
+    font-size: 0.95rem;
+  }
+
+  .required {
+    color: var(--error-red);
+  }
+
+  .optional {
+    color: var(--medium-gray);
+    font-weight: 400;
+    font-size: 0.85rem;
+  }
+
+  .form-group input[type="text"],
+  .form-group input[type="email"],
+  .form-group input[type="tel"],
+  .form-group select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--light-gray);
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background: var(--white);
+  }
+
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: var(--teal-accent);
+    box-shadow: 0 0 0 4px rgba(77, 184, 184, 0.15);
+  }
+
+  .form-group input::placeholder {
+    color: var(--medium-gray);
+    opacity: 0.7;
+  }
+
+  /* Checkbox Sections */
+  .checkbox-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .checkbox-section-title {
+    font-size: 1rem;
+    color: var(--navy-blue);
+    margin: 0 0 0.75rem;
+    font-weight: 600;
+  }
+
+  .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    background: var(--off-white);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .checkbox-label:hover {
+    background: var(--light-gray);
+    border-color: var(--light-gray);
+  }
+
+  .checkbox-label:focus-within {
+    border-color: var(--teal-accent);
+    box-shadow: 0 0 0 3px rgba(77, 184, 184, 0.15);
+  }
+
+  .checkbox-label.checkbox-highlight {
+    background: var(--warning-bg);
+    border-color: var(--golden-orange);
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.1rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    accent-color: var(--teal-accent);
+  }
+
+  .checkbox-text {
+    flex: 1;
+    color: var(--dark-gray);
+    line-height: 1.4;
+    font-size: 0.95rem;
+  }
+
+  .checkbox-text strong {
+    display: block;
+    color: var(--navy-blue);
+  }
+
+  .checkbox-text small {
+    display: block;
+    color: var(--medium-gray);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+  }
+
+  /* Consent Group */
+  .consent-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .consent-checkbox {
+    background: transparent;
+    padding: 0;
+  }
+
+  .consent-checkbox:hover {
+    background: transparent;
+  }
+
+  .consent-checkbox .checkbox-text {
+    font-size: 0.9rem;
+    color: var(--medium-gray);
+  }
+
+  /* Form Actions */
+  .form-actions {
+    text-align: center;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 2rem;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    cursor: pointer;
+    min-height: 48px;
+  }
+
+  .btn-primary {
+    background: var(--navy-blue);
+    color: var(--white);
+    border-color: var(--navy-blue);
+  }
+
+  .btn-primary:hover {
+    background: var(--navy-blue-dark);
+    border-color: var(--navy-blue-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(27, 54, 93, 0.25);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--navy-blue);
+    border-color: var(--navy-blue);
+  }
+
+  .btn-outline:hover {
+    background: var(--navy-blue);
+    color: var(--white);
+  }
+
+  .btn-lg {
+    padding: 1rem 2.5rem;
+    font-size: 1.1rem;
+  }
+
+  .form-note {
+    font-size: 0.85rem;
+    color: var(--medium-gray);
+    margin: 1.25rem 0 0;
+    line-height: 1.6;
+  }
+
+  .form-note a {
+    color: var(--teal-accent);
+    text-decoration: underline;
+  }
+
+  .form-note a:hover {
+    color: var(--teal-dark);
+  }
+
+  /* Success Message */
+  .success-message {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: var(--white);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .success-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--success-green);
+    color: var(--white);
+    font-size: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+  }
+
+  .success-message h3 {
+    color: var(--navy-blue);
+    font-size: 1.75rem;
+    margin: 0 0 0.75rem;
+  }
+
+  .success-message p {
+    color: var(--dark-gray);
+    font-size: 1.1rem;
+    margin: 0 0 0.5rem;
+  }
+
+  .success-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+  }
+
+  /* Hidden state */
+  [hidden] {
+    display: none !important;
+  }
+
+  /* Focus styles */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible {
+    outline: 3px solid var(--golden-orange);
+    outline-offset: 2px;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .subscription-form {
+      padding: 1.5rem;
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .form-section-title {
+      font-size: 1.1rem;
+    }
+
+    .btn-lg {
+      width: 100%;
+    }
+
+    .success-actions {
+      flex-direction: column;
+    }
+
+    .success-actions .btn {
+      width: 100%;
+    }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .btn,
+    .checkbox-label,
+    .form-group input,
+    .form-group select {
+      transition: none;
+    }
+
+    .btn-primary:hover {
+      transform: none;
+    }
+  }
+
+  /* Print styles */
+  @media print {
+    .subscription-form-wrapper {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Find all subscription forms on the page
+    const forms = document.querySelectorAll('.subscription-form');
+    
+    forms.forEach(form => {
+      const formId = form.id;
+      const successMessage = document.getElementById(`${formId}-success`);
+      const submittedAtField = form.querySelector('.js-submitted-at');
+      const pageUrlField = form.querySelector('.js-page-url');
+      
+      // Set page URL
+      if (pageUrlField) {
+        pageUrlField.value = window.location.href;
+      }
+      
+      // Handle form submission
+      form.addEventListener('submit', function(e) {
+        // Set submission timestamp
+        if (submittedAtField) {
+          submittedAtField.value = new Date().toISOString();
+        }
+        
+        // For Netlify forms with default action, the page will redirect
+        // If you want AJAX submission, prevent default and use fetch
+      });
+    });
+  });
+</script>
