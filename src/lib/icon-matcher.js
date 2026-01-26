@@ -63,8 +63,8 @@ export function getSmartIcon(item) {
     'emergency assembly point': '🚨',
     
     // Groups & Activities
-    'arts inc - pacific palms': '🎨',
-    'arts inc pacific palms': '🎨',
+    'arts inc - pacific palms': '🎨 🕺',
+    'arts inc pacific palms': '🎨 🕺',
     'bush walking group': '🥾',
     'community library': '📚',
     'tai chi': '🧘',
@@ -218,7 +218,7 @@ export function getSmartIcon(item) {
     { keywords: ['cycling', 'bike', 'bicycle', 'cyclist'], icon: '🚴' },
     { keywords: ['mountain bike', 'mtb'], icon: '🚵' },
     { keywords: ['bmx'], icon: '🚴' },
-    { keywords: ['pump track'], icon: '🛹' },
+    { keywords: ['pump track'], icon: '🚴' },
     { keywords: ['skateboard', 'skating', 'skate park'], icon: '🛹' },
     { keywords: ['roller skate', 'rollerskate', 'roller skating'], icon: '🛼' },
     { keywords: ['inline skate', 'inline skating', 'rollerblad'], icon: '🛼' },
