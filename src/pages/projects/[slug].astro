@@ -24,6 +24,7 @@
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { fetchProjects, fetchProjectBySlug } from '../../lib/notion-projects.js';
+import { getSmartIcon } from '../../lib/icon-matcher.js';
 
 // Get the slug from the URL
 export async function getStaticPaths() {
@@ -207,53 +208,26 @@ const sanitizedAbout = sanitizeContent(project.aboutContent);
 const sanitizedChanges = sanitizeContent(project.changesContent);
 const parsedFAQs = parseFAQs(project.faqsContent);
 
-// Feature icons mapping - matches mockup style
-const featureIconMap = {
-  'crown': '🏛️',
-  'reserve': '🏛️',
-  'aboriginal': '🏛️',
-  'heritage': '🏛️',
-  'indigenous': '🏛️',
-  'community': '💬',
-  'consultation': '💬',
-  'developed': '💬',
-  'feedback': '💬',
-  'engagement': '💬',
-  'lease': '📍',
-  'license': '📍',
-  'licence': '📍',
-  'location': '📍',
-  'flexible': '📍',
-  'environment': '🌿',
-  'nature': '🌿',
-  'green': '🌿',
-  'sustainable': '🌿',
-  'conservation': '🌿',
-  'partner': '🤝',
-  'collaborate': '🤝',
-  'together': '🤝',
-  'safety': '🛡️',
-  'secure': '🛡️',
-  'protect': '🛡️'
-};
-
-// Default icons to cycle through
-const defaultIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
+// Default icons to cycle through for features
+const defaultFeatureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
 
 /**
- * Get appropriate icon for a feature based on keywords
+ * Get appropriate icon for a feature using the smart icon matcher
  */
 function getFeatureIcon(featureText, index) {
-  const lowerText = featureText.toLowerCase();
+  // Use the smart icon matcher with feature text as title
+  const icon = getSmartIcon({ 
+    title: featureText,
+    category: project.category || '',
+    section: 'Project Hub'
+  });
   
-  for (const [keyword, icon] of Object.entries(featureIconMap)) {
-    if (lowerText.includes(keyword)) {
-      return icon;
-    }
+  // If icon matcher returns generic fallback, use cycling icons instead
+  if (icon === '📋') {
+    return defaultFeatureIcons[index % defaultFeatureIcons.length];
   }
   
-  // Fallback to cycling through default icons
-  return defaultIcons[index % defaultIcons.length];
+  return icon;
 }
 
 /**
