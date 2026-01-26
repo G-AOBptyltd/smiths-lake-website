@@ -33,10 +33,24 @@ const icons: Record<string, string> = {
             <line x1="24" y1="12" x2="24" y2="24" stroke="currentColor" stroke-width="2"/>
             <line x1="24" y1="24" x2="32" y2="28" stroke="currentColor" stroke-width="2"/>
             <circle cx="24" cy="24" r="3" fill="currentColor"/>`,
+  projects: `<rect x="6" y="6" width="36" height="36" rx="3" stroke="currentColor" stroke-width="2" fill="none"/>
+             <path d="M6 16h36" stroke="currentColor" stroke-width="2"/>
+             <path d="M14 11v-5" stroke="currentColor" stroke-width="2"/>
+             <path d="M34 11v-5" stroke="currentColor" stroke-width="2"/>
+             <path d="M14 24h10" stroke="currentColor" stroke-width="2"/>
+             <path d="M14 32h16" stroke="currentColor" stroke-width="2"/>
+             <circle cx="34" cy="34" r="8" stroke="currentColor" stroke-width="2" fill="none"/>
+             <path d="M32 34l2 2 4-4" stroke="currentColor" stroke-width="2" fill="none"/>`,
 };
 ---
 
-<article class={`section-card ${variant === 'emergency' ? 'section-card--emergency' : ''}`}>
+<article 
+  class={`section-card section-card--clickable ${variant === 'emergency' ? 'section-card--emergency' : ''}`}
+  data-href={href}
+  tabindex="0"
+  role="link"
+  aria-label={`View ${title}`}
+>
   <div class="section-card__icon">
     <svg viewBox="0 0 48 48" fill="none" aria-hidden="true" set:html={icons[icon] || icons.about} />
   </div>
@@ -69,11 +83,25 @@ const icons: Record<string, string> = {
     border-top-color: var(--color-error);
   }
   
+  /* Clickable card styles */
+  .section-card--clickable {
+    cursor: pointer;
+  }
+  
+  .section-card--clickable:active {
+    transform: translateY(-2px);
+  }
+  
+  .section-card--clickable:focus-visible {
+    outline: 3px solid var(--color-golden);
+    outline-offset: 2px;
+  }
+  
   .section-card__icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: var(--space-8);
+    padding: var(--space-2);
     background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
     color: var(--color-white);
   }
@@ -83,8 +111,8 @@ const icons: Record<string, string> = {
   }
   
   .section-card__icon svg {
-    width: 48px;
-    height: 48px;
+    width: 24px;
+    height: 24px;
   }
   
   .section-card__content {
@@ -111,6 +139,8 @@ const icons: Record<string, string> = {
     font-weight: 600;
     text-decoration: none;
     font-size: var(--text-base);
+    position: relative;
+    z-index: 2; /* Ensure link is clickable above card click area */
   }
   
   .section-card__link:hover {
@@ -132,3 +162,42 @@ const icons: Record<string, string> = {
     border-radius: var(--radius-sm);
   }
 </style>
+
+<script>
+  /**
+   * Clickable Card Handler for SectionCard
+   * Makes entire card clickable while preserving individual link functionality
+   */
+  document.addEventListener('DOMContentLoaded', () => {
+    const clickableCards = document.querySelectorAll('.section-card--clickable');
+    
+    clickableCards.forEach(card => {
+      const targetUrl = card.dataset.href;
+      
+      if (!targetUrl) return;
+      
+      // Handle click events
+      card.addEventListener('click', (event) => {
+        // Don't navigate if user clicked on a link, button, or interactive element
+        const clickedElement = event.target;
+        const isInteractiveElement = clickedElement.closest('a, button, input, select, textarea');
+        
+        if (isInteractiveElement) {
+          // Let the clicked element handle its own action
+          return;
+        }
+        
+        // Navigate to the target page
+        window.location.href = targetUrl;
+      });
+      
+      // Handle keyboard navigation (Enter key)
+      card.addEventListener('keydown', (event) => {
+        // Only trigger on Enter key and if card is focused (not a child element)
+        if (event.key === 'Enter' && event.target === card) {
+          window.location.href = targetUrl;
+        }
+      });
+    });
+  });
+</script>
