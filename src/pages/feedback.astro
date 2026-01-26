@@ -1,31 +1,64 @@
 ---
+/**
+ * Feedback Form Page
+ * Accepts general community feedback and project-specific feedback
+ * 
+ * URL Parameters:
+ * - project: Pre-fills the project field when linked from Project Hub
+ * 
+ * @updated 26 January 2026
+ */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
+
+// Get project parameter from URL (passed from Project Hub pages)
+const projectParam = Astro.url.searchParams.get('project') || '';
+const hasProject = projectParam.length > 0;
+
+// Customize page based on whether it's project-specific
+const pageTitle = hasProject ? `Feedback: ${projectParam}` : 'Submit Feedback';
+const pageSubtitle = hasProject 
+  ? `Share your thoughts on the ${projectParam}`
+  : 'Your ideas help shape our community\'s future.';
 ---
 
 <BaseLayout 
-  title="Submit Feedback" 
+  title={pageTitle}
   description="Share your ideas and suggestions for improving Smiths Lake Village."
 >
   <Hero 
     title="Submit Feedback"
-    subtitle="Your ideas help shape our community's future."
+    subtitle={pageSubtitle}
     size="small"
   />
   
   <section class="section">
     <div class="container container--narrow">
       <div class="feedback-intro">
-        <p>
-          We want to hear from you! Share your ideas, suggestions, or concerns about 
-          our community. Your feedback helps PPCA understand what matters most to 
-          residents and guides our advocacy efforts.
-        </p>
-        <p>
-          <strong>What happens to your feedback?</strong> All submissions are reviewed 
-          by the PPCA committee. Ideas that align with community priorities may be 
-          developed into formal submissions to MidCoast Council.
-        </p>
+        {hasProject ? (
+          <div class="project-context">
+            <p class="project-badge">
+              📋 Providing feedback on: <strong>{projectParam}</strong>
+            </p>
+            <p>
+              Your feedback on this project will be reviewed by the PPCA committee 
+              and may influence the final outcomes. All submissions are valued.
+            </p>
+          </div>
+        ) : (
+          <>
+            <p>
+              We want to hear from you! Share your ideas, suggestions, or concerns about 
+              our community. Your feedback helps PPCA understand what matters most to 
+              residents and guides our advocacy efforts.
+            </p>
+            <p>
+              <strong>What happens to your feedback?</strong> All submissions are reviewed 
+              by the PPCA committee. Ideas that align with community priorities may be 
+              developed into formal submissions to MidCoast Council.
+            </p>
+          </>
+        )}
       </div>
       
       <form 
@@ -34,49 +67,80 @@ import Hero from '../components/Hero.astro';
         data-netlify="true" 
         netlify-honeypot="bot-field"
         class="feedback-form"
+        action="/thank-you/"
       >
         <input type="hidden" name="form-name" value="feedback" />
         <p class="hidden">
           <label>Don't fill this out: <input name="bot-field" /></label>
         </p>
         
-        <div class="form-group">
-          <label for="name" class="form-label">Your Name (optional)</label>
-          <input 
-            type="text" 
-            id="name" 
-            name="name" 
-            class="form-input" 
-            autocomplete="name"
-          />
-          <p class="form-help">Leave blank to submit anonymously.</p>
+        <!-- Project field (visible when linked from Project Hub) -->
+        {hasProject && (
+          <div class="form-group">
+            <label for="project" class="form-label">Related Project</label>
+            <input 
+              type="text" 
+              id="project" 
+              name="project" 
+              class="form-input form-input--readonly" 
+              value={projectParam}
+              readonly
+            />
+          </div>
+        )}
+        
+        <!-- Hidden project field for non-project feedback -->
+        {!hasProject && (
+          <input type="hidden" name="project" value="General Feedback" />
+        )}
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name" class="form-label">Your Name (optional)</label>
+            <input 
+              type="text" 
+              id="name" 
+              name="name" 
+              class="form-input" 
+              autocomplete="name"
+            />
+            <p class="form-help">Leave blank to submit anonymously.</p>
+          </div>
+          
+          <div class="form-group">
+            <label for="email" class="form-label">Email Address (optional)</label>
+            <input 
+              type="email" 
+              id="email" 
+              name="email" 
+              class="form-input" 
+              autocomplete="email"
+            />
+            <p class="form-help">Provide if you'd like a response.</p>
+          </div>
         </div>
         
-        <div class="form-group">
-          <label for="email" class="form-label">Email Address (optional)</label>
-          <input 
-            type="email" 
-            id="email" 
-            name="email" 
-            class="form-input" 
-            autocomplete="email"
-          />
-          <p class="form-help">Provide if you'd like updates on your suggestion.</p>
-        </div>
+        {!hasProject && (
+          <div class="form-group">
+            <label for="category" class="form-label form-label--required">Category</label>
+            <select id="category" name="category" class="form-select" required>
+              <option value="">Please select...</option>
+              <option value="project-hub">Community Project</option>
+              <option value="services">Services & Amenities</option>
+              <option value="environment">Environment & Conservation</option>
+              <option value="safety">Safety & Emergency</option>
+              <option value="groups">Groups & Activities</option>
+              <option value="infrastructure">Roads & Infrastructure</option>
+              <option value="council">Council Submission Idea</option>
+              <option value="website">Website Feedback</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        )}
         
-        <div class="form-group">
-          <label for="category" class="form-label form-label--required">Category</label>
-          <select id="category" name="category" class="form-select" required>
-            <option value="">Please select...</option>
-            <option value="services">Services & Amenities</option>
-            <option value="environment">Environment & Conservation</option>
-            <option value="safety">Safety & Emergency</option>
-            <option value="groups">Groups & Activities</option>
-            <option value="infrastructure">Roads & Infrastructure</option>
-            <option value="council">Council Submission Idea</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
+        {hasProject && (
+          <input type="hidden" name="category" value="project-hub" />
+        )}
         
         <div class="form-group">
           <label for="title" class="form-label form-label--required">Feedback Title</label>
@@ -86,7 +150,7 @@ import Hero from '../components/Hero.astro';
             name="title" 
             class="form-input" 
             required 
-            placeholder="Brief summary of your idea or concern"
+            placeholder={hasProject ? `Your feedback on ${projectParam}` : 'Brief summary of your idea or concern'}
           />
         </div>
         
@@ -98,7 +162,9 @@ import Hero from '../components/Hero.astro';
             class="form-textarea" 
             rows="8" 
             required
-            placeholder="Describe your idea, suggestion, or concern in detail..."
+            placeholder={hasProject 
+              ? 'Share your thoughts, suggestions, concerns, or questions about this project...'
+              : 'Describe your idea, suggestion, or concern in detail...'}
           ></textarea>
         </div>
         
@@ -112,13 +178,28 @@ import Hero from '../components/Hero.astro';
           </select>
         </div>
         
-        <div class="form-group">
-          <button type="submit" class="btn btn--primary btn--lg">Submit Feedback</button>
+        <div class="form-group form-group--checkbox">
+          <label class="checkbox-label">
+            <input type="checkbox" name="subscribe" value="yes" />
+            <span>Email me updates about {hasProject ? 'this project' : 'community initiatives'}</span>
+          </label>
         </div>
+        
+        <div class="form-group">
+          <button type="submit" class="btn btn--primary btn--lg btn--full">Submit Feedback</button>
+        </div>
+        
+        {hasProject && (
+          <p class="form-back">
+            <a href={`/projects/${projectParam.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}/`}>
+              ← Back to {projectParam}
+            </a>
+          </p>
+        )}
       </form>
       
       <aside class="feedback-note">
-        <h2>Privacy Note</h2>
+        <h2>🔒 Privacy Note</h2>
         <p>
           Your feedback is stored securely and reviewed only by PPCA committee members. 
           Anonymous submissions are welcome. We will never share your personal 
@@ -133,44 +214,214 @@ import Hero from '../components/Hero.astro';
 </BaseLayout>
 
 <style>
+  .container--narrow {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  
+  .section {
+    padding: 3rem 0;
+  }
+  
   .feedback-intro {
     max-width: 700px;
-    margin: 0 auto var(--space-10);
+    margin: 0 auto 2rem;
   }
   
   .feedback-intro p {
-    font-size: var(--text-lg);
-    color: var(--color-gray-700);
-    line-height: var(--leading-relaxed);
+    font-size: 1.1rem;
+    color: #374151;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+  }
+  
+  .project-context {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 2px solid #0ea5e9;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .project-badge {
+    font-size: 1.1rem;
+    color: #0369a1;
+    margin-bottom: 0.75rem;
+  }
+  
+  .project-context p:last-child {
+    margin-bottom: 0;
+    color: #374151;
   }
   
   .feedback-form {
-    background: var(--color-off-white);
-    padding: var(--space-8);
-    border-radius: var(--radius-lg);
-    margin-bottom: var(--space-10);
+    background: #f8fafc;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    border: 1px solid #e2e8f0;
   }
   
   .hidden {
     display: none;
   }
   
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  
+  @media (max-width: 600px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-group--checkbox {
+    margin-top: 0.5rem;
+  }
+  
+  .form-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #1f2937;
+  }
+  
+  .form-label--required::after {
+    content: ' *';
+    color: #dc2626;
+  }
+  
+  .form-input,
+  .form-select,
+  .form-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    outline: none;
+    border-color: #4db8b8;
+    box-shadow: 0 0 0 3px rgba(77, 184, 184, 0.15);
+  }
+  
+  .form-input--readonly {
+    background-color: #f1f5f9;
+    color: #1B365D;
+    font-weight: 600;
+    cursor: not-allowed;
+  }
+  
+  .form-textarea {
+    resize: vertical;
+    min-height: 150px;
+  }
+  
+  .form-help {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+  }
+  
+  .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    cursor: pointer;
+  }
+  
+  .checkbox-label input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.1rem;
+  }
+  
+  .checkbox-label span {
+    color: #374151;
+    line-height: 1.5;
+  }
+  
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    text-decoration: none;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .btn--primary {
+    background: #1B365D;
+    color: white;
+    border-color: #1B365D;
+  }
+  
+  .btn--primary:hover {
+    background: #142847;
+    border-color: #142847;
+  }
+  
+  .btn--lg {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+  }
+  
+  .btn--full {
+    width: 100%;
+  }
+  
+  .form-back {
+    text-align: center;
+    margin-top: 1rem;
+  }
+  
+  .form-back a {
+    color: #4db8b8;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .form-back a:hover {
+    text-decoration: underline;
+  }
+  
   .feedback-note {
-    background: var(--color-navy);
-    color: var(--color-white);
-    padding: var(--space-6);
-    border-radius: var(--radius-lg);
+    background: #1B365D;
+    color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
   }
   
   .feedback-note h2 {
-    color: var(--color-white);
-    font-size: var(--text-lg);
-    margin-bottom: var(--space-3);
+    color: white;
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
   }
   
   .feedback-note p {
-    color: var(--color-gray-200);
-    margin-bottom: var(--space-3);
+    color: #cbd5e1;
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
   }
   
   .feedback-note p:last-child {
@@ -178,10 +429,10 @@ import Hero from '../components/Hero.astro';
   }
   
   .feedback-note a {
-    color: var(--color-sky-light);
+    color: #7dd3fc;
   }
   
   .feedback-note a:hover {
-    color: var(--color-white);
+    color: white;
   }
 </style>
