@@ -182,6 +182,8 @@ function parseNotionPage(page) {
     documentSize: parseProperty(props['Document Size']),
     heroImageFile: parseProperty(props['Hero Image File']),
     mailchimpTag: parseProperty(props['MailChimp Tag']),
+    submissionOpens: parseProperty(props['Submission Opens']),
+    engagementViews: parseProperty(props['Engagement Views']),
     // ========== END PROJECT HUB FIELDS ==========
 
     // Timestamps
