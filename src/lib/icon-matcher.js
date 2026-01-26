@@ -158,8 +158,8 @@ export function getSmartIcon(item) {
     { keywords: ['protection', 'protected', 'preserve'], icon: '🛡️' },
     
     // Environment & Nature
-    { keywords: ['environmental', 'environment'], icon: '🌿' },
-    { keywords: ['sustainable', 'sustainability', 'green'], icon: '♻️' },
+    { keywords: ['environmental', 'environment','weed'], icon: '🌿' },
+    { keywords: ['sustainable', 'sustainability', 'green','cleanup'], icon: '♻️' },
     { keywords: ['conservation', 'conserve'], icon: '🌳' },
     { keywords: ['biodiversity', 'ecosystem'], icon: '🦋' },
     { keywords: ['flora', 'vegetation', 'plants'], icon: '🌱' },
@@ -173,7 +173,7 @@ export function getSmartIcon(item) {
     { keywords: ['park', 'parkland', 'open space'], icon: '🌳' },
     { keywords: ['playground', 'play area', 'play space'], icon: '🎠' },
     { keywords: ['trail', 'track', 'pathway', 'walkway'], icon: '🚶' },
-    { keywords: ['cycling', 'bike', 'bicycle'], icon: '🚴' },
+    { keywords: ['cycling', 'bike', 'bicycle','pump'], icon: '🚴' },
     { keywords: ['pump track', 'skate park', 'bmx'], icon: '🛹' },
     { keywords: ['fitness', 'exercise', 'gym'], icon: '💪' },
     { keywords: ['amenities', 'facilities', 'amenity'], icon: '🏢' },
