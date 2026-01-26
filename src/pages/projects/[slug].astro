@@ -3,20 +3,21 @@
  * Project Detail Page - Dynamic Route
  * 
  * Displays complete project information:
- * - Angled hero with image
+ * - Angled hero with status badge
  * - Breadcrumb navigation
- * - Key Features cards
+ * - Key Features cards with icons
  * - About/Changes/FAQs tabs
- * - Document library sidebar
+ * - Document library sidebar (no file sizes)
+ * - Project Info with Opens/Closes dates
  * - Submit Feedback button (links to /feedback/)
  * - Subscription form at bottom
  * 
- * @version 3.0 - Redesigned to match mockup
+ * @version 4.0 - Matches mockup design
  * @updated 26 January 2026
  */
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { fetchProjects, fetchProjectBySlug, getProjectSubmissionCount } from '../../lib/notion-projects.js';
+import { fetchProjects, fetchProjectBySlug } from '../../lib/notion-projects.js';
 
 // Get the slug from the URL
 export async function getStaticPaths() {
@@ -41,29 +42,30 @@ if (!project) {
   return Astro.redirect('/projects/');
 }
 
-// Get submission count for this project
-let submissionCount = 0;
-try {
-  submissionCount = await getProjectSubmissionCount(project.title);
-} catch (error) {
-  console.error('Error fetching submission count:', error);
-}
-
-// Format deadline date
-const deadlineFormatted = project.submissionDeadline
-  ? new Date(project.submissionDeadline).toLocaleDateString('en-AU', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-  : null;
-
-// Short date format for sidebar
-const deadlineShort = project.submissionDeadline
+// Format deadline/closes date
+const closesFormatted = project.submissionDeadline
   ? new Date(project.submissionDeadline).toLocaleDateString('en-AU', {
       day: 'numeric',
       month: 'short',
+      year: 'numeric'
+    })
+  : null;
+
+// Format opens date
+const opensFormatted = project.submissionOpens
+  ? new Date(project.submissionOpens).toLocaleDateString('en-AU', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    })
+  : null;
+
+// Full deadline for banner
+const deadlineFullFormatted = project.submissionDeadline
+  ? new Date(project.submissionDeadline).toLocaleDateString('en-AU', {
+      weekday: 'long',
+      day: 'numeric', 
+      month: 'long',
       year: 'numeric'
     })
   : null;
@@ -121,8 +123,65 @@ const sanitizedAbout = sanitizeContent(project.aboutContent);
 const sanitizedChanges = sanitizeContent(project.changesContent);
 const sanitizedFAQs = sanitizeContent(project.faqsContent);
 
-// Feature icons mapping
-const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
+// Feature icons mapping - matches mockup style
+const featureIconMap = {
+  'crown': '🏛️',
+  'reserve': '🏛️',
+  'aboriginal': '🏛️',
+  'heritage': '🏛️',
+  'community': '💬',
+  'consultation': '💬',
+  'developed': '💬',
+  'feedback': '💬',
+  'lease': '📍',
+  'license': '📍',
+  'licence': '📍',
+  'location': '📍',
+  'flexible': '📍',
+  'environment': '🌿',
+  'nature': '🌿',
+  'green': '🌿',
+  'sustainable': '🌿',
+  'partner': '🤝',
+  'collaborate': '🤝',
+  'together': '🤝'
+};
+
+// Default icons to cycle through
+const defaultIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
+
+/**
+ * Get appropriate icon for a feature based on keywords
+ */
+function getFeatureIcon(featureText, index) {
+  const lowerText = featureText.toLowerCase();
+  
+  for (const [keyword, icon] of Object.entries(featureIconMap)) {
+    if (lowerText.includes(keyword)) {
+      return icon;
+    }
+  }
+  
+  // Fallback to cycling through default icons
+  return defaultIcons[index % defaultIcons.length];
+}
+
+/**
+ * Parse feature into title and description
+ */
+function parseFeature(feature) {
+  if (feature.includes(':')) {
+    const parts = feature.split(':');
+    return {
+      title: parts[0].trim(),
+      description: parts.slice(1).join(':').trim()
+    };
+  }
+  return {
+    title: feature.trim(),
+    description: ''
+  };
+}
 ---
 
 <BaseLayout 
@@ -175,14 +234,17 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
           <section class="features-section" aria-labelledby="features-heading">
             <h2 id="features-heading">Key Features</h2>
             <div class="features-grid">
-              {project.features.map((feature, index) => (
-                <div class="feature-card">
-                  <div class="feature-icon">{featureIcons[index % featureIcons.length]}</div>
-                  <h3>{feature.split(':')[0] || feature}</h3>
-                  {feature.includes(':') && <p>{feature.split(':').slice(1).join(':').trim()}</p>}
-                  {!feature.includes(':') && <p>{feature}</p>}
-                </div>
-              ))}
+              {project.features.slice(0, 5).map((feature, index) => {
+                const parsed = parseFeature(feature);
+                const icon = getFeatureIcon(feature, index);
+                return (
+                  <div class="feature-card">
+                    <div class="feature-icon">{icon}</div>
+                    <h3>{parsed.title}</h3>
+                    {parsed.description && <p>{parsed.description}</p>}
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}
@@ -260,27 +322,17 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
         <!-- Deadline Banner -->
         {project.submissionDeadline && !project.deadlinePassed && (
           <div class="deadline-banner deadline-active" role="status">
-            <div class="deadline-banner-icon">⏰</div>
             <div class="deadline-banner-content">
-              <h3>Submissions Close Soon</h3>
-              <p>Deadline: <strong>{deadlineFormatted}</strong>
-                {daysUntilDeadline !== null && daysUntilDeadline <= 14 && (
-                  <span class="deadline-urgent">
-                    ({daysUntilDeadline === 0 ? 'Today!' : 
-                      daysUntilDeadline === 1 ? '1 day left' : 
-                      `${daysUntilDeadline} days left`})
-                  </span>
-                )}
-              </p>
+              <h3>⏰ Submissions Close Soon</h3>
+              <p>Deadline: <strong>4:30pm {deadlineFullFormatted}</strong></p>
             </div>
           </div>
         )}
 
         {project.submissionDeadline && project.deadlinePassed && (
           <div class="deadline-banner deadline-passed" role="status">
-            <div class="deadline-banner-icon">✓</div>
             <div class="deadline-banner-content">
-              <h3>Consultation Closed</h3>
+              <h3>✓ Consultation Closed</h3>
               <p>This project is now under review. Outcomes will be published when available.</p>
             </div>
           </div>
@@ -289,51 +341,10 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
         <!-- CTA Section -->
         <section class="cta-section">
           <h2>Ready to Have Your Say?</h2>
-          <p>Your feedback helps shape our community's future. Submit your thoughts on this project.</p>
+          <p>Join our community to submit your formal feedback on this project</p>
           <div class="cta-buttons">
-            <a href={feedbackUrl} class="btn btn-primary">Submit Feedback</a>
-            <button type="button" class="btn btn-outline share-button">Share Project</button>
-          </div>
-        </section>
-
-        <!-- Subscription Form (moved to bottom) -->
-        <section class="subscription-section" id="stay-updated" aria-labelledby="subscribe-heading">
-          <div class="subscribe-box">
-            <h2 id="subscribe-heading">Stay Updated</h2>
-            <p>Subscribe to receive email updates about this project.</p>
-            
-            <form name="project-subscription" method="POST" data-netlify="true" netlify-honeypot="bot-field" class="subscription-form" action="/thank-you/">
-              <input type="hidden" name="form-name" value="project-subscription" />
-              <input type="hidden" name="project" value={project.title} />
-              <input type="hidden" name="projectSlug" value={project.slug} />
-              
-              <div class="form-field-hidden" aria-hidden="true">
-                <label>Don't fill this out: <input name="bot-field" tabindex="-1" /></label>
-              </div>
-              
-              <div class="form-row">
-                <div class="form-group">
-                  <label for="firstName">First Name <span class="required">*</span></label>
-                  <input type="text" id="firstName" name="firstName" required autocomplete="given-name" />
-                </div>
-                <div class="form-group">
-                  <label for="lastName">Last Name <span class="required">*</span></label>
-                  <input type="text" id="lastName" name="lastName" required autocomplete="family-name" />
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="email">Email Address <span class="required">*</span></label>
-                <input type="email" id="email" name="email" required autocomplete="email" />
-              </div>
-
-              <button type="submit" class="btn btn-primary btn-block">Subscribe to Updates</button>
-
-              <p class="form-note">
-                <span class="required">*</span> Required fields. 
-                <a href="/privacy/">Privacy policy</a>.
-              </p>
-            </form>
+            <a href="/newsletter/" class="btn btn-outline">Sign Up</a>
+            <a href={feedbackUrl} class="btn btn-primary">Login & Submit</a>
           </div>
         </section>
 
@@ -347,27 +358,31 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
           <h3>Project Info</h3>
           <dl class="info-list">
             <div class="info-row">
-              <dt>Status</dt>
+              <dt>Status:</dt>
               <dd><span class={`status-badge status-${project.statusBadge.type}`}>{project.statusBadge.label}</span></dd>
             </div>
-            {project.category && (
+            {opensFormatted && (
               <div class="info-row">
-                <dt>Category</dt>
-                <dd>{project.category}</dd>
+                <dt>Opens:</dt>
+                <dd>{opensFormatted}</dd>
               </div>
             )}
-            {project.submissionDeadline && !project.deadlinePassed && (
+            {closesFormatted && !project.deadlinePassed && (
               <div class="info-row">
-                <dt>Closes</dt>
-                <dd>{deadlineShort}</dd>
+                <dt>Closes:</dt>
+                <dd>{closesFormatted}</dd>
               </div>
             )}
-            {project.submissionDeadline && project.deadlinePassed && (
+            {closesFormatted && project.deadlinePassed && (
               <div class="info-row">
-                <dt>Closed</dt>
-                <dd>{deadlineShort}</dd>
+                <dt>Closed:</dt>
+                <dd>{closesFormatted}</dd>
               </div>
             )}
+            <div class="info-row">
+              <dt>Engagement:</dt>
+              <dd>{project.engagementViews || '—'} views</dd>
+            </div>
           </dl>
         </div>
 
@@ -381,9 +396,10 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
                   <div class="document-icon" aria-hidden="true">📄</div>
                   <div class="document-info">
                     <span class="document-title">{doc.title}</span>
-                    {doc.size && <span class="document-meta">{doc.size}</span>}
                   </div>
-                  <a href={doc.url} class="document-link" target="_blank" rel="noopener noreferrer" aria-label={`Download ${doc.title}`}>↓</a>
+                  <a href={doc.url} class="document-link" target="_blank" rel="noopener noreferrer" aria-label={`Download ${doc.title}`}>
+                    <span class="download-icon">↓</span>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -399,7 +415,7 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
           </div>
         </div>
 
-        <div class="sidebar-section sidebar-section-minimal">
+        <div class="sidebar-back">
           <a href="/projects/" class="back-link">← Back to All Projects</a>
         </div>
 
@@ -413,6 +429,7 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
   :root {
     --navy-blue: #1B365D;
     --navy-blue-dark: #142847;
+    --navy-blue-light: #2B4A7D;
     --teal-accent: #4db8b8;
     --teal-dark: #2d8b8b;
     --sky-blue: #5B9BD5;
@@ -441,17 +458,17 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
     border: 0;
   }
 
-  [hidden] { display: none !important; }
-
   a:focus-visible, button:focus-visible, input:focus-visible {
     outline: 3px solid var(--golden-orange);
     outline-offset: 2px;
   }
 
-  /* Hero Section */
+  /* ========================================
+     HERO SECTION
+     ======================================== */
   .project-hero {
     position: relative;
-    min-height: 350px;
+    min-height: 300px;
     overflow: hidden;
     background: linear-gradient(135deg, var(--navy-blue) 0%, #1e3d4a 100%);
     display: flex;
@@ -462,9 +479,9 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
     position: absolute;
     top: 0;
     left: 0;
-    width: 60%;
+    width: 65%;
     height: 100%;
-    background: #1e3d4a;
+    background: linear-gradient(135deg, var(--navy-blue) 0%, #1e3d4a 100%);
     transform: skewX(-15deg);
     transform-origin: top left;
     z-index: 1;
@@ -474,60 +491,63 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
     position: absolute;
     right: 0;
     top: 0;
-    width: 55%;
+    width: 50%;
     height: 100%;
     background-size: cover;
     background-position: center;
-    clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%);
-    z-index: 2;
+    clip-path: polygon(20% 0, 100% 0, 100% 100%, 0 100%);
+    z-index: 0;
   }
 
   .hero-placeholder {
     background: linear-gradient(135deg, var(--sky-blue) 0%, var(--navy-blue) 100%);
-    opacity: 0.3;
+    opacity: 0.4;
   }
 
   .hero-content {
     position: relative;
-    z-index: 3;
+    z-index: 2;
     color: var(--white);
     padding: 3rem 2rem;
-    max-width: 700px;
+    max-width: 600px;
   }
 
   .hero-badge {
     display: inline-block;
     padding: 0.35rem 1rem;
-    border-radius: 20px;
+    border-radius: 4px;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
     margin-bottom: 1rem;
   }
 
   .hero-title {
-    font-size: clamp(1.75rem, 5vw, 2.5rem);
+    font-size: clamp(1.5rem, 4vw, 2.25rem);
     color: var(--teal-accent);
     margin: 0 0 1rem;
     line-height: 1.2;
     text-transform: uppercase;
+    font-weight: 700;
   }
 
   .hero-description {
-    font-size: 1.1rem;
+    font-size: 1rem;
     opacity: 0.95;
     margin-bottom: 0;
-    max-width: 550px;
+    line-height: 1.6;
   }
 
   /* Status Badges */
   .status-badge {
     display: inline-block;
     padding: 0.25rem 0.75rem;
-    border-radius: 20px;
+    border-radius: 4px;
     font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
   .status-open { background: var(--success-green); color: var(--white); }
@@ -535,14 +555,19 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
   .status-review { background: var(--warning-orange); color: var(--white); }
   .status-default { background: var(--medium-gray); color: var(--white); }
 
-  /* Breadcrumb */
+  /* ========================================
+     BREADCRUMB
+     ======================================== */
   .breadcrumb {
     background: var(--off-white);
     border-bottom: 1px solid var(--light-gray);
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 2rem;
   }
 
-  .breadcrumb-container { max-width: 1200px; margin: 0 auto; }
+  .breadcrumb-container { 
+    max-width: 1200px; 
+    margin: 0 auto; 
+  }
 
   .breadcrumb-list {
     display: flex;
@@ -554,46 +579,68 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
     font-size: 0.875rem;
   }
 
-  .breadcrumb-list li { display: flex; align-items: center; }
+  .breadcrumb-list li { 
+    display: flex; 
+    align-items: center; 
+  }
+
   .breadcrumb-list li:not(:last-child)::after {
     content: '/';
     margin-left: 0.5rem;
     color: var(--medium-gray);
   }
 
-  .breadcrumb-list a { color: var(--teal-accent); text-decoration: none; }
-  .breadcrumb-list a:hover { text-decoration: underline; }
-  .breadcrumb-list [aria-current="page"] { color: var(--dark-gray); font-weight: 500; }
+  .breadcrumb-list a { 
+    color: var(--teal-accent); 
+    text-decoration: none; 
+  }
 
-  /* Content Wrapper */
+  .breadcrumb-list a:hover { 
+    text-decoration: underline; 
+  }
+
+  .breadcrumb-list [aria-current="page"] { 
+    color: var(--dark-gray); 
+    font-weight: 500; 
+  }
+
+  /* ========================================
+     CONTENT WRAPPER - TWO COLUMN LAYOUT
+     ======================================== */
   .content-wrapper {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 2rem;
     display: grid;
-    grid-template-columns: 1fr 350px;
-    gap: 2rem;
+    grid-template-columns: 1fr 320px;
+    gap: 3rem;
   }
 
-  .main-content { min-width: 0; }
+  .main-content { 
+    min-width: 0; 
+  }
 
-  /* Features Section - Card Style */
+  /* ========================================
+     KEY FEATURES SECTION
+     ======================================== */
   .features-section {
     margin-bottom: 2.5rem;
   }
 
   .features-section h2 {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     color: var(--navy-blue);
-    margin: 0 0 1.5rem;
+    margin: 0 0 1.25rem;
     padding-bottom: 0.75rem;
     border-bottom: 3px solid var(--teal-accent);
     text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
   }
 
   .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
   }
 
@@ -601,71 +648,57 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
     background: var(--white);
     border: 1px solid var(--light-gray);
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 1.5rem 1rem;
     text-align: center;
     transition: transform 0.2s, box-shadow 0.2s;
   }
 
   .feature-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
 
   .feature-card .feature-icon {
     font-size: 2.5rem;
     margin-bottom: 0.75rem;
+    display: block;
   }
 
   .feature-card h3 {
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--navy-blue);
     margin: 0 0 0.5rem;
+    font-weight: 700;
   }
 
   .feature-card p {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     color: var(--medium-gray);
     margin: 0;
     line-height: 1.5;
   }
 
-  /* Content Sections */
-  .content-section {
-    margin-bottom: 2rem;
+  /* ========================================
+     TABS SECTION
+     ======================================== */
+  .tabs-section { 
+    margin-bottom: 2rem; 
   }
-
-  .content-section h2 {
-    font-size: 1.5rem;
-    color: var(--navy-blue);
-    margin: 0 0 1.5rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 3px solid var(--teal-accent);
-    text-transform: uppercase;
-  }
-
-  .content-text { color: var(--dark-gray); line-height: 1.8; }
-  .content-text p { margin-bottom: 1rem; }
-  .content-text p:last-child { margin-bottom: 0; }
-  .placeholder-text { color: var(--medium-gray); font-style: italic; }
-
-  /* Tabs */
-  .tabs-section { margin-bottom: 2rem; }
 
   .tabs {
     display: flex;
-    gap: 4px;
+    gap: 0;
     border-bottom: 2px solid var(--light-gray);
     margin-bottom: 1.5rem;
-    flex-wrap: wrap;
   }
 
   .tab {
-    padding: 0.75rem 1.5rem;
+    padding: 0.875rem 1.5rem;
     background: transparent;
     border: none;
     border-bottom: 3px solid transparent;
     margin-bottom: -2px;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--medium-gray);
     cursor: pointer;
@@ -673,55 +706,116 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
     font-family: inherit;
   }
 
-  .tab:hover { color: var(--navy-blue); background: var(--off-white); }
-  .tab.active { color: var(--navy-blue); border-bottom-color: var(--teal-accent); }
+  .tab:hover { 
+    color: var(--navy-blue); 
+    background: var(--off-white); 
+  }
 
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
+  .tab.active { 
+    color: var(--navy-blue); 
+    border-bottom-color: var(--teal-accent); 
+  }
 
-  /* Deadline Banner */
-  .deadline-banner {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 1.5rem;
-    border-radius: 8px;
+  .tab-content { 
+    display: none; 
+  }
+
+  .tab-content.active { 
+    display: block; 
+  }
+
+  .content-text { 
+    color: var(--dark-gray); 
+    line-height: 1.8; 
+  }
+
+  .content-text p { 
+    margin-bottom: 1rem; 
+  }
+
+  .content-text p:last-child { 
+    margin-bottom: 0; 
+  }
+
+  .placeholder-text { 
+    color: var(--medium-gray); 
+    font-style: italic; 
+  }
+
+  /* Content Section (non-tabbed) */
+  .content-section {
     margin-bottom: 2rem;
   }
 
+  .content-section h2 {
+    font-size: 1.25rem;
+    color: var(--navy-blue);
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 3px solid var(--teal-accent);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  /* ========================================
+     DEADLINE BANNER
+     ======================================== */
+  .deadline-banner {
+    padding: 1.25rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
   .deadline-active {
-    background: linear-gradient(135deg, #fff7e6 0%, #ffedcc 100%);
-    border: 1px solid var(--warning-orange);
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: var(--white);
   }
 
   .deadline-passed {
     background: var(--off-white);
     border: 1px solid var(--light-gray);
+    color: var(--dark-gray);
   }
 
-  .deadline-banner-icon { font-size: 2rem; flex-shrink: 0; }
-  .deadline-banner-content h3 { margin: 0 0 0.5rem; color: var(--navy-blue); font-size: 1.1rem; }
-  .deadline-banner-content p { margin: 0; color: var(--dark-gray); }
-  .deadline-urgent { color: var(--warning-orange); font-weight: 600; margin-left: 0.5rem; }
+  .deadline-banner-content h3 { 
+    margin: 0 0 0.25rem; 
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
 
-  /* CTA Section */
+  .deadline-banner-content p { 
+    margin: 0; 
+    font-size: 0.95rem;
+  }
+
+  .deadline-active h3,
+  .deadline-active p {
+    color: var(--white);
+  }
+
+  /* ========================================
+     CTA SECTION
+     ======================================== */
   .cta-section {
-    background: var(--off-white);
+    background: var(--navy-blue);
     padding: 2rem;
-    border-radius: 12px;
+    border-radius: 8px;
     text-align: center;
-    margin-bottom: 2rem;
+    margin-top: 2rem;
   }
 
   .cta-section h2 {
-    color: var(--navy-blue);
-    margin: 0 0 0.75rem;
-    font-size: 1.5rem;
+    color: var(--white);
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
   }
 
   .cta-section > p {
-    color: var(--dark-gray);
+    color: rgba(255, 255, 255, 0.85);
     margin: 0 0 1.5rem;
+    font-size: 0.95rem;
   }
 
   .cta-buttons {
@@ -731,59 +825,9 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
     flex-wrap: wrap;
   }
 
-  /* Subscription Section */
-  .subscription-section {
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--light-gray);
-  }
-
-  .subscribe-box {
-    background: var(--off-white);
-    border: 2px solid var(--teal-accent);
-    border-radius: 12px;
-    padding: 2rem;
-  }
-
-  .subscribe-box h2 {
-    color: var(--navy-blue);
-    margin: 0 0 0.5rem;
-    font-size: 1.25rem;
-  }
-
-  .subscribe-box > p {
-    color: var(--dark-gray);
-    margin: 0 0 1.5rem;
-  }
-
-  /* Form Styles */
-  .subscription-form { max-width: 100%; }
-  .form-field-hidden { position: absolute; left: -9999px; }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  .form-group { margin-bottom: 1rem; }
-  .form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--dark-gray); font-size: 0.9rem; }
-  .required { color: var(--error-red); }
-
-  .form-group input[type="text"],
-  .form-group input[type="email"] {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--light-gray);
-    border-radius: 6px;
-    font-size: 1rem;
-    font-family: inherit;
-  }
-
-  .form-group input:focus {
-    border-color: var(--teal-accent);
-    box-shadow: 0 0 0 3px rgba(77, 184, 184, 0.15);
-    outline: none;
-  }
-
-  .form-note { font-size: 0.85rem; color: var(--medium-gray); margin-top: 1rem; }
-  .form-note a { color: var(--teal-accent); }
-
-  /* Buttons */
+  /* ========================================
+     BUTTONS
+     ======================================== */
   .btn {
     display: inline-flex;
     align-items: center;
@@ -791,9 +835,9 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
     text-decoration: none;
-    border-radius: 6px;
+    border-radius: 4px;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-family: inherit;
     transition: all 0.2s ease;
     border: 2px solid transparent;
@@ -801,81 +845,164 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
     min-height: 44px;
   }
 
-  .btn-primary { background: var(--navy-blue); color: var(--white); border-color: var(--navy-blue); }
-  .btn-primary:hover { background: var(--navy-blue-dark); border-color: var(--navy-blue-dark); }
-  .btn-outline { background: transparent; color: var(--navy-blue); border-color: var(--navy-blue); }
-  .btn-outline:hover { background: var(--navy-blue); color: var(--white); }
-  .btn-block { display: flex; width: 100%; }
+  .btn-primary { 
+    background: var(--navy-blue); 
+    color: var(--white); 
+    border-color: var(--navy-blue); 
+  }
 
-  /* Sidebar */
-  .sidebar { position: sticky; top: 100px; height: fit-content; }
+  .btn-primary:hover { 
+    background: var(--navy-blue-dark); 
+    border-color: var(--navy-blue-dark); 
+  }
+
+  .btn-outline { 
+    background: transparent; 
+    color: var(--navy-blue); 
+    border-color: var(--navy-blue); 
+  }
+
+  .btn-outline:hover { 
+    background: var(--navy-blue); 
+    color: var(--white); 
+  }
+
+  /* CTA section button variants */
+  .cta-section .btn-outline {
+    color: var(--white);
+    border-color: var(--white);
+  }
+
+  .cta-section .btn-outline:hover {
+    background: var(--white);
+    color: var(--navy-blue);
+  }
+
+  .cta-section .btn-primary {
+    background: var(--teal-accent);
+    border-color: var(--teal-accent);
+    color: var(--white);
+  }
+
+  .cta-section .btn-primary:hover {
+    background: var(--teal-dark);
+    border-color: var(--teal-dark);
+  }
+
+  .btn-block { 
+    display: flex; 
+    width: 100%; 
+  }
+
+  /* ========================================
+     SIDEBAR
+     ======================================== */
+  .sidebar { 
+    position: sticky; 
+    top: 100px; 
+    height: fit-content; 
+  }
 
   .sidebar-section {
     background: var(--white);
     border: 1px solid var(--light-gray);
     border-radius: 8px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  }
-
-  .sidebar-section-minimal {
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    padding: 0;
-    text-align: center;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   }
 
   .sidebar-section h3 {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--navy-blue);
     margin: 0 0 1rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.75px;
+    font-weight: 700;
   }
 
-  .info-list { margin: 0; }
+  /* Project Info List */
+  .info-list { 
+    margin: 0; 
+  }
+
   .info-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 0;
+    padding: 0.6rem 0;
     border-bottom: 1px solid var(--light-gray);
   }
-  .info-row:last-child { border-bottom: none; padding-bottom: 0; }
-  .info-row dt { font-weight: 500; color: var(--medium-gray); font-size: 0.9rem; }
-  .info-row dd { margin: 0; color: var(--dark-gray); font-weight: 600; }
+
+  .info-row:last-child { 
+    border-bottom: none; 
+    padding-bottom: 0; 
+  }
+
+  .info-row dt { 
+    font-weight: 500; 
+    color: var(--medium-gray); 
+    font-size: 0.9rem; 
+  }
+
+  .info-row dd { 
+    margin: 0; 
+    color: var(--dark-gray); 
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
 
   /* Document List */
-  .document-list { list-style: none; padding: 0; margin: 0; }
+  .document-list { 
+    list-style: none; 
+    padding: 0; 
+    margin: 0; 
+  }
+
   .document-item {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 1rem;
+    padding: 0.875rem;
     background: var(--off-white);
-    border-radius: 8px;
-    margin-bottom: 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 0.625rem;
     transition: all 0.2s ease;
   }
-  .document-item:last-child { margin-bottom: 0; }
-  .document-item:hover { background: var(--light-gray); transform: translateX(4px); }
-  .document-icon { font-size: 1.5rem; flex-shrink: 0; }
-  .document-info { flex: 1; min-width: 0; }
+
+  .document-item:last-child { 
+    margin-bottom: 0; 
+  }
+
+  .document-item:hover { 
+    background: var(--light-gray); 
+  }
+
+  .document-icon { 
+    font-size: 1.25rem; 
+    flex-shrink: 0; 
+    opacity: 0.7;
+  }
+
+  .document-info { 
+    flex: 1; 
+    min-width: 0; 
+  }
+
   .document-title {
     display: block;
     font-weight: 600;
     color: var(--navy-blue);
-    margin-bottom: 0.25rem;
+    font-size: 0.9rem;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    line-height: 1.4;
   }
-  .document-meta { font-size: 0.8rem; color: var(--medium-gray); }
+
   .document-link {
     flex-shrink: 0;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -883,41 +1010,127 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
     color: var(--white);
     border-radius: 50%;
     text-decoration: none;
-    font-size: 1.25rem;
+    font-size: 1rem;
+    transition: background 0.2s;
   }
-  .document-link:hover { background: var(--teal-dark); }
 
-  .sidebar-actions { display: flex; flex-direction: column; gap: 0.75rem; }
-  .back-link { color: var(--teal-accent); text-decoration: none; font-weight: 500; font-size: 0.9rem; }
-  .back-link:hover { text-decoration: underline; }
+  .document-link:hover { 
+    background: var(--teal-dark); 
+  }
 
-  /* Responsive */
+  .download-icon {
+    font-weight: bold;
+  }
+
+  /* Sidebar Actions */
+  .sidebar-actions { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 0.625rem; 
+  }
+
+  .sidebar-back {
+    text-align: center;
+    padding-top: 0.5rem;
+  }
+
+  .back-link { 
+    color: var(--teal-accent); 
+    text-decoration: none; 
+    font-weight: 500; 
+    font-size: 0.9rem; 
+  }
+
+  .back-link:hover { 
+    text-decoration: underline; 
+  }
+
+  /* ========================================
+     RESPONSIVE DESIGN
+     ======================================== */
+  @media (max-width: 1024px) {
+    .features-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
   @media (max-width: 900px) {
-    .content-wrapper { grid-template-columns: 1fr; }
-    .sidebar { position: static; order: -1; }
+    .content-wrapper { 
+      grid-template-columns: 1fr;
+      padding: 1.5rem;
+    }
+
+    .sidebar { 
+      position: static; 
+      order: -1; 
+    }
+
+    .features-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
 
   @media (max-width: 768px) {
-    .project-hero { min-height: 280px; }
-    .hero-diagonal { width: 100%; transform: none; }
-    .hero-image { width: 100%; clip-path: none; opacity: 0.25; }
-    .hero-content { padding: 2rem 1rem; }
-    .form-row { grid-template-columns: 1fr; }
-    .features-grid { grid-template-columns: 1fr; }
-    .tabs { flex-wrap: wrap; }
-    .tab { flex: 1 1 auto; min-width: 100px; text-align: center; }
-    .cta-buttons { flex-direction: column; }
-    .cta-buttons .btn { width: 100%; }
+    .project-hero { 
+      min-height: 250px; 
+    }
+
+    .hero-diagonal { 
+      width: 100%; 
+      transform: none; 
+    }
+
+    .hero-image { 
+      width: 100%; 
+      clip-path: none; 
+      opacity: 0.2; 
+    }
+
+    .hero-content { 
+      padding: 2rem 1.5rem; 
+    }
+
+    .breadcrumb {
+      padding: 0.75rem 1.5rem;
+    }
+
+    .features-grid { 
+      grid-template-columns: 1fr; 
+    }
+
+    .tabs { 
+      flex-wrap: wrap; 
+    }
+
+    .tab { 
+      flex: 1 1 auto; 
+      min-width: 100px; 
+      text-align: center;
+      padding: 0.75rem 1rem;
+    }
+
+    .cta-buttons { 
+      flex-direction: column; 
+    }
+
+    .cta-buttons .btn { 
+      width: 100%; 
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .btn, .document-item, .tab, .form-group input, .feature-card { transition: none; }
-    .document-item:hover, .feature-card:hover { transform: none; }
+    .btn, .document-item, .tab, .feature-card { 
+      transition: none; 
+    }
+
+    .feature-card:hover { 
+      transform: none; 
+    }
   }
 </style>
 
 <script>
-  // Tab switching
+  // Tab switching functionality
   document.addEventListener('DOMContentLoaded', () => {
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -926,6 +1139,7 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
       tab.addEventListener('click', () => {
         const tabId = tab.getAttribute('data-tab');
         
+        // Update tab states
         tabs.forEach(t => {
           t.classList.remove('active');
           t.setAttribute('aria-selected', 'false');
@@ -934,6 +1148,7 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
         tab.classList.add('active');
         tab.setAttribute('aria-selected', 'true');
         
+        // Update panel visibility
         tabContents.forEach(content => content.classList.remove('active'));
         
         const targetPanel = document.getElementById(`panel-${tabId}`);
@@ -943,15 +1158,19 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
       });
     });
 
-    // Share buttons
+    // Share button functionality
     const shareButtons = document.querySelectorAll('.share-button');
     shareButtons.forEach(btn => {
       btn.addEventListener('click', async () => {
         const pageUrl = window.location.href;
+        const pageTitle = document.title;
         
         if (navigator.share) {
           try {
-            await navigator.share({ title: document.title, url: pageUrl });
+            await navigator.share({ 
+              title: pageTitle, 
+              url: pageUrl 
+            });
           } catch (err) {
             if (err.name !== 'AbortError') {
               copyToClipboard(pageUrl, btn);
@@ -967,7 +1186,9 @@ const featureIcons = ['🏛️', '💬', '📍', '🌿', '🤝'];
       navigator.clipboard.writeText(text).then(() => {
         const original = btn.textContent;
         btn.textContent = '✓ Link Copied!';
-        setTimeout(() => { btn.textContent = original; }, 2000);
+        setTimeout(() => { 
+          btn.textContent = original; 
+        }, 2000);
       }).catch(() => {
         alert('Link: ' + text);
       });
