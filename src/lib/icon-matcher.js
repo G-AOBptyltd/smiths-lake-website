@@ -6,8 +6,9 @@
  * across all website sections.
  * 
  * @module icon-matcher
- * @version 1.0.0
+ * @version 1.1.0 - Added Project Hub feature icons
  * @author PPCA Digital Transformation Team
+ * @updated 26 January 2026
  * @requires No external dependencies (pure JavaScript)
  */
 
@@ -100,6 +101,12 @@ export function getSmartIcon(item) {
     'worimi people': '🪃',
     'charlotte williams': '📜',
     'smiths lake settlement': '⛵',
+    
+    // Project Hub - Common Feature Titles
+    'crown reserves': '👑',
+    'community developed': '👥',
+    'lease & license': '📝',
+    'lease and license': '📝',
   };
   
   // Check for exact match
@@ -110,6 +117,86 @@ export function getSmartIcon(item) {
   // PRIORITY 2: KEYWORD MATCHES
   // Partial matching within titles - more flexible than exact matches
   const keywordMatches = [
+    // ============================================
+    // PROJECT HUB FEATURE KEYWORDS (Check first!)
+    // ============================================
+    // Governance & Legal
+    { keywords: ['crown reserve', 'crown land'], icon: '👑' },
+    { keywords: ['lease', 'license', 'licence', 'permit'], icon: '📝' },
+    { keywords: ['zoning', 'zone', 'land use'], icon: '🗺️' },
+    { keywords: ['regulation', 'compliance', 'bylaw'], icon: '⚖️' },
+    { keywords: ['policy', 'policies'], icon: '📋' },
+    { keywords: ['legislation', 'act', 'law'], icon: '⚖️' },
+    
+    // Community & Consultation
+    { keywords: ['community developed', 'community-developed', 'community driven'], icon: '👥' },
+    { keywords: ['consultation', 'consulted', 'engage', 'engagement'], icon: '💬' },
+    { keywords: ['feedback', 'input', 'submission'], icon: '📨' },
+    { keywords: ['stakeholder', 'participant'], icon: '🤝' },
+    { keywords: ['public meeting', 'town hall', 'forum'], icon: '🏛️' },
+    { keywords: ['survey', 'poll', 'questionnaire'], icon: '📊' },
+    { keywords: ['vote', 'voting', 'ballot'], icon: '🗳️' },
+    
+    // Planning & Development
+    { keywords: ['master plan', 'masterplan', 'strategic plan'], icon: '📐' },
+    { keywords: ['draft plan', 'draft strategy'], icon: '📄' },
+    { keywords: ['development', 'redevelopment'], icon: '🏗️' },
+    { keywords: ['infrastructure', 'construction'], icon: '🔧' },
+    { keywords: ['upgrade', 'improvement', 'enhancement'], icon: '⬆️' },
+    { keywords: ['maintenance', 'upkeep'], icon: '🔨' },
+    { keywords: ['design', 'blueprint'], icon: '✏️' },
+    { keywords: ['timeline', 'schedule', 'milestone'], icon: '📅' },
+    { keywords: ['budget', 'funding', 'cost', 'financial'], icon: '💰' },
+    { keywords: ['grant', 'subsidy'], icon: '💵' },
+    
+    // Rights & Interests
+    { keywords: ['aboriginal', 'indigenous', 'first nations', 'worimi'], icon: '🪃' },
+    { keywords: ['native title', 'traditional owner'], icon: '🪃' },
+    { keywords: ['heritage', 'historical', 'historic'], icon: '🏛️' },
+    { keywords: ['cultural', 'culture'], icon: '🎭' },
+    { keywords: ['rights', 'interest', 'interests'], icon: '✊' },
+    { keywords: ['protection', 'protected', 'preserve'], icon: '🛡️' },
+    
+    // Environment & Nature
+    { keywords: ['environmental', 'environment'], icon: '🌿' },
+    { keywords: ['sustainable', 'sustainability', 'green'], icon: '♻️' },
+    { keywords: ['conservation', 'conserve'], icon: '🌳' },
+    { keywords: ['biodiversity', 'ecosystem'], icon: '🦋' },
+    { keywords: ['flora', 'vegetation', 'plants'], icon: '🌱' },
+    { keywords: ['fauna', 'wildlife', 'animal'], icon: '🦘' },
+    { keywords: ['water quality', 'waterway'], icon: '💧' },
+    { keywords: ['coastal', 'foreshore', 'beach'], icon: '🏖️' },
+    
+    // Recreation & Facilities
+    { keywords: ['recreation', 'recreational'], icon: '🎯' },
+    { keywords: ['sports', 'sporting', 'athletics'], icon: '⚽' },
+    { keywords: ['park', 'parkland', 'open space'], icon: '🌳' },
+    { keywords: ['playground', 'play area', 'play space'], icon: '🎠' },
+    { keywords: ['trail', 'track', 'pathway', 'walkway'], icon: '🚶' },
+    { keywords: ['cycling', 'bike', 'bicycle'], icon: '🚴' },
+    { keywords: ['pump track', 'skate park', 'bmx'], icon: '🛹' },
+    { keywords: ['fitness', 'exercise', 'gym'], icon: '💪' },
+    { keywords: ['amenities', 'facilities', 'amenity'], icon: '🏢' },
+    { keywords: ['toilet', 'bathroom', 'restroom'], icon: '🚻' },
+    { keywords: ['parking', 'car park'], icon: '🅿️' },
+    { keywords: ['picnic', 'bbq', 'barbecue'], icon: '🍖' },
+    
+    // Access & Inclusion
+    { keywords: ['accessible', 'accessibility', 'disability'], icon: '♿' },
+    { keywords: ['inclusive', 'inclusion', 'all ages'], icon: '👨‍👩‍👧‍👦' },
+    { keywords: ['flexible', 'adaptable', 'multi-use'], icon: '🔄' },
+    { keywords: ['public access', 'open access'], icon: '🚪' },
+    
+    // Safety & Management
+    { keywords: ['safety', 'safe', 'secure'], icon: '🛡️' },
+    { keywords: ['risk', 'hazard'], icon: '⚠️' },
+    { keywords: ['emergency', 'evacuation'], icon: '🚨' },
+    { keywords: ['management', 'managed', 'govern'], icon: '📊' },
+    { keywords: ['oversight', 'monitor', 'review'], icon: '👁️' },
+    
+    // ============================================
+    // EXISTING KEYWORD MATCHES (Website Sections)
+    // ============================================
     // Emergency & Safety (highest priority for safety-critical content)
     { keywords: ['fire station', 'fire brigade', 'rfs', 'rural fire'], icon: '🚒' },
     { keywords: ['surf life', 'lifesaving', 'lifeguard', 'slsc'], icon: '🏖️' },
@@ -119,12 +206,11 @@ export function getSmartIcon(item) {
     { keywords: ['ambulance', 'paramedic'], icon: '🚑' },
     { keywords: ['hospital', 'emergency ward'], icon: '🏥' },
     { keywords: ['flood', 'ses', 'state emergency'], icon: '🌊' },
-    { keywords: ['evacuation', 'assembly point'], icon: '🚨' },
     { keywords: ['bushfire', 'wildfire'], icon: '🔥' },
     
     // Sports & Recreation
     { keywords: ['walking', 'bushwalk', 'hiking', 'trail walk'], icon: '🥾' },
-    { keywords: ['swimming', 'swim club'], icon: '🏊' },
+    { keywords: ['swimming', 'swim club', 'pool'], icon: '🏊' },
     { keywords: ['yoga'], icon: '🧘‍♀️' },
     { keywords: ['tai chi', 'taichi'], icon: '🧘' },
     { keywords: ['pilates'], icon: '🤸' },
@@ -137,7 +223,6 @@ export function getSmartIcon(item) {
     { keywords: ['surfing', 'surf club'], icon: '🏄' },
     { keywords: ['kayak', 'canoe', 'paddle'], icon: '🛶' },
     { keywords: ['sailing', 'yacht', 'sailing club'], icon: '⛵' },
-    { keywords: ['cycling', 'bike', 'bicycle'], icon: '🚴' },
     { keywords: ['running', 'jogging', 'athletics'], icon: '🏃' },
     { keywords: ['bowls', 'bowling'], icon: '🎳' },
     
@@ -160,36 +245,26 @@ export function getSmartIcon(item) {
     { keywords: ['cooking', 'baking', 'food', 'culinary'], icon: '👨‍🍳' },
     
     // Environment & Sustainability
-    { keywords: ['tree', 'bush regeneration', 'landcare', 'planting', 'revegetation'], icon: '🌳' },
-    { keywords: ['water', 'lake', 'creek', 'river', 'waterway'], icon: '💧' },
-    { keywords: ['wildlife', 'animal', 'fauna', 'habitat'], icon: '🦘' },
+    { keywords: ['tree', 'bush regeneration', 'landcare', 'revegetation'], icon: '🌳' },
+    { keywords: ['water', 'lake', 'creek', 'river'], icon: '💧' },
     { keywords: ['bird', 'avian', 'birdwatch'], icon: '🦜' },
-    { keywords: ['beach', 'coast', 'shore', 'dune'], icon: '🏖️' },
     { keywords: ['recycling', 'recycle', 'waste', 'composting'], icon: '♻️' },
-    { keywords: ['climate', 'carbon', 'sustainability'], icon: '🌍' },
+    { keywords: ['climate', 'carbon'], icon: '🌍' },
     { keywords: ['erosion', 'coastal management'], icon: '🌊' },
     
     // Community Services
     { keywords: ['hall', 'venue', 'function space', 'community centre'], icon: '🏛️' },
     { keywords: ['volunteer', 'volunteering'], icon: '🤝' },
-    { keywords: ['education', 'school', 'kindergarten'], icon: '🎓' },
+    { keywords: ['school', 'kindergarten'], icon: '🎓' },
     { keywords: ['childcare', 'daycare', 'preschool', 'kids'], icon: '👶' },
     { keywords: ['senior', 'aged care', 'elderly', 'retirement'], icon: '👴' },
-    { keywords: ['disability', 'accessible', 'accessibility'], icon: '♿' },
     
     // Infrastructure & Amenities
-    { keywords: ['road', 'street', 'path', 'pathway'], icon: '🛣️' },
-    { keywords: ['park', 'playground', 'reserve'], icon: '🎡' },
-    { keywords: ['toilet', 'amenities', 'facilities'], icon: '🚻' },
-    { keywords: ['parking', 'car park'], icon: '🅿️' },
-    { keywords: ['barbecue', 'bbq', 'picnic'], icon: '🍖' },
+    { keywords: ['road', 'street', 'path'], icon: '🛣️' },
     { keywords: ['oval', 'sports field'], icon: '⚽' },
     
     // History & Culture
-    { keywords: ['worimi', 'indigenous', 'aboriginal', 'first nations'], icon: '🪃' },
-    { keywords: ['heritage', 'historical', 'museum', 'archive'], icon: '🏛️' },
     { keywords: ['settlement', 'pioneer', 'colonial'], icon: '⛵' },
-    { keywords: ['timeline', 'chronology'], icon: '📜' },
     { keywords: ['document', 'record'], icon: '📄' },
     { keywords: ['map', 'geography', 'cartography'], icon: '🗺️' },
   ];
@@ -248,6 +323,12 @@ export function getSmartIcon(item) {
     'education': '🎓',
     'health': '🏥',
     'infrastructure': '🏗️',
+    
+    // Project Hub categories
+    'sports & recreation': '🏃',
+    'environment': '🌿',
+    'planning': '📐',
+    'governance': '⚖️',
   };
   
   if (categoryFallbacks[category]) {
@@ -271,6 +352,7 @@ export function getSmartIcon(item) {
     'history and culture': '📚',
     'history': '📚',
     'about': 'ℹ️',
+    'project hub': '📋',
   };
   
   if (sectionDefaults[section]) {
@@ -281,6 +363,35 @@ export function getSmartIcon(item) {
   // If nothing else matches, use a generic document icon
   console.info('[icon-matcher] Using fallback icon for:', { title, category, section });
   return '📋';
+}
+
+/**
+ * Get icon specifically for Project Hub features
+ * This function is optimized for feature text parsing
+ * 
+ * @param {string} featureText - The feature text (may include title:description format)
+ * @param {number} index - Index for fallback cycling
+ * @returns {string} Unicode emoji character
+ */
+export function getFeatureIcon(featureText, index = 0) {
+  if (!featureText) {
+    const fallbackIcons = ['📋', '💬', '📍', '✓', '🎯'];
+    return fallbackIcons[index % fallbackIcons.length];
+  }
+  
+  // Use getSmartIcon with Project Hub section context
+  const icon = getSmartIcon({
+    title: featureText,
+    section: 'Project Hub'
+  });
+  
+  // If we got the generic fallback, use cycling icons instead
+  if (icon === '📋') {
+    const fallbackIcons = ['📋', '💬', '📍', '✓', '🎯'];
+    return fallbackIcons[index % fallbackIcons.length];
+  }
+  
+  return icon;
 }
 
 /**
@@ -300,6 +411,7 @@ export function getCategoryColor(category) {
     
     // Groups & Activities
     'sports & exercise': '#388E3C',
+    'sports & recreation': '#388E3C',
     'arts & culture': '#7B1FA2',
     'social & hobbies': '#F57C00',
     'service': '#00796B',
@@ -313,6 +425,11 @@ export function getCategoryColor(category) {
     // History
     'indigenous heritage': '#5D4037',
     'settlement history': '#455A64',
+    
+    // Project Hub
+    'planning': '#1565C0',
+    'governance': '#37474F',
+    'recreation': '#2E7D32',
   };
   
   return categoryColors[category?.toLowerCase()] || '#1B365D'; // Default navy blue
