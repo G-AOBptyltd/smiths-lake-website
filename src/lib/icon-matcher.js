@@ -457,7 +457,6 @@ export function getSmartIcon(item) {
     { keywords: ['coding', 'programming', 'software'], icon: '👨‍💻' },
     { keywords: ['robotics', 'robot'], icon: '🤖' },
     { keywords: ['3d printing', '3d print'], icon: '🖨️' },
-    { keywords: ['virtual reality', 'vr', 'augmented reality', 'ar'], icon: '🥽' },
     { keywords: ['cyber', 'digital safety', 'online safety'], icon: '🔒' },
     
     // ============================================
