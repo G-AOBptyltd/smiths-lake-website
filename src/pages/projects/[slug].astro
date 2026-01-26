@@ -6,13 +6,19 @@
  * - Angled hero with status badge
  * - Breadcrumb navigation
  * - Key Features cards with icons
- * - About/Changes/FAQs tabs
+ * - About/Changes/FAQs tabs (FAQs as accordion)
  * - Document library sidebar (no file sizes)
  * - Project Info with Opens/Closes dates
  * - Submit Feedback button (links to /feedback/)
- * - Subscription form at bottom
  * 
- * @version 4.0 - Matches mockup design
+ * FAQ Format in Notion:
+ * Q: Question text here
+ * A: Answer text here
+ * 
+ * Q: Another question
+ * A: Another answer
+ * 
+ * @version 5.0 - Proper FAQ accordion
  * @updated 26 January 2026
  */
 
@@ -118,10 +124,88 @@ function sanitizeContent(content) {
     .join('\n');
 }
 
+/**
+ * Parse FAQ content into Q&A pairs
+ * Supports format:
+ * Q: Question text
+ * A: Answer text
+ * 
+ * Also supports semicolon format for backwards compatibility:
+ * Q: Question; A: Answer; Q: Question2; A: Answer2
+ */
+function parseFAQs(content) {
+  if (!content) return [];
+  
+  const faqs = [];
+  
+  // First try Q:/A: format with line breaks
+  const qaPairs = content.split(/(?=Q\s*:)/i).filter(pair => pair.trim());
+  
+  for (const pair of qaPairs) {
+    // Match Q: followed by content, then A: followed by content
+    const match = pair.match(/Q\s*:\s*([\s\S]*?)(?:A\s*:\s*([\s\S]*))?$/i);
+    
+    if (match) {
+      const question = match[1]?.trim();
+      let answer = match[2]?.trim() || '';
+      
+      // Clean up answer - remove trailing Q: if present (from next question)
+      answer = answer.replace(/\s*Q\s*:[\s\S]*$/i, '').trim();
+      
+      if (question) {
+        faqs.push({
+          question: escapeHtml(question),
+          answer: escapeHtml(answer)
+        });
+      }
+    }
+  }
+  
+  // If no Q:/A: format found, try semicolon format as fallback
+  if (faqs.length === 0 && content.includes(';')) {
+    const parts = content.split(';').map(p => p.trim()).filter(p => p);
+    
+    for (let i = 0; i < parts.length; i += 2) {
+      const question = parts[i]?.replace(/^Q\s*:\s*/i, '').trim();
+      const answer = parts[i + 1]?.replace(/^A\s*:\s*/i, '').trim() || '';
+      
+      if (question) {
+        faqs.push({
+          question: escapeHtml(question),
+          answer: escapeHtml(answer)
+        });
+      }
+    }
+  }
+  
+  // If still no FAQs, treat entire content as single item
+  if (faqs.length === 0 && content.trim()) {
+    faqs.push({
+      question: 'Information',
+      answer: escapeHtml(content.trim())
+    });
+  }
+  
+  return faqs;
+}
+
+/**
+ * Escape HTML entities
+ */
+function escapeHtml(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // Pre-sanitize content
 const sanitizedAbout = sanitizeContent(project.aboutContent);
 const sanitizedChanges = sanitizeContent(project.changesContent);
-const sanitizedFAQs = sanitizeContent(project.faqsContent);
+const parsedFAQs = parseFAQs(project.faqsContent);
 
 // Feature icons mapping - matches mockup style
 const featureIconMap = {
@@ -129,10 +213,12 @@ const featureIconMap = {
   'reserve': '🏛️',
   'aboriginal': '🏛️',
   'heritage': '🏛️',
+  'indigenous': '🏛️',
   'community': '💬',
   'consultation': '💬',
   'developed': '💬',
   'feedback': '💬',
+  'engagement': '💬',
   'lease': '📍',
   'license': '📍',
   'licence': '📍',
@@ -142,9 +228,13 @@ const featureIconMap = {
   'nature': '🌿',
   'green': '🌿',
   'sustainable': '🌿',
+  'conservation': '🌿',
   'partner': '🤝',
   'collaborate': '🤝',
-  'together': '🤝'
+  'together': '🤝',
+  'safety': '🛡️',
+  'secure': '🛡️',
+  'protect': '🛡️'
 };
 
 // Default icons to cycle through
@@ -305,7 +395,30 @@ function parseFeature(feature) {
             )}
             {hasFAQs && (
               <div class={`tab-content ${initialTab === 'faqs' ? 'active' : ''}`} role="tabpanel" id="panel-faqs" aria-labelledby="tab-faqs" tabindex="0">
-                <div class="content-text" set:html={sanitizedFAQs}></div>
+                <div class="faq-accordion">
+                  <h3 class="faq-title">Frequently Asked Questions</h3>
+                  {parsedFAQs.map((faq, index) => (
+                    <div class="faq-item">
+                      <button 
+                        class="faq-question" 
+                        aria-expanded="false"
+                        aria-controls={`faq-answer-${index}`}
+                        id={`faq-question-${index}`}
+                      >
+                        <span class="faq-question-text">{faq.question}</span>
+                        <span class="faq-icon" aria-hidden="true">▼</span>
+                      </button>
+                      <div 
+                        class="faq-answer" 
+                        id={`faq-answer-${index}`}
+                        aria-labelledby={`faq-question-${index}`}
+                        hidden
+                      >
+                        <p>{faq.answer}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </section>
@@ -758,6 +871,89 @@ function parseFeature(feature) {
   }
 
   /* ========================================
+     FAQ ACCORDION
+     ======================================== */
+  .faq-accordion {
+    margin: 0;
+  }
+
+  .faq-title {
+    font-size: 1.1rem;
+    color: var(--navy-blue);
+    margin: 0 0 1.25rem;
+    font-weight: 700;
+  }
+
+  .faq-item {
+    border: 1px solid var(--light-gray);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+    background: var(--white);
+  }
+
+  .faq-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .faq-question {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: var(--off-white);
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--navy-blue);
+    transition: background 0.2s;
+  }
+
+  .faq-question:hover {
+    background: var(--light-gray);
+  }
+
+  .faq-question[aria-expanded="true"] {
+    background: var(--navy-blue);
+    color: var(--white);
+  }
+
+  .faq-question[aria-expanded="true"] .faq-icon {
+    transform: rotate(180deg);
+  }
+
+  .faq-question-text {
+    flex: 1;
+    padding-right: 1rem;
+  }
+
+  .faq-icon {
+    font-size: 0.75rem;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+
+  .faq-answer {
+    padding: 1.25rem;
+    background: var(--white);
+    border-top: 1px solid var(--light-gray);
+  }
+
+  .faq-answer[hidden] {
+    display: none;
+  }
+
+  .faq-answer p {
+    margin: 0;
+    color: var(--dark-gray);
+    line-height: 1.7;
+  }
+
+  /* ========================================
      DEADLINE BANNER
      ======================================== */
   .deadline-banner {
@@ -1119,7 +1315,7 @@ function parseFeature(feature) {
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .btn, .document-item, .tab, .feature-card { 
+    .btn, .document-item, .tab, .feature-card, .faq-question, .faq-icon { 
       transition: none; 
     }
 
@@ -1154,6 +1350,34 @@ function parseFeature(feature) {
         const targetPanel = document.getElementById(`panel-${tabId}`);
         if (targetPanel) {
           targetPanel.classList.add('active');
+        }
+      });
+    });
+
+    // FAQ accordion functionality
+    const faqQuestions = document.querySelectorAll('.faq-question');
+    
+    faqQuestions.forEach(question => {
+      question.addEventListener('click', () => {
+        const isExpanded = question.getAttribute('aria-expanded') === 'true';
+        const answerId = question.getAttribute('aria-controls');
+        const answer = document.getElementById(answerId);
+        
+        if (isExpanded) {
+          // Close this FAQ
+          question.setAttribute('aria-expanded', 'false');
+          if (answer) answer.hidden = true;
+        } else {
+          // Open this FAQ (optionally close others)
+          // Uncomment below to close others when opening one:
+          // faqQuestions.forEach(q => {
+          //   q.setAttribute('aria-expanded', 'false');
+          //   const a = document.getElementById(q.getAttribute('aria-controls'));
+          //   if (a) a.hidden = true;
+          // });
+          
+          question.setAttribute('aria-expanded', 'true');
+          if (answer) answer.hidden = false;
         }
       });
     });
