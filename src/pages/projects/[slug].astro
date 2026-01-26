@@ -845,13 +845,13 @@ const sanitizedFAQs = sanitizeContent(project.faqsContent);
   .document-icon { font-size: 1.75rem; flex-shrink: 0; }
   .document-info { flex: 1; min-width: 0; }
   .document-title {
-    display: block;
-    font-weight: 600;
-    color: var(--navy-blue);
-    margin-bottom: 0.25rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  display: block;
+  font-weight: 600;
+  color: var(--navy-blue);
+  margin-bottom: 0.25rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
   }
   .document-meta { font-size: 0.8rem; color: var(--medium-gray); }
   .document-link {
