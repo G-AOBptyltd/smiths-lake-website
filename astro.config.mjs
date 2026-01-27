@@ -1,16 +1,10 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 
+// https://astro.build/config
 export default defineConfig({
   site: 'https://villagefirst.org.au',
-  integrations: [
-    sitemap({
-      filter: (page) => {
-        // Exclude the manual sitemap page from XML sitemap
-        return !page.includes('/sitemap/');
-      }
-    })
-  ],
+  integrations: [sitemap()],
   output: 'static',
   build: {
     format: 'directory'
