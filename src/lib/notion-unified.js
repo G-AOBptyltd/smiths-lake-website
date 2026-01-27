@@ -201,7 +201,7 @@ export async function fetchNotionContent(filters = {}) {
     const filterConditions = [];
     
     // Filter by "Status on Web" (default: only show "Published" items)
-    if (filters.requireShowOnWebsite !== false) {
+    if (filters.requireShowOnWebsite !== true) {
       filterConditions.push({
         property: 'Status on Web',
         select: {
