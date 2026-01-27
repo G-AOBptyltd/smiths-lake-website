@@ -1,17 +1,15 @@
 ---
 /**
- * Feedback Form Page - FIXED VERSION
+ * Feedback Form Page
  * Accepts general community feedback and project-specific feedback
- * 
- * CRITICAL FIX: Ensures all submissions use consistent field names
- * - project: Always uses 'project' field name
- * - category: Always uses 'category' field name
- * - priority: Values now match Notion Select options exactly (High/Medium/Low)
  * 
  * URL Parameters:
  * - project: Pre-fills the project field when linked from Project Hub
  * 
- * @updated 27 January 2026 - Fixed field mapping for Zapier integration
+ * Note: Uses client-side JS to read URL params since Astro static builds
+ * don't have access to runtime URL parameters
+ * 
+ * @updated 26 January 2026
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
@@ -70,26 +68,21 @@ import Hero from '../components/Hero.astro';
           <label>Don't fill this out: <input name="bot-field" /></label>
         </p>
         
-        <!-- Project field - ALWAYS uses name="project" regardless of source -->
+        <!-- Project field - shown via JS when ?project= parameter exists -->
         <div id="project-field-group" class="form-group" style="display: none;">
-          <label for="project-visible" class="form-label">Related Project</label>
+          <label for="project" class="form-label">Related Project</label>
           <input 
             type="text" 
-            id="project-visible" 
+            id="project" 
             name="project" 
             class="form-input form-input--readonly" 
-            value=""
+            value="General Feedback"
             readonly
           />
         </div>
         
-        <!-- Hidden project field for general feedback - ALSO uses name="project" -->
-        <input 
-          type="hidden" 
-          id="project-hidden" 
-          name="project" 
-          value="General Feedback" 
-        />
+        <!-- Hidden project field for non-project feedback (default) -->
+        <input type="hidden" id="project-hidden" name="project-default" value="General Feedback" />
         
         <div class="form-row">
           <div class="form-group">
@@ -119,31 +112,25 @@ import Hero from '../components/Hero.astro';
           </div>
         </div>
         
-        <!-- Category dropdown - shown for general feedback -->
+        <!-- Category dropdown - hidden via JS when project parameter exists -->
         <div id="category-group" class="form-group">
-          <label for="category-visible" class="form-label form-label--required">Category</label>
-          <select id="category-visible" name="category" class="form-select" required>
+          <label for="category" class="form-label form-label--required">Category</label>
+          <select id="category" name="category" class="form-select" required>
             <option value="">Please select...</option>
-            <option value="Project Hub">Community Project</option>
-            <option value="Services">Services & Amenities</option>
-            <option value="Environment">Environment & Conservation</option>
-            <option value="Safety">Safety & Emergency</option>
-            <option value="Groups">Groups & Activities</option>
-            <option value="Infrastructure">Roads & Infrastructure</option>
-            <option value="Council">Council Submission Idea</option>
-            <option value="Website">Website Feedback</option>
-            <option value="Other">Other</option>
+            <option value="project-hub">Community Project</option>
+            <option value="services">Services & Amenities</option>
+            <option value="environment">Environment & Conservation</option>
+            <option value="safety">Safety & Emergency</option>
+            <option value="groups">Groups & Activities</option>
+            <option value="infrastructure">Roads & Infrastructure</option>
+            <option value="council">Council Submission Idea</option>
+            <option value="website">Website Feedback</option>
+            <option value="other">Other</option>
           </select>
         </div>
         
-        <!-- Hidden category for project feedback - ALSO uses name="category" -->
-        <input 
-          type="hidden" 
-          id="category-hidden" 
-          name="category" 
-          value="Project Hub" 
-          disabled 
-        />
+        <!-- Hidden category for project feedback -->
+        <input type="hidden" id="category-hidden" name="category-default" value="" disabled />
         
         <div class="form-group">
           <label for="title" class="form-label form-label--required">Feedback Title</label>
@@ -173,9 +160,9 @@ import Hero from '../components/Hero.astro';
           <label for="priority" class="form-label">How important is this to you?</label>
           <select id="priority" name="priority" class="form-select">
             <option value="">Please select...</option>
-            <option value="High">Very Important - Needs urgent attention</option>
-            <option value="Medium">Important - Should be addressed</option>
-            <option value="Low">Nice to Have - When resources allow</option>
+            <option value="high">Very Important - Needs urgent attention</option>
+            <option value="medium">Important - Should be addressed</option>
+            <option value="low">Nice to Have - When resources allow</option>
           </select>
         </div>
         
@@ -463,35 +450,35 @@ import Hero from '../components/Hero.astro';
         generalIntro.style.display = 'none';
       }
       
-      // Show visible project field and populate it
+      // Show and populate project field
       const projectFieldGroup = document.getElementById('project-field-group');
-      const projectVisible = document.getElementById('project-visible');
-      if (projectFieldGroup && projectVisible) {
+      const projectInput = document.getElementById('project');
+      if (projectFieldGroup && projectInput) {
         projectFieldGroup.style.display = 'block';
-        projectVisible.value = projectName;
+        projectInput.value = projectName;
+        projectInput.name = 'project'; // Ensure it's named correctly for form submission
       }
       
-      // Disable the hidden default project field (prevents dual submission)
+      // Disable the hidden default project field
       const projectHidden = document.getElementById('project-hidden');
       if (projectHidden) {
         projectHidden.disabled = true;
       }
       
-      // Hide category dropdown and enable hidden category field
+      // Hide category dropdown and set hidden category value
       const categoryGroup = document.getElementById('category-group');
-      const categoryVisible = document.getElementById('category-visible');
+      const categorySelect = document.getElementById('category');
       const categoryHidden = document.getElementById('category-hidden');
       
-      if (categoryGroup && categoryVisible && categoryHidden) {
-        // Hide the dropdown
+      if (categoryGroup && categorySelect && categoryHidden) {
         categoryGroup.style.display = 'none';
+        categorySelect.removeAttribute('required');
+        categorySelect.disabled = true;
+        categorySelect.name = 'category-disabled';
         
-        // Disable the visible select (prevents it from submitting)
-        categoryVisible.disabled = true;
-        categoryVisible.removeAttribute('required');
-        
-        // Enable the hidden field (will submit with value "Project Hub")
         categoryHidden.disabled = false;
+        categoryHidden.name = 'category';
+        categoryHidden.value = 'project-hub';
       }
       
       // Update placeholder text
@@ -524,17 +511,6 @@ import Hero from '../components/Hero.astro';
       
       // Update page title
       document.title = `Feedback: ${projectName} | Smiths Lake Village`;
-    } else {
-      // General feedback mode - ensure visible fields are enabled
-      const projectHidden = document.getElementById('project-hidden');
-      if (projectHidden) {
-        projectHidden.disabled = false;  // This will submit "General Feedback"
-      }
-      
-      const categoryHidden = document.getElementById('category-hidden');
-      if (categoryHidden) {
-        categoryHidden.disabled = true;  // Prevent project category from submitting
-      }
     }
   });
 </script>
