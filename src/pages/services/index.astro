@@ -1,25 +1,33 @@
 ---
-// Services Index Page - UPDATED 2026-01-21
-// Updated for Status on Web and Status/Stage/Phase fields
+// Services Index Page - FIXED 2026-01-27
+// FIXED: Removed requireShowOnWebsite parameter (property doesn't exist in Notion)
 import Layout from '../../layouts/BaseLayout.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 import { getSmartIcon } from '../../lib/icon-matcher.js';
 
 // Fetch Services items
-// ✅ UPDATED: fetchNotionContent now filters by Status on Web = "Published" automatically
+// ✅ FIXED: Removed requireShowOnWebsite - using Status on Web filtering only
 const items = await fetchNotionContent({ 
-  section: 'Services',
-  requireShowOnWebsite: true
+  section: 'Services'
+  // REMOVED: requireShowOnWebsite: true (property doesn't exist)
 });
 
-// ✅ REMOVED: No longer filtering by status values
-// All items with Status on Web = "Published" will display
+// Filter to only show published items (Status on Web = "Published")
+// This filtering should already be done by fetchNotionContent, but adding safety check
+const publishedItems = items.filter(item => {
+  // If item has statusOnWeb property, check it
+  if (item.statusOnWeb) {
+    return item.statusOnWeb === 'Published';
+  }
+  // Otherwise include all items (backward compatibility)
+  return true;
+});
 
 // Group by service type
-const amenities = items.filter(item =>
+const amenities = publishedItems.filter(item =>
   item.serviceType === 'Amenity' || item.category === 'Amenities'
 );
-const projects = items.filter(item =>
+const projects = publishedItems.filter(item =>
   item.serviceType !== 'Amenity' && item.category !== 'Amenities'
 );
 ---
@@ -173,8 +181,6 @@ const projects = items.filter(item =>
     }
 
     .badge.category { background: #DBEAFE; color: #1E40AF; }
-    
-    /* ✅ UPDATED: Generic status badge styling (all statuses shown) */
     .badge.status { background: #DBEAFE; color: #1E40AF; }
 
     .card-body {
@@ -332,7 +338,7 @@ const projects = items.filter(item =>
                              options.includes('Green Header') ? 'green' :
                              options.includes('Orange Header') ? 'orange' :
                              options.includes('Purple Header') ? 'purple' :
-                             options.includes('Gray Header') ? 'gray' : 'blue', // Default to section color
+                             options.includes('Gray Header') ? 'gray' : 'blue',
                 showSource: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Source'),
                 showPeople: template === 'Detailed' || template === 'Featured' || options.includes('Show People'),
                 showUpdated: template === 'Rich' || template === 'Detailed' || template === 'Featured' || options.includes('Show Updated Date'),
@@ -349,7 +355,7 @@ const projects = items.filter(item =>
                   
                   {config.showIconHeader && (
                     <div class={`card-icon-header ${config.headerColor}`}>
-                      <span class="icon-display">{getSmartIcon(group)}</span>
+                      <span class="icon-display">{getSmartIcon({section: 'Services', category: item.category})}</span>
                     </div>
                   )}
 
@@ -359,7 +365,6 @@ const projects = items.filter(item =>
                       {item.category && (
                         <span class="badge category">{item.category}</span>
                       )}
-                      {/* ✅ UPDATED: Display ALL status values from Status / Stage / Phase array */}
                       {Array.isArray(item.status) && item.status.length > 0 && (
                         config.showAllStatuses ? 
                           item.status.map(s => (
@@ -400,7 +405,7 @@ const projects = items.filter(item =>
 
                         {item.contactPhone && item.showContactPublicly === 'TRUE' && (
                           <div class="meta-row">
-                            <span class="meta-icon">{getSmartIcon(group)}</span>
+                            <span class="meta-icon">📞</span>
                             <span><a href={`tel:${item.contactPhone}`}>{item.contactPhone}</a></span>
                           </div>
                         )}
@@ -414,21 +419,21 @@ const projects = items.filter(item =>
 
                         {config.showSource && item.sourceAttribution && (
                           <div class="meta-row">
-                            <span class="meta-icon">{getSmartIcon(group)}</span>
+                            <span class="meta-icon">📄</span>
                             <span><span class="meta-label">Source:</span> {item.sourceAttribution}</span>
                           </div>
                         )}
 
                         {config.showPeople && item.relatedPeople && (
                           <div class="meta-row">
-                            <span class="meta-icon">{getSmartIcon(group)}</span>
+                            <span class="meta-icon">👥</span>
                             <span><span class="meta-label">People:</span> {item.relatedPeople}</span>
                           </div>
                         )}
 
                         {config.showUpdated && item.lastEditedTime && (
                           <div class="meta-row">
-                            <span class="meta-icon">{getSmartIcon(group)}</span>
+                            <span class="meta-icon">🕐</span>
                             <span><span class="meta-label">Updated:</span> {new Date(item.lastEditedTime).toLocaleDateString('en-AU')}</span>
                           </div>
                         )}
@@ -471,11 +476,9 @@ const projects = items.filter(item =>
 
           <div class="services-grid">
             {projects.map(item => {
-              // Determine card template and options
               const template = item.cardTemplate || 'Standard';
               const options = item.cardOptions || [];
               
-              // Build configuration
               const config = {
                 showIconHeader: options.includes('Show Icon Header'),
                 headerColor: options.includes('Red Header') ? 'red' :
@@ -508,7 +511,6 @@ const projects = items.filter(item =>
                       {item.category && (
                         <span class="badge category">{item.category}</span>
                       )}
-                      {/* ✅ UPDATED: Display ALL status values from Status / Stage / Phase array */}
                       {Array.isArray(item.status) && item.status.length > 0 && (
                         config.showAllStatuses ? 
                           item.status.map(s => (
@@ -528,21 +530,21 @@ const projects = items.filter(item =>
                       <div class="card-metadata">
                         {config.showSource && item.sourceAttribution && (
                           <div class="meta-row">
-                            <span class="meta-icon">{getSmartIcon(group)}</span>
+                            <span class="meta-icon">📄</span>
                             <span><span class="meta-label">Source:</span> {item.sourceAttribution}</span>
                           </div>
                         )}
 
                         {config.showPeople && item.relatedPeople && (
                           <div class="meta-row">
-                            <span class="meta-icon">{getSmartIcon(group)}</span>
+                            <span class="meta-icon">👥</span>
                             <span><span class="meta-label">People:</span> {item.relatedPeople}</span>
                           </div>
                         )}
 
                         {config.showUpdated && item.lastEditedTime && (
                           <div class="meta-row">
-                            <span class="meta-icon">{getSmartIcon(group)}</span>
+                            <span class="meta-icon">🕐</span>
                             <span><span class="meta-label">Updated:</span> {new Date(item.lastEditedTime).toLocaleDateString('en-AU')}</span>
                           </div>
                         )}
