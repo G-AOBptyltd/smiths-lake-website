@@ -1,6 +1,9 @@
 // Unified Notion Library for PPCA Website
 // Fetches content from single unified database with proper field handling
-// UPDATED 2026-01-28: FIXED - Corrected requireShowOnWebsite filter logic + default parameter
+// UPDATED 2026-01-28: COMPLETE FIX - Checks BOTH Show on Website AND Status on Web
+// - Fixed inverted requireShowOnWebsite logic (line 213)
+// - Added OR condition to check both legacy and new status fields
+// - Fixed fetchItemsBySection to pass requireShowOnWebsite parameter
 
 import { Client } from '@notionhq/client';
 import fs from 'fs';
@@ -110,6 +113,7 @@ function parseNotionPage(page) {
     
     // Status fields
     statusOnWeb: statusOnWeb,
+    showOnWebsite: parseProperty(props['Show on Website']), // Keep legacy field for compatibility
     status: statusStagePhase,
     
     slug: parseProperty(props.Slug),
@@ -200,15 +204,26 @@ export async function fetchNotionContent(filters = {}) {
     // Build filter conditions dynamically
     const filterConditions = [];
     
-    // FIXED: Filter by "Status on Web" when explicitly requested
-    // Logic: requireShowOnWebsite === true → Filter for "Published" only
-    //        requireShowOnWebsite === false or undefined → No filter (show all)
+    // FIXED: Filter by BOTH "Status on Web" AND "Show on Website" (legacy)
+    // Logic: requireShowOnWebsite === true → Filter for Published items
+    //        Checks BOTH new field (Status on Web = Published) OR legacy field (Show on Website = TRUE)
+    //        This ensures backward compatibility during migration period
     if (filters.requireShowOnWebsite === true) {
       filterConditions.push({
-        property: 'Status on Web',
-        select: {
-          equals: 'Published',
-        },
+        or: [
+          {
+            property: 'Status on Web',
+            select: {
+              equals: 'Published',
+            },
+          },
+          {
+            property: 'Show on Website',
+            select: {
+              equals: 'TRUE',
+            },
+          }
+        ]
       });
     }
 
@@ -278,7 +293,7 @@ export async function fetchNotionContent(filters = {}) {
 
       let data = cached.data || [];
       
-      // Apply filters to cached data (FIXED: same logic as above)
+      // Apply filters to cached data (FIXED: check both fields)
       if (filters.section) {
         data = data.filter((item) => item.section === filters.section);
       }
@@ -286,7 +301,9 @@ export async function fetchNotionContent(filters = {}) {
         data = data.filter((item) => item.category === filters.category);
       }
       if (filters.requireShowOnWebsite === true) {
-        data = data.filter((item) => item.statusOnWeb === 'Published');
+        data = data.filter((item) => 
+          item.statusOnWeb === 'Published' || item.showOnWebsite === 'TRUE'
+        );
       }
 
       return data;
@@ -299,9 +316,10 @@ export async function fetchNotionContent(filters = {}) {
 /**
  * Fetch items by section
  * UPDATED: Now filters for Published items by default
+ * Checks BOTH "Status on Web" AND "Show on Website" for compatibility
  * 
  * @param {string} sectionName - The section to filter by
- * @param {boolean} requireShowOnWebsite - Whether to filter by "Published" status (default: true)
+ * @param {boolean} requireShowOnWebsite - Whether to filter by Published status (default: true)
  * @returns {Promise<Array>} Array of items from the section
  */
 export async function fetchItemsBySection(sectionName, requireShowOnWebsite = true) {
@@ -314,10 +332,11 @@ export async function fetchItemsBySection(sectionName, requireShowOnWebsite = tr
 /**
  * Fetch items by section and category
  * UPDATED: Now filters for Published items by default
+ * Checks BOTH "Status on Web" AND "Show on Website" for compatibility
  * 
  * @param {string} sectionName - The section to filter by
  * @param {string} categoryName - The category to filter by
- * @param {boolean} requireShowOnWebsite - Whether to filter by "Published" status (default: true)
+ * @param {boolean} requireShowOnWebsite - Whether to filter by Published status (default: true)
  * @returns {Promise<Array>} Array of items matching section and category
  */
 export async function fetchItemsBySectionAndCategory(sectionName, categoryName, requireShowOnWebsite = true) {
