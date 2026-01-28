@@ -1,134 +1,198 @@
 ---
-interface Props {
-  title: string;
-  description: string;
-  href: string;
-  icon: string;
-  variant?: 'default' | 'emergency';
-}
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import QuickInfo from '../components/QuickInfo.astro';
+import SectionCard from '../components/SectionCard.astro';
+import NewsItem from '../components/NewsItem.astro';
 
-const { title, description, href, icon, variant = 'default' } = Astro.props;
+const quickInfoItems = [
+  { value: '~1,300', label: 'Permanent Residents' },
+  { value: 'Great Lakes', label: 'NSW Region' },
+  { value: 'MidCoast', label: 'Local Council' },
+  { value: 'PPCA', label: 'Community Association' },
+];
 
-// Icon mapping (keeping your existing icons)
-const icons: Record<string, string> = {
-  about: `<path d="M24 4L4 20h6v20h28V20h6L24 4z" stroke="currentColor" stroke-width="2" fill="none"/>
-          <rect x="18" y="28" width="12" height="12" stroke="currentColor" stroke-width="2"/>`,
-  emergency: `<path d="M24 4L4 44h40L24 4z" stroke="currentColor" stroke-width="2" fill="none"/>
-              <line x1="24" y1="18" x2="24" y2="30" stroke="currentColor" stroke-width="3"/>
-              <circle cx="24" cy="36" r="2" fill="currentColor"/>`,
-  services: `<circle cx="24" cy="14" r="8" stroke="currentColor" stroke-width="2" fill="none"/>
-             <path d="M10 40c0-8 6-14 14-14s14 6 14 14" stroke="currentColor" stroke-width="2" fill="none"/>
-             <circle cx="36" cy="32" r="6" stroke="currentColor" stroke-width="2" fill="none"/>
-             <line x1="36" y1="29" x2="36" y2="35" stroke="currentColor" stroke-width="2"/>
-             <line x1="33" y1="32" x2="39" y2="32" stroke="currentColor" stroke-width="2"/>`,
-  groups: `<circle cx="16" cy="14" r="6" stroke="currentColor" stroke-width="2" fill="none"/>
-           <circle cx="32" cy="14" r="6" stroke="currentColor" stroke-width="2" fill="none"/>
-           <path d="M4 36c0-6 5-11 12-11s12 5 12 11" stroke="currentColor" stroke-width="2" fill="none"/>
-           <path d="M20 36c0-6 5-11 12-11s12 5 12 11" stroke="currentColor" stroke-width="2" fill="none"/>`,
-  environment: `<path d="M24 44V24" stroke="currentColor" stroke-width="2"/>
-                <path d="M24 24c-8-8-8-16 0-20 8 4 8 12 0 20z" stroke="currentColor" stroke-width="2" fill="none"/>
-                <path d="M16 36c-4 0-8-4-8-8 0-6 8-8 16-8" stroke="currentColor" stroke-width="2" fill="none"/>
-                <path d="M32 36c4 0 8-4 8-8 0-6-8-8-16-8" stroke="currentColor" stroke-width="2" fill="none"/>`,
-  history: `<circle cx="24" cy="24" r="18" stroke="currentColor" stroke-width="2" fill="none"/>
-            <line x1="24" y1="12" x2="24" y2="24" stroke="currentColor" stroke-width="2"/>
-            <line x1="24" y1="24" x2="32" y2="28" stroke="currentColor" stroke-width="2"/>
-            <circle cx="24" cy="24" r="3" fill="currentColor"/>`,
-};
+// Sections reordered to match new navigation menu
+// Order: About Us → Project Hub → Environment → Services → Groups & Activities → History → Emergency & Safety
+const sections = [
+  {
+    title: 'About Us',
+    description: 'Learn about Smiths Lake Village, PPCA, our community plans, local demographics, and what makes our coastal community special.',
+    href: '/about/',
+    icon: 'about',
+  },
+  {
+    title: 'Project Hub',
+    description: 'Have your say on community projects. View current consultations, download documents, and submit feedback on initiatives affecting our village.',
+    href: '/projects/',
+    icon: 'projects',
+  },
+  {
+    title: 'Environment & Conservation',
+    description: 'Lake health monitoring, green space management, conservation initiatives, and environmental programs protecting our natural assets.',
+    href: '/environment/',
+    icon: 'environment',
+  },
+  {
+    title: 'Services & Amenities',
+    description: 'Medical services, existing amenities, and current developing projects including the Fire Station and Recreation Reserve.',
+    href: '/services/',
+    icon: 'services',
+  },
+  {
+    title: 'Groups & Activities',
+    description: 'Join our vibrant community groups including arts, fishing, gardening, and sporting clubs. Find volunteering opportunities.',
+    href: '/groups/',
+    icon: 'groups',
+  },
+  {
+    title: 'History & Culture',
+    description: 'Discover the rich history of Smiths Lake Village, the Worimi people\'s connection to country, and our local cultural heritage.',
+    href: '/history/',
+    icon: 'history',
+  },
+  {
+    title: 'Emergency & Safety',
+    description: 'Critical emergency contacts, evacuation plans, Bushfire Brigade, Surf Life Saving, and safety resources for our community.',
+    href: '/emergency/',
+    icon: 'emergency',
+    variant: 'emergency' as const,
+  },
+];
+
+const newsItems = [
+  {
+    title: 'Summer Fire Season Reminder',
+    date: new Date('2025-12-01'),
+    excerpt: 'Review your bushfire survival plan and ensure your property is prepared. Check our emergency section for evacuation routes.',
+    href: '/emergency/',
+  },
+  {
+    title: 'Community Website Launch',
+    date: new Date('2025-11-15'),
+    excerpt: 'Welcome to our new community website! Access community documents, services, and stay connected with local news and updates.',
+    href: '/about/',
+  },
+  {
+    title: 'Open Spaces & Recreation Strategy',
+    date: new Date('2025-11-01'),
+    excerpt: 'The community\'s submission to MidCoast Council on open spaces and foreshore trails continues to progress through council review.',
+    href: '/services/',
+  },
+];
 ---
 
-<article class={`section-card ${variant === 'emergency' ? 'section-card--emergency' : ''}`}>
-  <a href={href} class="section-card__link-wrapper">
-    <div class="section-card__icon">
-      <svg viewBox="0 0 48 48" fill="none" aria-hidden="true" set:html={icons[icon] || icons.about} />
+<BaseLayout title="Home">
+  <Hero 
+    title="Welcome to Smiths Lake Village"
+    subtitle="A vibrant coastal community in the heart of Pacific Palms, NSW. Discover our pristine lake, native bushland, and welcoming neighbourhood."
+    size="large"
+  />
+  
+  <QuickInfo items={quickInfoItems} />
+  
+  <!-- Main Sections Grid -->
+  <section class="section bg-off-white" aria-labelledby="explore-heading">
+    <div class="container">
+      <h2 id="explore-heading" class="text-center mb-8">Explore Our Community</h2>
+      <div class="sections-grid">
+        {sections.map((section) => (
+          <SectionCard 
+            title={section.title}
+            description={section.description}
+            href={section.href}
+            icon={section.icon}
+            variant={section.variant}
+          />
+        ))}
+      </div>
     </div>
-    <div class="section-card__content">
-      <h3 class="section-card__title">{title}</h3>
-      <p class="section-card__description">{description}</p>
-      <span class="section-card__cta" aria-hidden="true">
-        Learn more →
-      </span>
-      <span class="sr-only">Learn more about {title}</span>
+  </section>
+  
+  <!-- Latest Updates -->
+  <section class="section" aria-labelledby="news-heading">
+    <div class="container">
+      <h2 id="news-heading" class="text-center mb-8">Latest Updates</h2>
+      <div class="news-grid">
+        {newsItems.map((item) => (
+          <NewsItem 
+            title={item.title}
+            date={item.date}
+            excerpt={item.excerpt}
+            href={item.href}
+          />
+        ))}
+      </div>
+      <p class="text-center mt-8">
+        <a href="/news/" class="btn btn--outline">View All Updates</a>
+      </p>
     </div>
-  </a>
-</article>
+  </section>
+  
+  <!-- Call to Action -->
+  <section class="cta-section">
+    <div class="container">
+      <div class="cta-content">
+        <h2 class="cta-title">Stay Connected</h2>
+        <p class="cta-text">
+          Subscribe to our newsletter for community updates, events, and important announcements.
+        </p>
+        <a href="/newsletter/" class="btn btn--primary btn--lg">Sign Up for Newsletter</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
 
 <style>
-  .section-card {
-    background-color: var(--color-white);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-md);
-    overflow: hidden;
-    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
-    border-top: 4px solid var(--color-sky);
-    position: relative;
+  .sections-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: var(--space-6);
   }
   
-  .section-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
+  @media (min-width: 640px) {
+    .sections-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
   
-  .section-card--emergency {
-    border-top-color: var(--color-error);
+  @media (min-width: 1024px) {
+    .sections-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
   
-  /* Make the entire card clickable */
-  .section-card__link-wrapper {
-    display: block;
-    text-decoration: none;
-    color: inherit;
+  .news-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: var(--space-8);
   }
   
-  .section-card__link-wrapper:focus-visible {
-    outline: 3px solid var(--color-golden);
-    outline-offset: 2px;
+  @media (min-width: 768px) {
+    .news-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
   
-  .section-card__icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-8);
+  .cta-section {
     background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
+    padding: var(--space-16) 0;
+  }
+  
+  .cta-content {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  .cta-title {
     color: var(--color-white);
-  }
-  
-  .section-card--emergency .section-card__icon {
-    background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
-  }
-  
-  .section-card__icon svg {
-    width: 48px;
-    height: 48px;
-  }
-  
-  .section-card__content {
-    padding: var(--space-6);
-  }
-  
-  .section-card__title {
-    font-size: var(--text-xl);
-    margin-bottom: var(--space-3);
-    color: var(--color-navy);
-  }
-  
-  .section-card__description {
-    color: var(--color-gray-600);
     margin-bottom: var(--space-4);
-    font-size: var(--text-base);
   }
   
-  .section-card__cta {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    color: var(--color-golden-dark);
-    font-weight: 600;
-    font-size: var(--text-base);
-    transition: color var(--transition-fast);
-  }
-  
-  .section-card__link-wrapper:hover .section-card__cta {
-    color: var(--color-golden);
+  .cta-text {
+    color: var(--color-gray-200);
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-8);
   }
 </style>
