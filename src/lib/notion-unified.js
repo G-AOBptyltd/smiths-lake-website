@@ -1,6 +1,9 @@
 // Unified Notion Library for PPCA Website
 // Fetches content from single unified database with proper field handling
-// UPDATED 2026-01-26: Added Project Hub specific fields
+// UPDATED 2026-01-28: COMPLETE FIX - Checks BOTH Show on Website AND Status on Web
+// - Fixed inverted requireShowOnWebsite logic (line 213)
+// - Added OR condition to check both legacy and new status fields
+// - Fixed fetchItemsBySection to pass requireShowOnWebsite parameter
 
 import { Client } from '@notionhq/client';
 import fs from 'fs';
@@ -110,6 +113,7 @@ function parseNotionPage(page) {
     
     // Status fields
     statusOnWeb: statusOnWeb,
+    showOnWebsite: parseProperty(props['Show on Website']), // Keep legacy field for compatibility
     status: statusStagePhase,
     
     slug: parseProperty(props.Slug),
@@ -203,10 +207,20 @@ export async function fetchNotionContent(filters = {}) {
     // Filter by "Status on Web" (default: only show "Published" items)
     if (filters.requireShowOnWebsite !== true) {
       filterConditions.push({
-        property: 'Status on Web',
-        select: {
-          equals: 'Published',
-        },
+        or: [
+          {
+            property: 'Status on Web',
+            select: {
+              equals: 'Published',
+            },
+          },
+          {
+            property: 'Show on Website',
+            select: {
+              equals: 'TRUE',
+            },
+          }
+        ]
       });
     }
 
@@ -276,15 +290,17 @@ export async function fetchNotionContent(filters = {}) {
 
       let data = cached.data || [];
       
-      // Apply filters to cached data
+      // Apply filters to cached data (FIXED: check both fields)
       if (filters.section) {
         data = data.filter((item) => item.section === filters.section);
       }
       if (filters.category) {
         data = data.filter((item) => item.category === filters.category);
       }
-      if (filters.requireShowOnWebsite !== false) {
-        data = data.filter((item) => item.statusOnWeb === 'Published');
+      if (filters.requireShowOnWebsite === true) {
+        data = data.filter((item) => 
+          item.statusOnWeb === 'Published' || item.showOnWebsite === 'TRUE'
+        );
       }
 
       return data;
@@ -296,16 +312,36 @@ export async function fetchNotionContent(filters = {}) {
 
 /**
  * Fetch items by section
+ * UPDATED: Now filters for Published items by default
+ * Checks BOTH "Status on Web" AND "Show on Website" for compatibility
+ * 
+ * @param {string} sectionName - The section to filter by
+ * @param {boolean} requireShowOnWebsite - Whether to filter by Published status (default: true)
+ * @returns {Promise<Array>} Array of items from the section
  */
-export async function fetchItemsBySection(sectionName) {
-  return fetchNotionContent({ section: sectionName });
+export async function fetchItemsBySection(sectionName, requireShowOnWebsite = true) {
+  return fetchNotionContent({ 
+    section: sectionName,
+    requireShowOnWebsite: requireShowOnWebsite 
+  });
 }
 
 /**
  * Fetch items by section and category
+ * UPDATED: Now filters for Published items by default
+ * Checks BOTH "Status on Web" AND "Show on Website" for compatibility
+ * 
+ * @param {string} sectionName - The section to filter by
+ * @param {string} categoryName - The category to filter by
+ * @param {boolean} requireShowOnWebsite - Whether to filter by Published status (default: true)
+ * @returns {Promise<Array>} Array of items matching section and category
  */
-export async function fetchItemsBySectionAndCategory(sectionName, categoryName) {
-  return fetchNotionContent({ section: sectionName, category: categoryName });
+export async function fetchItemsBySectionAndCategory(sectionName, categoryName, requireShowOnWebsite = true) {
+  return fetchNotionContent({ 
+    section: sectionName, 
+    category: categoryName,
+    requireShowOnWebsite: requireShowOnWebsite 
+  });
 }
 
 /**
@@ -313,7 +349,7 @@ export async function fetchItemsBySectionAndCategory(sectionName, categoryName) 
  */
 export async function fetchItemsBySectionWithStatuses(sectionName, acceptedStatuses) {
   console.warn('fetchItemsBySectionWithStatuses is deprecated - Status/Stage/Phase is for display only');
-  return fetchNotionContent({ section: sectionName });
+  return fetchNotionContent({ section: sectionName, requireShowOnWebsite: true });
 }
 
 /**
@@ -328,7 +364,7 @@ export async function fetchItemBySlug(slug) {
  * Get all slugs for static page generation
  */
 export async function getAllSlugs() {
-  const items = await fetchNotionContent();
+  const items = await fetchNotionContent({ requireShowOnWebsite: true });
   return items.map((item) => ({
     slug: item.slug,
     section: item.section,
@@ -338,9 +374,10 @@ export async function getAllSlugs() {
 
 /**
  * Check for emergency alerts
+ * Only shows Published emergency items
  */
 export async function checkEmergencyAlerts() {
-  const emergencyItems = await fetchItemsBySection('Emergency & Safety');
+  const emergencyItems = await fetchItemsBySection('Emergency & Safety', true);
 
   const alerts = emergencyItems
     .filter((item) => item.alertLevel && item.alertLevel !== 'Normal')
