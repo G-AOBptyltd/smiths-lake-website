@@ -1,6 +1,6 @@
 // Unified Notion Library for PPCA Website
 // Fetches content from single unified database with proper field handling
-// UPDATED 2026-01-26: Added Project Hub specific fields
+// UPDATED 2026-01-28: FIXED - Corrected requireShowOnWebsite filter logic (was inverted)
 
 import { Client } from '@notionhq/client';
 import fs from 'fs';
@@ -200,8 +200,10 @@ export async function fetchNotionContent(filters = {}) {
     // Build filter conditions dynamically
     const filterConditions = [];
     
-    // Filter by "Status on Web" (default: only show "Published" items)
-    if (filters.requireShowOnWebsite !== false) {
+    // FIXED: Filter by "Status on Web" when explicitly requested
+    // Logic: requireShowOnWebsite === true → Filter for "Published" only
+    //        requireShowOnWebsite === false or undefined → No filter (show all)
+    if (filters.requireShowOnWebsite === true) {
       filterConditions.push({
         property: 'Status on Web',
         select: {
@@ -276,14 +278,14 @@ export async function fetchNotionContent(filters = {}) {
 
       let data = cached.data || [];
       
-      // Apply filters to cached data
+      // Apply filters to cached data (FIXED: same logic as above)
       if (filters.section) {
         data = data.filter((item) => item.section === filters.section);
       }
       if (filters.category) {
         data = data.filter((item) => item.category === filters.category);
       }
-      if (filters.requireShowOnWebsite !== false) {
+      if (filters.requireShowOnWebsite === true) {
         data = data.filter((item) => item.statusOnWeb === 'Published');
       }
 
