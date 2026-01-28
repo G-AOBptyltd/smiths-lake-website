@@ -15,13 +15,12 @@ const items = await fetchNotionContent({
 // ✅ REMOVED: No longer filtering by status values
 // All items with Status on Web = "Published" will display
 
-// Category emoji mapping
+// Category emoji mapping - FIXED 2026-01-28 to match actual Notion values
 const categoryEmojis = {
-  'Sports & Exercise': '⚽',
+  'Sports & Recreation': '⚽',  // FIXED: Was 'Sports & Exercise'
   'Art & Culture': '🎨',
   'Social & Hobbies': '☕',
-  'Hobbies': '🌱',
-  'Service': '🤝',
+  'Community Project': '🤝',    // FIXED: Was 'Service'
 };
 
 // Helper: Format meeting schedule
@@ -54,13 +53,12 @@ function formatMeetingSchedule(group) {
   return parts.join(' ');
 }
 
-// Build section groups
+// Build section groups - FIXED 2026-01-28 to match actual Notion category values
 const categoryDefs = [
-  { key: 'Sports & Exercise', title: 'Sports & Recreation' },
+  { key: 'Sports & Recreation', title: 'Sports & Recreation' },  // FIXED: Was 'Sports & Exercise'
   { key: 'Art & Culture', title: 'Arts & Culture' },
   { key: 'Social & Hobbies', title: 'Social & Community' },
-  { key: 'Hobbies', title: 'Hobbies & Interests' },
-  { key: 'Service', title: 'Community Service' },
+  { key: 'Community Project', title: 'Community Projects' },      // FIXED: Was 'Service'
 ];
 
 const sections = categoryDefs
