@@ -1,6 +1,6 @@
-// Unified Notion Library for PPCA Website 0
+// Unified Notion Library for PPCA Website
 // Fetches content from single unified database with proper field handling
-// UPDATED 2026-01-28: FIXED - Corrected requireShowOnWebsite filter logic (was inverted)
+// UPDATED 2026-01-28: FIXED - Corrected requireShowOnWebsite filter logic + default parameter
 
 import { Client } from '@notionhq/client';
 import fs from 'fs';
@@ -298,16 +298,34 @@ export async function fetchNotionContent(filters = {}) {
 
 /**
  * Fetch items by section
+ * UPDATED: Now filters for Published items by default
+ * 
+ * @param {string} sectionName - The section to filter by
+ * @param {boolean} requireShowOnWebsite - Whether to filter by "Published" status (default: true)
+ * @returns {Promise<Array>} Array of items from the section
  */
-export async function fetchItemsBySection(sectionName) {
-  return fetchNotionContent({ section: sectionName });
+export async function fetchItemsBySection(sectionName, requireShowOnWebsite = true) {
+  return fetchNotionContent({ 
+    section: sectionName,
+    requireShowOnWebsite: requireShowOnWebsite 
+  });
 }
 
 /**
  * Fetch items by section and category
+ * UPDATED: Now filters for Published items by default
+ * 
+ * @param {string} sectionName - The section to filter by
+ * @param {string} categoryName - The category to filter by
+ * @param {boolean} requireShowOnWebsite - Whether to filter by "Published" status (default: true)
+ * @returns {Promise<Array>} Array of items matching section and category
  */
-export async function fetchItemsBySectionAndCategory(sectionName, categoryName) {
-  return fetchNotionContent({ section: sectionName, category: categoryName });
+export async function fetchItemsBySectionAndCategory(sectionName, categoryName, requireShowOnWebsite = true) {
+  return fetchNotionContent({ 
+    section: sectionName, 
+    category: categoryName,
+    requireShowOnWebsite: requireShowOnWebsite 
+  });
 }
 
 /**
@@ -315,7 +333,7 @@ export async function fetchItemsBySectionAndCategory(sectionName, categoryName) 
  */
 export async function fetchItemsBySectionWithStatuses(sectionName, acceptedStatuses) {
   console.warn('fetchItemsBySectionWithStatuses is deprecated - Status/Stage/Phase is for display only');
-  return fetchNotionContent({ section: sectionName });
+  return fetchNotionContent({ section: sectionName, requireShowOnWebsite: true });
 }
 
 /**
@@ -330,7 +348,7 @@ export async function fetchItemBySlug(slug) {
  * Get all slugs for static page generation
  */
 export async function getAllSlugs() {
-  const items = await fetchNotionContent();
+  const items = await fetchNotionContent({ requireShowOnWebsite: true });
   return items.map((item) => ({
     slug: item.slug,
     section: item.section,
@@ -340,9 +358,10 @@ export async function getAllSlugs() {
 
 /**
  * Check for emergency alerts
+ * Only shows Published emergency items
  */
 export async function checkEmergencyAlerts() {
-  const emergencyItems = await fetchItemsBySection('Emergency & Safety');
+  const emergencyItems = await fetchItemsBySection('Emergency & Safety', true);
 
   const alerts = emergencyItems
     .filter((item) => item.alertLevel && item.alertLevel !== 'Normal')
