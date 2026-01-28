@@ -8,8 +8,8 @@
  * - Past projects grid (Closed)
  * - Subscription CTA
  * 
- * @version 2.1 - Fully clickable cards
- * @updated 28 January 2026
+ * @version 2.1 - Added clickable cards with JavaScript handler
+ * @updated 26 January 2026
  */
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -106,9 +106,10 @@ const pageDescription = "Have your say on community projects and development pro
               
               return (
                 <article 
-                  class="project-card" 
+                  class="project-card project-card-clickable" 
                   role="listitem"
                   aria-labelledby={`${cardId}-title`}
+                  data-href={`/projects/${project.slug}/`}
                 >
                   <a href={`/projects/${project.slug}/`} class="project-card-link">
                     <!-- Project Image/Icon -->
@@ -223,9 +224,10 @@ const pageDescription = "Have your say on community projects and development pro
               
               return (
                 <article 
-                  class="project-card project-card-compact" 
+                  class="project-card project-card-compact project-card-clickable" 
                   role="listitem"
                   aria-labelledby={`${cardId}-title`}
+                  data-href={`/projects/${project.slug}/`}
                 >
                   <a href={`/projects/${project.slug}/`} class="project-card-link">
                     <!-- Project Image/Icon -->
@@ -558,6 +560,15 @@ const pageDescription = "Have your say on community projects and development pro
     box-shadow: 0 0 0 3px var(--golden-orange);
   }
 
+  /* Clickable card styles */
+  .project-card-clickable {
+    cursor: pointer;
+  }
+
+  .project-card-clickable:active {
+    transform: translateY(-2px);
+  }
+
   .project-card-compact {
     /* Slightly smaller for past projects */
   }
@@ -700,7 +711,8 @@ const pageDescription = "Have your say on community projects and development pro
     font-weight: 600;
     font-size: 0.9rem;
     margin-top: auto;
-    transition: color 0.2s ease;
+    position: relative;
+    z-index: 2; /* Ensure link is clickable above card click area */
   }
 
   .project-card-link:hover .card-cta {
@@ -911,3 +923,56 @@ const pageDescription = "Have your say on community projects and development pro
     }
   }
 </style>
+
+<script>
+  /**
+   * Clickable Card Handler
+   * Makes entire project card clickable while preserving individual link functionality
+   * 
+   * How it works:
+   * - Clicking anywhere on the card navigates to the project page
+   * - Clicking directly on links/buttons inside the card works normally
+   * - Supports keyboard navigation and accessibility
+   */
+  document.addEventListener('DOMContentLoaded', () => {
+    const clickableCards = document.querySelectorAll('.project-card-clickable');
+    
+    clickableCards.forEach(card => {
+      const targetUrl = card.dataset.href;
+      
+      if (!targetUrl) return;
+      
+      // Handle click events
+      card.addEventListener('click', (event) => {
+        // Don't navigate if user clicked on a link, button, or interactive element
+        const clickedElement = event.target;
+        const isInteractiveElement = clickedElement.closest('a, button, input, select, textarea');
+        
+        if (isInteractiveElement) {
+          // Let the clicked element handle its own action
+          return;
+        }
+        
+        // Navigate to the project page
+        window.location.href = targetUrl;
+      });
+      
+      // Handle keyboard navigation (Enter key)
+      card.addEventListener('keydown', (event) => {
+        // Only trigger on Enter key and if card is focused (not a child element)
+        if (event.key === 'Enter' && event.target === card) {
+          window.location.href = targetUrl;
+        }
+      });
+      
+      // Make card focusable for keyboard users
+      if (!card.hasAttribute('tabindex')) {
+        card.setAttribute('tabindex', '0');
+      }
+      
+      // Add ARIA role for accessibility
+      card.setAttribute('role', 'link');
+      card.setAttribute('aria-label', `View project: ${card.querySelector('.card-title')?.textContent || 'Project details'}`);
+    });
+  });
+</script>

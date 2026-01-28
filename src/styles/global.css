@@ -460,14 +460,14 @@ li:last-child {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-8);
+  padding: var(--space-2);
   background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
   color: var(--color-white);
 }
 
 .card__icon svg {
-  width: 48px;
-  height: 48px;
+  width: 24px;
+  height: 24px;
 }
 
 .card__content {

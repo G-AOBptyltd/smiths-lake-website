@@ -204,11 +204,8 @@ export async function fetchNotionContent(filters = {}) {
     // Build filter conditions dynamically
     const filterConditions = [];
     
-    // FIXED: Filter by BOTH "Status on Web" AND "Show on Website" (legacy)
-    // Logic: requireShowOnWebsite === true → Filter for Published items
-    //        Checks BOTH new field (Status on Web = Published) OR legacy field (Show on Website = TRUE)
-    //        This ensures backward compatibility during migration period
-    if (filters.requireShowOnWebsite === true) {
+    // Filter by "Status on Web" (default: only show "Published" items)
+    if (filters.requireShowOnWebsite !== true) {
       filterConditions.push({
         or: [
           {

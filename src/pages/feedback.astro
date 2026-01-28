@@ -86,27 +86,29 @@ import Hero from '../components/Hero.astro';
         
         <div class="form-row">
           <div class="form-group">
-            <label for="name" class="form-label">Your Name (optional)</label>
+            <label for="name" class="form-label form-label--required">Your Name</label>
             <input 
               type="text" 
               id="name" 
               name="name" 
               class="form-input" 
               autocomplete="name"
+              required
             />
-            <p class="form-help">Leave blank to submit anonymously.</p>
+            <p class="form-help">Required for project feedback.</p>
           </div>
           
           <div class="form-group">
-            <label for="email" class="form-label">Email Address (optional)</label>
+            <label for="email" class="form-label form-label--required">Email Address</label>
             <input 
               type="email" 
               id="email" 
               name="email" 
               class="form-input" 
               autocomplete="email"
+              required
             />
-            <p class="form-help">Provide if you'd like a response.</p>
+            <p class="form-help">Required so we can follow up on your feedback.</p>
           </div>
         </div>
         
@@ -512,3 +514,4 @@ import Hero from '../components/Hero.astro';
     }
   });
 </script>
+</BaseLayout>
