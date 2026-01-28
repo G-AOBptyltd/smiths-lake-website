@@ -8,8 +8,8 @@
  * - Past projects grid (Closed)
  * - Subscription CTA
  * 
- * @version 2.0 - Improved accessibility, error handling, and branding
- * @updated 26 January 2026
+ * @version 2.1 - Fully clickable cards
+ * @updated 28 January 2026
  */
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -110,72 +110,70 @@ const pageDescription = "Have your say on community projects and development pro
                   role="listitem"
                   aria-labelledby={`${cardId}-title`}
                 >
-                  <!-- Project Image/Icon -->
-                  <div class="card-image">
-                    {project.heroImageFile ? (
-                      <img 
-                        src={project.heroImageFile} 
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div class="card-icon-placeholder" aria-hidden="true">
-                        <span class="icon-large">{icon}</span>
-                      </div>
-                    )}
-                    <!-- Status Badge -->
-                    <span 
-                      class={`status-badge status-${project.statusBadge.type}`}
-                      aria-label={`Status: ${project.statusBadge.label}`}
-                    >
-                      {project.statusBadge.label}
-                    </span>
-                  </div>
-
-                  <!-- Card Content -->
-                  <div class="card-content">
-                    <h3 id={`${cardId}-title`} class="card-title">
-                      {project.title}
-                    </h3>
-                    
-                    <!-- Meta Info -->
-                    <div class="card-meta">
-                      {project.submissionDeadline && !project.deadlinePassed && (
-                        <span class="meta-item deadline">
-                          <span aria-hidden="true">📅</span>
-                          <span class="visually-hidden">Submissions close:</span>
-                          {new Date(project.submissionDeadline).toLocaleDateString('en-AU', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
-                        </span>
+                  <a href={`/projects/${project.slug}/`} class="project-card-link">
+                    <!-- Project Image/Icon -->
+                    <div class="card-image">
+                      {project.heroImageFile ? (
+                        <img 
+                          src={project.heroImageFile} 
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div class="card-icon-placeholder" aria-hidden="true">
+                          <span class="icon-large">{icon}</span>
+                        </div>
                       )}
-                      {project.category && (
-                        <span class="meta-item category">
-                          <span aria-hidden="true">📁</span>
-                          <span class="visually-hidden">Category:</span>
-                          {project.category}
-                        </span>
-                      )}
+                      <!-- Status Badge -->
+                      <span 
+                        class={`status-badge status-${project.statusBadge.type}`}
+                        aria-label={`Status: ${project.statusBadge.label}`}
+                      >
+                        {project.statusBadge.label}
+                      </span>
                     </div>
 
-                    <!-- Description -->
-                    {project.description && (
-                      <p class="card-description">{project.description}</p>
-                    )}
+                    <!-- Card Content -->
+                    <div class="card-content">
+                      <h3 id={`${cardId}-title`} class="card-title">
+                        {project.title}
+                      </h3>
+                      
+                      <!-- Meta Info -->
+                      <div class="card-meta">
+                        {project.submissionDeadline && !project.deadlinePassed && (
+                          <span class="meta-item deadline">
+                            <span aria-hidden="true">📅</span>
+                            <span class="visually-hidden">Submissions close:</span>
+                            {new Date(project.submissionDeadline).toLocaleDateString('en-AU', { 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
+                          </span>
+                        )}
+                        {project.category && (
+                          <span class="meta-item category">
+                            <span aria-hidden="true">📁</span>
+                            <span class="visually-hidden">Category:</span>
+                            {project.category}
+                          </span>
+                        )}
+                      </div>
 
-                    <!-- Learn More Link -->
-                    <a 
-                      href={`/projects/${project.slug}/`} 
-                      class="card-link"
-                      aria-describedby={`${cardId}-title`}
-                    >
-                      Learn more & have your say
-                      <span class="link-arrow" aria-hidden="true">→</span>
-                    </a>
-                  </div>
+                      <!-- Description -->
+                      {project.description && (
+                        <p class="card-description">{project.description}</p>
+                      )}
+
+                      <!-- CTA Text -->
+                      <span class="card-cta" aria-hidden="true">
+                        Learn more & have your say →
+                      </span>
+                      <span class="visually-hidden">Learn more about {project.title}</span>
+                    </div>
+                  </a>
                 </article>
               );
             })}
@@ -229,63 +227,61 @@ const pageDescription = "Have your say on community projects and development pro
                   role="listitem"
                   aria-labelledby={`${cardId}-title`}
                 >
-                  <!-- Project Image/Icon -->
-                  <div class="card-image card-image-compact">
-                    {project.heroImageFile ? (
-                      <img 
-                        src={project.heroImageFile} 
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div class="card-icon-placeholder" aria-hidden="true">
-                        <span class="icon-large">{icon}</span>
-                      </div>
-                    )}
-                    <!-- Status Badge -->
-                    <span 
-                      class={`status-badge status-${project.statusBadge.type}`}
-                      aria-label={`Status: ${project.statusBadge.label}`}
-                    >
-                      {project.statusBadge.label}
-                    </span>
-                  </div>
-
-                  <!-- Card Content -->
-                  <div class="card-content">
-                    <h3 id={`${cardId}-title`} class="card-title">{project.title}</h3>
-                    
-                    <!-- Meta Info -->
-                    <div class="card-meta">
-                      {project.submissionDeadline && (
-                        <span class="meta-item">
-                          <span aria-hidden="true">📅</span>
-                          <span class="visually-hidden">Consultation closed:</span>
-                          {new Date(project.submissionDeadline).toLocaleDateString('en-AU', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
-                        </span>
+                  <a href={`/projects/${project.slug}/`} class="project-card-link">
+                    <!-- Project Image/Icon -->
+                    <div class="card-image card-image-compact">
+                      {project.heroImageFile ? (
+                        <img 
+                          src={project.heroImageFile} 
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div class="card-icon-placeholder" aria-hidden="true">
+                          <span class="icon-large">{icon}</span>
+                        </div>
                       )}
+                      <!-- Status Badge -->
+                      <span 
+                        class={`status-badge status-${project.statusBadge.type}`}
+                        aria-label={`Status: ${project.statusBadge.label}`}
+                      >
+                        {project.statusBadge.label}
+                      </span>
                     </div>
 
-                    <!-- Description -->
-                    {project.description && (
-                      <p class="card-description">{project.description}</p>
-                    )}
+                    <!-- Card Content -->
+                    <div class="card-content">
+                      <h3 id={`${cardId}-title`} class="card-title">{project.title}</h3>
+                      
+                      <!-- Meta Info -->
+                      <div class="card-meta">
+                        {project.submissionDeadline && (
+                          <span class="meta-item">
+                            <span aria-hidden="true">📅</span>
+                            <span class="visually-hidden">Consultation closed:</span>
+                            {new Date(project.submissionDeadline).toLocaleDateString('en-AU', { 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
+                          </span>
+                        )}
+                      </div>
 
-                    <!-- View Outcomes Link -->
-                    <a 
-                      href={`/projects/${project.slug}/`} 
-                      class="card-link"
-                      aria-describedby={`${cardId}-title`}
-                    >
-                      View outcomes
-                      <span class="link-arrow" aria-hidden="true">→</span>
-                    </a>
-                  </div>
+                      <!-- Description -->
+                      {project.description && (
+                        <p class="card-description">{project.description}</p>
+                      )}
+
+                      <!-- View Outcomes CTA -->
+                      <span class="card-cta" aria-hidden="true">
+                        View outcomes →
+                      </span>
+                      <span class="visually-hidden">View outcomes for {project.title}</span>
+                    </div>
+                  </a>
                 </article>
               );
             })}
@@ -566,6 +562,22 @@ const pageDescription = "Have your say on community projects and development pro
     /* Slightly smaller for past projects */
   }
 
+  /* Clickable card wrapper */
+  .project-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .project-card-link:focus-visible {
+    outline: 3px solid var(--golden-orange);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
   /* Card Image */
   .card-image {
     width: 100%;
@@ -679,28 +691,21 @@ const pageDescription = "Have your say on community projects and development pro
     flex-grow: 1;
   }
 
-  .card-link {
+  /* Card CTA */
+  .card-cta {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
     color: var(--teal-accent);
-    text-decoration: none;
     font-weight: 600;
     font-size: 0.9rem;
     margin-top: auto;
+    transition: color 0.2s ease;
   }
 
-  .card-link:hover {
+  .project-card-link:hover .card-cta {
     color: var(--teal-dark);
     text-decoration: underline;
-  }
-
-  .link-arrow {
-    transition: transform 0.2s ease;
-  }
-
-  .card-link:hover .link-arrow {
-    transform: translateX(4px);
   }
 
   /* ============================================
@@ -893,8 +898,7 @@ const pageDescription = "Have your say on community projects and development pro
     .btn,
     .project-card,
     .card-image img,
-    .card-link,
-    .link-arrow {
+    .card-cta {
       transition: none;
     }
 
