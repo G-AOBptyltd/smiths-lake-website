@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "node src/scripts/generate-search-index.js && astro build",
+    "build": "node src/scripts/download-hero-images.js && node src/scripts/generate-search-index.js && astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
