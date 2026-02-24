@@ -18,6 +18,8 @@
  */
 
 import { getSmartIcon } from '../lib/icon-matcher.js';
+import fs from 'node:fs';
+import path from 'node:path';
 
 interface MetadataItem {
   label: string;
@@ -38,6 +40,33 @@ const heroAccent = accentHex || item.sectionColour?.hex || '#1B365D';
 
 // Smart icon for this item
 const itemIcon = getSmartIcon(item);
+
+// Resolve card hero image from build-time manifest
+let heroImagePath = '';
+try {
+  const manifestPath = path.resolve('public/images/cards/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+    const slug = item.slug || '';
+    if (manifest[slug]) {
+      heroImagePath = manifest[slug];
+    }
+  }
+  // Also check project manifest as fallback
+  if (!heroImagePath) {
+    const projectManifestPath = path.resolve('public/images/projects/manifest.json');
+    if (fs.existsSync(projectManifestPath)) {
+      const projectManifest = JSON.parse(fs.readFileSync(projectManifestPath, 'utf-8'));
+      const slug = item.slug || '';
+      if (projectManifest[slug]) {
+        heroImagePath = projectManifest[slug];
+      }
+    }
+  }
+} catch (e) {
+  // No manifest — gracefully fall back to colour-only hero
+}
+const hasHeroImage = !!heroImagePath;
 
 // Build document list
 const documents = [];
@@ -100,7 +129,26 @@ const pageDescription = item.description || `${item.title} - ${item.sectionDispl
 <main class="detail-page" id="main-content">
   
   <!-- Hero Section -->
-  <section class="detail-hero" style={`background: linear-gradient(135deg, ${heroAccent} 0%, ${hexToRgba(heroAccent, 0.85)} 100%);`} aria-labelledby="detail-title">
+  <section class={`detail-hero ${hasHeroImage ? 'has-image' : ''}`} aria-labelledby="detail-title">
+    {hasHeroImage ? (
+      <div class="hero-background">
+        <img
+          src={heroImagePath}
+          alt=""
+          class="hero-background-image"
+          loading="eager"
+        />
+      </div>
+      <div
+        class="hero-overlay"
+        style={`background: linear-gradient(135deg, ${hexToRgba(heroAccent, 0.85)} 0%, ${hexToRgba(heroAccent, 0.65)} 50%, ${hexToRgba(heroAccent, 0.45)} 100%);`}
+      ></div>
+    ) : (
+      <div
+        class="hero-gradient"
+        style={`background: linear-gradient(135deg, ${heroAccent} 0%, ${hexToRgba(heroAccent, 0.85)} 100%);`}
+      ></div>
+    )}
     <div class="hero-content">
       <div class="hero-icon" aria-hidden="true">{itemIcon}</div>
       <div class="hero-text">
@@ -386,6 +434,38 @@ const pageDescription = item.description || `${item.title} - ${item.sectionDispl
     display: flex;
     align-items: center;
     overflow: hidden;
+  }
+
+  .detail-hero.has-image {
+    min-height: 280px;
+  }
+
+  /* Background image layer */
+  .hero-background {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 0;
+  }
+
+  .hero-background-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 40%;
+  }
+
+  /* Colour overlay on top of image */
+  .hero-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1;
+  }
+
+  /* Solid gradient when no image */
+  .hero-gradient {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 0;
   }
 
   .hero-content {
