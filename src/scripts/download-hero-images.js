@@ -38,7 +38,16 @@ const CARD_MANIFEST_PATH = path.resolve(CARD_IMAGES_DIR, 'manifest.json');
 const PROJECT_MANIFEST_PATH = path.resolve(PROJECT_IMAGES_DIR, 'manifest.json');
 
 function generateSlug(title) {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  if (!title) return 'untitled';
+  return title
+    .toLowerCase()
+    .replace(/&/g, 'and')                    // & → and (match detail pages)
+    .replace(/['']/g, '')                     // Remove smart quotes
+    .replace(/[^a-z0-9\s-]/g, '')            // Strip non-alphanumeric
+    .replace(/\s+/g, '-')                     // Spaces to hyphens
+    .replace(/-+/g, '-')                      // Collapse multiple hyphens
+    .replace(/^-+|-+$/g, '')                  // Trim leading/trailing hyphens
+    .substring(0, 80);                        // Reasonable max length
 }
 
 function getExtension(url, contentType) {
