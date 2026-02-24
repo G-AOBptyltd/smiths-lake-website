@@ -1,25 +1,37 @@
 ---
-// Services Index Page - FIXED 2026-01-27
-// FIXED: Removed requireShowOnWebsite parameter (property doesn't exist in Notion)
+// Services Index Page - UPDATED 2026-02-24
+// Updated: SectionHero component, Notion-managed hero images
 import Layout from '../../layouts/BaseLayout.astro';
+import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
+import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 import { getSmartIcon } from '../../lib/icon-matcher.js';
 
+// Fetch section settings
+const sectionSettings = await fetchSectionSettingsBySlug('services');
+
+// Load section hero image manifest
+let sectionHeroManifest = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const manifestPath = path.resolve(process.cwd(), 'public/images/heroes/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    sectionHeroManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  }
+} catch (e) { /* manifest not yet generated */ }
+const heroImage = sectionHeroManifest['services'] || null;
+
 // Fetch Services items
-// ✅ FIXED: Removed requireShowOnWebsite - using Status on Web filtering only
 const items = await fetchNotionContent({ 
   section: 'Services'
-  // REMOVED: requireShowOnWebsite: true (property doesn't exist)
 });
 
-// Filter to only show published items (Status on Web = "Published")
-// This filtering should already be done by fetchNotionContent, but adding safety check
+// Filter to only show published items
 const publishedItems = items.filter(item => {
-  // If item has statusOnWeb property, check it
   if (item.statusOnWeb) {
     return item.statusOnWeb === 'Published';
   }
-  // Otherwise include all items (backward compatibility)
   return true;
 });
 
@@ -39,31 +51,6 @@ const projects = publishedItems.filter(item =>
   <style>
     .services-page {
       background: #f7f9fc;
-    }
-
-    /* Hero Section - Blue Gradient */
-    .services-hero {
-      background: linear-gradient(135deg, #5B9BD5 0%, #7BB3E0 100%);
-      color: white;
-      padding: 4rem 1rem;
-      text-align: center;
-    }
-
-    .hero-content {
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    .services-hero h1 {
-      color: white;
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      font-weight: 700;
-    }
-
-    .services-hero p {
-      font-size: 1.25rem;
-      opacity: 0.95;
     }
 
     /* Content Sections */
@@ -306,12 +293,12 @@ const projects = publishedItems.filter(item =>
 
   <div class="services-page">
     <!-- Hero Section -->
-    <div class="services-hero">
-      <div class="hero-content">
-        <h1>Services & Amenities</h1>
-        <p>Facilities, amenities, and community projects in Smiths Lake Village</p>
-      </div>
-    </div>
+    <SectionHero
+      title={sectionSettings?.heroTitle || 'Services & Amenities'}
+      subtitle={sectionSettings?.heroSubtitle || 'Facilities, amenities, and community projects in Smiths Lake Village.'}
+      accentHex={sectionSettings?.accentHex || '#1B365D'}
+      backgroundImage={heroImage}
+    />
 
     <div class="content-section">
       <!-- Amenities Section -->

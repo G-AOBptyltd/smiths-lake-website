@@ -1,19 +1,30 @@
 ---
-// Groups & Activities Index Page - UPDATED 2026-01-21
-// Updated for Status on Web, Status/Stage/Phase, Event Frequency, Event Cycle fields
+// Groups & Activities Index Page - UPDATED 2026-02-24
+// Updated: SectionHero component, Notion-managed hero images
 import Layout from '../../layouts/BaseLayout.astro';
+import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
+import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 import { getSmartIcon } from '../../lib/icon-matcher.js';
 
+// Fetch section settings
+const sectionSettings = await fetchSectionSettingsBySlug('groups');
+let sectionHeroManifest = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const manifestPath = path.resolve(process.cwd(), 'public/images/heroes/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    sectionHeroManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  }
+} catch (e) { /* manifest not yet generated */ }
+const heroImage = sectionHeroManifest['groups'] || null;
+
 // Fetch all Groups & Activities items
-// ✅ UPDATED: fetchNotionContent now filters by Status on Web = "Published" automatically
 const items = await fetchNotionContent({ 
   section: 'Groups & Activities',
   requireShowOnWebsite: true
 });
-
-// ✅ REMOVED: No longer filtering by status values
-// All items with Status on Web = "Published" will display
 
 // Category emoji mapping - FIXED 2026-01-28 to match actual Notion values
 const categoryEmojis = {
@@ -352,20 +363,18 @@ const sections = categoryDefs
     }
 
     @media (max-width: 768px) {
-      .groups-hero h1 { font-size: 2rem; }
-      .groups-hero p { font-size: 1rem; }
       .groups-grid { grid-template-columns: 1fr; }
       .category-header { flex-direction: column; align-items: flex-start; }
     }
   </style>
 
   <div class="groups-page">
-    <div class="groups-hero">
-      <div class="hero-content">
-        <h1>Groups & Activities</h1>
-        <p>Join our vibrant community through clubs, groups, and volunteering.</p>
-      </div>
-    </div>
+    <SectionHero
+      title={sectionSettings?.heroTitle || 'Groups & Activities'}
+      subtitle={sectionSettings?.heroSubtitle || 'Join our vibrant community through clubs, groups, and volunteering.'}
+      accentHex={sectionSettings?.accentHex || '#5B9BD5'}
+      backgroundImage={heroImage}
+    />
 
     <div class="intro-section">
       <p>

@@ -1,19 +1,33 @@
 ---
-// Environment & Sustainability Index Page - UPDATED 2026-01-21
-// Updated for Status on Web and Status/Stage/Phase fields
+// Environment & Sustainability Index Page - UPDATED 2026-02-24
+// Updated: SectionHero component, Notion-managed hero images
 import Layout from '../../layouts/BaseLayout.astro';
+import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
+import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 import { getSmartIcon } from '../../lib/icon-matcher.js';
 
+// Fetch section settings (hero image, title, accent colour)
+const sectionSettings = await fetchSectionSettingsBySlug('environment');
+
+// Load section hero image manifest (downloaded at build time)
+let sectionHeroManifest = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const manifestPath = path.resolve(process.cwd(), 'public/images/heroes/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    sectionHeroManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  }
+} catch (e) { /* manifest not yet generated */ }
+
+const heroImage = sectionHeroManifest['environment'] || null;
+
 // Fetch Environment items
-// ✅ UPDATED: fetchNotionContent now filters by Status on Web = "Published" automatically
 const items = await fetchNotionContent({ 
   section: 'Environment & Sustainability',
   requireShowOnWebsite: true
 });
-
-// ✅ REMOVED: No longer filtering by status values
-// All items with Status on Web = "Published" will display
 ---
 
 <Layout
@@ -23,35 +37,6 @@ const items = await fetchNotionContent({
   <style>
     .environment-page {
       background: #f7f9fc;
-    }
-
-    /* Hero Section - Green Gradient */
-    .environment-hero {
-      background: linear-gradient(135deg, #16A34A 0%, #22C55E 100%);
-      color: white;
-      padding: 4rem 1rem;
-      text-align: center;
-      position: relative;
-    }
-
-    .hero-content {
-      position: relative;
-      z-index: 1;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    .environment-hero h1 {
-      color: white;
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      font-weight: 700;
-    }
-
-    .environment-hero p {
-      font-size: 1.25rem;
-      opacity: 0.95;
-      line-height: 1.6;
     }
 
     /* Content Sections */
@@ -244,14 +229,6 @@ const items = await fetchNotionContent({
 
     /* Mobile responsive */
     @media (max-width: 768px) {
-      .environment-hero h1 {
-        font-size: 2rem;
-      }
-
-      .environment-hero p {
-        font-size: 1rem;
-      }
-
       .programs-grid {
         grid-template-columns: 1fr;
       }
@@ -260,12 +237,12 @@ const items = await fetchNotionContent({
 
   <div class="environment-page">
     <!-- Hero Section -->
-    <div class="environment-hero">
-      <div class="hero-content">
-        <h1>Environment & Sustainability</h1>
-        <p>Lake health monitoring, foreshore management, wildlife conservation, and environmental programs protecting our natural assets.</p>
-      </div>
-    </div>
+    <SectionHero
+      title={sectionSettings?.heroTitle || 'Environment & Sustainability'}
+      subtitle={sectionSettings?.heroSubtitle || 'Lake health monitoring, foreshore management, wildlife conservation, and environmental programs protecting our natural assets.'}
+      accentHex={sectionSettings?.accentHex || '#16A34A'}
+      backgroundImage={heroImage}
+    />
 
     <div class="content-section">
       {items.length > 0 ? (

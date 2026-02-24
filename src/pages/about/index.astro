@@ -1,11 +1,26 @@
 ---
-// About Us Index Page
+// About Us Index Page - UPDATED 2026-02-24
+// Updated: SectionHero component, Notion-managed hero images
 import Layout from '../../layouts/BaseLayout.astro';
+import SectionHero from '../../components/SectionHero.astro';
 import { getPublicDocuments } from '../../lib/notionDocuments';
+import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 
-// Pull documents from Notion (controlled via Display Locations + Show on Website)
+// Fetch section settings
+const sectionSettings = await fetchSectionSettingsBySlug('about');
+let sectionHeroManifest = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const manifestPath = path.resolve(process.cwd(), 'public/images/heroes/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    sectionHeroManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  }
+} catch (e) { /* manifest not yet generated */ }
+const heroImage = sectionHeroManifest['about'] || null;
+
+// Pull documents from Notion
 const documents = await getPublicDocuments('About - Document Library');
-
 ---
 
 <Layout 
@@ -15,53 +30,6 @@ const documents = await getPublicDocuments('About - Document Library');
   <style>
     .about-page {
       background: #f7f9fc;
-    }
-    
-    /* Hero Section */
-    .about-hero {
-      background: linear-gradient(135deg, rgba(27, 54, 93, 0.95), rgba(91, 155, 213, 0.85)),
-                  url('/images/smiths-lake-aerial.jpg') center/cover;
-      color: white;
-      padding: 5rem 1rem;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .about-hero::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 50%;
-      height: 100%;
-      background: repeating-linear-gradient(
-        -60deg,
-        transparent,
-        transparent 10px,
-        rgba(255, 255, 255, 0.03) 10px,
-        rgba(255, 255, 255, 0.03) 20px
-      );
-    }
-    
-    .hero-content {
-      position: relative;
-      z-index: 1;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-    
-    .about-hero h1 {
-      color: white;
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      font-weight: 700;
-    }
-    
-    .about-hero p {
-      font-size: 1.25rem;
-      opacity: 0.95;
-      line-height: 1.6;
     }
     
     /* Content Section */
@@ -302,12 +270,12 @@ const documents = await getPublicDocuments('About - Document Library');
 
   <div class="about-page">
     <!-- Hero Section -->
-    <div class="about-hero">
-      <div class="hero-content">
-        <h1>About Us</h1>
-        <p>Discover what makes Smiths Lake Village a special place to live, work and visit.</p>
-      </div>
-    </div>
+    <SectionHero
+      title={sectionSettings?.heroTitle || 'About Us'}
+      subtitle={sectionSettings?.heroSubtitle || 'Discover what makes Smiths Lake Village a special place to live, work and visit.'}
+      accentHex={sectionSettings?.accentHex || '#F5A623'}
+      backgroundImage={heroImage}
+    />
     
     <div class="content-section">
       <!-- Location & Overview -->
