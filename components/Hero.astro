@@ -11,6 +11,7 @@ interface Props {
     href: string;
   };
   backgroundImage?: string;
+  overlayOpacity?: number; // 0-100: 0 = no overlay, 100 = solid colour. Default 50.
   videoSrc?: string;
   size?: 'default' | 'large' | 'small';
 }
@@ -21,9 +22,15 @@ const {
   primaryCta, 
   secondaryCta,
   backgroundImage = '/images/hero-smiths-lake.jpg',
+  overlayOpacity = 50,
   videoSrc,
   size = 'default'
 } = Astro.props;
+
+// Convert 0-100 scale to alpha values for the gradient
+const peakAlpha = Math.max(0, Math.min(1, overlayOpacity / 100));
+const midAlpha = peakAlpha * 0.7;
+const endAlpha = peakAlpha * 0.45;
 
 const sizeClasses = {
   small: 'hero--small',
@@ -54,7 +61,7 @@ const sizeClasses = {
       />
     )}
   </div>
-  <div class="hero-overlay"></div>
+  <div class="hero-overlay" style={`background: linear-gradient(135deg, rgba(27, 54, 93, ${peakAlpha}) 0%, rgba(27, 54, 93, ${midAlpha}) 50%, rgba(91, 155, 213, ${endAlpha}) 100%);`}></div>
   <div class="hero-stripes" aria-hidden="true"></div>
   
   <div class="hero-content">
@@ -133,12 +140,6 @@ const sizeClasses = {
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(
-      135deg,
-      rgba(27, 54, 93, 0.85) 0%,
-      rgba(27, 54, 93, 0.6) 50%,
-      rgba(91, 155, 213, 0.4) 100%
-    );
     z-index: 2;
   }
   

@@ -6,6 +6,7 @@ import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 import { getSmartIcon } from '../../lib/icon-matcher.js';
+import { generateSlug } from '../../lib/notion-detail-pages.js';
 
 // Fetch section settings
 const sectionSettings = await fetchSectionSettingsBySlug('history');
@@ -501,6 +502,7 @@ function getCardDisplayConfig(item) {
       subtitle={sectionSettings?.heroSubtitle || 'Discover the stories that shaped our community.'}
       accentHex={sectionSettings?.accentHex || '#92400E'}
       backgroundImage={heroImage}
+      overlayOpacity={sectionSettings?.overlayOpacity ?? 50}
     />
 
     <div class="acknowledgement">
@@ -609,6 +611,9 @@ function getCardDisplayConfig(item) {
                         </a>
                       )
                     )}
+                    <a href={`/history/${item.slug || generateSlug(item.title)}/`} class="btn btn-outline" style="margin-top: 0.5rem;">
+                      View Full Page →
+                    </a>
                   </div>
                 </div>
               </div>

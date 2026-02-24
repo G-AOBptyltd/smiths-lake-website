@@ -1,0 +1,54 @@
+---
+/**
+ * Groups & Activities - Detail Page
+ * Dynamic route: /groups/[slug]/
+ * 
+ * @version 1.0
+ * @created February 2026
+ */
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DetailPage from '../../components/DetailPage.astro';
+import { fetchDetailPageItems } from '../../lib/notion-detail-pages.js';
+import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
+
+const SECTION_NAME = 'Groups & Activities';
+
+export async function getStaticPaths() {
+  let items = [];
+  try {
+    items = await fetchDetailPageItems(SECTION_NAME);
+  } catch (error) {
+    console.error('Error fetching groups for static paths:', error);
+  }
+
+  return items.map(item => ({
+    params: { slug: item.slug },
+    props: { item }
+  }));
+}
+
+const { item } = Astro.props;
+
+if (!item) {
+  return Astro.redirect('/groups/');
+}
+
+// Get section accent colour from Section Settings
+let accentHex = item.sectionColour?.hex || '#5B9BD5';
+try {
+  const sectionSettings = await fetchSectionSettingsBySlug('groups');
+  if (sectionSettings?.accentHex) {
+    accentHex = sectionSettings.accentHex;
+  }
+} catch (e) {
+  // Use default colour
+}
+
+const pageTitle = `${item.title} | Groups & Activities`;
+const pageDescription = item.description || `${item.title} - Groups & Activities at Smiths Lake Village.`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <DetailPage item={item} accentHex={accentHex} />
+</BaseLayout>

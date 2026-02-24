@@ -1,0 +1,51 @@
+---
+/**
+ * Services & Amenities - Detail Page
+ * Dynamic route: /services/[slug]/
+ * 
+ * @version 1.0
+ * @created February 2026
+ */
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DetailPage from '../../components/DetailPage.astro';
+import { fetchDetailPageItems } from '../../lib/notion-detail-pages.js';
+import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
+
+const SECTION_NAME = 'Services';
+
+export async function getStaticPaths() {
+  let items = [];
+  try {
+    items = await fetchDetailPageItems(SECTION_NAME);
+  } catch (error) {
+    console.error('Error fetching services for static paths:', error);
+  }
+
+  return items.map(item => ({
+    params: { slug: item.slug },
+    props: { item }
+  }));
+}
+
+const { item } = Astro.props;
+
+if (!item) {
+  return Astro.redirect('/services/');
+}
+
+let accentHex = item.sectionColour?.hex || '#1B365D';
+try {
+  const sectionSettings = await fetchSectionSettingsBySlug('services');
+  if (sectionSettings?.accentHex) {
+    accentHex = sectionSettings.accentHex;
+  }
+} catch (e) {}
+
+const pageTitle = `${item.title} | Services & Amenities`;
+const pageDescription = item.description || `${item.title} - Services & Amenities at Smiths Lake Village.`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <DetailPage item={item} accentHex={accentHex} />
+</BaseLayout>

@@ -1,9 +1,32 @@
 ---
+// Home Page - UPDATED 2026-02-24
+// Updated: Section Settings integration for hero image management via Notion
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 import QuickInfo from '../components/QuickInfo.astro';
 import SectionCard from '../components/SectionCard.astro';
 import NewsItem from '../components/NewsItem.astro';
+import { fetchSectionSettingsBySlug } from '../lib/notion-section-settings.js';
+
+// Fetch home section settings (hero image, title, subtitle)
+const sectionSettings = await fetchSectionSettingsBySlug('home');
+
+// Load hero image manifest (downloaded at build time)
+let sectionHeroManifest = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const manifestPath = path.resolve(process.cwd(), 'public/images/heroes/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    sectionHeroManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  }
+} catch (e) { /* manifest not yet generated */ }
+
+// Use Notion hero image if available, otherwise fall back to existing local image
+const heroImage = sectionHeroManifest['home'] || '/images/hero-smiths-lake.jpg';
+const heroTitle = sectionSettings?.heroTitle || 'Welcome to Smiths Lake Village';
+const heroSubtitle = sectionSettings?.heroSubtitle || 'A vibrant coastal community in the heart of Pacific Palms, NSW. Discover our pristine lake, native bushland, and welcoming neighbourhood.';
+const overlayOpacity = sectionSettings?.overlayOpacity ?? 50;
 
 const quickInfoItems = [
   { value: '~1,300', label: 'Permanent Residents' },
@@ -84,8 +107,10 @@ const newsItems = [
 
 <BaseLayout title="Home">
   <Hero 
-    title="Welcome to Smiths Lake Village"
-    subtitle="A vibrant coastal community in the heart of Pacific Palms, NSW. Discover our pristine lake, native bushland, and welcoming neighbourhood."
+    title={heroTitle}
+    subtitle={heroSubtitle}
+    backgroundImage={heroImage}
+    overlayOpacity={overlayOpacity}
     size="large"
   />
   

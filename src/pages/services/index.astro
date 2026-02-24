@@ -6,6 +6,7 @@ import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 import { getSmartIcon } from '../../lib/icon-matcher.js';
+import { generateSlug } from '../../lib/notion-detail-pages.js';
 
 // Fetch section settings
 const sectionSettings = await fetchSectionSettingsBySlug('services');
@@ -217,24 +218,36 @@ const projects = publishedItems.filter(item =>
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      color: #5B9BD5;
       text-decoration: none;
       font-weight: 600;
-      margin-top: 1rem;
+      margin-top: 0.75rem;
       transition: color 0.2s;
     }
 
-    .card-link:hover {
+    .card-link-detail {
+      color: #5B9BD5;
+    }
+
+    .card-link-detail:hover {
       color: #1B365D;
     }
 
-    .card-link::after {
-      content: '→';
-      transition: transform 0.2s;
+    .card-link-external {
+      color: #6B7280;
+      font-size: 0.875rem;
+      font-weight: 500;
     }
 
-    .card-link:hover::after {
-      transform: translateX(4px);
+    .card-link-external:hover {
+      color: #1B365D;
+    }
+
+    .card-link-detail::after {
+      content: '';
+    }
+
+    .card-link:hover {
+      text-decoration: none;
     }
 
     /* Contact CTA Box */
@@ -298,6 +311,7 @@ const projects = publishedItems.filter(item =>
       subtitle={sectionSettings?.heroSubtitle || 'Facilities, amenities, and community projects in Smiths Lake Village.'}
       accentHex={sectionSettings?.accentHex || '#1B365D'}
       backgroundImage={heroImage}
+      overlayOpacity={sectionSettings?.overlayOpacity ?? 50}
     />
 
     <div class="content-section">
@@ -430,13 +444,19 @@ const projects = publishedItems.filter(item =>
                     {(item.websiteUrl || item.documentUrl) && (
                       <a 
                         href={item.websiteUrl || item.documentUrl} 
-                        class="card-link"
-                        target={item.documentUrl ? '_blank' : undefined}
-                        rel={item.documentUrl ? 'noopener' : undefined}
+                        class="card-link card-link-external"
+                        target="_blank"
+                        rel="noopener"
                       >
-                        {item.documentUrl ? 'View Document' : 'Visit Website'}
+                        {item.documentUrl ? 'View Document' : 'Visit Website'} ↗
                       </a>
                     )}
+                    <a 
+                      href={`/services/${item.slug || generateSlug(item.title)}/`}
+                      class="card-link card-link-detail"
+                    >
+                      View Details →
+                    </a>
                   </div>
                 </article>
               );
@@ -541,13 +561,19 @@ const projects = publishedItems.filter(item =>
                     {(item.websiteUrl || item.documentUrl) && (
                       <a 
                         href={item.websiteUrl || item.documentUrl} 
-                        class="card-link"
-                        target={item.documentUrl ? '_blank' : undefined}
-                        rel={item.documentUrl ? 'noopener' : undefined}
+                        class="card-link card-link-external"
+                        target="_blank"
+                        rel="noopener"
                       >
-                        {item.documentUrl ? 'View Document' : 'Learn More'}
+                        {item.documentUrl ? 'View Document' : 'Learn More'} ↗
                       </a>
                     )}
+                    <a 
+                      href={`/services/${item.slug || generateSlug(item.title)}/`}
+                      class="card-link card-link-detail"
+                    >
+                      View Details →
+                    </a>
                   </div>
                 </article>
               );

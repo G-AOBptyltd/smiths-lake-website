@@ -30,6 +30,16 @@ if (!fs.existsSync(CACHE_DIR)) {
  * Default section settings (used as fallback when Notion is unavailable)
  */
 const DEFAULT_SECTIONS = {
+  home: {
+    sectionName: 'Home',
+    slug: 'home',
+    heroTitle: 'Welcome to Smiths Lake Village',
+    heroSubtitle: 'A vibrant coastal community in the heart of Pacific Palms, NSW. Discover our pristine lake, native bushland, and welcoming neighbourhood.',
+    accentColour: 'Navy Blue',
+    accentHex: '#1B365D',
+    overlayOpacity: 50,
+    heroImage: null,
+  },
   about: {
     sectionName: 'About',
     slug: 'about',
@@ -37,6 +47,7 @@ const DEFAULT_SECTIONS = {
     heroSubtitle: 'Discover what makes Smiths Lake Village a special place to live, work and visit.',
     accentColour: 'Golden Orange',
     accentHex: '#F5A623',
+    overlayOpacity: 50,
     heroImage: null,
   },
   projects: {
@@ -46,6 +57,7 @@ const DEFAULT_SECTIONS = {
     heroSubtitle: 'Your feedback helps shape decisions that affect our community.',
     accentColour: 'Navy Blue',
     accentHex: '#1B365D',
+    overlayOpacity: 50,
     heroImage: null,
   },
   environment: {
@@ -55,6 +67,7 @@ const DEFAULT_SECTIONS = {
     heroSubtitle: 'Lake health monitoring, foreshore management, wildlife conservation, and environmental programs protecting our natural assets.',
     accentColour: 'Green',
     accentHex: '#16A34A',
+    overlayOpacity: 50,
     heroImage: null,
   },
   services: {
@@ -64,6 +77,7 @@ const DEFAULT_SECTIONS = {
     heroSubtitle: 'Facilities, amenities, and community projects in Smiths Lake Village.',
     accentColour: 'Navy Blue',
     accentHex: '#1B365D',
+    overlayOpacity: 50,
     heroImage: null,
   },
   groups: {
@@ -73,6 +87,7 @@ const DEFAULT_SECTIONS = {
     heroSubtitle: 'Join our vibrant community through clubs, groups, and volunteering.',
     accentColour: 'Sky Blue',
     accentHex: '#5B9BD5',
+    overlayOpacity: 50,
     heroImage: null,
   },
   history: {
@@ -82,6 +97,7 @@ const DEFAULT_SECTIONS = {
     heroSubtitle: 'Discover the stories that shaped our community.',
     accentColour: 'Brown',
     accentHex: '#92400E',
+    overlayOpacity: 50,
     heroImage: null,
   },
   emergency: {
@@ -91,6 +107,7 @@ const DEFAULT_SECTIONS = {
     heroSubtitle: 'Emergency services, evacuation plans, and safety information for the Smiths Lake community.',
     accentColour: 'Red',
     accentHex: '#DC2626',
+    overlayOpacity: 50,
     heroImage: null,
   },
 };
@@ -164,6 +181,7 @@ function parseSectionSettingsPage(page) {
     heroSubtitle: parseProperty(props['Hero Subtitle']),
     accentColour: accentColour,
     accentHex: accentHex || COLOUR_MAP[accentColour] || '#1B365D',
+    overlayOpacity: parseProperty(props['Overlay Opacity']) ?? 50, // 0-100 scale, default 50
     heroImageFiles: heroImageFiles, // Raw file objects for download script
     heroImage: extractImageUrl(heroImageFiles), // Direct URL (temporary, Notion-signed)
     status: parseProperty(props['Status']),
