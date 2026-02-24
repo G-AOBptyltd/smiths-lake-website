@@ -1,0 +1,49 @@
+---
+/**
+ * History & Culture - Detail Page
+ * Dynamic route: /history/[slug]/
+ * 
+ * @version 1.1 - Fixed SECTION_NAME scoping for Astro getStaticPaths
+ * @created February 2026
+ */
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DetailPage from '../../components/DetailPage.astro';
+import { fetchDetailPageItems } from '../../lib/notion-detail-pages.js';
+import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
+
+export async function getStaticPaths() {
+  let items = [];
+  try {
+    items = await fetchDetailPageItems('History & Culture');
+  } catch (error) {
+    console.error('Error fetching history items for static paths:', error);
+  }
+
+  return items.map(item => ({
+    params: { slug: item.slug },
+    props: { item }
+  }));
+}
+
+const { item } = Astro.props;
+
+if (!item) {
+  return Astro.redirect('/history/');
+}
+
+let accentHex = item.sectionColour?.hex || '#92400E';
+try {
+  const sectionSettings = await fetchSectionSettingsBySlug('history');
+  if (sectionSettings?.accentHex) {
+    accentHex = sectionSettings.accentHex;
+  }
+} catch (e) {}
+
+const pageTitle = `${item.title} | History & Culture`;
+const pageDescription = item.description || `${item.title} - History & Culture of Smiths Lake Village.`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <DetailPage item={item} accentHex={accentHex} />
+</BaseLayout>

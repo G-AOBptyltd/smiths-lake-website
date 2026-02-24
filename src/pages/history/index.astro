@@ -1,9 +1,25 @@
 ---
-// History & Culture Page - UPDATED 2026-01-21
-// Updated for Status on Web and Status/Stage/Phase fields
+// History & Culture Page - UPDATED 2026-02-24
+// Updated: SectionHero component, Notion-managed hero images
 import Layout from '../../layouts/BaseLayout.astro';
+import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
+import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 import { getSmartIcon } from '../../lib/icon-matcher.js';
+import { generateSlug } from '../../lib/notion-detail-pages.js';
+
+// Fetch section settings
+const sectionSettings = await fetchSectionSettingsBySlug('history');
+let sectionHeroManifest = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const manifestPath = path.resolve(process.cwd(), 'public/images/heroes/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    sectionHeroManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  }
+} catch (e) { /* manifest not yet generated */ }
+const heroImage = sectionHeroManifest['history'] || null;
 
 // Fetch History & Culture items
 const allHistoryItems = await fetchNotionContent({ 
@@ -141,27 +157,6 @@ function getCardDisplayConfig(item) {
 <Layout title="History & Culture" description="Discover the stories that shaped our community">
   <style>
     .history-page { background: #f7f9fc; }
-    
-    .history-hero {
-      background: linear-gradient(135deg, rgba(27, 54, 93, 0.95), rgba(91, 155, 213, 0.85));
-      color: white;
-      padding: 5rem 1rem;
-      text-align: center;
-    }
-    
-    .history-hero h1 {
-      color: white;
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      font-weight: 700;
-    }
-    
-    .history-hero p {
-      font-size: 1.25rem;
-      opacity: 0.95;
-      max-width: 800px;
-      margin: 0 auto;
-    }
     
     .acknowledgement {
       background: #1B365D;
@@ -477,7 +472,6 @@ function getCardDisplayConfig(item) {
     .document-link:hover { color: #1B365D; text-decoration: underline; }
     
     @media (max-width: 768px) {
-      .history-hero h1 { font-size: 2rem; }
       .timeline::before { left: 20px; }
       .timeline-item {
         flex-direction: column !important;
@@ -503,10 +497,13 @@ function getCardDisplayConfig(item) {
   </style>
 
   <div class="history-page">
-    <div class="history-hero">
-      <h1>History & Culture</h1>
-      <p>Discover the stories that shaped our community.</p>
-    </div>
+    <SectionHero
+      title={sectionSettings?.heroTitle || 'History & Culture'}
+      subtitle={sectionSettings?.heroSubtitle || 'Discover the stories that shaped our community.'}
+      accentHex={sectionSettings?.accentHex || '#92400E'}
+      backgroundImage={heroImage}
+      overlayOpacity={sectionSettings?.overlayOpacity ?? 50}
+    />
 
     <div class="acknowledgement">
       <h2>Acknowledgement of Country</h2>
@@ -614,6 +611,9 @@ function getCardDisplayConfig(item) {
                         </a>
                       )
                     )}
+                    <a href={`/history/${item.slug || generateSlug(item.title)}/`} class="btn btn-outline" style="margin-top: 0.5rem;">
+                      View Full Page →
+                    </a>
                   </div>
                 </div>
               </div>

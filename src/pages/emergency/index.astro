@@ -1,22 +1,33 @@
 ---
-// Emergency & Safety Index Page - UPDATED 2026-01-21
-// Updated for Status on Web and Status/Stage/Phase fields
+// Emergency & Safety Index Page - UPDATED 2026-02-24
+// Updated: SectionHero component, Notion-managed hero images
 import Layout from '../../layouts/BaseLayout.astro';
+import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
+import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 import { getSmartIcon } from '../../lib/icon-matcher.js';
+import { generateSlug } from '../../lib/notion-detail-pages.js';
+
+// Fetch section settings
+const sectionSettings = await fetchSectionSettingsBySlug('emergency');
+let sectionHeroManifest = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const manifestPath = path.resolve(process.cwd(), 'public/images/heroes/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    sectionHeroManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  }
+} catch (e) { /* manifest not yet generated */ }
+const heroImage = sectionHeroManifest['emergency'] || null;
 
 // Fetch Emergency & Safety items
-// ✅ UPDATED: fetchNotionContent now filters by Status on Web = "Published" automatically
 const items = await fetchNotionContent({ 
   section: 'Emergency & Safety',
   requireShowOnWebsite: true
 });
 
-// ✅ REMOVED: No longer filtering by status values
-// All items with Status on Web = "Published" will display
-// Status / Stage / Phase values are shown as badges for public information
-
-// Group by category for organization
+// Group by category
 const categories = {
   'Bushfire': items.filter(item => item.category === 'Bushfire'),
   'Flood': items.filter(item => item.category === 'Flood'),
@@ -26,7 +37,6 @@ const categories = {
   'Other': items.filter(item => !['Bushfire', 'Flood', 'Police', 'Surf Life Saving', 'Amenities'].includes(item.category))
 };
 
-// Category emoji mapping
 const categoryEmojis = {
   'Bushfire': '🔥',
   'Flood': '🌊',
@@ -44,35 +54,6 @@ const categoryEmojis = {
   <style>
     .emergency-page {
       background: #f7f9fc;
-    }
-    
-    /* Hero Section - Red Gradient */
-    .emergency-hero {
-      background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
-      color: white;
-      padding: 4rem 1rem;
-      text-align: center;
-      position: relative;
-    }
-    
-    .hero-content {
-      position: relative;
-      z-index: 1;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-    
-    .emergency-hero h1 {
-      color: white;
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      font-weight: 700;
-    }
-    
-    .emergency-hero p {
-      font-size: 1.25rem;
-      opacity: 0.95;
-      margin-bottom: 2rem;
     }
     
     /* Emergency Contact Buttons */
@@ -301,24 +282,36 @@ const categoryEmojis = {
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      color: #dc2626;
       text-decoration: none;
       font-weight: 600;
-      margin-top: 1rem;
+      margin-top: 0.75rem;
       transition: color 0.2s;
     }
-    
-    .card-link:hover {
+
+    .card-link-detail {
+      color: #dc2626;
+    }
+
+    .card-link-detail:hover {
       color: #991b1b;
     }
-    
-    .card-link::after {
-      content: '→';
-      transition: transform 0.2s;
+
+    .card-link-external {
+      color: #6B7280;
+      font-size: 0.875rem;
+      font-weight: 500;
     }
-    
-    .card-link:hover::after {
-      transform: translateX(4px);
+
+    .card-link-external:hover {
+      color: #991b1b;
+    }
+
+    .card-link-detail::after {
+      content: '';
+    }
+
+    .card-link:hover {
+      text-decoration: none;
     }
     
     .no-items {
@@ -355,22 +348,23 @@ const categoryEmojis = {
 
   <div class="emergency-page">
     <!-- Hero Section -->
-    <div class="emergency-hero">
-      <div class="hero-content">
-        <h1>Emergency & Safety</h1>
-        <p>Emergency services, evacuation plans, and safety information for the Smiths Lake community.</p>
-        
-        <div class="emergency-contacts">
-          <a href="tel:000" class="emergency-btn">
-            <span style="font-size: 1.5rem;">🚨</span>
-            Emergency: 000
-          </a>
-          <a href="tel:131444" class="emergency-btn emergency-btn-secondary">
-            Police (Non-Emergency): 131 444
-          </a>
-        </div>
+    <SectionHero
+      title={sectionSettings?.heroTitle || 'Emergency & Safety'}
+      subtitle={sectionSettings?.heroSubtitle || 'Emergency services, evacuation plans, and safety information for the Smiths Lake community.'}
+      accentHex={sectionSettings?.accentHex || '#DC2626'}
+      backgroundImage={heroImage}
+      overlayOpacity={sectionSettings?.overlayOpacity ?? 50}
+    >
+      <div class="emergency-contacts" style="margin-top: 1.5rem;">
+        <a href="tel:000" class="emergency-btn">
+          <span style="font-size: 1.5rem;">🚨</span>
+          Emergency: 000
+        </a>
+        <a href="tel:131444" class="emergency-btn emergency-btn-secondary">
+          Police (Non-Emergency): 131 444
+        </a>
       </div>
-    </div>
+    </SectionHero>
     
     <div class="content-section">
       {Object.entries(categories).map(([category, categoryItems]) => 
@@ -493,13 +487,19 @@ const categoryEmojis = {
                       {(item.websiteUrl || item.documentUrl) && (
                         <a 
                           href={item.websiteUrl || item.documentUrl} 
-                          class="card-link"
-                          target={item.documentUrl ? '_blank' : undefined}
-                          rel={item.documentUrl ? 'noopener' : undefined}
+                          class="card-link card-link-external"
+                          target="_blank"
+                          rel="noopener"
                         >
-                          {item.documentUrl ? 'View Document' : 'Visit Website'}
+                          {item.documentUrl ? 'View Document' : 'Visit Website'} ↗
                         </a>
                       )}
+                      <a 
+                        href={`/emergency/${item.slug || generateSlug(item.title)}/`}
+                        class="card-link card-link-detail"
+                      >
+                        View Details →
+                      </a>
                     </div>
                   </article>
                 );

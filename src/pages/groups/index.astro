@@ -1,19 +1,31 @@
 ---
-// Groups & Activities Index Page - UPDATED 2026-01-21
-// Updated for Status on Web, Status/Stage/Phase, Event Frequency, Event Cycle fields
+// Groups & Activities Index Page - UPDATED 2026-02-24
+// Updated: SectionHero component, Notion-managed hero images
 import Layout from '../../layouts/BaseLayout.astro';
+import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
+import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 import { getSmartIcon } from '../../lib/icon-matcher.js';
+import { generateSlug } from '../../lib/notion-detail-pages.js';
+
+// Fetch section settings
+const sectionSettings = await fetchSectionSettingsBySlug('groups');
+let sectionHeroManifest = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const manifestPath = path.resolve(process.cwd(), 'public/images/heroes/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    sectionHeroManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  }
+} catch (e) { /* manifest not yet generated */ }
+const heroImage = sectionHeroManifest['groups'] || null;
 
 // Fetch all Groups & Activities items
-// ✅ UPDATED: fetchNotionContent now filters by Status on Web = "Published" automatically
 const items = await fetchNotionContent({ 
   section: 'Groups & Activities',
   requireShowOnWebsite: true
 });
-
-// ✅ REMOVED: No longer filtering by status values
-// All items with Status on Web = "Published" will display
 
 // Category emoji mapping - FIXED 2026-01-28 to match actual Notion values
 const categoryEmojis = {
@@ -282,24 +294,36 @@ const sections = categoryDefs
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      color: #7C3AED;
       text-decoration: none;
       font-weight: 600;
-      margin-top: 1rem;
+      margin-top: 0.75rem;
       transition: color 0.2s;
     }
 
-    .card-link:hover {
+    .card-link-detail {
+      color: #7C3AED;
+    }
+
+    .card-link-detail:hover {
       color: #5B21A8;
     }
 
-    .card-link::after {
-      content: '→';
-      transition: transform 0.2s;
+    .card-link-external {
+      color: #6B7280;
+      font-size: 0.875rem;
+      font-weight: 500;
     }
 
-    .card-link:hover::after {
-      transform: translateX(4px);
+    .card-link-external:hover {
+      color: #1B365D;
+    }
+
+    .card-link-detail::after {
+      content: '';
+    }
+
+    .card-link:hover {
+      text-decoration: none;
     }
 
     .cta-box {
@@ -352,20 +376,19 @@ const sections = categoryDefs
     }
 
     @media (max-width: 768px) {
-      .groups-hero h1 { font-size: 2rem; }
-      .groups-hero p { font-size: 1rem; }
       .groups-grid { grid-template-columns: 1fr; }
       .category-header { flex-direction: column; align-items: flex-start; }
     }
   </style>
 
   <div class="groups-page">
-    <div class="groups-hero">
-      <div class="hero-content">
-        <h1>Groups & Activities</h1>
-        <p>Join our vibrant community through clubs, groups, and volunteering.</p>
-      </div>
-    </div>
+    <SectionHero
+      title={sectionSettings?.heroTitle || 'Groups & Activities'}
+      subtitle={sectionSettings?.heroSubtitle || 'Join our vibrant community through clubs, groups, and volunteering.'}
+      accentHex={sectionSettings?.accentHex || '#5B9BD5'}
+      backgroundImage={heroImage}
+      overlayOpacity={sectionSettings?.overlayOpacity ?? 50}
+    />
 
     <div class="intro-section">
       <p>
@@ -493,13 +516,19 @@ const sections = categoryDefs
                       {(group.websiteUrl || group.facebookUrl || group.groupInfoDocumentUrl || group.documentUrl) && (
                         <a 
                           href={group.websiteUrl || group.facebookUrl || group.groupInfoDocumentUrl || group.documentUrl} 
-                          class="card-link"
+                          class="card-link card-link-external"
                           target="_blank"
                           rel="noopener"
                         >
-                          {group.groupInfoDocumentUrl || group.documentUrl ? 'View Info' : group.facebookUrl ? 'Facebook' : 'Visit Website'}
+                          {group.groupInfoDocumentUrl || group.documentUrl ? 'View Info' : group.facebookUrl ? 'Facebook' : 'Visit Website'} ↗
                         </a>
                       )}
+                      <a 
+                        href={`/groups/${group.slug || generateSlug(group.title)}/`}
+                        class="card-link card-link-detail"
+                      >
+                        View Details →
+                      </a>
                     </div>
                   </article>
                 );

@@ -6,7 +6,6 @@ import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 import { getSmartIcon } from '../../lib/icon-matcher.js';
-import { generateSlug } from '../../lib/notion-detail-pages.js';
 
 // Fetch section settings
 const sectionSettings = await fetchSectionSettingsBySlug('groups');
@@ -294,36 +293,24 @@ const sections = categoryDefs
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
+      color: #7C3AED;
       text-decoration: none;
       font-weight: 600;
-      margin-top: 0.75rem;
+      margin-top: 1rem;
       transition: color 0.2s;
     }
 
-    .card-link-detail {
-      color: #7C3AED;
-    }
-
-    .card-link-detail:hover {
+    .card-link:hover {
       color: #5B21A8;
     }
 
-    .card-link-external {
-      color: #6B7280;
-      font-size: 0.875rem;
-      font-weight: 500;
+    .card-link::after {
+      content: '→';
+      transition: transform 0.2s;
     }
 
-    .card-link-external:hover {
-      color: #1B365D;
-    }
-
-    .card-link-detail::after {
-      content: '';
-    }
-
-    .card-link:hover {
-      text-decoration: none;
+    .card-link:hover::after {
+      transform: translateX(4px);
     }
 
     .cta-box {
@@ -387,7 +374,6 @@ const sections = categoryDefs
       subtitle={sectionSettings?.heroSubtitle || 'Join our vibrant community through clubs, groups, and volunteering.'}
       accentHex={sectionSettings?.accentHex || '#5B9BD5'}
       backgroundImage={heroImage}
-      overlayOpacity={sectionSettings?.overlayOpacity ?? 50}
     />
 
     <div class="intro-section">
@@ -516,19 +502,13 @@ const sections = categoryDefs
                       {(group.websiteUrl || group.facebookUrl || group.groupInfoDocumentUrl || group.documentUrl) && (
                         <a 
                           href={group.websiteUrl || group.facebookUrl || group.groupInfoDocumentUrl || group.documentUrl} 
-                          class="card-link card-link-external"
+                          class="card-link"
                           target="_blank"
                           rel="noopener"
                         >
-                          {group.groupInfoDocumentUrl || group.documentUrl ? 'View Info' : group.facebookUrl ? 'Facebook' : 'Visit Website'} ↗
+                          {group.groupInfoDocumentUrl || group.documentUrl ? 'View Info' : group.facebookUrl ? 'Facebook' : 'Visit Website'}
                         </a>
                       )}
-                      <a 
-                        href={`/groups/${group.slug || generateSlug(group.title)}/`}
-                        class="card-link card-link-detail"
-                      >
-                        View Details →
-                      </a>
                     </div>
                   </article>
                 );
