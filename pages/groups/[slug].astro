@@ -3,7 +3,7 @@
  * Groups & Activities - Detail Page
  * Dynamic route: /groups/[slug]/
  * 
- * @version 1.0
+ * @version 1.1 - Fixed SECTION_NAME scoping for Astro getStaticPaths
  * @created February 2026
  */
 
@@ -12,12 +12,10 @@ import DetailPage from '../../components/DetailPage.astro';
 import { fetchDetailPageItems } from '../../lib/notion-detail-pages.js';
 import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 
-const SECTION_NAME = 'Groups & Activities';
-
 export async function getStaticPaths() {
   let items = [];
   try {
-    items = await fetchDetailPageItems(SECTION_NAME);
+    items = await fetchDetailPageItems('Groups & Activities');
   } catch (error) {
     console.error('Error fetching groups for static paths:', error);
   }
@@ -34,16 +32,13 @@ if (!item) {
   return Astro.redirect('/groups/');
 }
 
-// Get section accent colour from Section Settings
 let accentHex = item.sectionColour?.hex || '#5B9BD5';
 try {
   const sectionSettings = await fetchSectionSettingsBySlug('groups');
   if (sectionSettings?.accentHex) {
     accentHex = sectionSettings.accentHex;
   }
-} catch (e) {
-  // Use default colour
-}
+} catch (e) {}
 
 const pageTitle = `${item.title} | Groups & Activities`;
 const pageDescription = item.description || `${item.title} - Groups & Activities at Smiths Lake Village.`;

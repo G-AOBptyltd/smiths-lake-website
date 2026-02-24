@@ -3,7 +3,7 @@
  * Services & Amenities - Detail Page
  * Dynamic route: /services/[slug]/
  * 
- * @version 1.0
+ * @version 1.1 - Fixed SECTION_NAME scoping for Astro getStaticPaths
  * @created February 2026
  */
 
@@ -12,12 +12,10 @@ import DetailPage from '../../components/DetailPage.astro';
 import { fetchDetailPageItems } from '../../lib/notion-detail-pages.js';
 import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 
-const SECTION_NAME = 'Services';
-
 export async function getStaticPaths() {
   let items = [];
   try {
-    items = await fetchDetailPageItems(SECTION_NAME);
+    items = await fetchDetailPageItems('Services');
   } catch (error) {
     console.error('Error fetching services for static paths:', error);
   }
