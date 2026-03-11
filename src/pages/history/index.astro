@@ -1,6 +1,6 @@
 ---
-// History & Culture Page - UPDATED 2026-02-24
-// Updated: SectionHero component, Notion-managed hero images
+// History & Culture Page - UPDATED 2026-03-11
+// Updated: Timeline reversed to show newest first
 import Layout from '../../layouts/BaseLayout.astro';
 import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
@@ -27,13 +27,13 @@ const allHistoryItems = await fetchNotionContent({
   requireShowOnWebsite: true
 });
 
-// Sort by Year Era (oldest to newest)
+// Sort by Year Era (newest to oldest)
 const timelineItems = allHistoryItems
   .filter(item => item.yearEra)
   .sort((a, b) => {
     const dateA = new Date(a.yearEra);
     const dateB = new Date(b.yearEra);
-    return dateA - dateB;
+    return dateB - dateA;
   });
 
 // Separate documents for the bottom section
@@ -215,7 +215,7 @@ function getCardDisplayConfig(item) {
       top: 0;
       bottom: 0;
       width: 3px;
-      background: linear-gradient(to bottom, #5B9BD5, #1B365D);
+      background: linear-gradient(to bottom, #1B365D, #5B9BD5);
       transform: translateX(-50%);
     }
     
@@ -517,7 +517,7 @@ function getCardDisplayConfig(item) {
       <div class="timeline-section">
         <div class="timeline-header">
           <h2>Historical Timeline</h2>
-          <p>Journey through the key moments that defined our community</p>
+          <p>From recent milestones back to the earliest origins of our community</p>
         </div>
 
         <div class="timeline">
