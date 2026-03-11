@@ -15,7 +15,6 @@ interface Props {
   videoSrc?: string;
   size?: 'default' | 'large' | 'small';
 }
-
 const { 
   title, 
   subtitle, 
@@ -26,19 +25,16 @@ const {
   videoSrc,
   size = 'default'
 } = Astro.props;
-
 // Convert 0-100 scale to alpha values for the gradient
 const peakAlpha = Math.max(0, Math.min(1, overlayOpacity / 100));
 const midAlpha = peakAlpha * 0.7;
 const endAlpha = peakAlpha * 0.45;
-
 const sizeClasses = {
   small: 'hero--small',
   default: '',
   large: 'hero--large'
 };
 ---
-
 <section class={`hero ${sizeClasses[size]}`}>
   <div class="hero-background">
     {videoSrc ? (
@@ -62,7 +58,6 @@ const sizeClasses = {
     )}
   </div>
   <div class="hero-overlay" style={`background: linear-gradient(135deg, rgba(27, 54, 93, ${peakAlpha}) 0%, rgba(27, 54, 93, ${midAlpha}) 50%, rgba(91, 155, 213, ${endAlpha}) 100%);`}></div>
-  <div class="hero-stripes" aria-hidden="true"></div>
   
   <div class="hero-content">
     <h1 class="hero-title">{title}</h1>
@@ -84,7 +79,6 @@ const sizeClasses = {
     )}
   </div>
 </section>
-
 <style>
   .hero {
     position: relative;
@@ -143,25 +137,9 @@ const sizeClasses = {
     z-index: 2;
   }
   
-  .hero-stripes {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 40%;
-    height: 100%;
-    background: repeating-linear-gradient(
-      -60deg,
-      transparent,
-      transparent 8px,
-      rgba(27, 54, 93, 0.3) 8px,
-      rgba(27, 54, 93, 0.3) 10px
-    );
-    z-index: 3;
-  }
-  
   .hero-content {
     position: relative;
-    z-index: 4;
+    z-index: 3;
     text-align: center;
     color: var(--color-white);
     padding: var(--space-8) var(--space-4);
