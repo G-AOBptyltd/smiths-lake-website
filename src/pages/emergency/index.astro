@@ -152,6 +152,19 @@ const categoryEmojis = {
       transform: translateY(-4px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
+
+    /* Clickable card */
+    .clickable-card {
+      cursor: pointer;
+    }
+    .clickable-card:active {
+      transform: translateY(-2px);
+    }
+    .clickable-card:focus-visible {
+      outline: 3px solid #F5A623;
+      outline-offset: 2px;
+    }
+
     
     .item-card.featured {
       border: 3px solid #F5A623;
@@ -401,7 +414,7 @@ const categoryEmojis = {
                 };
 
                 return (
-                  <article class={`item-card ${config.isFeatured ? 'featured' : ''} ${config.isHighlighted ? 'highlighted' : ''} ${!config.showIconHeader ? 'no-icon-header' : ''}`}>
+                  <article class={`item-card clickable-card ${config.isFeatured ? 'featured' : ''} ${config.isHighlighted ? 'highlighted' : ''} ${!config.showIconHeader ? 'no-icon-header' : ''}`} data-href={`/emergency/${item.slug || generateSlug(item.title)}/`} tabindex="0" role="link" aria-label={`View ${item.title}`}>
                     
                     {config.showIconHeader && (
                       <div class={`card-icon-header ${config.headerColor}`}>
@@ -516,4 +529,22 @@ const categoryEmojis = {
       )}
     </div>
   </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.clickable-card').forEach(card => {
+      const targetUrl = card.dataset.href;
+      if (!targetUrl) return;
+      card.addEventListener('click', (event) => {
+        if (event.target.closest('a, button, input, select, textarea')) return;
+        window.location.href = targetUrl;
+      });
+      card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && event.target === card) {
+          window.location.href = targetUrl;
+        }
+      });
+    });
+  });
+</script>
 </Layout>
