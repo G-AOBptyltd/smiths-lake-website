@@ -97,6 +97,19 @@ const items = await fetchNotionContent({
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
 
+    /* Clickable card */
+    .clickable-card {
+      cursor: pointer;
+    }
+    .clickable-card:active {
+      transform: translateY(-2px);
+    }
+    .clickable-card:focus-visible {
+      outline: 3px solid #F5A623;
+      outline-offset: 2px;
+    }
+
+
     .program-card.featured {
       border: 3px solid #F5A623;
       background: linear-gradient(to bottom, #FFF9E6 0%, white 100%);
@@ -290,7 +303,7 @@ const items = await fetchNotionContent({
               };
 
               return (
-                <article class={`program-card ${config.isFeatured ? 'featured' : ''} ${config.isHighlighted ? 'highlighted' : ''} ${!config.showIconHeader ? 'no-icon-header' : ''}`}>
+                <article class={`program-card clickable-card ${config.isFeatured ? 'featured' : ''} ${config.isHighlighted ? 'highlighted' : ''} ${!config.showIconHeader ? 'no-icon-header' : ''}`} data-href={`/environment/${program.slug || generateSlug(program.title)}/`} tabindex="0" role="link" aria-label={`View ${program.title}`}>
                   
                   {config.showIconHeader && (
                     <div class={`card-icon-header ${config.headerColor}`}>
@@ -393,4 +406,22 @@ const items = await fetchNotionContent({
       )}
     </div>
   </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.clickable-card').forEach(card => {
+      const targetUrl = card.dataset.href;
+      if (!targetUrl) return;
+      card.addEventListener('click', (event) => {
+        if (event.target.closest('a, button, input, select, textarea')) return;
+        window.location.href = targetUrl;
+      });
+      card.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && event.target === card) {
+          window.location.href = targetUrl;
+        }
+      });
+    });
+  });
+</script>
 </Layout>
