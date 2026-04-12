@@ -20,6 +20,7 @@
 import { getSmartIcon } from '../lib/icon-matcher.js';
 import fs from 'node:fs';
 import path from 'node:path';
+import NotionPageContent from './NotionPageContent.astro';
 
 interface MetadataItem {
   label: string;
@@ -186,17 +187,14 @@ const pageDescription = item.description || `${item.title} - ${item.sectionDispl
     
     <article class="main-content">
       
-      <!-- Description Section -->
-      {item.description && (
-        <section class="content-section" aria-labelledby="about-heading">
-          <h2 id="about-heading">About</h2>
-          <div class="content-text">
-            {item.description.split('\n\n').map(para => (
-              <p>{para}</p>
-            ))}
-          </div>
-        </section>
-      )}
+      <!-- Description / Page Content Section -->
+      <section class="content-section" aria-labelledby="about-heading">
+        <h2 id="about-heading">About</h2>
+        <NotionPageContent 
+          pageId={item.id} 
+          fallbackHtml={item.description ? item.description.split('\n\n').map(p => `<p>${p}</p>`).join('') : ''}
+        />
+      </section>
 
       <!-- Notes / Extended Content -->
       {hasNotes && (

@@ -25,6 +25,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { fetchProjects, fetchProjectBySlug } from '../../lib/notion-projects.js';
 import { getSmartIcon } from '../../lib/icon-matcher.js';
+import NotionPageContent from '../../components/NotionPageContent.astro';
 
 // Get the slug from the URL
 export async function getStaticPaths() {
@@ -86,7 +87,7 @@ if (project.submissionDeadline && !project.deadlinePassed) {
 }
 
 // Check if any content tabs should be shown
-const hasAbout = project.aboutContent && project.aboutContent.trim().length > 0;
+const hasAbout = true; // Always show About tab - NotionPageContent handles fallback to aboutContent
 const hasChanges = project.changesContent && project.changesContent.trim().length > 0;
 const hasFAQs = project.faqsContent && project.faqsContent.trim().length > 0;
 const showTabs = hasAbout || hasChanges || hasFAQs;
@@ -359,7 +360,10 @@ function parseFeature(feature) {
 
             {hasAbout && (
               <div class={`tab-content ${initialTab === 'about' ? 'active' : ''}`} role="tabpanel" id="panel-about" aria-labelledby="tab-about" tabindex="0">
-                <div class="content-text" set:html={sanitizedAbout}></div>
+                <NotionPageContent 
+                  pageId={project.id} 
+                  fallbackHtml={sanitizedAbout}
+                />
               </div>
             )}
             {hasChanges && (
