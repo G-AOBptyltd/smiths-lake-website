@@ -243,9 +243,12 @@ a { color: var(--blue); }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
 
   /* ── Submission generator ────────────────────────────── */
+<<<<<<< HEAD
   .sub-offer { background: var(--white); border: 2px solid var(--teal); border-radius: 10px; padding: 22px; margin-top: 20px; display: none; }
   .sub-offer h3 { color: var(--teal); font-size: 17px; font-weight: 600; margin-bottom: 8px; }
   .sub-offer p { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px; }
+=======
+>>>>>>> main
   .sub-choice-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
   .sub-choice-btn { flex: 1; min-width: 140px; padding: 12px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--gray-light); cursor: pointer; font-size: 13px; font-weight: 500; text-align: center; color: var(--text); transition: all .15s; }
   .sub-choice-btn:hover { border-color: var(--teal); background: var(--teal-light); color: var(--teal); }
@@ -573,7 +576,11 @@ a { color: var(--blue); }
 // PPCA: Replace this with your Google Apps Script Web App URL after deployment
 // e.g. "https://script.google.com/macros/s/AKfycb.../exec"
 // This can also be set via the config panel in the Live Results tab.
-const HARDCODED_BACKEND = "https://script.google.com/macros/s/AKfycbyMkBKQLb4esaEYUI-h7IJISeGejnRBCgItiY9xd2OoIFXwY1fN81BqfJEPna04Wnf68g/exec"; // ← paste URL here for permanent embed
+<<<<<<< HEAD
+const HARDCODED_BACKEND = "https://script.google.com/macros/s/AKfycbwdnaeq9lKENJb7PTNg2JBvj5wgtLohs5zxbt_7tptKJtTK7-rz0wY3HueeP3IAERgHcw/exec"; // ← paste URL here for permanent embed
+=======
+const HARDCODED_BACKEND = "https://script.google.com/macros/s/AKfycbwdnaeq9lKENJb7PTNg2JBvj5wgtLohs5zxbt_7tptKJtTK7-rz0wY3HueeP3IAERgHcw/exec"; // ← paste URL here for permanent embed
+>>>>>>> main
 
 const BACKEND_KEY = "blueys_backend_url_v2";
 
@@ -722,7 +729,11 @@ async function submitSurvey(){
 
   try {
     // Use no-cors mode — GAS accepts this; response will be opaque but submission goes through
-    await fetch(url,{method:'POST',body:JSON.stringify(payload),mode:'no-cors',headers:{'Content-Type':'application/json'}});
+<<<<<<< HEAD
+    await fetch(url,{method:'POST',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain;charset=utf-8'}});
+=======
+    await fetch(url,{method:'POST',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain;charset=utf-8'}});
+>>>>>>> main
     showThankYou('Your response has been recorded and the live results have updated across all devices.');
   } catch(e) {
     // Network error — save locally as fallback
@@ -736,9 +747,12 @@ async function submitSurvey(){
 function showThankYou(msg){
   document.getElementById('thankyou').style.display='block';
   document.getElementById('thankyou-msg').textContent=msg;
+<<<<<<< HEAD
   // Reset submission panels
   document.getElementById('sub-offer').style.display='block';
   ['sub-details-panel','sub-ai-panel','sub-template-panel'].forEach(id=>{
+=======
+>>>>>>> main
     document.getElementById(id).classList.remove('active');
   });
   document.getElementById('thankyou').scrollIntoView({behavior:'smooth'});

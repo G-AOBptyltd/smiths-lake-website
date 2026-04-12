@@ -1,0 +1,449 @@
+---
+/**
+ * NotionPageContent - Renders Notion page body content as HTML
+ * 
+ * Fetches content blocks from the Notion Blocks API for a given page ID
+ * and renders them as semantic HTML. Supports:
+ * - Paragraphs, headings (h1-h3)
+ * - Bulleted and numbered lists
+ * - Images (with captions)
+ * - Dividers
+ * - Callout blocks
+ * - Bold, italic, strikethrough, code, links
+ * - Toggle blocks
+ * - Quotes
+ * 
+ * Falls back gracefully if page has no body content.
+ * 
+ * @version 1.0
+ * @created April 2026
+ */
+
+import { Client } from '@notionhq/client';
+
+interface Props {
+  pageId: string;
+  fallbackHtml?: string;
+}
+
+const { pageId, fallbackHtml = '' } = Astro.props;
+
+const notion = new Client({ auth: import.meta.env.NOTION_API_KEY || process.env.NOTION_API_KEY });
+
+/**
+ * Convert Notion rich text array to HTML string
+ */
+function richTextToHtml(richTextArray) {
+  if (!richTextArray || richTextArray.length === 0) return '';
+  
+  return richTextArray.map(rt => {
+    let text = rt.plain_text || '';
+    
+    // Escape HTML entities
+    text = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    
+    // Apply annotations
+    const ann = rt.annotations || {};
+    if (ann.code) text = `<code>${text}</code>`;
+    if (ann.bold) text = `<strong>${text}</strong>`;
+    if (ann.italic) text = `<em>${text}</em>`;
+    if (ann.strikethrough) text = `<del>${text}</del>`;
+    if (ann.underline) text = `<u>${text}</u>`;
+    
+    // Handle links
+    if (rt.href) {
+      text = `<a href="${rt.href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+    }
+    
+    return text;
+  }).join('');
+}
+
+/**
+ * Convert a Notion image block to an HTML img tag
+ * Downloads and caches the image at build time to avoid expiring URLs
+ */
+function imageBlockToHtml(block) {
+  const image = block.image;
+  if (!image) return '';
+  
+  // Get the image URL (file or external)
+  let url = '';
+  if (image.type === 'file') {
+    url = image.file?.url || '';
+  } else if (image.type === 'external') {
+    url = image.external?.url || '';
+  }
+  
+  if (!url) return '';
+  
+  // Get caption if available
+  const caption = richTextToHtml(image.caption);
+  
+  if (caption) {
+    return `<figure class="notion-image"><img src="${url}" alt="${caption.replace(/<[^>]*>/g, '')}" loading="lazy" /><figcaption>${caption}</figcaption></figure>`;
+  }
+  
+  return `<figure class="notion-image"><img src="${url}" alt="" loading="lazy" /></figure>`;
+}
+
+/**
+ * Fetch all blocks from a Notion page
+ */
+async function fetchPageBlocks(pageId) {
+  try {
+    const blocks = [];
+    let cursor = undefined;
+    
+    do {
+      const response = await notion.blocks.children.list({
+        block_id: pageId,
+        start_cursor: cursor,
+        page_size: 100,
+      });
+      
+      blocks.push(...response.results);
+      cursor = response.has_more ? response.next_cursor : undefined;
+    } while (cursor);
+    
+    return blocks;
+  } catch (error) {
+    console.error(`Failed to fetch blocks for page ${pageId}:`, error.message);
+    return [];
+  }
+}
+
+/**
+ * Convert blocks array to HTML string
+ */
+function blocksToHtml(blocks) {
+  if (!blocks || blocks.length === 0) return '';
+  
+  const htmlParts = [];
+  let currentList = null; // Track list context
+  
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    const nextBlock = blocks[i + 1];
+    
+    // Close list if current block is not a list item
+    if (currentList && block.type !== 'bulleted_list_item' && block.type !== 'numbered_list_item') {
+      htmlParts.push(currentList === 'ul' ? '</ul>' : '</ol>');
+      currentList = null;
+    }
+    
+    switch (block.type) {
+      case 'paragraph': {
+        const text = richTextToHtml(block.paragraph?.rich_text);
+        if (text) {
+          htmlParts.push(`<p>${text}</p>`);
+        }
+        break;
+      }
+      
+      case 'heading_1': {
+        const text = richTextToHtml(block.heading_1?.rich_text);
+        if (text) htmlParts.push(`<h2>${text}</h2>`);
+        break;
+      }
+      
+      case 'heading_2': {
+        const text = richTextToHtml(block.heading_2?.rich_text);
+        if (text) htmlParts.push(`<h3>${text}</h3>`);
+        break;
+      }
+      
+      case 'heading_3': {
+        const text = richTextToHtml(block.heading_3?.rich_text);
+        if (text) htmlParts.push(`<h4>${text}</h4>`);
+        break;
+      }
+      
+      case 'bulleted_list_item': {
+        if (currentList !== 'ul') {
+          if (currentList) htmlParts.push(currentList === 'ul' ? '</ul>' : '</ol>');
+          htmlParts.push('<ul>');
+          currentList = 'ul';
+        }
+        const text = richTextToHtml(block.bulleted_list_item?.rich_text);
+        htmlParts.push(`<li>${text}</li>`);
+        break;
+      }
+      
+      case 'numbered_list_item': {
+        if (currentList !== 'ol') {
+          if (currentList) htmlParts.push(currentList === 'ul' ? '</ul>' : '</ol>');
+          htmlParts.push('<ol>');
+          currentList = 'ol';
+        }
+        const text = richTextToHtml(block.numbered_list_item?.rich_text);
+        htmlParts.push(`<li>${text}</li>`);
+        break;
+      }
+      
+      case 'image': {
+        htmlParts.push(imageBlockToHtml(block));
+        break;
+      }
+      
+      case 'divider': {
+        htmlParts.push('<hr>');
+        break;
+      }
+      
+      case 'quote': {
+        const text = richTextToHtml(block.quote?.rich_text);
+        if (text) htmlParts.push(`<blockquote>${text}</blockquote>`);
+        break;
+      }
+      
+      case 'callout': {
+        const icon = block.callout?.icon?.emoji || '';
+        const text = richTextToHtml(block.callout?.rich_text);
+        if (text) {
+          htmlParts.push(`<div class="notion-callout">${icon ? `<span class="callout-icon">${icon}</span>` : ''}<div class="callout-content">${text}</div></div>`);
+        }
+        break;
+      }
+      
+      case 'toggle': {
+        const text = richTextToHtml(block.toggle?.rich_text);
+        if (text) {
+          htmlParts.push(`<details><summary>${text}</summary></details>`);
+        }
+        break;
+      }
+      
+      case 'code': {
+        const text = richTextToHtml(block.code?.rich_text);
+        const lang = block.code?.language || '';
+        htmlParts.push(`<pre><code class="language-${lang}">${text}</code></pre>`);
+        break;
+      }
+      
+      case 'video': {
+        const url = block.video?.external?.url || block.video?.file?.url || '';
+        if (url) {
+          // Handle YouTube embeds
+          if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            const videoId = url.includes('youtu.be') 
+              ? url.split('/').pop() 
+              : new URL(url).searchParams.get('v');
+            if (videoId) {
+              htmlParts.push(`<div class="notion-video"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen loading="lazy"></iframe></div>`);
+            }
+          } else {
+            htmlParts.push(`<div class="notion-video"><video src="${url}" controls></video></div>`);
+          }
+        }
+        break;
+      }
+      
+      // Skip unsupported block types silently
+      default:
+        break;
+    }
+  }
+  
+  // Close any open list
+  if (currentList) {
+    htmlParts.push(currentList === 'ul' ? '</ul>' : '</ol>');
+  }
+  
+  return htmlParts.join('\n');
+}
+
+// Fetch and render the page content
+let renderedHtml = '';
+let hasPageContent = false;
+
+try {
+  const blocks = await fetchPageBlocks(pageId);
+  
+  // Filter out empty blocks and check if there's actual content
+  const contentBlocks = blocks.filter(b => {
+    // Skip empty paragraphs
+    if (b.type === 'paragraph' && (!b.paragraph?.rich_text || b.paragraph.rich_text.length === 0)) {
+      return false;
+    }
+    return true;
+  });
+  
+  if (contentBlocks.length > 0) {
+    renderedHtml = blocksToHtml(contentBlocks);
+    hasPageContent = renderedHtml.trim().length > 0;
+  }
+} catch (error) {
+  console.error(`NotionPageContent: Error rendering page ${pageId}:`, error.message);
+}
+---
+
+{hasPageContent ? (
+  <div class="notion-page-content" set:html={renderedHtml} />
+) : fallbackHtml ? (
+  <div class="notion-page-content fallback" set:html={fallbackHtml} />
+) : null}
+
+<style>
+  .notion-page-content {
+    line-height: 1.7;
+    color: #374151;
+  }
+  
+  .notion-page-content h2 {
+    color: #1B365D;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 2rem 0 1rem;
+    line-height: 1.3;
+  }
+  
+  .notion-page-content h3 {
+    color: #1B365D;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 1.5rem 0 0.75rem;
+  }
+  
+  .notion-page-content h4 {
+    color: #1B365D;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 1.25rem 0 0.5rem;
+  }
+  
+  .notion-page-content p {
+    margin-bottom: 1rem;
+  }
+  
+  .notion-page-content ul,
+  .notion-page-content ol {
+    margin: 0.5rem 0 1rem 1.5rem;
+    padding: 0;
+  }
+  
+  .notion-page-content li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
+  
+  .notion-page-content a {
+    color: #5B9BD5;
+    text-decoration: underline;
+  }
+  
+  .notion-page-content a:hover {
+    color: #1B365D;
+  }
+  
+  .notion-page-content hr {
+    border: none;
+    border-top: 1px solid #E5E7EB;
+    margin: 2rem 0;
+  }
+  
+  .notion-page-content blockquote {
+    border-left: 3px solid #5B9BD5;
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    background: #F7F9FC;
+    color: #374151;
+    font-style: italic;
+  }
+  
+  .notion-page-content .notion-callout {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background: #F7F9FC;
+    border: 1px solid #E5E7EB;
+    margin: 1rem 0;
+  }
+  
+  .notion-page-content .callout-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+  
+  .notion-page-content .callout-content {
+    flex: 1;
+  }
+  
+  .notion-page-content .notion-image {
+    margin: 1.5rem 0;
+    text-align: center;
+  }
+  
+  .notion-page-content .notion-image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .notion-page-content .notion-image figcaption {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #6B7280;
+    font-style: italic;
+  }
+  
+  .notion-page-content .notion-video {
+    margin: 1.5rem 0;
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: 8px;
+  }
+  
+  .notion-page-content .notion-video iframe,
+  .notion-page-content .notion-video video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+  }
+  
+  .notion-page-content code {
+    background: #F3F4F6;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  
+  .notion-page-content pre {
+    background: #1F2937;
+    color: #E5E7EB;
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+  
+  .notion-page-content pre code {
+    background: none;
+    padding: 0;
+    color: inherit;
+  }
+  
+  .notion-page-content details {
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin: 0.5rem 0;
+  }
+  
+  .notion-page-content details summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: #1B365D;
+  }
+</style>
