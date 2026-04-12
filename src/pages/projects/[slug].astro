@@ -493,6 +493,11 @@ function parseFeature(feature) {
         <div class="sidebar-section">
           <h3>Quick Actions</h3>
           <div class="sidebar-actions">
+            {project.surveyUrl && (
+              <a href={project.surveyUrl} class="btn btn-survey btn-block" target="_blank" rel="noopener">
+                📋 Take the Community Survey
+              </a>
+            )}
             <a href={feedbackUrl} class="btn btn-primary btn-block">Submit Feedback</a>
             <button type="button" class="btn btn-outline btn-block share-button">Share Project</button>
           </div>
@@ -1022,10 +1027,26 @@ function parseFeature(feature) {
     border-color: var(--navy-blue-dark); 
   }
 
-  .btn-outline { 
-    background: transparent; 
-    color: var(--navy-blue); 
-    border-color: var(--navy-blue); 
+  .btn-survey {
+    background: #1A7A6E;
+    color: var(--white);
+    border-color: #1A7A6E;
+    font-weight: 600;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .btn-survey:hover {
+    background: #0F6E56;
+    border-color: #0F6E56;
+    color: var(--white);
+    text-decoration: none;
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--navy-blue);
+    border-color: var(--navy-blue);
   }
 
   .btn-outline:hover { 

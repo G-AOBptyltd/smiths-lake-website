@@ -238,7 +238,10 @@ function enrichProjectData(project) {
     
     // Email integration
     mailchimpTag: project.mailchimpTag || title,
-    
+
+    // Survey URL (MVP: hardcoded per-project; Scenario B: Notion field)
+    surveyUrl: getSurveyUrl(slug),
+
     // Preserve original data for debugging
     _raw: project
   };
@@ -371,6 +374,20 @@ function getStatusBadge(status) {
 /**
  * Generate URL slug from title
  */
+/**
+ * Get survey URL for a project (MVP: hardcoded mapping)
+ * TODO: Replace with Notion database field in Scenario B
+ * @param {string} slug - Project slug
+ * @returns {string|null} Survey URL or null
+ */
+function getSurveyUrl(slug) {
+  const surveyMap = {
+    'bluey-s-beach-village-centre': '/surveys/blueys-beach-survey.html',
+    'blueys-beach-village-concept-design': '/surveys/blueys-beach-survey.html',
+  };
+  return surveyMap[slug] || null;
+}
+
 function generateSlug(title) {
   if (!title) return 'untitled';
   
