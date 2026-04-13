@@ -734,6 +734,7 @@ async function submitSurvey(){
 }
 
 function showThankYou(msg){
+  document.getElementById('submit-btn').style.display='none';
   document.getElementById('thankyou').style.display='block';
   document.getElementById('thankyou-msg').textContent=msg;
   document.getElementById('thankyou').scrollIntoView({behavior:'smooth'});
