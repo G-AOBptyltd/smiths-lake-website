@@ -896,8 +896,8 @@ function renderResults(d){
   const allOpen=[...(d.openE2||[]).map(r=>({...r,section:'Parking & pedestrian safety'})), ...(d.openE3||[]).map(r=>({...r,section:'Additional comments'}))];
   if(allOpen.length){
     html+=`<div class="dash-section">Open-ended responses (most recent)</div>`;
-    allOpen.forEach(r=>{
-      html+=`<div class="open-quote"><div class="open-meta">${r.type} — ${r.section}</div>${r.text}</div>`;
+    allOpen.forEach((r,i)=>{
+      html+=`<div class="open-quote"><div class="open-meta">Person ${i+1} — ${r.section}</div>${r.text}</div>`;
     });
   }
 
