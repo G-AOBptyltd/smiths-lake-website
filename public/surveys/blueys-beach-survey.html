@@ -773,7 +773,7 @@ async function loadResults(){
     renderResults(data);
     // Auto-refresh every 60s when on results tab
     clearTimeout(resultsRefreshTimer);
-    resultsRefreshTimer=setTimeout(()=>{if(document.getElementById('view-results').style.display!=='none')loadResults();},60000);
+    resultsRefreshTimer=setTimeout(()=>{if(document.getElementById('view-results').style.display!=='none')loadResults();},180000);
   } catch(e){
     document.getElementById('results-body').innerHTML=`<div class="error-msg">Unable to load results. Please check your backend URL in the config panel, or try refreshing. Error: ${e.message}</div>`;
   }
@@ -804,7 +804,7 @@ function renderResults(d){
 
   const ts=d.updatedAt?new Date(d.updatedAt).toLocaleString('en-AU',{timeZone:'Australia/Sydney',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
 
-  let html=`<div class="update-note">Last updated ${ts} AEST · Auto-refreshes every 60 seconds</div>`;
+  let html=`<div class="update-note">Last updated ${ts} AEST · Auto-refreshes every 3 minutes</div>`;
 
   // Stats
   const conjointComplete=d.conjoint?d.conjoint.filter((c,i)=>c.answered>0).length:0;
