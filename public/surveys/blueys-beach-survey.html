@@ -169,6 +169,9 @@ a { color: var(--blue); }
 .dash-header h2 { font-size: 15px; font-weight: 600; color: var(--teal); }
 .refresh-btn { font-size: 12px; padding: 5px 12px; border: 1px solid var(--border); border-radius: 5px; cursor: pointer; background: var(--white); color: var(--text-muted); }
 .refresh-btn:hover { background: var(--teal-light); color: var(--teal); border-color: var(--teal); }
+.hub-link { font-size: 12px; padding: 5px 12px; border: 1px solid var(--border); border-radius: 5px; cursor: pointer; background: var(--white); color: var(--text-muted); text-decoration: none; display: inline-block; }
+.hub-link:hover { background: var(--teal-light); color: var(--teal); border-color: var(--teal); }
+.hub-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .update-note { font-size: 11px; color: var(--text-muted); font-style: italic; margin-bottom: 14px; }
 .loading-overlay { text-align: center; padding: 40px 20px; color: var(--text-muted); }
 .loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--teal); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 12px; }
@@ -376,6 +379,10 @@ a { color: var(--blue); }
 
 <div class="page-wrap">
 
+  <div class="hub-bar">
+    <a href="/projects/bluey-s-beach-village-centre/" class="hub-link">← Back to Project Hub</a>
+  </div>
+
   <div class="view-tabs">
     <button class="vtab on" onclick="showView('survey')">Complete Survey</button>
     <button class="vtab" onclick="showView('results')" id="results-tab-btn">Live Results <span class="vtab-count" id="resp-count-tab" style="display:none"></span></button>
@@ -515,6 +522,10 @@ a { color: var(--blue); }
     <div class="submit-section">
       <button class="submit-btn" id="submit-btn" onclick="submitSurvey()">Submit my response</button>
       <div class="submit-note" id="submit-note">Your response is anonymous. Results update the Live Results dashboard instantly across all devices.</div>
+    </div>
+
+    <div class="hub-bar" style="margin-top:20px">
+      <a href="/projects/bluey-s-beach-village-centre/" class="hub-link">← Back to Project Hub</a>
     </div>
 
     <div class="thankyou" id="thankyou">
