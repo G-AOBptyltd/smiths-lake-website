@@ -23,6 +23,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;fo
 .hero-bar p{font-size:13px;opacity:.85}
 .snapshot-badge{display:inline-block;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;margin-top:8px;letter-spacing:.03em}
 .page-wrap{max-width:960px;margin:0 auto;padding:20px 16px 60px}
+.hub-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.hub-link{font-size:12px;padding:5px 12px;border:1px solid #ddd;border-radius:5px;background:#fff;color:#666;text-decoration:none;display:inline-block}
+.hub-link:hover{background:#e8f7f3;color:#1A7A6E;border-color:#1A7A6E}
 .tabs{display:flex;background:var(--white);border-bottom:2px solid var(--teal-mid);border-radius:8px 8px 0 0;overflow-x:auto;gap:0;margin-bottom:0}
 .tab{flex-shrink:0;padding:12px 16px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:3px solid transparent;border-top:none;border-left:none;border-right:none;background:none;transition:all .15s;white-space:nowrap}
 .tab.on{color:var(--teal);border-bottom-color:var(--teal);font-weight:700;background:var(--teal-light)}
@@ -93,6 +96,11 @@ canvas{max-height:320px}
 </div>
 
 <div class="page-wrap">
+
+  <div class="hub-bar">
+    <a href="/projects/bluey-s-beach-village-centre/" class="hub-link">← Back to VillageFirst Project Hub</a>
+    <a href="/" class="hub-link">Return to VillageFirst Website</a>
+  </div>
 
   <div class="tabs">
     <button class="tab on" onclick="showTab('overview',this)">📊 Overview</button>
