@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blueys Beach Survey &#8212; Results Snapshot 27 April 2026</title>
+<meta name="description" content="Community survey results snapshot &#8212; 27 April 2026 (n=58). Blueys Beach Village Renewal, PPCA / VillageFirst.">
+<meta property="og:title" content="Blueys Beach Survey &#8212; Results Snapshot 27 April 2026">
+<meta property="og:description" content="58 responses. Hybrid option leads at 45%. PPCA Community Survey Snapshot for MidCoast Council.">
+<link rel="canonical" href="https://villagefirst.org.au/results/blueys-beach-results-27april2026">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#1A7A6E;--teal-light:#E1F5EE;--teal-mid:#9FE1CB;
+  --blue:#185FA5;--blue-light:#E6F1FB;
+  --green:#3B6D11;--green-light:#EAF3DE;
+  --amber:#BA7517;--amber-light:#FAEEDA;
+  --red:#A32D2D;--red-light:#FCEBEB;
+  --gray:#5F5E5A;--gray-light:#F1EFE8;
+  --border:#D3D1C7;--text:#2C2C2A;--text-muted:#5F5E5A;--white:#fff;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;font-size:15px;line-height:1.6;color:var(--text);background:#F4F2ED}
+.site-header{background:var(--teal);color:var(--white);padding:0;overflow:hidden}
+.hero-bar{background:linear-gradient(135deg,#0f5a50 0%,#1A7A6E 60%,#2a9a8a 100%);padding:20px 24px 18px}
+.hero-bar h1{font-size:20px;font-weight:700;margin-bottom:3px}
+.hero-bar p{font-size:13px;opacity:.85}
+.snapshot-badge{display:inline-block;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;margin-top:8px;letter-spacing:.03em}
+.page-wrap{max-width:960px;margin:0 auto;padding:20px 16px 60px}
+.hub-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.hub-link{font-size:12px;padding:5px 12px;border:1px solid #ddd;border-radius:5px;background:#fff;color:#666;text-decoration:none;display:inline-block}
+.hub-link:hover{background:#e8f7f3;color:#1A7A6E;border-color:#1A7A6E}
+.tabs{display:flex;background:var(--white);border-bottom:2px solid var(--teal-mid);border-radius:8px 8px 0 0;overflow-x:auto;gap:0;margin-bottom:0}
+.tab{flex-shrink:0;padding:12px 16px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border-bottom:3px solid transparent;border-top:none;border-left:none;border-right:none;background:none;transition:all .15s;white-space:nowrap}
+.tab.on{color:var(--teal);border-bottom-color:var(--teal);font-weight:700;background:var(--teal-light)}
+.tab:hover:not(.on){color:var(--teal);background:#f0faf7}
+.panel{display:none;background:var(--white);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:24px}
+.panel.on{display:block}
+.stat-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px}
+.stat{flex:1;min-width:140px;background:var(--teal-light);border:1px solid var(--teal-mid);border-radius:10px;padding:14px 16px;text-align:center}
+.stat-num{font-size:32px;font-weight:800;color:var(--teal);line-height:1}
+.stat-lbl{font-size:12px;color:var(--teal);margin-top:4px;font-weight:500}
+.stat.blue{background:var(--blue-light);border-color:#a0c4f0}.stat.blue .stat-num,.stat.blue .stat-lbl{color:var(--blue)}
+.stat.amber{background:var(--amber-light);border-color:#e8c878}.stat.amber .stat-num,.stat.amber .stat-lbl{color:var(--amber)}
+.stat.green{background:var(--green-light);border-color:#b8d898}.stat.green .stat-num,.stat.green .stat-lbl{color:var(--green)}
+.insight{background:linear-gradient(135deg,#e8f8f4,#d4f0e8);border-left:4px solid var(--teal);border-radius:0 8px 8px 0;padding:14px 16px;margin:16px 0;font-size:13px;color:var(--text)}
+.insight strong{color:var(--teal)}
+.insight.blue{background:linear-gradient(135deg,#e4effc,#cce0f8);border-left-color:var(--blue)}.insight.blue strong{color:var(--blue)}
+.insight.amber{background:linear-gradient(135deg,#fdf3e0,#f9e8c0);border-left-color:var(--amber)}.insight.amber strong{color:var(--amber)}
+.insight.green{background:linear-gradient(135deg,#ebf5e0,#d5ecbf);border-left-color:var(--green)}.insight.green strong{color:var(--green)}
+.shift-box{background:#f7f3ff;border:1px solid #c8b8f0;border-left:4px solid #7c5cbf;border-radius:0 8px 8px 0;padding:12px 16px;margin:16px 0;font-size:12px;color:var(--text)}
+.shift-box strong{color:#5a3fa0}
+.shift-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.shift-table th{text-align:left;font-weight:700;color:#5a3fa0;padding:4px 8px;border-bottom:1px solid #c8b8f0}
+.shift-table td{padding:4px 8px;border-bottom:1px solid #e0d8f5}
+.delta-pos{color:var(--green);font-weight:700}
+.delta-neg{color:var(--red);font-weight:700}
+.chart-wrap{position:relative;margin:20px 0;background:var(--white);border:1px solid var(--border);border-radius:8px;padding:16px}
+.chart-wrap h3{font-size:14px;font-weight:600;color:var(--teal);margin-bottom:12px}
+.chart-sub{font-size:12px;color:var(--text-muted);margin-top:8px}
+.section-label{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-muted);margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--teal-mid)}
+.conjoint-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.c-task{background:var(--gray-light);border:1px solid var(--border);border-radius:8px;padding:14px}
+.c-task h4{font-size:12px;font-weight:700;color:var(--gray);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.c-bar-wrap{display:flex;flex-direction:column;gap:6px}
+.c-bar-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.c-bar-label{width:80px;font-weight:600;font-size:11px;color:var(--text)}
+.c-bar{flex:1;height:22px;border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:12px;font-weight:700;color:var(--white);min-width:30px}
+.c-bar.x{background:var(--blue)}.c-bar.y{background:var(--amber)}
+.c-winner{font-size:10px;font-weight:700;margin-top:6px;padding:3px 8px;border-radius:10px;display:inline-block}
+.c-winner.x{background:var(--blue-light);color:var(--blue)}.c-winner.y{background:var(--amber-light);color:var(--amber)}
+.c-note{font-size:10px;color:var(--text-muted);margin-top:6px;font-style:italic;line-height:1.4}
+.resp-grid{display:grid;gap:10px;margin:12px 0}
+.resp-card{background:var(--gray-light);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13px;line-height:1.6}
+.resp-num{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);display:block;margin-bottom:4px}
+.pref-bar-wrap{display:flex;flex-direction:column;gap:8px;margin:16px 0}
+.pref-row{display:flex;align-items:center;gap:10px}
+.pref-lbl{width:200px;font-size:13px;font-weight:500;flex-shrink:0}
+.pref-bar{height:28px;border-radius:6px;display:flex;align-items:center;padding:0 10px;font-size:13px;font-weight:700;color:var(--white);min-width:40px;transition:width .5s}
+.pref-val{font-size:12px;color:var(--text-muted);margin-left:6px}
+.footnote{font-size:11px;color:var(--text-muted);margin-top:12px;padding:8px 12px;background:#f8f8f6;border-left:3px solid var(--border);border-radius:0 4px 4px 0;line-height:1.5}
+.score-row{display:flex;align-items:center;gap:10px;margin:6px 0}
+.score-lbl{font-size:12px;color:var(--text);flex:1;min-width:0}
+.score-bar-bg{width:200px;height:18px;background:var(--gray-light);border-radius:4px;overflow:hidden;flex-shrink:0}
+.score-bar-fill{height:100%;border-radius:4px;background:var(--teal);transition:width .4s}
+.score-val{font-size:12px;font-weight:700;color:var(--teal);width:36px;text-align:right;flex-shrink:0}
+.score-rank{font-size:10px;font-weight:700;width:22px;color:var(--text-muted);flex-shrink:0}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}.pref-lbl{width:120px}.score-bar-bg{width:120px}}
+canvas{max-height:320px}
+.download-btn{display:inline-block;background:var(--teal);color:var(--white);padding:8px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;margin-top:16px;text-decoration:none}
+.download-btn:hover{background:#0f5a50}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;margin:0 2px}
+.tag.opt1{background:var(--blue-light);color:var(--blue)}
+.tag.opt2{background:var(--amber-light);color:var(--amber)}
+.tag.hybrid{background:var(--green-light);color:var(--green)}
+.tag.neither{background:var(--gray-light);color:var(--gray)}
+.print-header{display:none}
+@media print{
+  @page{size:A4;margin:18mm 15mm}
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body{background:#fff!important;color:#000!important;font-size:11pt;line-height:1.5}
+  .print-header{display:block!important;border-bottom:2px solid #1A7A6E;padding-bottom:10px;margin-bottom:16px}
+  .print-header h2{font-size:14pt;font-weight:700;color:#1A7A6E;margin-bottom:2px}
+  .print-header p{font-size:9pt;color:#555}
+  .site-header,.hub-bar,.tabs,.download-btn{display:none!important}
+  .panel{display:block!important;border:none!important;padding:0!important;margin-bottom:0}
+  #tab-parta,#tab-partb,#tab-partc,#tab-partd,#tab-parte,#tab-responses,#tab-analysis{page-break-before:always}
+  .chart-wrap,.insight,.c-task,.resp-card,.shift-box,.stat-row{page-break-inside:avoid}
+  .section-label{font-size:9pt;font-weight:700;border-bottom:1px solid #ccc;margin:16pt 0 6pt}
+  .two-col{grid-template-columns:1fr!important}
+  .stat{border:1px solid #ccc!important;background:#f5f5f5!important}
+  .stat-num{color:#1A7A6E!important}
+  .stat-lbl{color:#1A7A6E!important}
+  canvas{max-height:200pt!important}
+  .conjoint-grid{grid-template-columns:1fr 1fr!important}
+  .score-bar-bg{width:160px!important}
+  .footnote{border-left:2px solid #999}
+}
+</style>
+</head>
+<body>
+<div class="print-header">
+  <h2>Blueys Beach Village Centre &mdash; Community Survey Results Snapshot</h2>
+  <p>Snapshot &mdash; 27 April 2026 &middot; n&nbsp;=&nbsp;58 responses &middot; PPCA Community Survey Snapshot for MidCoast Council &mdash; prepared by villagefirst.org.au</p>
+  <p>Live page: https://villagefirst.org.au/results/blueys-beach-results-27april2026</p>
+</div>
+<div class="site-header">
+  <div class="hero-bar">
+    <h1>Blueys Beach Village Centre &mdash; Community Survey Results</h1>
+    <p>PPCA Community Survey Snapshot for MidCoast Council &mdash; prepared by villagefirst.org.au</p>
+    <div class="snapshot-badge">&#128248; Snapshot &mdash; 27 April 2026 &middot; n&nbsp;=&nbsp;58 responses &middot; Survey Questionnaire remains open for further respondents</div>
+  </div>
+</div>
+<div class="page-wrap">
+  <div class="hub-bar">
+    <a href="/projects/bluey-s-beach-village-centre/" class="hub-link">&larr; Back to VillageFirst Project Hub</a>
+    <a href="/" class="hub-link">Return to VillageFirst Website</a>
+  </div>
+  <div class="tabs">
+    <button class="tab on" onclick="showTab('overview',this)">&#128202; Overview</button>
+    <button class="tab" onclick="showTab('parta',this)">Part A &mdash; Shared Features</button>
+    <button class="tab" onclick="showTab('partb',this)">Part B &mdash; Key Differences</button>
+    <button class="tab" onclick="showTab('partc',this)">Part C &mdash; Conjoint</button>
+    <button class="tab" onclick="showTab('partd',this)">Part D &mdash; Priorities</button>
+    <button class="tab" onclick="showTab('parte',this)">Part E &mdash; Overall</button>
+    <button class="tab" onclick="showTab('responses',this)">&#128172; Responses</button>
+    <button class="tab" onclick="showTab('analysis',this)">&#128269; Analysis</button>
+  </div>
+  <!-- OVERVIEW -->
+  <div class="panel on" id="tab-overview">
+    <div class="stat-row">
+      <div class="stat"><div class="stat-num">58</div><div class="stat-lbl">Total Responses</div></div>
+      <div class="stat blue"><div class="stat-num">58</div><div class="stat-lbl">Reviewed Design Plans</div></div>
+      <div class="stat amber"><div class="stat-num">34</div><div class="stat-lbl">Parking &amp; Safety Observations</div></div>
+      <div class="stat green"><div class="stat-num">23</div><div class="stat-lbl">Additional Comments</div></div>
+    </div>
+    <div class="insight">
+      <strong>Key Finding:</strong> With 58 responses, the <strong>Hybrid option</strong> (23 front parking bays + formal pedestrian crossing + shop front wall seat) is now the <strong>leading preference at 45%</strong>, ahead of Option 2 at 31%. Together, options that retain the full 23 parking bays account for <strong>62% of preferences</strong> (Hybrid 45% + Option 1 17%). The community continues to strongly support the shared features common to both designs (mean ratings 3.60&ndash;4.40 across all ten elements).
+    </div>
+    <div class="two-col">
+      <div class="chart-wrap"><h3>Who responded?</h3><canvas id="chartRespondents"></canvas></div>
+      <div class="chart-wrap">
+        <h3>Overall preference (Part E)</h3>
+        <canvas id="chartOverall"></canvas>
+        <div class="chart-sub">Hybrid: 26 (45%) &middot; Option 2: 18 (31%) &middot; Option 1: 10 (17%) &middot; Neither&sup1;: 3 (5%)</div>
+      </div>
+    </div>
+    <div class="section-label">Preference breakdown</div>
+    <div class="pref-bar-wrap">
+      <div class="pref-row">
+        <div class="pref-lbl"><span class="tag hybrid">Hybrid</span> 23 bays + crossing + seat</div>
+        <div class="pref-bar" style="width:calc(45.6% * 4);background:var(--green)">26</div>
+        <div class="pref-val">45%</div>
+      </div>
+      <div class="pref-row">
+        <div class="pref-lbl"><span class="tag opt2">Option 2</span> 19 bays + crossing + seat</div>
+        <div class="pref-bar" style="width:calc(31.6% * 4);background:var(--amber)">18</div>
+        <div class="pref-val">31%</div>
+      </div>
+      <div class="pref-row">
+        <div class="pref-lbl"><span class="tag opt1">Option 1</span> 23 bays, no crossing/seat</div>
+        <div class="pref-bar" style="width:calc(17.5% * 4);background:var(--blue)">10</div>
+        <div class="pref-val">17%</div>
+      </div>
+    </div>
+    <div class="footnote">&sup1; A small number of respondents (3 of 58, 5%) selected &ldquo;Neither &mdash; needs rework&rdquo;, indicating they do not support either concept design as currently presented. Their open-text feedback is included in the Responses section below.</div>
+    <div class="shift-box">
+      <strong>Shift since 21 April snapshot (n=43):</strong> Hybrid has overtaken Option 2 as the leading preference. The &ldquo;Neither&rdquo; category appears for the first time.
+      <table class="shift-table">
+        <tr><th>Preference</th><th>21 Apr (n=43)</th><th>27 Apr (n=58)</th><th>Change</th></tr>
+        <tr><td><span class="tag hybrid">Hybrid</span></td><td>38.1% (16)</td><td>45.6% (26)</td><td class="delta-pos">+7.5pp</td></tr>
+        <tr><td><span class="tag opt2">Option 2</span></td><td>40.5% (17)</td><td>31.6% (18)</td><td class="delta-neg">&minus;8.9pp</td></tr>
+        <tr><td><span class="tag opt1">Option 1</span></td><td>21.4% (9)</td><td>17.5% (10)</td><td class="delta-neg">&minus;3.9pp</td></tr>
+        <tr><td><span class="tag neither">Neither&sup1;</span></td><td>not reported</td><td>5.3% (3)</td><td>new</td></tr>
+      </table>
+    </div>
+    <div class="section-label">Top-rated shared features (Part A)</div>
+    <div id="topFeatures"></div>
+  </div>
+  <!-- PART A -->
+  <div class="panel" id="tab-parta">
+    <div class="insight">
+      <strong>Part A &mdash; Shared Features:</strong> Ten features that appear in <em>both</em> design options were rated 1&ndash;5 (Strongly Disagree to Strongly Agree). All features scored above 3.60 &mdash; strong community support across the board. Rankings are consistent with the 21 April snapshot.
+    </div>
+    <div class="chart-wrap">
+      <h3>Average agreement rating (1&ndash;5 scale) &middot; n=57&ndash;58</h3>
+      <canvas id="chartPartA"></canvas>
+    </div>
+    <div class="section-label">Ranked by agreement score</div>
+    <div id="partaRanked"></div>
+  </div>
+  <!-- PART B -->
+  <div class="panel" id="tab-partb">
+    <div class="insight blue">
+      <strong>Part B &mdash; Importance of the three key differences:</strong> Rated 1&ndash;5 (Not Important to Critically Important). Parking retains the highest importance score. The distribution for parking (b1) shows a strong skew toward 5 &mdash; 30 of 58 respondents rated it &ldquo;Critically Important&rdquo; &mdash; reflecting concern about future development pressure.
+    </div>
+    <div class="two-col">
+      <div class="chart-wrap">
+        <h3>Importance rating (1&ndash;5) &middot; n=58</h3>
+        <canvas id="chartPartB"></canvas>
+      </div>
+      <div>
+        <div class="chart-wrap">
+          <h3>A &mdash; Front parking (23 vs 19 bays)</h3>
+          <canvas id="chartB1dist"></canvas>
+          <div class="chart-sub">Avg: <strong>3.97/5</strong></div>
+        </div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="chart-wrap">
+        <h3>B &mdash; Verge pedestrian crossing</h3>
+        <canvas id="chartB2dist"></canvas>
+        <div class="chart-sub">Avg: <strong>3.66/5</strong></div>
+      </div>
+      <div class="chart-wrap">
+        <h3>C &mdash; Shop front linear wall seat</h3>
+        <canvas id="chartB3dist"></canvas>
+        <div class="chart-sub">Avg: <strong>3.62/5</strong></div>
+      </div>
+    </div>
+  </div>
+  <!-- PART C -->
+  <div class="panel" id="tab-partc">
+    <div class="insight amber">
+      <strong>Part C &mdash; Conjoint analysis:</strong> Four package-choice tasks isolate which features drive preference. The pattern is consistent with the 21 April snapshot &mdash; Option 2 wins the pure head-to-head, but when pedestrian features are removed, a strong majority prefer to retain 23 parking bays.
+    </div>
+    <div class="conjoint-grid">
+      <div class="c-task">
+        <h4>Task 1 &mdash; Pure head-to-head</h4>
+        <div class="c-note">X = Option 1 exactly &middot; Y = Option 2 exactly</div>
+        <div class="c-bar-wrap" style="margin-top:10px">
+          <div class="c-bar-row"><span class="c-bar-label">X (Opt 1)</span><div class="c-bar x" style="width:calc(21/52*160px)">21</div><span>40.4%</span></div>
+          <div class="c-bar-row"><span class="c-bar-label">Y (Opt 2)</span><div class="c-bar y" style="width:calc(31/52*160px)">31</div><span>59.6%</span></div>
+        </div>
+        <div class="c-winner y">&#10003; Option 2 preferred &middot; n=52</div>
+      </div>
+      <div class="c-task">
+        <h4>Task 2 &mdash; Parking + wall seat vary</h4>
+        <div class="c-note">No verge crossing in either package</div>
+        <div class="c-bar-wrap" style="margin-top:10px">
+          <div class="c-bar-row"><span class="c-bar-label">X (23 bays)</span><div class="c-bar x" style="width:calc(32/46*160px)">32</div><span>69.6%</span></div>
+          <div class="c-bar-row"><span class="c-bar-label">Y (19 bays)</span><div class="c-bar y" style="width:calc(14/46*160px)">14</div><span>30.4%</span></div>
+        </div>
+        <div class="c-winner x">&#10003; Retain 23 bays preferred &middot; n=46</div>
+      </div>
+      <div class="c-task">
+        <h4>Task 3 &mdash; Parking + crossing vary</h4>
+        <div class="c-note">No wall seat in either package</div>
+        <div class="c-bar-wrap" style="margin-top:10px">
+          <div class="c-bar-row"><span class="c-bar-label">X (23 bays)</span><div class="c-bar x" style="width:calc(34/49*160px)">34</div><span>69.4%</span></div>
+          <div class="c-bar-row"><span class="c-bar-label">Y (19 bays)</span><div class="c-bar y" style="width:calc(15/49*160px)">15</div><span>30.6%</span></div>
+        </div>
+        <div class="c-winner x">&#10003; Retain 23 bays strongly preferred &middot; n=49</div>
+      </div>
+      <div class="c-task">
+        <h4>Task 4 &mdash; All three features vary</h4>
+        <div class="c-note">Parking is the key swing attribute</div>
+        <div class="c-bar-wrap" style="margin-top:10px">
+          <div class="c-bar-row"><span class="c-bar-label">X (23 bays)</span><div class="c-bar x" style="width:calc(29/48*160px)">29</div><span>60.4%</span></div>
+          <div class="c-bar-row"><span class="c-bar-label">Y (19 bays)</span><div class="c-bar y" style="width:calc(19/48*160px)">19</div><span>39.6%</span></div>
+        </div>
+        <div class="c-winner x">&#10003; Retain 23 bays preferred &middot; n=48</div>
+      </div>
+    </div>
+    <div class="insight">
+      <strong>Conjoint insight:</strong> Option 2 wins the pure head-to-head 59.6% vs 40.4%. But in Tasks 2, 3, and 4 &mdash; when crossing or wall seat features are removed &mdash; 60&ndash;70% prefer to retain the 23 parking bays. This indicates that <strong>the pedestrian crossing and wall seat are what makes Option 2 attractive</strong>, not the parking reduction itself. This finding is consistent with the 21 April snapshot and stable as the sample has grown from 43 to 58 respondents.
+    </div>
+  </div>
+  <!-- PART D -->
+  <div class="panel" id="tab-partd">
+    <div class="insight">
+      <strong>Part D &mdash; Relative importance (100 points total):</strong> Respondents distributed 100 points across the three key differences to show their relative importance. Point allocation is closely aligned with the 21 April snapshot, confirming the stability of community priorities.
+    </div>
+    <div class="two-col">
+      <div class="chart-wrap"><h3>Average point allocation</h3><canvas id="chartPartD"></canvas></div>
+      <div>
+        <div class="section-label">Point allocation breakdown</div>
+        <div class="pref-bar-wrap">
+          <div class="pref-row">
+            <div class="pref-lbl" style="width:160px">A &mdash; Parking count</div>
+            <div class="pref-bar" style="width:calc(45.4% * 3);background:var(--blue)">51 pts</div>
+            <div class="pref-val">45%</div>
+          </div>
+          <div class="pref-row">
+            <div class="pref-lbl" style="width:160px">B &mdash; Verge crossing</div>
+            <div class="pref-bar" style="width:calc(29.0% * 3);background:var(--teal)">32 pts</div>
+            <div class="pref-val">29%</div>
+          </div>
+          <div class="pref-row">
+            <div class="pref-lbl" style="width:160px">C &mdash; Wall seat</div>
+            <div class="pref-bar" style="width:calc(25.6% * 3);background:var(--green)">29 pts</div>
+            <div class="pref-val">26%</div>
+          </div>
+        </div>
+        <div class="insight amber" style="margin-top:16px">
+          <strong>Parking dominates</strong> at 45% of relative importance &mdash; nearly double either pedestrian feature alone. Combined, pedestrian features (crossing + wall seat) account for 55%, explaining why Option 2 attracts support despite the parking trade-off. These proportions are virtually unchanged from 21 April (45% / 29% / 26%), confirming stable community priorities.
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- PART E -->
+  <div class="panel" id="tab-parte">
+    <div class="insight">
+      <strong>Part E &mdash; Overall preference:</strong> 57 of 58 respondents stated an overall preference. The Hybrid option is now the clear leader, overtaking Option 2 since the 21 April snapshot. Three respondents (5%) selected &ldquo;Neither &mdash; needs rework&rdquo; for the first time.
+    </div>
+    <div class="two-col">
+      <div class="chart-wrap">
+        <h3>Overall design preference &middot; n=57</h3>
+        <canvas id="chartPartE"></canvas>
+      </div>
+      <div>
+        <div class="section-label">Reading the result</div>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:12px">
+          <strong style="color:var(--green)">Hybrid leads</strong> with 45.6% &mdash; the option combining Option 1&rsquo;s 23 parking bays with Option 2&rsquo;s pedestrian crossing and wall seat.
+        </p>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:12px">
+          <strong style="color:var(--amber)">Option 2</strong> at 31.6% remains the second preference. Together, Hybrid + Option 2 account for 77% who want pedestrian features included.
+        </p>
+        <p style="font-size:13px;color:var(--text-muted);line-height:1.7;margin-bottom:12px">
+          <strong style="color:var(--blue)">Option 1</strong> support (17.5%) reflects the strong preference for retaining 23 bays seen throughout the conjoint tasks.
+        </p>
+        <div class="insight blue" style="margin-top:8px">
+          <strong>For the submission:</strong> The Hybrid represents the single strongest community position &mdash; maximising parking while including pedestrian features that 77% of respondents support.
+        </div>
+      </div>
+    </div>
+    <div class="footnote">&sup1; Three respondents (5.3%) selected &ldquo;Neither &mdash; needs rework&rdquo;. This option was not recorded in the 21 April snapshot. Their open-text feedback is included in the Responses section below.</div>
+  </div>
+  <!-- RESPONSES -->
+  <div class="panel" id="tab-responses">
+    <div class="insight" style="margin-bottom:16px">
+      Comments are presented as submitted, lightly moderated for readability (minor typos corrected; no names or identifying details included). Person numbers are anonymised reference codes only.
+    </div>
+    <div class="section-label">E2 &mdash; Parking demand &amp; pedestrian safety observations (34 responses)</div>
+    <div class="resp-grid">
+<div class="resp-card"><span class="resp-num">Person 1</span><p>Retain parking to support businesses. Control safety for pedestrians.</p></div>
+<div class="resp-card"><span class="resp-num">Person 2</span><p>Sometimes planting can obscure the view of cars coming &mdash; perhaps a convex mirror opposite the bottle shop car park.</p></div>
+<div class="resp-card"><span class="resp-num">Person 3</span><p>In the busy months it is almost impossible to get a car park at the BB shops.</p></div>
+<div class="resp-card"><span class="resp-num">Person 4</span><p>From the village precinct &mdash; east and western streets need more angled parking.</p></div>
+<div class="resp-card"><span class="resp-num">Person 6</span><p>More outdoor eating and dining areas would be lovely.</p></div>
+<div class="resp-card"><span class="resp-num">Person 7</span><p>It is important to retain the number of car parking spaces to support local businesses and because most people have to drive to access the businesses. The verge crossing is very close to the roundabout and speed humps and crossings at either end would be more practical for traffic flow.</p></div>
+<div class="resp-card"><span class="resp-num">Person 8</span><p>Typically able to park but find it very difficult to find somewhere to sit to have a coffee.</p></div>
+<div class="resp-card"><span class="resp-num">Person 9</span><p>Parking is always limited during peak holiday periods &mdash; but so is everywhere. During off-peak times there is ample space. Option 2 has the edge for liveability and safety with the pedestrian walkway, even with 4 fewer car parks.</p></div>
+<div class="resp-card"><span class="resp-num">Person 11</span><p>Option 1 retains current parking spaces which is important at peak holiday times. Option 1 also has pedestrian crossings at either end of the village &mdash; I think this would be safer and less disruptive than having the crossing in the middle, which is too close to the roundabout.</p></div>
+<div class="resp-card"><span class="resp-num">Person 14</span><p>Parking is at a premium during peak holiday periods. However, if the expectation of parking directly in front of the shop you want to visit is lowered, ample parking can be found within 100 metres.</p></div>
+<div class="resp-card"><span class="resp-num">Person 15</span><p>The speed limit needs to be reduced through the village area. Speed bumps and roundabouts will help.</p></div>
+<div class="resp-card"><span class="resp-num">Person 16</span><p>Exiting at the parking at the pizza shop / superette end is risky &mdash; will be better with the roundabout. Pedestrian crossing will be safer. NO SPEED BUMPS &mdash; they damage cars, waste petrol, pollute with brake dust, wear out suspension &mdash; environmentally unsound.</p></div>
+<div class="resp-card"><span class="resp-num">Person 21</span><p>During holiday periods there is limited parking availability. A time limit could help &mdash; 30 min pickup and 1 hour for those using restaurants.</p></div>
+<div class="resp-card"><span class="resp-num">Person 24</span><p>Peak-time parking is inadequate.</p></div>
+<div class="resp-card"><span class="resp-num">Person 26</span><p>Pedestrian issues persist for an older cohort &mdash; youth riding e-bikes and scooters knocking over older pedestrians on the village footpaths.</p></div>
+<div class="resp-card"><span class="resp-num">Person 28</span><p>Long-term resident. Many near misses from the existing exit near the bottle shop, or people exiting from the wrong end.</p></div>
+<div class="resp-card"><span class="resp-num">Person 30</span><p>So much more parking is needed, plus a pedestrian crossing, before a fatality happens &mdash; plus a speed hump.</p></div>
+<div class="resp-card"><span class="resp-num">Person 32</span><p>Regular observer at Kembali Cafe. Pedestrians crossing from shops need clear line of sight. Vehicles travelling faster than is pedestrian-safe. Many delivery trucks entering and reversing.</p></div>
+<div class="resp-card"><span class="resp-num">Person 33</span><p>A designated formal verge crossing is necessary to direct pedestrians &mdash; there is much informal crossing behaviour, particularly in busy times &mdash; and Blueys Beach Village is continuing to get busier.</p></div>
+<div class="resp-card"><span class="resp-num">Person 35</span><p>Increasingly young people on bikes use the area. Safer formalised crossings placed within lines of desire are important so they will actually get used.</p></div>
+<div class="resp-card"><span class="resp-num">Person 36</span><p>When it&rsquo;s busy &mdash; let&rsquo;s accept that. Places have peaks. Most of the time it isn&rsquo;t busy. Design for what happens 90% of the time. If parking is full, people will park a little further away and walk. Having a larger area for tables and chairs will help businesses. Don&rsquo;t make the whole design about the cars &mdash; there should be a balance.</p></div>
+<div class="resp-card"><span class="resp-num">Person 38</span><p>More work needed regarding peak times in the village area.</p></div>
+<div class="resp-card"><span class="resp-num">Person 39</span><p>Parking demand is currently high during peak season. Parking availability must be maintained, especially as developments will increase the population. Both options reduce the current parking availability.</p></div>
+<div class="resp-card"><span class="resp-num">Person 40</span><p>The main issue is that the current speed limit is too fast.</p></div>
+<div class="resp-card"><span class="resp-num">Person 41</span><p>There already isn&rsquo;t enough parking during school holidays, so I avoid shopping there during these times.</p></div>
+<div class="resp-card"><span class="resp-num">Person 43</span><p>This does not really meet holiday-period needs but will be great for non-holiday periods. Important to keep a community feel and not lose it.</p></div>
+<div class="resp-card"><span class="resp-num">Person 44</span><p>Parking availability is far worse than it used to be. With new developments, parking will be next to impossible. We cannot afford to lose any spaces. Need a footpath towards the beach on the south side of the road. Need a formal crossing near the bottle shop. Need very short-time (10-min) parking for the post office.</p></div>
+<div class="resp-card"><span class="resp-num">Person 48</span><p>Parking is at a premium &mdash; bad enough in quiet months; in busy months it&rsquo;s a no-go zone.</p></div>
+<div class="resp-card"><span class="resp-num">Person 50</span><p>In busy and holiday times, all of the above improvements are needed.</p></div>
+<div class="resp-card"><span class="resp-num">Person 51</span><p>During holiday peak times there is a lack of parking and pedestrians cross everywhere.</p></div>
+<div class="resp-card"><span class="resp-num">Person 52</span><p>Drivers need clear vision when leaving the parking area. Speed limit should be 40 km/h from the Medical Centre to Red Gum Road &mdash; that entire section is very dangerous. Some time restrictions on parking, and dedicated short-term parking for the post office.</p></div>
+<div class="resp-card"><span class="resp-num">Person 54</span><p>On weekends and holidays there is a lot of traffic and parking demand. As much parking as possible is needed. The extra parking from the developer will help.</p></div>
+<div class="resp-card"><span class="resp-num">Person 57</span><p>Parking not usually problematic. No need for a crossing within the parking area outside the shops. Crossing the road to Kembali and the pharmacist needs care &mdash; a crossing and speed humps there would help. The village needs to be more pedestrian-friendly.</p></div>
+<div class="resp-card"><span class="resp-num">Person 58</span><p>Parking is an important issue and is only going to get worse &mdash; reducing it is counterproductive. Vehicle speed and wayward pedestrians need attention. All informal parking spots are used in peak times. People cross anywhere and are at times oblivious to oncoming vehicles.</p></div>
+    </div>
+    <div class="section-label" style="margin-top:24px">E3 &mdash; Additional comments on unaddressed needs (23 responses)</div>
+    <div class="resp-grid">
+<div class="resp-card"><span class="resp-num">Person 1</span><p>Coastal styling is appreciated.</p></div>
+<div class="resp-card"><span class="resp-num">Person 3</span><p>The position of the roundabout seems really unsafe. How will new residents access the shops if there is no appropriate crossing for them?</p></div>
+<div class="resp-card"><span class="resp-num">Person 4</span><p>Insufficient public green space.</p></div>
+<div class="resp-card"><span class="resp-num">Person 6</span><p>Be sure to tidy up the rear areas of the shops.</p></div>
+<div class="resp-card"><span class="resp-num">Person 7</span><p>It is a small area and it would be difficult to come up with a practical design that offered more amenities.</p></div>
+<div class="resp-card"><span class="resp-num">Person 8</span><p>Bins are often overflowing &mdash; more shaded areas needed.</p></div>
+<div class="resp-card"><span class="resp-num">Person 9</span><p>It&rsquo;s great to see bike racks included. But how are people supposed to get there safely by bike? Lakes Way connects communities like Tiona, Elizabeth Beach, Smiths Lake and The Palms, but it&rsquo;s not a road where most people would feel comfortable cycling. A broader vision &mdash; safe separated cycleways connecting these communities &mdash; would be a genuine game-changer. Is there a plan? If not, we&rsquo;d encourage Council to start that conversation.</p></div>
+<div class="resp-card"><span class="resp-num">Person 10</span><p>Heavy goods vehicles and trucks should not be allowed to access the village centre.</p></div>
+<div class="resp-card"><span class="resp-num">Person 11</span><p>Allowing eateries to have outdoor seating is always welcomed. The high-bench seating outside Drift Cafe works well &mdash; it doesn&rsquo;t take up much space and adds versatility.</p></div>
+<div class="resp-card"><span class="resp-num">Person 15</span><p>More shops and a medical centre are needed. The current shops will not be sufficient for the increase in population. The medical centre is proposed for relocation with no alternate in Pacific Palms proposed.</p></div>
+<div class="resp-card"><span class="resp-num">Person 16</span><p>Mark out parking bays along the road beyond the 19/23 formal bays. Why not require developers to provide underground parking?</p></div>
+<div class="resp-card"><span class="resp-num">Person 21</span><p>Cars need to slow down coming into the area from both directions &mdash; signage prior to the village, similar to school zone arrangements during peak periods.</p></div>
+<div class="resp-card"><span class="resp-num">Person 24</span><p>More parking for the post office.</p></div>
+<div class="resp-card"><span class="resp-num">Person 26</span><p>Why not open up the space behind the post office for vehicle parking? There is insufficient parking now for safe access for the older cohort of residents, let alone the influx from new developments.</p></div>
+<div class="resp-card"><span class="resp-num">Person 32</span><p>Is it possible to utilise and formalise the space behind the shops?</p></div>
+<div class="resp-card"><span class="resp-num">Person 35</span><p>Only 3 bike racks are provided in both options. This should be increased to future-proof the proposal &mdash; as e-bike use grows, demand for bike parking will increase significantly.</p></div>
+<div class="resp-card"><span class="resp-num">Person 36</span><p>Perhaps getting the entire length of the footpath in front of the existing shops 500mm wider (if there is space). Consider turning curves for delivery vehicles.</p></div>
+<div class="resp-card"><span class="resp-num">Person 39</span><p>Make Option 1 speed humps and formal pedestrian crossings standard features.</p></div>
+<div class="resp-card"><span class="resp-num">Person 44</span><p>Too many shop staff tying up parking. Need to ensure very short-term (10-minute) parking for the post office.</p></div>
+<div class="resp-card"><span class="resp-num">Person 52</span><p>More areas for seating to eat. A local map, perhaps designed by a local artist.</p></div>
+<div class="resp-card"><span class="resp-num">Person 54</span><p>There is no long-term master plan for expansion of shops. What happens when Ingenia, Lot 23, and the other developments are all fully built and inhabited?</p></div>
+<div class="resp-card"><span class="resp-num">Person 57</span><p>My preference is Option 2 with no verge crossing (no crossing within the parking area outside the shops).</p></div>
+<div class="resp-card"><span class="resp-num">Person 58</span><p>If the speed were reduced to 30 km/h the crossings could possibly be removed. It may also be possible to widen the pavement in front of the shops to allow for more seating options.</p></div>
+    </div>
+  </div>
+  <!-- ANALYSIS -->
+  <div class="panel" id="tab-analysis">
+    <div class="section-label">Key findings &mdash; 27 April 2026 snapshot</div>
+    <div class="insight"><strong>1. Hybrid is now the leading community preference.</strong> At 45.6%, the Hybrid option (23 bays + pedestrian crossing + wall seat) overtook Option 2 (31.6%) between the 21 April and 27 April snapshots. Together, options retaining all 23 parking bays &mdash; Hybrid and Option 1 &mdash; account for 62% of preferences.</div>
+    <div class="insight blue"><strong>2. Pedestrian features continue to drive Option 2 support.</strong> Conjoint analysis confirms &mdash; at a sample of 58 &mdash; that the verge crossing and wall seat are the primary drivers of Option 2 support. When tested without those features (Tasks 2&ndash;4), 60&ndash;70% prefer to retain 23 parking bays. This finding is stable across both snapshots.</div>
+    <div class="insight amber"><strong>3. All shared features received strong support.</strong> Every Part A feature scored above 3.60/5. Highest-rated: Formalised angled parking (4.40), Seating nook (4.35), Existing canopy palms (4.24), Subtropical planting (4.14). Rankings are consistent with the 21 April snapshot.</div>
+    <div class="insight green"><strong>4. Community priorities are stable across both snapshots.</strong> Part D allocation: parking 45% / crossing 29% / wall seat 26% &mdash; virtually unchanged from 21 April. Part B means: parking 3.97, crossing 3.66, wall seat 3.62 &mdash; all three attributes rated closely, parking marginally highest.</div>
+    <div class="insight"><strong>5. &ldquo;Neither &mdash; needs rework&rdquo; appears for the first time.</strong> Three respondents (5.3%) selected this option. Their feedback focuses on roundabout proximity, pedestrian priority concerns, and preference for a different crossing location. 95% of respondents support one of the three design options.</div>
+    <div class="insight blue"><strong>6. Strong engagement quality.</strong> 100% of respondents confirmed they reviewed the design plans. 34 of 58 (59%) provided written observations; 23 of 58 (40%) provided additional comments. Key themes: peak-season parking pressure, future development impact, roundabout proximity to the proposed crossing, e-bike and pedestrian safety, and calls for the Hybrid approach.</div>
+    <div class="section-label" style="margin-top:28px">Suggested PPCA submission positions</div>
+    <div class="resp-card"><span class="resp-num">Position 1 &mdash; Advocate for the Hybrid as primary position</span><p>The Hybrid (Option 1 parking + Option 2 crossing and wall seat) is now the leading single community preference at 45%. It maximises community agreement &mdash; retaining all 23 parking bays while including the pedestrian features supported by 77% of respondents. The PPCA should formally advocate for this outcome if architecturally feasible.</p></div>
+    <div class="resp-card" style="margin-top:10px"><span class="resp-num">Position 2 &mdash; Pedestrian features are essential regardless of option</span><p>77% of surveyed community members support including the verge pedestrian crossing and wall seat (Hybrid 45% + Option 2 31%). These features should be included in whichever option Council selects.</p></div>
+    <div class="resp-card" style="margin-top:10px"><span class="resp-num">Position 3 &mdash; Parking capacity is a critical future-proofing concern</span><p>Conjoint analysis and open-text responses consistently show that retaining 23 parking bays is the dominant concern, particularly in the context of new residential developments. The PPCA should request Council address how parking demand will be managed as the area&rsquo;s population grows.</p></div>
+    <div class="resp-card" style="margin-top:10px"><span class="resp-num">Position 4 &mdash; Safety assessment of the verge crossing location</span><p>Multiple written responses raised concerns about the roundabout proximity to the proposed verge crossing. The PPCA should request Council confirm a pedestrian safety assessment of the crossing location and consider whether crossings at either end of the village (as in Option 1) provide a safer alternative.</p></div>
+    <button class="download-btn" onclick="window.print()">&#128424; Print / Save as PDF</button>
+  </div>
+</div>
+<script>
+Chart.defaults.animation=false;
+function showTab(id,el){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));document.getElementById('tab-'+id).classList.add('on');el.classList.add('on');}
+const def={responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#eee'}}}};
+new Chart(document.getElementById('chartRespondents'),{type:'doughnut',data:{labels:['Wider Blueys / PP Resident','Property Owner','Village Resident','Regular Visitor','Other'],datasets:[{data:[35,13,6,3,1],backgroundColor:['#1A7A6E','#185FA5','#3B6D11','#BA7517','#9FE1CB'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},boxWidth:12}}}}});
+new Chart(document.getElementById('chartOverall'),{type:'doughnut',data:{labels:['Hybrid (45%)','Option 2 (31%)','Option 1 (17%)','Neither\u00b9 (5%)'],datasets:[{data:[26,18,10,3],backgroundColor:['#3B6D11','#BA7517','#185FA5','#9E9E9E'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},boxWidth:12}}}}});
+const aLabels=['A1 Entry feature wall','A2 Coastal paving','A3 Seating nook','A4 Subtropical planting','A5 Timber post fencing','A6 Public art sculpture','A7 Formalised parking','A8 Cycle parking','A9 Speed hump + crossings','A10 Palms retained'];
+const aVals=[3.60,3.66,4.35,4.14,3.64,3.78,4.40,3.95,4.10,4.24];
+const aColors=aVals.map(v=>v>=4.2?'#1A7A6E':v>=4.0?'#185FA5':v>=3.8?'#BA7517':'#9FE1CB');
+new Chart(document.getElementById('chartPartA'),{type:'bar',data:{labels:aLabels,datasets:[{data:aVals,backgroundColor:aColors,borderRadius:4}]},options:{...def,scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{min:1,max:5,grid:{color:'#eee'},ticks:{stepSize:1}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' Avg: '+ctx.parsed.y+' / 5'}}}}});
+const aFull=[{label:'A7 \u2014 Formalised angled car parking with new kerbs and improved safety',val:4.40},{label:'A3 \u2014 Seating nook with picnic bench, wall seats, shade umbrellas, water bubbler',val:4.35},{label:'A10 \u2014 Existing canopy palms retained and supplemented',val:4.24},{label:'A4 \u2014 Subtropical understorey planting \u2014 endemic and native species',val:4.14},{label:'A9 \u2014 Speed hump and line markings at vehicle entry, formal pedestrian crossings',val:4.10},{label:'A8 \u2014 Cycle parking integrated with wall seating',val:3.95},{label:'A6 \u2014 Sculpture or public art feature, community role in artist selection',val:3.78},{label:'A2 \u2014 Coastal paving with salt-pitted finish and feature text inlays',val:3.66},{label:'A5 \u2014 Visually permeable timber vertical post fencing along the road verge',val:3.64},{label:'A1 \u2014 Village entry \u201cfeature wall\u201d with Blueys Beach signage',val:3.60}];
+const ranked=document.getElementById('partaRanked');
+aFull.forEach((f,i)=>{const pct=(f.val-1)/4*100;ranked.innerHTML+=`<div class="score-row"><span class="score-rank">#${i+1}</span><span class="score-lbl">${f.label}</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:${pct}%"></div></div><span class="score-val">${f.val}</span></div>`;});
+const topF=document.getElementById('topFeatures');
+aFull.slice(0,4).forEach((f,i)=>{const pct=(f.val-1)/4*100;topF.innerHTML+=`<div class="score-row"><span class="score-rank">#${i+1}</span><span class="score-lbl">${f.label}</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:${pct}%"></div></div><span class="score-val">${f.val}</span></div>`;});
+new Chart(document.getElementById('chartPartB'),{type:'bar',data:{labels:[['A \u2014 Parking','(23 vs 19 bays)'],'B \u2014 Verge crossing','C \u2014 Wall seat'],datasets:[{data:[3.97,3.66,3.62],backgroundColor:['#185FA5','#1A7A6E','#BA7517'],borderRadius:4}]},options:{...def,scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{min:1,max:5,ticks:{stepSize:1}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' Importance: '+ctx.parsed.y+'/5'}}}}});
+const dO={responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'#eee'},ticks:{stepSize:5}}}};
+new Chart(document.getElementById('chartB1dist'),{type:'bar',data:{labels:['1','2','3','4','5'],datasets:[{data:[5,4,9,10,30],backgroundColor:'#185FA5',borderRadius:3}]},options:dO});
+new Chart(document.getElementById('chartB2dist'),{type:'bar',data:{labels:['1','2','3','4','5'],datasets:[{data:[8,5,8,15,22],backgroundColor:'#1A7A6E',borderRadius:3}]},options:dO});
+new Chart(document.getElementById('chartB3dist'),{type:'bar',data:{labels:['1','2','3','4','5'],datasets:[{data:[4,11,6,19,18],backgroundColor:'#BA7517',borderRadius:3}]},options:dO});
+new Chart(document.getElementById('chartPartD'),{type:'doughnut',data:{labels:['A \u2014 Parking (45%)','B \u2014 Crossing (29%)','C \u2014 Wall seat (26%)'],datasets:[{data:[45.4,29.0,25.6],backgroundColor:['#185FA5','#1A7A6E','#BA7517'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},boxWidth:12}}}}});
+new Chart(document.getElementById('chartPartE'),{type:'doughnut',data:{labels:['Hybrid (46%)','Option 2 (32%)','Option 1 (18%)','Neither\u00b9 (5%)'],datasets:[{data:[26,18,10,3],backgroundColor:['#3B6D11','#BA7517','#185FA5','#9E9E9E'],borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11},boxWidth:12}}}}});
+</script>
+</body>
+</html>

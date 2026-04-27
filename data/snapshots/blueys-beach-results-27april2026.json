@@ -1,0 +1,458 @@
+{
+  "snapshot_date": "27 April 2026",
+  "total": 58,
+  "plan_reviewed": 58,
+  "partA": {
+    "a1": {
+      "mean": 3.6,
+      "n": 58,
+      "dist": {
+        "1": 3,
+        "2": 7,
+        "3": 16,
+        "4": 16,
+        "5": 16
+      }
+    },
+    "a2": {
+      "mean": 3.66,
+      "n": 58,
+      "dist": {
+        "1": 3,
+        "2": 7,
+        "3": 13,
+        "4": 19,
+        "5": 16
+      }
+    },
+    "a3": {
+      "mean": 4.35,
+      "n": 57,
+      "dist": {
+        "1": 3,
+        "2": 1,
+        "3": 3,
+        "4": 16,
+        "5": 34
+      }
+    },
+    "a4": {
+      "mean": 4.14,
+      "n": 58,
+      "dist": {
+        "1": 3,
+        "2": 2,
+        "3": 7,
+        "4": 18,
+        "5": 28
+      }
+    },
+    "a5": {
+      "mean": 3.64,
+      "n": 58,
+      "dist": {
+        "1": 5,
+        "2": 6,
+        "3": 11,
+        "4": 19,
+        "5": 17
+      }
+    },
+    "a6": {
+      "mean": 3.78,
+      "n": 58,
+      "dist": {
+        "1": 5,
+        "2": 3,
+        "3": 8,
+        "4": 26,
+        "5": 16
+      }
+    },
+    "a7": {
+      "mean": 4.4,
+      "n": 58,
+      "dist": {
+        "1": 3,
+        "2": 1,
+        "3": 3,
+        "4": 14,
+        "5": 37
+      }
+    },
+    "a8": {
+      "mean": 3.95,
+      "n": 58,
+      "dist": {
+        "1": 4,
+        "2": 4,
+        "3": 5,
+        "4": 23,
+        "5": 22
+      }
+    },
+    "a9": {
+      "mean": 4.1,
+      "n": 58,
+      "dist": {
+        "1": 6,
+        "2": 3,
+        "3": 4,
+        "4": 11,
+        "5": 34
+      }
+    },
+    "a10": {
+      "mean": 4.24,
+      "n": 58,
+      "dist": {
+        "1": 2,
+        "2": 2,
+        "3": 8,
+        "4": 14,
+        "5": 32
+      }
+    }
+  },
+  "partB": {
+    "b1": {
+      "mean": 3.97,
+      "n": 58,
+      "dist": {
+        "1": 5,
+        "2": 4,
+        "3": 9,
+        "4": 10,
+        "5": 30
+      }
+    },
+    "b2": {
+      "mean": 3.66,
+      "n": 58,
+      "dist": {
+        "1": 8,
+        "2": 5,
+        "3": 8,
+        "4": 15,
+        "5": 22
+      }
+    },
+    "b3": {
+      "mean": 3.62,
+      "n": 58,
+      "dist": {
+        "1": 4,
+        "2": 11,
+        "3": 6,
+        "4": 19,
+        "5": 18
+      }
+    }
+  },
+  "partC": {
+    "c1": {
+      "label": "Pure head-to-head (X=Opt1, Y=Opt2)",
+      "x": 21,
+      "y": 31,
+      "n": 52,
+      "x_pct": 40.4,
+      "y_pct": 59.6,
+      "winner": "y"
+    },
+    "c2": {
+      "label": "Parking + wall seat vary (no crossing)",
+      "x": 32,
+      "y": 14,
+      "n": 46,
+      "x_pct": 69.6,
+      "y_pct": 30.4,
+      "winner": "x"
+    },
+    "c3": {
+      "label": "Parking + crossing vary (no wall seat)",
+      "x": 34,
+      "y": 15,
+      "n": 49,
+      "x_pct": 69.4,
+      "y_pct": 30.6,
+      "winner": "x"
+    },
+    "c4": {
+      "label": "All three features vary",
+      "x": 29,
+      "y": 19,
+      "n": 48,
+      "x_pct": 60.4,
+      "y_pct": 39.6,
+      "winner": "x"
+    }
+  },
+  "partD": {
+    "parking": {
+      "mean": 50.5,
+      "n": 47,
+      "col": "d1_a",
+      "pct": 45.4
+    },
+    "crossing": {
+      "mean": 32.2,
+      "n": 43,
+      "col": "d1_b",
+      "pct": 29.0
+    },
+    "wallseat": {
+      "mean": 28.5,
+      "n": 40,
+      "col": "d1_c",
+      "pct": 25.6
+    }
+  },
+  "partE": {
+    "counts": {
+      "a": 10,
+      "b": 18,
+      "c": 26,
+      "d": 3
+    },
+    "n": 57
+  },
+  "respondentTypes": {
+    "Resident \u2014 wider Blueys Beach / Pacific Palms": 35,
+    "Property owner (non-resident)": 13,
+    "Regular visitor": 3,
+    "Resident \u2014 village area": 6,
+    "Other": 1
+  },
+  "comments_e2": [
+    {
+      "person": 1,
+      "text": "Retain Parking to support businesses.  Control safety for pedestrians"
+    },
+    {
+      "person": 2,
+      "text": "Sometimes planting can obscure the view of cars coming-perhaps convex mirror opposite bottle shop car-park"
+    },
+    {
+      "person": 3,
+      "text": "In the busy months it is almost impossible to get a car park at the BB shops."
+    },
+    {
+      "person": 4,
+      "text": "From the village precinct -East and western streets need more angled parking."
+    },
+    {
+      "person": 6,
+      "text": "More outdoor eating, dining areas would be lovely"
+    },
+    {
+      "person": 7,
+      "text": "I think it is important to retain the number of car parking spaces to support local businesses and because most people have to drive rather than walk to access the businesses. \nThe verge crossing is very close to the roundabout and I think that speed humps and crossings either end would be more practical for traffic flow"
+    },
+    {
+      "person": 8,
+      "text": "Typically able to park but find it very difficult to find somewhere to sit to have a coffee"
+    },
+    {
+      "person": 9,
+      "text": "Parking is always limited during peak periods of holidays - but that being said, so is everywhere. During off-peak times there is ample spots for residents to park. Option 2 has the edge for liveability and safety with the pedestrian walkway, even with 4 fewer car parks."
+    },
+    {
+      "person": 11,
+      "text": "I like Option 1 because it retains the current parking spaces which is important, especially at peak holiday times. Option 1 also has pedestrian crossings at either end of the village shops - I think this would be safer and less disruptive than having the crossing with verge in the middle which I think is too close to the roundabout."
+    },
+    {
+      "person": 14,
+      "text": "Parking is at a premium during peak holiday periods. However, if the expectation of parking directly in front of the shop that you want to visit is lowered, ample parking can be found within 100 metres."
+    },
+    {
+      "person": 15,
+      "text": "I do think the speed limit needs to be reduced through the village area. Speed bumps and roundabouts will help this."
+    },
+    {
+      "person": 16,
+      "text": "Exiting at the parking at the pizza shop superette end is risky now will be better with circle provided traffic flows \u2026 \nPed crossing will be safer but I\u2019m a Jay walker so not fussed \nNO SPEED BUMPS!!! They bugger up cars. Waste petrol. Pollute with break dust. Wear out suspension = environmentally unsound !!"
+    },
+    {
+      "person": 21,
+      "text": "Holiday periods there is limited availability of car spaces maybe a time limit could be be allocatedduring high peak periods  30 min pickup period and 1 hour for those using restaurants"
+    },
+    {
+      "person": 24,
+      "text": "Peak time parking is inadequate."
+    },
+    {
+      "person": 26,
+      "text": "Pedestrian issues persist for an older cohort eg. youth riding e bikes and scooters knocking over older pedestrians on the village footpaths."
+    },
+    {
+      "person": 28,
+      "text": "Resident for 17 years, many near misses from the existing exit near the bottle shop or people exiting from the wrong end."
+    },
+    {
+      "person": 30,
+      "text": "So much more parking is needed, plus a pedestrian crossing, before a fatality happens, plus a speed hump"
+    },
+    {
+      "person": 32,
+      "text": "I live at Boomerang and am at Kembali 5 mornings a week-observations: pedestrians crossing from shops to Kembali Cafe need clear line of sight. Vehicles travelling faster than is pedestrian safe. Many delivery and JR Richards trucks entering & reversing ."
+    },
+    {
+      "person": 33,
+      "text": "I feel a designated formal verge crossing is necessary to direct pedestrians  - I have noticed much informal crossing behaviour, particularly in busy times - and Blueys Beach Village is continuing to get busier."
+    },
+    {
+      "person": 35,
+      "text": "Increasingly teenagers and teens on bikes use the area. It is important to improve safety by providing safer formalised crossings that are placed within lines of desire (so that they will actually get used)."
+    },
+    {
+      "person": 36,
+      "text": "When it's busy let's just accept that. Places have peaks. Most the time it isn't busy. Let's design for what happens 90% of the time. If the parking is full, people will just park a little further away and walk. This happens everywhere. Having a larger area for tables and chairs, I believe, will help the businesses. Don't make the whole design about the cars. W need parking, but there should be a balance."
+    },
+    {
+      "person": 38,
+      "text": "More work done re Peak times in village area"
+    },
+    {
+      "person": 39,
+      "text": "parking demand is currently high during peak season. parking availability must be maintained, especially as development/s will increase population.  both options reduce the current parking availability."
+    },
+    {
+      "person": 40,
+      "text": "Main issue is current speed limit is too fast."
+    },
+    {
+      "person": 41,
+      "text": "Here already isn\u2019t enough parking during school holidays, so I avoid shopping there during these times"
+    },
+    {
+      "person": 43,
+      "text": "this does not really meet the holiday period needs but will be great for non holiday periods - for now until the developments are complete and population explodes. crazy to have a round about in the middle of it all but obviouslly too late to change that. Important to keep a community feel and not lose it."
+    },
+    {
+      "person": 44,
+      "text": "Parking availability far worse already than it used to be.  With all of the new developments parking will be next to impossible. We simply cannot afford to lose any spaces.\nNeed a footpath towards beach on south side of road\nNeed a formal crossing near bottle shop as per option 1"
+    },
+    {
+      "person": 48,
+      "text": "Parking is premium , it\u2019s bad enough in quite months, in busy months it\u2019s a no go zone"
+    },
+    {
+      "person": 50,
+      "text": "Yes. In busy/ holiday times - all above is needed."
+    },
+    {
+      "person": 51,
+      "text": "Holiday peak time , lack of parking and pedestrians cross everywhere."
+    },
+    {
+      "person": 52,
+      "text": "Drivers need clear vision leaving the parking area.I have seen and been involved with may near misses. Speed limit should be 40klm from Medical Centre to Red Gum Road as that whole section is very dangerouse for many reasons. Some time restrictions on all or some parking. Post Office parking. Some short term parking."
+    },
+    {
+      "person": 54,
+      "text": "On weekends and holidays, there is a lot of traffic and parking needs. As much parking as possible is needed. With the extra parking provided by the developer, this will help."
+    },
+    {
+      "person": 57,
+      "text": "Parking not usually problematic. No need for crossing within the parking area outside the shops, crossing the road to Kemball and pharmacist needs care - need a crossing and speed humps. the village need to be more pedestrian freely/better amenity. It is tied and lets the area down."
+    },
+    {
+      "person": 58,
+      "text": "Parking is an important issue, and is only going to get worse in the future , reducing it counterproductive. Vehicle speed and wayward pedestrians need attention.  All available illegal parking spots are used in peak times, the winner being the 4WD that parked on the acute angle corner of croll and boomerang ! People cross anywhere and at times are oblivious to oncoming vehicles. I have had to stop for them in boomerang drive."
+    }
+  ],
+  "comments_e3": [
+    {
+      "person": 1,
+      "text": "Coastal styling is appreciated"
+    },
+    {
+      "person": 3,
+      "text": "The position of the roundabout seems to be really unsafe to me. How will new residents access the shop if there is no appropriate crossing for them?"
+    },
+    {
+      "person": 4,
+      "text": "Insufficient public green space"
+    },
+    {
+      "person": 6,
+      "text": "Be sure to tidy up the rear areas of the shops."
+    },
+    {
+      "person": 7,
+      "text": "It is a small area and it would be difficult to come up with a practical design that offered more amenities."
+    },
+    {
+      "person": 8,
+      "text": "Bins are often overflowing, need more shaded areas"
+    },
+    {
+      "person": 9,
+      "text": "It's great to see bike racks included in the concept design \u2014 and we really do appreciate the thought behind it. But for many of us who live here, it raises a bigger question that's hard to ignore: how are we actually supposed to get there safely by bike?\nLakes Way connects communities like Tiona, Elizabeth Beach, Smiths Lake and The Palms, but right now it's not a road where most people would feel comfortable cycling \u2014 not with kids, not as a family, and honestly not on your own either. It's a fast, busy road with no dedicated cycling infrastructure, and that makes the bike racks feel a little disconnected from reality for a lot of residents.\nWhat we'd love to see is a broader vision \u2014 something like the Rail Trail down in Byron Shire, where people can actually move between towns on two wheels without worrying about traffic. That kind of connected trail would be a genuine game-changer for this area. Locals wouldn't need to jump in the car for every little thing, and visitors would have a real reason to explore more of the region on foot or by bike.\nWe're not trying to be critical of the work that's gone into this \u2014 it's a positive step. But we do think the village design needs to be seen as part of something bigger. Is there a plan to connect these communities with safe, separated cycleways? If there is, we'd love to hear about it. And if there isn't one yet, we'd really encourage Council to start that conversation now."
+    },
+    {
+      "person": 10,
+      "text": "Heavy goods vehicles/trucks should not be allowed to access the village centre"
+    },
+    {
+      "person": 11,
+      "text": "Allowing eateries to have outdoor seating is always welcomed. The high-bench seating currently outside of Drift cafe works well as it doesn't take up much space, and adds versatility (option to sit or stand)."
+    },
+    {
+      "person": 15,
+      "text": "More shops and a medical center.\nThe current shops will not be sufficient for the increase of population. Likewise the medical center is set for\nRelocation and no alternate in pacific palms is proposed."
+    },
+    {
+      "person": 16,
+      "text": "Mark out parking bays along the road beyond the 19/23 formal bays\n\nWhy not force developers to make a 100 car park underground parking \ud83c\udd7f\ufe0f lol"
+    },
+    {
+      "person": 21,
+      "text": "Car need to slow down coming into the area from both ways , signage prior to coming into the area like in school zones during peak periods"
+    },
+    {
+      "person": 24,
+      "text": "More parking for PO."
+    },
+    {
+      "person": 26,
+      "text": "Why not open up the rainforest area behind the post office for vehicle parking? There is insufficient parking now for safe access to the shopping precinct for the older cohort of people now residing in this area let alone the massive influx of future residents expected to reside in the new developments taking shape?"
+    },
+    {
+      "person": 32,
+      "text": "Is it possible to utilise/formalise usage of space behind the shops?"
+    },
+    {
+      "person": 35,
+      "text": "Only 3 bike parking racks are provided currently in both options.  This should be increased to future-proof the proposal - as we move to more use of E-bikes there will be higher demand for bike parking.  3 bike racks is insufficient."
+    },
+    {
+      "person": 36,
+      "text": "Perhaps getting the entire length of the footpath in front of the existing shops 500mm wider (if there's space for that). Consider turning curves for a variety of delivery vehicles."
+    },
+    {
+      "person": 39,
+      "text": "Make Option one speed humps (legend 1)  formal  pedestrian crossings"
+    },
+    {
+      "person": 44,
+      "text": "Too many shop staff tying up parking\nNeed to ensure very short time (10 min) parking for post office"
+    },
+    {
+      "person": 52,
+      "text": "More areas provided for seating to eat. A local map maybe designed by a local artist."
+    },
+    {
+      "person": 54,
+      "text": "Yes, there is no long term master plan to extend or provide expansion of shops. What happens when Ingenia, Lot 23 and the other developments are all fully built and in habited?"
+    },
+    {
+      "person": 57,
+      "text": "My preference is option 2 with no verge crossing (no crossing within the parking area outside the shops0."
+    },
+    {
+      "person": 58,
+      "text": "yes, if the speed was reduced to 30kph the crossings possibly could be removed . it may be possible to widen the pavement in front of the shops to allow for more seating options"
+    }
+  ]
+}
