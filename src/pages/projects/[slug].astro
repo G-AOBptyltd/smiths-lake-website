@@ -502,6 +502,11 @@ function parseFeature(feature) {
                 📋 Take the Community Survey
               </a>
             )}
+            {project.snapshotUrl && (
+              <a href={project.snapshotUrl} class="btn btn-snapshot btn-block">
+                📸 View Results Snapshot
+              </a>
+            )}
             <a href={feedbackUrl} class="btn btn-primary btn-block">Submit Feedback</a>
             <button type="button" class="btn btn-outline btn-block share-button">Share Project</button>
           </div>
@@ -1031,6 +1036,15 @@ function parseFeature(feature) {
     border-color: var(--navy-blue-dark); 
   }
 
+  .btn-snapshot {
+    background-color: var(--color-amber, #f59e0b);
+    color: #fff;
+    border-color: var(--color-amber, #f59e0b);
+  }
+  .btn-snapshot:hover {
+    background-color: #d97706;
+    border-color: #d97706;
+  }
   .btn-survey {
     background: #1A7A6E;
     color: var(--white);

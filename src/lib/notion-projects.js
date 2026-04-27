@@ -242,6 +242,9 @@ function enrichProjectData(project) {
     // Survey URL (MVP: hardcoded per-project; Scenario B: Notion field)
     surveyUrl: getSurveyUrl(slug),
 
+    // Results snapshot URL (latest snapshot; update per release)
+    snapshotUrl: getSnapshotUrl(slug),
+
     // Preserve original data for debugging
     _raw: project
   };
@@ -386,6 +389,14 @@ function getSurveyUrl(slug) {
     'blueys-beach-village-concept-design': '/surveys/blueys-beach-survey.html',
   };
   return surveyMap[slug] || null;
+}
+
+function getSnapshotUrl(slug) {
+  const snapshotMap = {
+    'bluey-s-beach-village-centre': '/results/blueys-beach-results-27april2026.html',
+    'blueys-beach-village-concept-design': '/results/blueys-beach-results-27april2026.html',
+  };
+  return snapshotMap[slug] || null;
 }
 
 function generateSlug(title) {
