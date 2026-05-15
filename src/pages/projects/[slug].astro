@@ -507,8 +507,9 @@ function parseFeature(feature) {
                 📸 View Results Snapshot
               </a>
             )}
-            <a href={feedbackUrl} class="btn btn-primary btn-block">Submit Feedback</a>
-            <button type="button" class="btn btn-outline btn-block share-button">Share Project</button>
+            <p class="feedback-prompt">Have thoughts on this project?</p>
+            <a href={feedbackUrl} class="btn btn-teal btn-block">Share a comment or provide constructive feedback</a>
+            <button type="button" class="btn btn-share-outline btn-block share-button">🔗 Share this project</button>
           </div>
         </div>
 
@@ -1067,9 +1068,47 @@ function parseFeature(feature) {
     border-color: var(--navy-blue);
   }
 
-  .btn-outline:hover { 
-    background: var(--navy-blue); 
-    color: var(--white); 
+  .btn-outline:hover {
+    background: var(--navy-blue);
+    color: var(--white);
+  }
+
+  .btn-teal {
+    background: var(--teal-accent);
+    color: var(--white);
+    border-color: var(--teal-accent);
+    white-space: normal;
+    text-align: center;
+    line-height: 1.4;
+    padding: 12px 16px;
+  }
+
+  .btn-teal:hover {
+    background: var(--teal-dark);
+    border-color: var(--teal-dark);
+    color: var(--white);
+    text-decoration: none;
+  }
+
+  .btn-share-outline {
+    background: transparent;
+    color: var(--medium-gray);
+    border: 1px solid #d1d5db;
+    font-size: 13px;
+    padding: 9px 16px;
+  }
+
+  .btn-share-outline:hover {
+    background: var(--light-gray);
+    color: var(--navy-blue);
+    border-color: var(--navy-blue);
+  }
+
+  .feedback-prompt {
+    font-size: 13px;
+    color: var(--medium-gray);
+    text-align: center;
+    margin: 8px 0 4px;
   }
 
   /* CTA section button variants */
