@@ -39,15 +39,12 @@ const PROJECT_MANIFEST_PATH = path.resolve(PROJECT_IMAGES_DIR, 'manifest.json');
 
 function generateSlug(title) {
   if (!title) return 'untitled';
+  // Must match notion-projects.js exactly so manifest keys align with lookups
   return title
     .toLowerCase()
-    .replace(/&/g, 'and')                    // & → and (match detail pages)
-    .replace(/['']/g, '')                     // Remove smart quotes
-    .replace(/[^a-z0-9\s-]/g, '')            // Strip non-alphanumeric
-    .replace(/\s+/g, '-')                     // Spaces to hyphens
-    .replace(/-+/g, '-')                      // Collapse multiple hyphens
-    .replace(/^-+|-+$/g, '')                  // Trim leading/trailing hyphens
-    .substring(0, 80);                        // Reasonable max length
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 100);
 }
 
 function getExtension(url, contentType) {
