@@ -121,7 +121,8 @@ function enrichItemForDetailPage(item) {
     (item.contactPerson || item.contactEmail || item.contactPhone) && 
     item.showContactPublicly !== 'FALSE'
   );
-  const hasDocuments = !!(item.documentUrl || item.groupInfoDocumentUrl);
+  const parsedDocuments = parseDocuments(item.documentTitle || '', item.documentUrl || '');
+  const hasDocuments = parsedDocuments.length > 0;
   const hasLinks = !!(item.websiteUrl || item.facebookUrl);
   const hasLocation = !!(item.address || item.meetingLocation);
   const hasSchedule = !!(item.meetingDay || item.operatingHours || item.eventFrequency);
@@ -147,6 +148,9 @@ function enrichItemForDetailPage(item) {
     hasLocation,
     hasSchedule,
     hasSidebar: hasContact || hasDocuments || hasLinks || hasLocation || hasSchedule,
+
+    // Parsed document list (array of {title, url} objects)
+    parsedDocuments,
     
     // Structured metadata for sidebar display
     metadata,
@@ -281,6 +285,24 @@ export function getSectionPath(sectionName) {
  */
 export function getSectionDisplayName(sectionName) {
   return SECTION_DISPLAY_NAMES[sectionName] || sectionName;
+}
+
+/**
+ * Parse semicolon or newline-separated document titles and URLs
+ * into an array of {title, url} objects.
+ */
+function parseDocuments(titles, urls) {
+  const splitPattern = /[;\n]/;
+  const titleList = (titles || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
+  const urlList = (urls || '').split(splitPattern).map(s => s.trim()).filter(Boolean);
+  const docs = [];
+  const max = Math.max(titleList.length, urlList.length);
+  for (let i = 0; i < max; i++) {
+    if (titleList[i] && urlList[i]) {
+      docs.push({ title: titleList[i], url: urlList[i] });
+    }
+  }
+  return docs;
 }
 
 export default {

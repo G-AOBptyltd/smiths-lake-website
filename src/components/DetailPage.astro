@@ -69,20 +69,8 @@ try {
 }
 const hasHeroImage = !!heroImagePath;
 
-// Build document list
-const documents = [];
-if (item.documentUrl) {
-  documents.push({
-    title: item.documentTitle || item.title || 'View Document',
-    url: item.documentUrl,
-  });
-}
-if (item.groupInfoDocumentUrl && item.groupInfoDocumentUrl !== item.documentUrl) {
-  documents.push({
-    title: 'Group Information',
-    url: item.groupInfoDocumentUrl,
-  });
-}
+// Use pre-parsed document list from notion-detail-pages.js
+const documents = item.parsedDocuments || [];
 
 // Contact info (only if allowed publicly)
 const showContact = item.showContactPublicly !== 'FALSE';
@@ -113,9 +101,6 @@ function formatSchedule(item) {
 }
 
 const schedule = formatSchedule(item);
-
-// Feedback URL — pre-fills the project field with this item's title
-const feedbackUrl = `/feedback/?project=${encodeURIComponent(item.title)}`;
 
 // Hex to RGBA helper
 function hexToRgba(hex, alpha) {
@@ -394,15 +379,6 @@ const pageDescription = item.description || `${item.title} - ${item.sectionDispl
           </div>
         )}
 
-        <!-- Community Feedback -->
-        <div class="sidebar-section">
-          <div class="sidebar-actions">
-            <p class="feedback-prompt">Have thoughts on this?</p>
-            <a href={feedbackUrl} class="btn btn-teal btn-block">Share a comment or provide constructive feedback</a>
-            <button type="button" class="btn btn-share-outline btn-block share-button">🔗 Share this page</button>
-          </div>
-        </div>
-
         <!-- Back Link -->
         <div class="sidebar-back">
           <a href={`/${item.sectionPath}/`} class="back-link">← Back to {item.sectionDisplay}</a>
@@ -422,6 +398,9 @@ const pageDescription = item.description || `${item.title} - ${item.sectionDispl
     --accent: var(--accentHex);
     --navy-blue: #1B365D;
     --navy-blue-light: #2B4A7D;
+    --navy-blue-dark: #142847;
+    --teal-accent: #4db8b8;
+    --teal-dark: #2d8b8b;
     --sky-blue: #5B9BD5;
     --golden-orange: #F5A623;
     --white: #FFFFFF;
@@ -734,44 +713,6 @@ const pageDescription = item.description || `${item.title} - ${item.sectionDispl
     color: var(--white);
   }
 
-  .btn-teal {
-    background: var(--teal-accent);
-    color: var(--white);
-    border-color: var(--teal-accent);
-    white-space: normal;
-    text-align: center;
-    line-height: 1.4;
-    padding: 12px 16px;
-  }
-
-  .btn-teal:hover {
-    background: var(--teal-dark);
-    border-color: var(--teal-dark);
-    color: var(--white);
-    text-decoration: none;
-  }
-
-  .btn-share-outline {
-    background: transparent;
-    color: var(--medium-gray);
-    border: 1px solid #d1d5db;
-    font-size: 13px;
-    padding: 9px 16px;
-  }
-
-  .btn-share-outline:hover {
-    background: var(--light-gray);
-    color: var(--navy-blue);
-    border-color: var(--navy-blue);
-  }
-
-  .feedback-prompt {
-    font-size: 13px;
-    color: var(--medium-gray);
-    text-align: center;
-    margin: 8px 0 4px;
-  }
-
   /* ========================================
      SIDEBAR
      ======================================== */
@@ -1015,32 +956,3 @@ const pageDescription = item.description || `${item.title} - ${item.sectionDispl
     }
   }
 </style>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const shareButtons = document.querySelectorAll('.share-button');
-    shareButtons.forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const pageUrl = window.location.href;
-        const pageTitle = document.title;
-        if (navigator.share) {
-          try {
-            await navigator.share({ title: pageTitle, url: pageUrl });
-          } catch (err) {
-            if (err.name !== 'AbortError') copyToClipboard(pageUrl, btn);
-          }
-        } else {
-          copyToClipboard(pageUrl, btn);
-        }
-      });
-    });
-
-    function copyToClipboard(text, btn) {
-      navigator.clipboard.writeText(text).then(() => {
-        const original = btn.textContent;
-        btn.textContent = '✓ Link copied!';
-        setTimeout(() => { btn.textContent = original; }, 2000);
-      }).catch(() => { alert('Link: ' + text); });
-    }
-  });
-</script>
