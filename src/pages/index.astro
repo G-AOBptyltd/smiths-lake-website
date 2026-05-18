@@ -5,7 +5,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 import QuickInfo from '../components/QuickInfo.astro';
 import SectionCard from '../components/SectionCard.astro';
-import NewsItem from '../components/NewsItem.astro';
 import { fetchSectionSettingsBySlug } from '../lib/notion-section-settings.js';
 
 // Fetch home section settings (hero image, title, subtitle)
@@ -83,26 +82,6 @@ const sections = [
   },
 ];
 
-const newsItems = [
-  {
-    title: 'Summer Fire Season Reminder',
-    date: new Date('2025-12-01'),
-    excerpt: 'Review your bushfire survival plan and ensure your property is prepared. Check our emergency section for evacuation routes.',
-    href: '/emergency/',
-  },
-  {
-    title: 'Community Website Launch',
-    date: new Date('2025-11-15'),
-    excerpt: 'Welcome to our new community website! Access community documents, services, and stay connected with local news and updates.',
-    href: '/about/',
-  },
-  {
-    title: 'Open Spaces & Recreation Strategy',
-    date: new Date('2025-11-01'),
-    excerpt: 'The community\'s submission to MidCoast Council on open spaces and foreshore trails continues to progress through council review.',
-    href: '/services/',
-  },
-];
 ---
 
 <BaseLayout title="Home">
@@ -134,23 +113,20 @@ const newsItems = [
     </div>
   </section>
   
-  <!-- Latest Updates -->
-  <section class="section" aria-labelledby="news-heading">
+  <!-- News & Services Banner -->
+  <section class="news-banner-section">
     <div class="container">
-      <h2 id="news-heading" class="text-center mb-8">Latest Updates</h2>
-      <div class="news-grid">
-        {newsItems.map((item) => (
-          <NewsItem 
-            title={item.title}
-            date={item.date}
-            excerpt={item.excerpt}
-            href={item.href}
-          />
-        ))}
+      <div class="news-banner">
+        <div class="news-banner-icon" aria-hidden="true">📰</div>
+        <div class="news-banner-body">
+          <p class="news-banner-label">Stay informed</p>
+          <h2 class="news-banner-heading">News &amp; Local Services</h2>
+          <p class="news-banner-text">Latest updates from across the community — news, environment, history, emergency alerts, and local services all in one place.</p>
+        </div>
+        <div class="news-banner-action">
+          <a href="/services/" class="news-banner-btn">See what's happening →</a>
+        </div>
       </div>
-      <p class="text-center mt-8">
-        <a href="/news/" class="btn btn--outline">View All Updates</a>
-      </p>
     </div>
   </section>
   
@@ -187,18 +163,88 @@ const newsItems = [
     }
   }
   
-  .news-grid {
-    display: grid;
-    grid-template-columns: repeat(1, 1fr);
-    gap: var(--space-8);
+  /* News & Services Banner */
+  .news-banner-section {
+    padding: var(--space-10) 0;
+    background: #f0f7ff;
   }
-  
-  @media (min-width: 768px) {
-    .news-grid {
-      grid-template-columns: repeat(3, 1fr);
+
+  .news-banner {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    background: linear-gradient(135deg, #1B365D 0%, #0c2d5a 60%, #4db8b8 100%);
+    border-radius: 14px;
+    padding: 2.5rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .news-banner-icon {
+    font-size: 3.5rem;
+    flex-shrink: 0;
+    opacity: 0.9;
+    line-height: 1;
+  }
+
+  .news-banner-body {
+    flex: 1;
+  }
+
+  .news-banner-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #4db8b8;
+    margin-bottom: 0.4rem;
+  }
+
+  .news-banner-heading {
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+  }
+
+  .news-banner-text {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .news-banner-action {
+    flex-shrink: 0;
+  }
+
+  .news-banner-btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: #4db8b8;
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+    border-radius: 8px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+
+  .news-banner-btn:hover {
+    background: #2d8b8b;
+  }
+
+  @media (max-width: 640px) {
+    .news-banner {
+      flex-direction: column;
+      text-align: center;
+      padding: 2rem 1.5rem;
     }
+    .news-banner-icon { font-size: 2.5rem; }
   }
-  
+
   .cta-section {
     background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
     padding: var(--space-16) 0;
