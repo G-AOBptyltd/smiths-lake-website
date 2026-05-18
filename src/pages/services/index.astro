@@ -65,8 +65,9 @@ const eligibleItems = allPublished
   });
 
 const featuredItem  = eligibleItems[0] || null;
-const digestItems   = eligibleItems.slice(1, 4);
-const thumbItems    = eligibleItems.slice(4, 7);
+const heroItem      = eligibleItems[1] || null;   // centre block — distinct from lead
+const digestItems   = eligibleItems.slice(2, 5);
+const thumbItems    = eligibleItems.slice(5, 8);
 
 // ── Local Services directory ──────────────────────────────────────────────────
 const serviceItems = allPublished.filter((item: any) =>
@@ -294,20 +295,27 @@ const serviceItems = allPublished.filter((item: any) =>
               )}
             </a>
 
-            <!-- Hero block -->
-            <a
-              href={buildItemUrl(featuredItem)}
-              class="news-hero"
-              style={`background: ${getHeroStyle(featuredItem.section).gradient};`}
-              aria-label={featuredItem.title}
-            >
-              <span class="news-hero-icon" aria-hidden="true">{getHeroStyle(featuredItem.section).icon}</span>
-              <div class="news-hero-overlay"></div>
-              <div class="news-hero-content">
-                <span class="news-hero-label">{getSectionDisplayName(featuredItem.section)}</span>
-                <p class="news-hero-hed">{featuredItem.title}</p>
+            <!-- Hero block (second item — distinct from lead) -->
+            {heroItem ? (
+              <a
+                href={buildItemUrl(heroItem)}
+                class="news-hero"
+                style={`background: ${getHeroStyle(heroItem.section).gradient};`}
+                aria-label={heroItem.title}
+              >
+                <span class="news-hero-icon" aria-hidden="true">{getHeroStyle(heroItem.section).icon}</span>
+                <div class="news-hero-overlay"></div>
+                <div class="news-hero-content">
+                  <span class="news-hero-label">{getSectionDisplayName(heroItem.section)}</span>
+                  <p class="news-hero-hed">{heroItem.title}</p>
+                </div>
+              </a>
+            ) : (
+              <div class="news-hero" style={`background: ${getHeroStyle(featuredItem.section).gradient};`}>
+                <span class="news-hero-icon" aria-hidden="true">{getHeroStyle(featuredItem.section).icon}</span>
+                <div class="news-hero-overlay"></div>
               </div>
-            </a>
+            )}
 
             <!-- Digest list -->
             <div class="news-digest" role="list">
