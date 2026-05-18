@@ -190,9 +190,13 @@ function parseNotionPage(page) {
     engagementViews: parseProperty(props['Engagement Views']),
     // ========== END PROJECT HUB FIELDS ==========
 
-    // Timestamps
+    // Timestamps (custom Notion properties, may be null if not in database)
     createdTime: parseProperty(props['Created Time']),
     lastEditedTime: parseProperty(props['Last Edited Time']),
+
+    // Top-level Notion timestamps — always available on every page
+    notionCreatedTime: page.created_time,
+    notionLastEditedTime: page.last_edited_time,
   };
 }
 

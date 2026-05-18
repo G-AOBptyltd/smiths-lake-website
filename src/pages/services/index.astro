@@ -8,7 +8,7 @@ import Layout from '../../layouts/BaseLayout.astro';
 import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
-import { generateSlug } from '../../lib/notion-detail-pages.js';
+import { generateSlug, getSectionPath, getSectionColour, getSectionDisplayName } from '../../lib/notion-detail-pages.js';
 
 // Fetch section settings (hero image, colours)
 const sectionSettings = await fetchSectionSettingsBySlug('services');
@@ -25,47 +25,34 @@ try {
 } catch (e) { /* manifest not yet generated */ }
 const heroImage = sectionHeroManifest['services'] || null;
 
-// ── Static news items (placeholder until Notion News DB is connected) ─────────
-const newsItems = [
-  {
-    title: 'Community Website Launched',
-    date: new Date('2025-11-15'),
-    category: 'Community',
-    categoryColour: '#4db8b8',
-    excerpt: 'VillageFirst — the new online home for Smiths Lake and Pacific Palms residents — is now live. Find local services, history, groups, and more in one place.',
-    href: '/about/',
-  },
-  {
-    title: 'Open Spaces & Recreation Strategy Underway',
-    date: new Date('2025-11-01'),
-    category: 'Council',
-    categoryColour: '#5B9BD5',
-    excerpt: 'MidCoast Council is developing an Open Spaces and Recreation Strategy. PPCA is gathering community input to shape a formal submission on behalf of residents.',
-    href: '/projects/',
-  },
-  {
-    title: 'Summer Fire Season — Stay Prepared',
-    date: new Date('2025-12-01'),
-    category: 'Emergency',
-    categoryColour: '#DC2626',
-    excerpt: 'The NSW Rural Fire Service urges residents to review their Bushfire Survival Plans before the peak fire season. Know your trigger, know your route.',
-    href: '/emergency/',
-  },
-  {
-    title: 'Estuary Monitoring Program Continues',
-    date: new Date('2026-02-10'),
-    category: 'Environment',
-    categoryColour: '#16A34A',
-    excerpt: 'Volunteers and researchers completed the latest round of Smiths Lake estuary health monitoring. Results continue to show healthy water quality and thriving birdlife.',
-    href: '/environment/',
-  },
-];
+// ── Dynamic news feed from unified Notion database ────────────────────────────
+// Fetches ALL published items across every section in one call.
+// Sorts by Notion's built-in last_edited_time (always present, no custom field needed).
+// Daily Netlify rebuild keeps this current automatically.
+const allPublished = await fetchNotionContent({ requireShowOnWebsite: true });
 
-// ── Notion Services ────────────────────────────────────────────────────────────
-const items = await fetchNotionContent({ section: 'Services' });
-const publishedItems = items.filter(item =>
-  item.statusOnWeb ? item.statusOnWeb === 'Published' : true
-);
+const newsItems = allPublished
+  .filter(item =>
+    item.section &&                          // must belong to a section
+    item.section !== 'Project Hub' &&        // projects has its own hub
+    item.notionLastEditedTime               // must have a timestamp
+  )
+  .sort((a, b) =>
+    new Date(b.notionLastEditedTime).getTime() - new Date(a.notionLastEditedTime).getTime()
+  )
+  .slice(0, 6)
+  .map(item => ({
+    title: item.title,
+    date: new Date(item.notionLastEditedTime),
+    category: getSectionDisplayName(item.section),
+    categoryColour: getSectionColour(item.section),
+    excerpt: item.description || '',
+    href: `/${getSectionPath(item.section)}/${item.slug || generateSlug(item.title)}/`,
+  }));
+
+// ── Notion Services directory ─────────────────────────────────────────────────
+const items = allPublished.filter(item => item.section === 'Services' || item.section === 'Services & Amenities');
+const publishedItems = items;
 ---
 
 <Layout
@@ -489,10 +476,12 @@ const publishedItems = items.filter(item =>
           ))}
         </div>
 
-        <div class="news-notice" role="note">
-          <span aria-hidden="true">🌱</span>
-          These are placeholder updates while a Notion-connected news feed is being set up. Content will be managed directly from Notion.
-        </div>
+        {newsItems.length === 0 && (
+          <div class="news-notice" role="note">
+            <span aria-hidden="true">🌱</span>
+            No recent updates to show yet — check back soon.
+          </div>
+        )}
       </section>
 
       <!-- ── Local Services ──────────────────────────────────────────── -->

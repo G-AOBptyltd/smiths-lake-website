@@ -288,6 +288,13 @@ export function getSectionDisplayName(sectionName) {
 }
 
 /**
+ * Get section accent colour hex string
+ */
+export function getSectionColour(sectionName) {
+  return SECTION_COLOURS[sectionName]?.hex || '#1B365D';
+}
+
+/**
  * Parse semicolon or newline-separated document titles and URLs
  * into an array of {title, url} objects.
  */
