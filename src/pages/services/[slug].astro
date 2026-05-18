@@ -15,7 +15,13 @@ import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js
 export async function getStaticPaths() {
   let items = [];
   try {
-    items = await fetchDetailPageItems('Services');
+    // Fetch both section name variants — Notion uses 'Services & Amenities'
+    // but legacy items may be tagged as 'Services'
+    const [services, servicesAndAmenities] = await Promise.all([
+      fetchDetailPageItems('Services'),
+      fetchDetailPageItems('Services & Amenities'),
+    ]);
+    items = [...services, ...servicesAndAmenities];
   } catch (error) {
     console.error('Error fetching services for static paths:', error);
   }

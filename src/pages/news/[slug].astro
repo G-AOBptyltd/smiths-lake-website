@@ -1,0 +1,389 @@
+---
+/**
+ * News Article Page
+ * Dynamic route: /news/[slug]/
+ *
+ * Renders items from the 'News' section in Notion as clean article format.
+ * No metadata sidebar — just headline, body, documents, and share controls.
+ *
+ * @created May 2026
+ */
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { fetchDetailPageItems } from '../../lib/notion-detail-pages.js';
+
+// Section → gradient + icon mapping for the hero block
+const SECTION_HERO_STYLES = {
+  'News':                       { gradient: 'linear-gradient(160deg, #0c2d5a 0%, #1B365D 50%, #4db8b8 100%)', icon: '📰' },
+  'Groups & Activities':        { gradient: 'linear-gradient(160deg, #1e3a5f 0%, #5B9BD5 70%, #93c5fd 100%)', icon: '🎉' },
+  'Services':                   { gradient: 'linear-gradient(160deg, #0c1a2e 0%, #1B365D 70%, #2d5a9e 100%)', icon: '🏘️' },
+  'Services & Amenities':       { gradient: 'linear-gradient(160deg, #0c1a2e 0%, #1B365D 70%, #2d5a9e 100%)', icon: '🏘️' },
+  'Environment & Sustainability': { gradient: 'linear-gradient(160deg, #064e3b 0%, #16A34A 70%, #4ade80 100%)', icon: '🌿' },
+  'Emergency & Safety':         { gradient: 'linear-gradient(160deg, #7f1d1d 0%, #DC2626 70%, #ef4444 100%)', icon: '🔥' },
+  'History & Culture':          { gradient: 'linear-gradient(160deg, #451a03 0%, #92400E 70%, #b45309 100%)', icon: '🏛️' },
+};
+
+export async function getStaticPaths() {
+  let items = [];
+  try {
+    items = await fetchDetailPageItems('News');
+  } catch (error) {
+    console.error('Error fetching news items for static paths:', error);
+  }
+  return items.map(item => ({
+    params: { slug: item.slug },
+    props: { item },
+  }));
+}
+
+const { item } = Astro.props;
+
+if (!item) {
+  return Astro.redirect('/services/');
+}
+
+const heroStyle = SECTION_HERO_STYLES[item.section] || SECTION_HERO_STYLES['News'];
+const accentHex = item.sectionColour?.hex || '#4db8b8';
+
+// Estimate read time from description length
+const wordCount = (item.description || '').split(/\s+/).filter(Boolean).length;
+const readTime = Math.max(1, Math.ceil(wordCount / 200));
+
+// Format date
+const pubDate = item.notionLastEditedTime
+  ? new Date(item.notionLastEditedTime).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+  : null;
+
+const feedbackUrl = `/feedback/?project=${encodeURIComponent(item.title)}`;
+const pageTitle = `${item.title} | Smiths Lake Village`;
+const pageDescription = item.description ? item.description.substring(0, 160) : `${item.title} — Smiths Lake Village community news.`;
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <style>
+    .article-wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 1rem 4rem;
+    }
+
+    /* Hero */
+    .article-hero {
+      width: 100%;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 0;
+    }
+
+    .article-hero-icon {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -60%);
+      font-size: 140px;
+      opacity: 0.08;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .article-hero-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60%;
+      background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%);
+    }
+
+    .article-hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .article-section-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 0.625rem;
+      display: block;
+    }
+
+    .article-headline {
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.2;
+      margin: 0;
+    }
+
+    /* Meta bar */
+    .article-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid #e5e7eb;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .article-meta-item {
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+
+    .article-meta-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: #d1d5db;
+      flex-shrink: 0;
+    }
+
+    .article-meta-cat {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.65rem;
+      border-radius: 20px;
+      color: white;
+    }
+
+    /* Body */
+    .article-body {
+      font-size: 1.0625rem;
+      line-height: 1.8;
+      color: #374151;
+    }
+
+    .article-body p {
+      margin-bottom: 1.25rem;
+    }
+
+    .article-body p:first-child {
+      font-size: 1.15rem;
+      font-weight: 500;
+      color: #1f2937;
+      line-height: 1.7;
+    }
+
+    /* Documents */
+    .article-docs {
+      margin-top: 2rem;
+      padding: 1.25rem 1.5rem;
+      background: #f8fafc;
+      border-radius: 10px;
+      border-left: 4px solid v-bind(accentHex);
+    }
+
+    .article-docs-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #6b7280;
+      margin-bottom: 0.75rem;
+    }
+
+    .article-doc-link {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #1B365D;
+      text-decoration: none;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid #e5e7eb;
+      transition: color 0.2s;
+    }
+
+    .article-doc-link:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .article-doc-link:hover {
+      color: #4db8b8;
+    }
+
+    /* External link */
+    .article-ext-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #4db8b8;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .article-ext-link:hover {
+      color: #1B365D;
+    }
+
+    /* Footer */
+    .article-footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-back {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #6b7280;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      transition: color 0.2s;
+    }
+
+    .footer-back:hover {
+      color: #1B365D;
+    }
+
+    .footer-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn-teal {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.6rem 1.25rem;
+      background: #4db8b8;
+      color: white;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: 6px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-teal:hover {
+      background: #2d8b8b;
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.6rem 1.25rem;
+      background: transparent;
+      color: #6b7280;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: 6px;
+      border: 1.5px solid #d1d5db;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-outline:hover {
+      border-color: #1B365D;
+      color: #1B365D;
+    }
+
+    @media (max-width: 600px) {
+      .article-hero { min-height: 220px; padding: 1.5rem; }
+      .article-footer { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+
+  <!-- Hero -->
+  <div class="article-hero" style={`background: ${heroStyle.gradient};`}>
+    <span class="article-hero-icon" aria-hidden="true">{heroStyle.icon}</span>
+    <div class="article-hero-overlay"></div>
+    <div class="article-hero-content">
+      <span class="article-section-label">{item.sectionDisplay || item.section}</span>
+      <h1 class="article-headline">{item.title}</h1>
+    </div>
+  </div>
+
+  <div class="article-wrap">
+
+    <!-- Meta bar -->
+    <div class="article-meta">
+      {item.category && (
+        <span class="article-meta-cat" style={`background: ${accentHex};`}>{item.category}</span>
+      )}
+      {item.category && pubDate && <span class="article-meta-dot"></span>}
+      {pubDate && <span class="article-meta-item">{pubDate}</span>}
+      {pubDate && <span class="article-meta-dot"></span>}
+      <span class="article-meta-item">{readTime} min read</span>
+    </div>
+
+    <!-- Body -->
+    <div class="article-body">
+      {item.description
+        ? item.description.split('\n').filter(Boolean).map((para: string) => (
+            <p>{para}</p>
+          ))
+        : <p>Content coming soon.</p>
+      }
+    </div>
+
+    <!-- External link -->
+    {item.websiteUrl && (
+      <a href={item.websiteUrl} class="article-ext-link" target="_blank" rel="noopener noreferrer">
+        Visit related website ↗
+      </a>
+    )}
+
+    <!-- Documents -->
+    {item.parsedDocuments && item.parsedDocuments.length > 0 && (
+      <div class="article-docs" style={`border-left-color: ${accentHex};`}>
+        <p class="article-docs-title">Related documents</p>
+        {item.parsedDocuments.map((doc: { title: string; url: string }) => (
+          <a href={doc.url} class="article-doc-link" target="_blank" rel="noopener noreferrer">
+            📄 {doc.title} ↗
+          </a>
+        ))}
+      </div>
+    )}
+
+    <!-- Footer -->
+    <div class="article-footer">
+      <a href="/services/" class="footer-back">← Back to news</a>
+      <div class="footer-actions">
+        <a href={feedbackUrl} class="btn-teal">Share a comment</a>
+        <button type="button" class="btn-outline share-button">🔗 Share</button>
+      </div>
+    </div>
+
+  </div>
+</BaseLayout>
+
+<script>
+  document.querySelector('.share-button')?.addEventListener('click', async () => {
+    const url = window.location.href;
+    const title = document.title;
+    if (navigator.share) {
+      try { await navigator.share({ title, url }); } catch {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        const btn = document.querySelector('.share-button') as HTMLButtonElement;
+        if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => { btn.textContent = '🔗 Share'; }, 2000); }
+      } catch {}
+    }
+  });
+</script>

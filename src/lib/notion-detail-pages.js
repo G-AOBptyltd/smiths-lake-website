@@ -21,6 +21,7 @@ import { fetchItemsBySection, fetchNotionContent } from './notion-unified.js';
  * Maps Notion section values to the folder structure in src/pages/
  */
 const SECTION_TO_PATH = {
+  'News': 'news',
   'Groups & Activities': 'groups',
   'Services': 'services',
   'Services & Amenities': 'services',
@@ -33,6 +34,7 @@ const SECTION_TO_PATH = {
  * Section name → parent page title mapping (for breadcrumbs)
  */
 const SECTION_DISPLAY_NAMES = {
+  'News': 'News',
   'Groups & Activities': 'Groups & Activities',
   'Services': 'Services & Amenities',
   'Services & Amenities': 'Services & Amenities',
@@ -45,6 +47,7 @@ const SECTION_DISPLAY_NAMES = {
  * Section name → accent colour mapping (fallback if section settings unavailable)
  */
 const SECTION_COLOURS = {
+  'News': { hex: '#4db8b8', name: 'Teal' },
   'Groups & Activities': { hex: '#5B9BD5', name: 'Sky Blue' },
   'Services': { hex: '#1B365D', name: 'Navy Blue' },
   'Services & Amenities': { hex: '#1B365D', name: 'Navy Blue' },
