@@ -31,11 +31,13 @@ const SECTION_SETTINGS_DB = process.env.NOTION_SECTION_SETTINGS_DB;
 const SECTION_HEROES_DIR = path.resolve(__dirname, '../../public/images/heroes');
 const CARD_IMAGES_DIR = path.resolve(__dirname, '../../public/images/cards');
 const PROJECT_IMAGES_DIR = path.resolve(__dirname, '../../public/images/projects');
+const CONTENT_IMAGES_DIR = path.resolve(__dirname, '../../public/images/content');
 
 // Manifest files
 const SECTION_MANIFEST_PATH = path.resolve(SECTION_HEROES_DIR, 'manifest.json');
 const CARD_MANIFEST_PATH = path.resolve(CARD_IMAGES_DIR, 'manifest.json');
 const PROJECT_MANIFEST_PATH = path.resolve(PROJECT_IMAGES_DIR, 'manifest.json');
+const CONTENT_MANIFEST_PATH = path.resolve(CONTENT_IMAGES_DIR, 'manifest.json');
 
 function generateSlug(title) {
   if (!title) return 'untitled';
@@ -205,6 +207,76 @@ async function downloadCardHeroImages() {
   }
 }
 
+async function downloadPageContentImages() {
+  console.log('');
+  console.log('🖼️  Inline page content images (Notion body blocks)...');
+
+  ensureDir(CONTENT_IMAGES_DIR);
+
+  if (!MAIN_DATABASE_ID) {
+    console.log('  ⚠️ NOTION_DATABASE_ID not set — skipping');
+    fs.writeFileSync(CONTENT_MANIFEST_PATH, JSON.stringify({}));
+    return {};
+  }
+
+  try {
+    // Fetch all published items
+    const dbResponse = await notion.databases.query({
+      database_id: MAIN_DATABASE_ID,
+      filter: {
+        or: [
+          { property: 'Status on Web', select: { equals: 'Published' } },
+          { property: 'Show on Website', select: { equals: 'TRUE' } },
+        ],
+      },
+    });
+
+    const manifest = {};
+    let downloaded = 0, skipped = 0;
+
+    for (const page of dbResponse.results) {
+      // Fetch all blocks for this page
+      let blocks = [];
+      let cursor = undefined;
+      do {
+        const blockResponse = await notion.blocks.children.list({
+          block_id: page.id,
+          start_cursor: cursor,
+          page_size: 100,
+        });
+        blocks.push(...blockResponse.results);
+        cursor = blockResponse.has_more ? blockResponse.next_cursor : undefined;
+      } while (cursor);
+
+      // Download only Notion-hosted file images (these have expiring S3 URLs)
+      for (const block of blocks) {
+        if (block.type !== 'image') continue;
+        if (block.image?.type !== 'file') continue; // external URLs are stable, skip
+
+        const imageUrl = block.image.file?.url;
+        if (!imageUrl) continue;
+
+        const safeId = block.id.replace(/-/g, '');
+        const filename = await downloadImage(imageUrl, safeId, CONTENT_IMAGES_DIR);
+        if (filename) {
+          manifest[block.id] = `/images/content/${filename}`;
+          downloaded++;
+        } else {
+          skipped++;
+        }
+      }
+    }
+
+    fs.writeFileSync(CONTENT_MANIFEST_PATH, JSON.stringify(manifest, null, 2));
+    console.log(`  Done: ${downloaded} downloaded, ${skipped} failed`);
+    return manifest;
+  } catch (error) {
+    console.error('  ❌ Error:', error.message);
+    fs.writeFileSync(CONTENT_MANIFEST_PATH, JSON.stringify({}));
+    return {};
+  }
+}
+
 async function main() {
   console.log('');
   console.log('═══════════════════════════════════════════');
@@ -213,9 +285,10 @@ async function main() {
 
   const sectionManifest = await downloadSectionHeroImages();
   const cardManifest = await downloadCardHeroImages();
+  const contentManifest = await downloadPageContentImages();
 
   console.log('');
-  console.log(`✅ Complete: ${Object.keys(sectionManifest).length} section heroes, ${Object.keys(cardManifest).length} card images`);
+  console.log(`✅ Complete: ${Object.keys(sectionManifest).length} section heroes, ${Object.keys(cardManifest).length} card images, ${Object.keys(contentManifest).length} content images`);
   console.log('');
 }
 
