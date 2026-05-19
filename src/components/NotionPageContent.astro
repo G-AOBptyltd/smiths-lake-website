@@ -1,25 +1,27 @@
 ---
 /**
  * NotionPageContent - Renders Notion page body content as HTML
- * 
+ *
  * Fetches content blocks from the Notion Blocks API for a given page ID
  * and renders them as semantic HTML. Supports:
  * - Paragraphs, headings (h1-h3)
  * - Bulleted and numbered lists
- * - Images (with captions)
+ * - Images (with captions) — downloaded to /public/images/content/ at build time
  * - Dividers
  * - Callout blocks
  * - Bold, italic, strikethrough, code, links
  * - Toggle blocks
  * - Quotes
- * 
+ *
  * Falls back gracefully if page has no body content.
- * 
- * @version 1.0
+ *
+ * @version 1.1 - Fixed: inline images now downloaded at build time (Notion S3 URLs expire ~1hr)
  * @created April 2026
  */
 
 import { Client } from '@notionhq/client';
+import fs from 'node:fs';
+import path from 'node:path';
 
 interface Props {
   pageId: string;
@@ -63,31 +65,70 @@ function richTextToHtml(richTextArray) {
 }
 
 /**
- * Convert a Notion image block to an HTML img tag
- * Downloads and caches the image at build time to avoid expiring URLs
+ * Download a Notion-hosted image to /public/images/content/ at build time.
+ * Returns the stable local path, or null on failure.
+ * External images (non-Notion URLs) are returned as-is — they don't expire.
  */
-function imageBlockToHtml(block) {
-  const image = block.image;
-  if (!image) return '';
-  
-  // Get the image URL (file or external)
-  let url = '';
-  if (image.type === 'file') {
-    url = image.file?.url || '';
-  } else if (image.type === 'external') {
-    url = image.external?.url || '';
+const CONTENT_IMAGES_DIR = path.resolve(process.cwd(), 'public/images/content');
+
+async function resolveImageUrl(url: string, blockId: string): Promise<string> {
+  // External URLs (Cloudfront, Unsplash, etc.) are stable — use directly
+  if (!url.includes('secure.notion-static.com') && !url.includes('prod-files-secure')) {
+    return url;
   }
-  
-  if (!url) return '';
-  
-  // Get caption if available
-  const caption = richTextToHtml(image.caption);
-  
+  // Notion-hosted: download to local public directory
+  try {
+    if (!fs.existsSync(CONTENT_IMAGES_DIR)) {
+      fs.mkdirSync(CONTENT_IMAGES_DIR, { recursive: true });
+    }
+    const safeId = blockId.replace(/-/g, '');
+    const response = await fetch(url);
+    if (!response.ok) return url; // fallback — at least works at build time
+    const contentType = response.headers.get('content-type') || '';
+    const ext = contentType.includes('png') ? '.png'
+               : contentType.includes('webp') ? '.webp'
+               : '.jpg';
+    const filename = `${safeId}${ext}`;
+    const filepath = path.join(CONTENT_IMAGES_DIR, filename);
+    const buffer = Buffer.from(await response.arrayBuffer());
+    fs.writeFileSync(filepath, buffer);
+    return `/images/content/${filename}`;
+  } catch (e) {
+    console.warn(`NotionPageContent: could not download image block ${blockId}:`, e.message);
+    return url; // fallback
+  }
+}
+
+/**
+ * Convert a Notion image block to an HTML img tag.
+ * Accepts a pre-resolved (local or external) URL.
+ */
+function imageBlockToHtml(block: any, resolvedUrl: string) {
+  if (!resolvedUrl) return '';
+  const caption = richTextToHtml(block.image?.caption);
   if (caption) {
-    return `<figure class="notion-image"><img src="${url}" alt="${caption.replace(/<[^>]*>/g, '')}" loading="lazy" /><figcaption>${caption}</figcaption></figure>`;
+    return `<figure class="notion-image"><img src="${resolvedUrl}" alt="${caption.replace(/<[^>]*>/g, '')}" loading="lazy" /><figcaption>${caption}</figcaption></figure>`;
   }
-  
-  return `<figure class="notion-image"><img src="${url}" alt="" loading="lazy" /></figure>`;
+  return `<figure class="notion-image"><img src="${resolvedUrl}" alt="" loading="lazy" /></figure>`;
+}
+
+/**
+ * Pre-download all Notion-hosted images in a blocks array.
+ * Returns a map of blockId → local (or stable external) URL.
+ */
+async function preDownloadImages(blocks: any[]): Promise<Record<string, string>> {
+  const urlMap: Record<string, string> = {};
+  for (const block of blocks) {
+    if (block.type !== 'image') continue;
+    const image = block.image;
+    let rawUrl = '';
+    if (image?.type === 'file') rawUrl = image.file?.url || '';
+    else if (image?.type === 'external') rawUrl = image.external?.url || '';
+    if (rawUrl && block.id) {
+      urlMap[block.id] = await resolveImageUrl(rawUrl, block.id);
+    }
+  }
+  return urlMap;
 }
 
 /**
@@ -117,9 +158,10 @@ async function fetchPageBlocks(pageId) {
 }
 
 /**
- * Convert blocks array to HTML string
+ * Convert blocks array to HTML string.
+ * imageUrlMap maps blockId → pre-resolved URL for image blocks.
  */
-function blocksToHtml(blocks) {
+function blocksToHtml(blocks: any[], imageUrlMap: Record<string, string> = {}) {
   if (!blocks || blocks.length === 0) return '';
   
   const htmlParts = [];
@@ -185,7 +227,8 @@ function blocksToHtml(blocks) {
       }
       
       case 'image': {
-        htmlParts.push(imageBlockToHtml(block));
+        const resolvedUrl = imageUrlMap[block.id] || '';
+        if (resolvedUrl) htmlParts.push(imageBlockToHtml(block, resolvedUrl));
         break;
       }
       
@@ -273,7 +316,9 @@ try {
   });
   
   if (contentBlocks.length > 0) {
-    renderedHtml = blocksToHtml(contentBlocks);
+    // Download all Notion-hosted images to stable local paths before rendering
+    const imageUrlMap = await preDownloadImages(contentBlocks);
+    renderedHtml = blocksToHtml(contentBlocks, imageUrlMap);
     hasPageContent = renderedHtml.trim().length > 0;
   }
 } catch (error) {

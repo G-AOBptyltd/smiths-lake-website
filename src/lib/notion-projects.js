@@ -187,10 +187,9 @@ function enrichProjectData(project) {
   // Engagement views
   const engagementViews = project.engagementViews || null;
 
-  // Hero image - prefer local downloaded copy, fall back to Notion URL
-  const localHeroImage = heroImageManifest[slug] || null;
-  const notionHeroImage = extractFileUrl(project.heroImageFile);
-  const heroImageFile = localHeroImage || notionHeroImage;
+  // Hero image — use local downloaded copy only (Notion S3 URLs expire in ~1hr and break static pages)
+  // If not in manifest, the build-time download script didn't find a Hero Image File for this project.
+  const heroImageFile = heroImageManifest[slug] || null;
 
   // Content fields - directly from notion-unified.js
   const aboutContent = project.projhubAboutContent || '';
