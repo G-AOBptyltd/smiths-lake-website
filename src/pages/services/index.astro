@@ -51,6 +51,17 @@ try {
 } catch (e) { /* manifest not yet generated */ }
 const heroImage = sectionHeroManifest['services'] || null;
 
+// Load card image manifest (for BBC hero centre block)
+let cardImageManifest: Record<string, string> = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const manifestPath = path.resolve(process.cwd(), 'public/images/cards/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    cardImageManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  }
+} catch (e) { /* manifest not yet generated */ }
+
 // ── Dynamic news feed ─────────────────────────────────────────────────────────
 // News section items are prioritised. Other published items fill remaining slots.
 const allPublished = await fetchNotionContent({ requireShowOnWebsite: true });
@@ -296,21 +307,29 @@ const serviceItems = allPublished.filter((item: any) =>
             </a>
 
             <!-- Hero block (second item — distinct from lead) -->
-            {heroItem ? (
-              <a
-                href={buildItemUrl(heroItem)}
-                class="news-hero"
-                style={`background: ${getHeroStyle(heroItem.section).gradient};`}
-                aria-label={heroItem.title}
-              >
-                <span class="news-hero-icon" aria-hidden="true">{getHeroStyle(heroItem.section).icon}</span>
-                <div class="news-hero-overlay"></div>
-                <div class="news-hero-content">
-                  <span class="news-hero-label">{getSectionDisplayName(heroItem.section)}</span>
-                  <p class="news-hero-hed">{heroItem.title}</p>
-                </div>
-              </a>
-            ) : (
+            {heroItem ? (() => {
+              const heroSlug = heroItem.slug || generateSlug(heroItem.title);
+              const heroCardImg = cardImageManifest[heroSlug] || null;
+              const heroStyle = getHeroStyle(heroItem.section);
+              const heroBg = heroCardImg
+                ? `background-image: url('${heroCardImg}'); background-size: cover; background-position: center;`
+                : `background: ${heroStyle.gradient};`;
+              return (
+                <a
+                  href={buildItemUrl(heroItem)}
+                  class="news-hero"
+                  style={heroBg}
+                  aria-label={heroItem.title}
+                >
+                  {!heroCardImg && <span class="news-hero-icon" aria-hidden="true">{heroStyle.icon}</span>}
+                  <div class="news-hero-overlay"></div>
+                  <div class="news-hero-content">
+                    <span class="news-hero-label">{getSectionDisplayName(heroItem.section)}</span>
+                    <p class="news-hero-hed">{heroItem.title}</p>
+                  </div>
+                </a>
+              );
+            })() : (
               <div class="news-hero" style={`background: ${getHeroStyle(featuredItem.section).gradient};`}>
                 <span class="news-hero-icon" aria-hidden="true">{getHeroStyle(featuredItem.section).icon}</span>
                 <div class="news-hero-overlay"></div>
