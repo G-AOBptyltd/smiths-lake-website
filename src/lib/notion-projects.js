@@ -386,6 +386,7 @@ function getSurveyUrl(slug) {
   const surveyMap = {
     'bluey-s-beach-village-centre': '/surveys/blueys-beach-survey.html',
     'blueys-beach-village-concept-design': '/surveys/blueys-beach-survey.html',
+    'blueys-beach-village-survey-concept-designs': '/surveys/blueys-beach-survey.html',
   };
   return surveyMap[slug] || null;
 }
@@ -394,6 +395,7 @@ function getSnapshotUrl(slug) {
   const snapshotMap = {
     'bluey-s-beach-village-centre': '/results/blueys-beach-results-27april2026.html',
     'blueys-beach-village-concept-design': '/results/blueys-beach-results-27april2026.html',
+    'blueys-beach-village-survey-concept-designs': '/results/blueys-beach-results-27april2026.html',
   };
   return snapshotMap[slug] || null;
 }
