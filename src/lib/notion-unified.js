@@ -188,6 +188,8 @@ function parseNotionPage(page) {
     mailchimpTag: parseProperty(props['MailChimp Tag']),
     submissionOpens: parseProperty(props['Submission Opens']),
     engagementViews: parseProperty(props['Engagement Views']),
+    surveyToolUrl: parseProperty(props['Survey URL']),
+    resultsSnapshotUrl: parseProperty(props['Results URL']),
     // ========== END PROJECT HUB FIELDS ==========
 
     // Timestamps (custom Notion properties, may be null if not in database)

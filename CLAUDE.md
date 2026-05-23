@@ -20,6 +20,12 @@
 git remote set-url origin https://G-AOBptyltd@github.com/G-AOBptyltd/smiths-lake-website.git
 ```
 
+**Git lock fix** — if `git commit` fails with "Unable to create HEAD.lock" or "index.lock", run:
+```bash
+rm /Users/gregcollocott/AOB\ Websites/smiths-lake-website/.git/index.lock 2>/dev/null; rm /Users/gregcollocott/AOB\ Websites/smiths-lake-website/.git/HEAD.lock 2>/dev/null
+```
+Then retry the commit. Claude's sandbox cannot remove these files — must be run locally.
+
 ## Build Chain
 ```
 node src/scripts/download-hero-images.js
@@ -31,8 +37,10 @@ Defined in `package.json` under `"build"`.
 ## Key Files
 | File | Purpose |
 |------|---------|
-| `src/lib/notion-projects.js` (v2.4) | Fetches projects from Notion, reads hero image manifest, serves local image paths |
-| `src/scripts/download-hero-images.js` | Build-time script: downloads hero images from Notion, writes `/public/images/projects/manifest.json` |
+| `src/lib/notion-projects.js` (v2.4) | Fetches projects from Notion, reads hero image manifest, serves local image paths only (no Notion URL fallback) |
+| `src/scripts/download-hero-images.js` (v2.0) | Build-time script: downloads section hero, card, project, and inline page body images from Notion; writes 4 manifests |
+| `src/components/NotionPageContent.astro` (v1.1) | Renders Notion page body blocks; reads `/public/images/content/manifest.json` for stable inline image paths |
+| `public/images/content/manifest.json` | Build-time generated: Notion block ID → local stable image path |
 | `src/pages/projects/[slug].astro` | Project detail pages — feedback CTA, share button, Quick Actions sidebar |
 | `src/pages/feedback.astro` | Community feedback form page |
 | `src/components/Hero.astro` | Hero banner component (no diagonal stripes) |
@@ -95,3 +103,15 @@ Active Zaps (all polling-based, ~15 min delay, Free plan):
 - **Session 10 (Apr 12–13):** Blueys Beach survey MVP deployment, CORS fix, Google Apps Script
 - **Session 11 (Apr 18):** Survey anonymisation, 3-min refresh, ADR-001 v2, Back to Hub button
 - **Session 12 (May 15):** Hero image slug mismatch fix, feedback button UX redesign, feedback form copy update
+- **Session 13 (May 18):** News & Services page — BBC-inspired layout, dynamic Notion news feed, /news/[slug]/ article template, services 404 fix, News section added to Notion DB. Homepage Latest Updates removed → News & Services banner card. Feed duplication fixed (centre hero now shows unique second item, not repeat of lead).
+- **Session 14 (May 19):** Fixed expiring inline page body images (Notion S3 URLs expire ~1hr). Root cause: `NotionPageContent.astro` was embedding raw Notion S3 URLs directly in static HTML. Fix: extended `download-hero-images.js` pre-build script with `downloadPageContentImages()` — downloads all Notion-hosted image blocks to `/public/images/content/[blockId].[ext]` and writes a manifest. `NotionPageContent.astro` now reads manifest at build time and uses stable local paths. Also removed expiring URL fallback in `notion-projects.js` project hero images. BBC centre hero block updated to use real card photo from manifest when available (previously always showed section colour gradient).
+
+## News & Services Architecture (added Session 13)
+- **`/services/`** — combined "News & Local Services" page. Fetches all published items via `fetchNotionContent()`, sorts News-section items first then by `notionLastEditedTime` descending. BBC 3-col layout: lead text + hero colour block + digest list, then 3 thumbnail cards below. Local services directory below the feed.
+- **`/news/[slug]/`** — clean article template for Section = News items. Gradient hero + large emoji + headline, meta bar (date/category/read time), body paragraphs split on `\n`, documents block, share footer. No sidebar.
+- **`/services/[slug]/`** — fixed to fetch both `'Services'` and `'Services & Amenities'` sections (was only fetching `'Services'`, causing 404s).
+- **Notion DB:** `News` added as valid Section select option. Use `Status on Web = Published` + `Section = News` to publish an article.
+- **`notionLastEditedTime`** (`page.last_edited_time`) mapped in `notion-unified.js` — always available, no custom field needed. Used as publication proxy for news feed ordering.
+- **`getSectionColour()`** exported from `notion-detail-pages.js`. `News` added to all three section mappings (SECTION_TO_PATH, SECTION_COLOURS, SECTION_DISPLAY_NAMES).
+- **Nav label:** "Services" → "News & Services" in `Header.astro`.
+- **Branch rule:** NEVER use `@netlify/mcp` deploy — it deploys to production. Feature branch previews are triggered by git push only.

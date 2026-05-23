@@ -238,11 +238,11 @@ function enrichProjectData(project) {
     // Email integration
     mailchimpTag: project.mailchimpTag || title,
 
-    // Survey URL (MVP: hardcoded per-project; Scenario B: Notion field)
-    surveyUrl: getSurveyUrl(slug),
+    // Survey URL — read from Notion 'Survey URL' field (set directly on the project entry)
+    surveyUrl: project.surveyToolUrl || null,
 
-    // Results snapshot URL (latest snapshot; update per release)
-    snapshotUrl: getSnapshotUrl(slug),
+    // Results snapshot URL — read from Notion 'Results URL' field
+    snapshotUrl: project.resultsSnapshotUrl || null,
 
     // Preserve original data for debugging
     _raw: project
