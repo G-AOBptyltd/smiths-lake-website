@@ -9,6 +9,12 @@
   status = 301
   force = true
 
+# Redirect old Blueys Beach project slug to current slug
+[[redirects]]
+  from = "/projects/bluey-s-beach-village-centre/"
+  to = "/projects/bluey-s-beach-village-survey-concept-designs/"
+  status = 301
+
 # Custom 404 page
 [[redirects]]
   from = "/*"
