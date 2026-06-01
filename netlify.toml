@@ -2,12 +2,38 @@
   command = "npm run build"
   publish = "dist"
 
+# Netlify Functions — Survey Platform
+[functions]
+  directory = "netlify/functions"
+
 # Redirect www to non-www
 [[redirects]]
   from = "https://www.villagefirst.org.au/*"
   to = "https://villagefirst.org.au/:splat"
   status = 301
   force = true
+
+# Survey Platform API — proxy Netlify Functions to clean /api/* paths
+# Must appear BEFORE the 404 catch-all
+[[redirects]]
+  from = "/api/survey-config"
+  to = "/.netlify/functions/survey-config"
+  status = 200
+
+[[redirects]]
+  from = "/api/survey-submit"
+  to = "/.netlify/functions/survey-submit"
+  status = 200
+
+[[redirects]]
+  from = "/api/survey-results"
+  to = "/.netlify/functions/survey-results"
+  status = 200
+
+[[redirects]]
+  from = "/api/survey-provision"
+  to = "/.netlify/functions/survey-provision"
+  status = 200
 
 # Redirect old Blueys Beach project slug to current slug
 [[redirects]]

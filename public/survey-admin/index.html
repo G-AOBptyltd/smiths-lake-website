@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Survey Admin — VillageFirst</title>
+  <meta name="robots" content="noindex, nofollow">
+  <!-- Netlify Identity Widget for Google OAuth -->
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #1e293b; font-size: 13px; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+    /* Auth screen */
+    #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #0f4c3a; color: #fff; }
+    #auth-screen h1 { font-size: 22px; margin-bottom: 8px; }
+    #auth-screen p { opacity: 0.7; margin-bottom: 24px; }
+    #auth-screen button { background: #fff; color: #0f4c3a; border: none; padding: 10px 28px; border-radius: 7px; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+    /* App */
+    #app { display: none; flex-direction: column; height: 100vh; }
+
+    /* Topbar */
+    .topbar { background: #0f4c3a; display: flex; align-items: center; padding: 0 16px; height: 44px; gap: 10px; flex-shrink: 0; }
+    .topbar-brand { color: #34d399; font-weight: 800; font-size: 13px; }
+    .village-chip { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 11px; padding: 3px 10px; border-radius: 20px; }
+    .topbar-sp { flex: 1; }
+    .topbar-user { font-size: 11px; color: rgba(255,255,255,0.5); }
+    .topbar-logout { background: none; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+    .topbar-logout:hover { color: #fff; }
+
+    /* Layout */
+    .app-body { display: flex; flex: 1; overflow: hidden; }
+
+    /* Sidebar */
+    .sidebar { width: 156px; background: #fff; border-right: 1px solid #e2e8f0; padding: 8px 0; flex-shrink: 0; display: flex; flex-direction: column; }
+    .s-sec { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: #94a3b8; padding: 8px 12px 3px; }
+    .s-item { display: flex; align-items: center; gap: 7px; padding: 7px 12px; font-size: 11px; font-weight: 500; color: #4b5563; cursor: pointer; transition: all 0.15s; }
+    .s-item:hover { background: #f9fafb; }
+    .s-item.active { background: #f0fdf4; color: #059669; font-weight: 700; border-right: 2px solid #059669; }
+    .s-divider { border: none; border-top: 1px solid #f3f4f6; margin: 4px 8px; }
+    .s-badge { margin-left: auto; background: #059669; color: #fff; font-size: 9px; padding: 1px 5px; border-radius: 8px; }
+
+    /* Main */
+    .main { flex: 1; overflow-y: auto; background: #f8fafc; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Panel header */
+    .ph { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 13px 18px; display: flex; align-items: center; }
+    .ph-title { font-size: 14px; font-weight: 700; }
+    .ph-sub { font-size: 11px; color: #9ca3af; margin-top: 1px; }
+    .ph-acts { margin-left: auto; display: flex; gap: 7px; }
+    .btn { padding: 6px 13px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+    .btn-g { background: #059669; color: #fff; }
+    .btn-g:hover { background: #047857; }
+    .btn-s { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+    .btn-s:hover { background: #e2e8f0; }
+    .btn-o { background: none; color: #059669; border: 1px solid #d1fae5; }
+    .btn-danger { background: #fee2e2; color: #dc2626; }
+
+    .pb { padding: 14px 18px; }
+
+    /* Cards */
+    .metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 14px; }
+    .metric { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; }
+    .m-n { font-size: 22px; font-weight: 900; color: #0f172a; }
+    .m-l { font-size: 10px; color: #9ca3af; margin-top: 1px; }
+    .m-t { font-size: 10px; color: #059669; margin-top: 3px; }
+
+    .survey-cards { display: flex; flex-direction: column; gap: 8px; }
+    .survey-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.15s; }
+    .survey-card:hover { border-color: #059669; }
+    .sc-info { flex: 1; }
+    .sc-title { font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+    .sc-meta { font-size: 10px; color: #9ca3af; }
+    .sc-proj { font-size: 10px; color: #059669; margin-top: 2px; }
+
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+    .ldot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #059669; animation: pulse 1.5s infinite; margin-right: 3px; }
+
+    .tag { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+    .t-live { background: #dcfce7; color: #166534; }
+    .t-draft { background: #f1f5f9; color: #64748b; }
+    .t-closed { background: #fee2e2; color: #991b1b; }
+    .t-sched { background: #fef3c7; color: #92400e; }
+
+    .tog { width: 32px; height: 18px; border-radius: 9px; position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.2s; }
+    .tog.on { background: #059669; }
+    .tog.off { background: #d1d5db; }
+    .tog-k { width: 14px; height: 14px; border-radius: 50%; background: #fff; position: absolute; top: 2px; transition: left 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+    .tog.on .tog-k { left: 16px; }
+    .tog.off .tog-k { left: 2px; }
+
+    /* Builder */
+    .wiz-bar { display: flex; background: #fff; border-bottom: 1px solid #e2e8f0; overflow-x: auto; }
+    .wiz-s { padding: 9px 13px; font-size: 10px; font-weight: 600; color: #9ca3af; cursor: pointer; border-bottom: 2px solid transparent; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .wiz-s.done { color: #059669; }
+    .wiz-s.active { color: #0f172a; border-bottom-color: #059669; }
+    .wiz-n { width: 16px; height: 16px; border-radius: 50%; font-size: 9px; display: flex; align-items: center; justify-content: center; background: #f1f5f9; color: #9ca3af; }
+    .wiz-s.active .wiz-n { background: #059669; color: #fff; }
+    .wiz-s.done .wiz-n { background: #dcfce7; color: #059669; }
+    .wiz-content { padding: 14px 18px; background: #fff; }
+
+    .f-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .f-f { margin-bottom: 10px; }
+    .f-l { font-size: 10px; font-weight: 700; color: #374151; margin-bottom: 3px; display: flex; align-items: center; gap: 4px; }
+    .f-req { color: #dc2626; }
+    .f-input { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 5px; padding: 7px 9px; font-size: 11px; color: #1e293b; background: #fff; outline: none; }
+    .f-input:focus { border-color: #059669; }
+    .f-input.filled { border-color: #d1fae5; background: #f0fdf4; }
+
+    .tmpl-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
+    .tmpl-opt { border: 2px solid #e2e8f0; border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.2s; }
+    .tmpl-opt:hover, .tmpl-opt.sel { border-color: #059669; background: #f0fdf4; }
+    .tmpl-opt-icon { font-size: 18px; margin-bottom: 5px; }
+    .tmpl-opt-name { font-size: 11px; font-weight: 700; margin-bottom: 2px; }
+    .tmpl-opt-desc { font-size: 10px; color: #64748b; line-height: 1.4; }
+
+    .pill-row { display: flex; flex-wrap: wrap; gap: 5px; }
+    .p-pill { font-size: 10px; padding: 3px 9px; border-radius: 20px; border: 1.5px solid #e2e8f0; cursor: pointer; color: #64748b; transition: all 0.15s; }
+    .p-pill.on { border-color: #059669; background: #f0fdf4; color: #166534; }
+
+    .act-box { background: #f0fdf4; border: 2px solid #059669; border-radius: 9px; padding: 14px; text-align: center; margin-top: 16px; }
+    .act-title { font-size: 13px; font-weight: 800; margin-bottom: 3px; }
+    .act-sub { font-size: 10px; color: #64748b; margin-bottom: 10px; line-height: 1.5; }
+    .act-btn { background: #059669; color: #fff; border: none; padding: 9px 28px; border-radius: 7px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .act-btn:hover { background: #047857; }
+    .act-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Results in admin */
+    .bar-r { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .bar-lbl { font-size: 10px; color: #374151; width: 170px; flex-shrink: 0; }
+    .bar-trk { flex: 1; height: 19px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding: 0 7px; font-size: 9px; font-weight: 800; color: #fff; }
+
+    /* Access list */
+    .acc-row { display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 13px; margin-bottom: 7px; }
+    .acc-info { flex: 1; }
+    .acc-name { font-size: 11px; font-weight: 700; }
+    .acc-scope { font-size: 10px; color: #9ca3af; }
+    .acc-badge { font-size: 9px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+    .ab-super { background: #f3e8ff; color: #6b21a8; }
+    .ab-admin { background: #f0fdf4; color: #166534; }
+    .ab-view { background: #f1f5f9; color: #64748b; }
+
+    /* Toast */
+    .vf-toast { position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 12px; opacity: 0; transition: opacity 0.3s; z-index: 999; }
+    .vf-toast.show { opacity: 1; }
+
+    .info-box { padding: 9px 11px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; font-size: 10px; color: #92400e; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<!-- Auth screen (shown until logged in) -->
+<div id="auth-screen">
+  <h1>🏘️ VillageFirst · Survey Admin</h1>
+  <p>Sign in to manage community surveys</p>
+  <button onclick="netlifyIdentity.open()">Sign in with Google</button>
+</div>
+
+<!-- App (shown after login) -->
+<div id="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-brand">🏘️ VillageFirst · Surveys</div>
+    <div class="village-chip" id="village-chip">📍 Loading…</div>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="logout()">Sign out</button>
+  </div>
+
+  <div class="app-body">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="s-sec" style="margin-top:4px;">Manage</div>
+      <div class="s-item active" onclick="showPanel('dashboard',this)">🏠 Dashboard</div>
+      <div class="s-item" onclick="showPanel('surveys',this)">📋 Surveys</div>
+      <div class="s-item" onclick="showPanel('builder',this)">➕ New Survey</div>
+      <hr class="s-divider">
+      <div class="s-sec">Analyse</div>
+      <div class="s-item" onclick="showPanel('results',this)">📈 Results</div>
+      <hr class="s-divider">
+      <div class="s-sec">Village</div>
+      <div class="s-item" onclick="showPanel('settings',this)">⚙️ Settings</div>
+      <div class="s-item" onclick="showPanel('access',this)">👥 Access</div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="ph">
+          <div><div class="ph-title">Dashboard</div><div class="ph-sub" id="dash-sub">Loading…</div></div>
+          <div class="ph-acts"><button class="btn btn-g" onclick="showPanel('builder',null)">+ New Survey</button></div>
+        </div>
+        <div class="pb">
+          <div id="dashboard-content">
+            <div style="text-align:center;padding:40px;color:#9ca3af;">Loading surveys…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SURVEYS -->
+      <div class="panel" id="panel-surveys">
+        <div class="ph">
+          <div><div class="ph-title">All Surveys</div></div>
+          <div class="ph-acts"><button class="btn btn-g" onclick="showPanel('builder',null)">+ New</button></div>
+        </div>
+        <div class="pb">
+          <div id="surveys-content">Loading…</div>
+        </div>
+      </div>
+
+      <!-- BUILDER -->
+      <div class="panel" id="panel-builder">
+        <div class="ph">
+          <div><div class="ph-title">New Survey</div><div class="ph-sub">3-minute setup</div></div>
+          <div class="ph-acts"><button class="btn btn-s" onclick="showPanel('dashboard',null)">Cancel</button></div>
+        </div>
+        <div class="wiz-bar">
+          <div class="wiz-s active" id="wiz-tab-1" onclick="setWiz(1)"><div class="wiz-n">1</div>Template</div>
+          <div class="wiz-s" id="wiz-tab-2" onclick="setWiz(2)"><div class="wiz-n">2</div>Details</div>
+          <div class="wiz-s" id="wiz-tab-3" onclick="setWiz(3)"><div class="wiz-n">3</div>Activate</div>
+        </div>
+        <div id="wiz-content" class="wiz-content"></div>
+      </div>
+
+      <!-- RESULTS -->
+      <div class="panel" id="panel-results">
+        <div class="ph">
+          <div><div class="ph-title">Results</div><div class="ph-sub">Select a survey to view results</div></div>
+          <div class="ph-acts">
+            <button class="btn btn-s" onclick="copyResultsLink()">🔗 Copy Link</button>
+            <button class="btn btn-g" onclick="openResultsPublic()">📊 View Public →</button>
+          </div>
+        </div>
+        <div class="pb" id="results-content">
+          <div style="text-align:center;padding:30px;color:#9ca3af;">Select a survey from the sidebar to view its results.</div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="panel" id="panel-settings">
+        <div class="ph"><div><div class="ph-title">Settings</div></div></div>
+        <div class="pb">
+          <div class="f-row">
+            <div class="f-f"><div class="f-l">Village name</div><input class="f-input filled" id="set-village" value="Smiths Lake"></div>
+            <div class="f-f"><div class="f-l">Admin email</div><input class="f-input filled" id="set-email" value="admin@villagefirst.org.au"></div>
+          </div>
+          <div class="info-box">Settings are stored in Netlify environment variables. Contact AOB (greg@villagefirst.org.au) to update them.</div>
+        </div>
+      </div>
+
+      <!-- ACCESS -->
+      <div class="panel" id="panel-access">
+        <div class="ph"><div><div class="ph-title">Access & Permissions</div></div><div class="ph-acts"><button class="btn btn-g">+ Invite</button></div></div>
+        <div class="pb">
+          <div class="acc-row"><span style="font-size:16px;">👤</span><div class="acc-info"><div class="acc-name">greg@villagefirst.org.au</div><div class="acc-scope">AOB · All villages</div></div><span class="acc-badge ab-super">Super Admin</span></div>
+          <div class="acc-row"><span style="font-size:16px;">👤</span><div class="acc-info"><div class="acc-name">admin@villagefirst.org.au</div><div class="acc-scope">Smiths Lake · Village Admin</div></div><span class="acc-badge ab-admin">Village Admin</span></div>
+          <div class="info-box">To add or remove admin access, update <code>SURVEY_ADMIN_EMAILS</code> in Netlify → Site configuration → Environment variables. Changes take effect immediately — no redeploy needed.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="vf-toast" id="toast"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let currentUser = null;
+let surveysCache = [];
+let selectedSurvey = null;
+let wizStep = 1;
+const builderData = { template: '', village: 'Smiths Lake', surveyName: '', projectName: '', projectNotionId: '', openDate: '', closeDate: '', respondentTypes: ['Village Resident', 'Property Owner', 'Regular Visitor', 'Other'] };
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+netlifyIdentity.on('init', user => {
+  if (user) { currentUser = user; showApp(); }
+});
+netlifyIdentity.on('login', user => {
+  currentUser = user;
+  netlifyIdentity.close();
+  showApp();
+});
+netlifyIdentity.on('logout', () => {
+  currentUser = null;
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+});
+
+function logout() { netlifyIdentity.logout(); }
+
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  const email = currentUser?.email || '';
+  document.getElementById('user-email').textContent = email;
+  loadDashboard();
+  renderWizStep1();
+}
+
+// ── Panels ────────────────────────────────────────────────────────────────────
+function showPanel(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.s-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const village = 'Smiths Lake';
+    document.getElementById('village-chip').textContent = '📍 ' + village;
+    document.getElementById('dash-sub').textContent = village + ' · ' + new Date().toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
+
+    // Load survey config data from Notion via survey-config endpoint
+    // For now, show a placeholder — real data comes from the Notion API
+    const res = await fetch('/api/survey-config?slug=_all');
+    // Fallback: always show the admin view with empty state if no surveys yet
+    renderDashboard([]);
+  } catch (e) {
+    renderDashboard([]);
+  }
+}
+
+function renderDashboard(surveys) {
+  const el = document.getElementById('dashboard-content');
+  const active = surveys.filter(s => s.active);
+
+  el.innerHTML = `
+    <div class="metrics">
+      <div class="metric"><div class="m-n">${active.length}</div><div class="m-l">Active Surveys</div></div>
+      <div class="metric"><div class="m-n">${surveys.length}</div><div class="m-l">Total Surveys</div></div>
+      <div class="metric"><div class="m-n">0</div><div class="m-l">Responses Today</div></div>
+      <div class="metric"><div class="m-n">—</div><div class="m-l">Days to Close</div></div>
+    </div>
+    <div class="survey-cards">
+      ${surveys.length === 0 ? `
+        <div style="text-align:center;padding:30px;color:#9ca3af;background:#fff;border-radius:8px;border:1.5px dashed #e2e8f0;">
+          <div style="font-size:24px;margin-bottom:8px;">📋</div>
+          <div style="font-size:12px;font-weight:700;margin-bottom:4px;">No surveys yet</div>
+          <div style="font-size:11px;margin-bottom:12px;">Create your first survey to get started.</div>
+          <button class="btn btn-g" onclick="showPanel('builder',null)">+ New Survey</button>
+        </div>` : surveys.map(s => renderSurveyCard(s)).join('')}
+    </div>`;
+}
+
+function renderSurveyCard(s) {
+  const isActive = s.active;
+  return `
+    <div class="survey-card" onclick="selectSurveyForResults('${s.id}')">
+      <span style="font-size:18px;">${isActive ? '🎯' : '📋'}</span>
+      <div class="sc-info">
+        <div class="sc-title">${s.surveyName}</div>
+        <div class="sc-meta">${isActive ? '<span class="ldot"></span>' : ''}${s.template}${s.closeDate ? ' · closes ' + new Date(s.closeDate).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ''}</div>
+        ${s.projectName ? `<div class="sc-proj">📌 ${s.projectName}</div>` : ''}
+      </div>
+      <span class="tag ${isActive ? 't-live' : 't-draft'}">${isActive ? 'Live' : 'Draft'}</span>
+    </div>`;
+}
+
+// ── Builder wizard ─────────────────────────────────────────────────────────────
+function setWiz(n) {
+  wizStep = n;
+  [1,2,3].forEach(i => {
+    const tab = document.getElementById('wiz-tab-' + i);
+    tab.classList.remove('active','done');
+    if (i < n) tab.classList.add('done');
+    if (i === n) tab.classList.add('active');
+    const nEl = tab.querySelector('.wiz-n');
+    if (nEl) nEl.textContent = i < n ? '✓' : i;
+  });
+  if (n === 1) renderWizStep1();
+  else if (n === 2) renderWizStep2();
+  else if (n === 3) renderWizStep3();
+}
+
+function renderWizStep1() {
+  const templates = [
+    { id: 'conjoint-design-options', icon: '⚖️', name: 'Design Option Preference', desc: 'Council releases 2 designs. Community rates features and picks preference.' },
+    { id: 'priority-ranking', icon: '🎯', name: 'Priority Ranking', desc: 'MaxDiff best/worst. Ranks features or projects under resource constraints.' },
+    { id: 'annual-satisfaction', icon: '📋', name: 'Annual Satisfaction', desc: 'Recurring pulse check. Service ratings, NPS, open text. Year-on-year tracking.' },
+  ];
+  document.getElementById('wiz-content').innerHTML = `
+    <div class="f-f"><div class="f-l">Choose a template <span class="f-req">*</span></div></div>
+    <div class="tmpl-grid">
+      ${templates.map(t => `
+        <div class="tmpl-opt ${builderData.template === t.id ? 'sel' : ''}" onclick="selectTemplate('${t.id}',this)">
+          <div class="tmpl-opt-icon">${t.icon}</div>
+          <div class="tmpl-opt-name">${t.name}</div>
+          <div class="tmpl-opt-desc">${t.desc}</div>
+        </div>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btn-g" onclick="if(!builderData.template){alert('Please choose a template.');return;}setWiz(2)">Next: Details →</button>
+    </div>`;
+}
+
+function selectTemplate(id, el) {
+  builderData.template = id;
+  document.querySelectorAll('.tmpl-opt').forEach(o => o.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function renderWizStep2() {
+  document.getElementById('wiz-content').innerHTML = `
+    <div class="f-row">
+      <div class="f-f">
+        <div class="f-l">Survey name <span class="f-req">*</span></div>
+        <input class="f-input" id="b-name" placeholder="e.g. Recreation Reserve — Community Priorities" value="${builderData.surveyName}">
+      </div>
+      <div class="f-f">
+        <div class="f-l">Linked project</div>
+        <input class="f-input" id="b-proj" placeholder="Project name (optional)" value="${builderData.projectName}">
+      </div>
+    </div>
+    <div class="f-row">
+      <div class="f-f">
+        <div class="f-l">Opens</div>
+        <input class="f-input" id="b-open" type="date" value="${builderData.openDate}">
+      </div>
+      <div class="f-f">
+        <div class="f-l">Closes</div>
+        <input class="f-input" id="b-close" type="date" value="${builderData.closeDate}">
+      </div>
+    </div>
+    <div class="f-f">
+      <div class="f-l">Who can respond?</div>
+      <div class="pill-row" id="respondent-pills">
+        ${['Village Resident','Property Owner','Regular Visitor','Business Owner','Other'].map(t => `
+          <div class="p-pill ${builderData.respondentTypes.includes(t)?'on':''}" onclick="togglePill(this,'${t}')">${t}</div>`).join('')}
+      </div>
+    </div>
+    <div class="f-row" style="margin-top:8px;">
+      <div class="f-f">
+        <div class="f-l">Results visibility</div>
+        <select class="f-input" id="b-visibility">
+          <option value="public">Public — live as responses come in</option>
+          <option value="committee-only">Committee only</option>
+          <option value="after-close">Public after close</option>
+        </select>
+      </div>
+      <div class="f-f">
+        <div class="f-l">Snapshot label</div>
+        <input class="f-input" id="b-snapshot" placeholder="e.g. PPCA submission to MidCoast Council">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btn-s" onclick="setWiz(1)">← Back</button>
+      <button class="btn btn-g" onclick="saveStep2AndNext()">Next: Activate →</button>
+    </div>`;
+}
+
+function saveStep2AndNext() {
+  const name = document.getElementById('b-name').value.trim();
+  if (!name) { alert('Please enter a survey name.'); return; }
+  builderData.surveyName = name;
+  builderData.projectName = document.getElementById('b-proj').value.trim();
+  builderData.openDate = document.getElementById('b-open').value;
+  builderData.closeDate = document.getElementById('b-close').value;
+  builderData.visibility = document.getElementById('b-visibility').value;
+  builderData.snapshotLabel = document.getElementById('b-snapshot').value.trim();
+  setWiz(3);
+}
+
+function togglePill(el, val) {
+  el.classList.toggle('on');
+  const idx = builderData.respondentTypes.indexOf(val);
+  if (idx > -1) builderData.respondentTypes.splice(idx, 1);
+  else builderData.respondentTypes.push(val);
+}
+
+function renderWizStep3() {
+  const slug = slugify(builderData.surveyName);
+  const surveyUrl = `${window.location.origin}/survey/?slug=${slug}`;
+  const resultsUrl = `${window.location.origin}/results/?slug=${slug}`;
+
+  document.getElementById('wiz-content').innerHTML = `
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;margin-bottom:7px;">Summary — ready to activate</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:10px;background:#f1f5f9;padding:2px 7px;border-radius:4px;">${builderData.template}</span>
+        <span style="font-size:10px;background:#f1f5f9;padding:2px 7px;border-radius:4px;">📍 ${builderData.village}</span>
+        ${builderData.openDate ? `<span style="font-size:10px;background:#f1f5f9;padding:2px 7px;border-radius:4px;">📅 ${builderData.openDate}</span>` : ''}
+        ${builderData.closeDate ? `<span style="font-size:10px;background:#f1f5f9;padding:2px 7px;border-radius:4px;">→ ${builderData.closeDate}</span>` : ''}
+      </div>
+    </div>
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;margin-bottom:7px;">What activating does automatically</div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:10px;color:#475569;">
+        <div>✅ Google Sheet provisioned — no manual setup needed</div>
+        <div>✅ Survey URL: <code style="font-size:9px;background:#f1f5f9;padding:1px 4px;border-radius:3px;">${surveyUrl}</code></div>
+        <div>✅ Results URL: <code style="font-size:9px;background:#f1f5f9;padding:1px 4px;border-radius:3px;">${resultsUrl}</code></div>
+        <div>✅ Notion project record updated (Survey URL field)</div>
+      </div>
+    </div>
+    <div class="act-box">
+      <div class="act-title">🚀 Ready to go live</div>
+      <div class="act-sub">Once activated, the survey is immediately accessible. Toggle it off instantly from the Dashboard at any time.</div>
+      <button class="act-btn" id="activate-btn" onclick="activateSurvey('${slug}')">Activate Survey</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="btn btn-s" onclick="setWiz(2)">← Back</button>
+    </div>`;
+}
+
+async function activateSurvey(slug) {
+  const btn = document.getElementById('activate-btn');
+  btn.disabled = true;
+  btn.textContent = 'Activating…';
+
+  try {
+    const email = currentUser?.email || '';
+    const res = await fetch('/api/survey-provision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Email': email },
+      body: JSON.stringify({
+        slug,
+        template: builderData.template,
+        surveyName: builderData.surveyName,
+        projectNotionId: builderData.projectNotionId || '',
+        config: {},
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      showToast('✅ Survey activated! ' + data.surveyUrl);
+      showPanel('dashboard', document.querySelector('.s-item'));
+      loadDashboard();
+    } else {
+      showToast('⚠️ ' + (data.error || 'Activation failed'), true);
+      btn.disabled = false;
+      btn.textContent = 'Activate Survey';
+    }
+  } catch (e) {
+    showToast('⚠️ Network error. Please try again.', true);
+    btn.disabled = false;
+    btn.textContent = 'Activate Survey';
+  }
+}
+
+// ── Results ───────────────────────────────────────────────────────────────────
+async function selectSurveyForResults(surveyId) {
+  showPanel('results', null);
+  document.getElementById('results-content').innerHTML = '<div style="text-align:center;padding:30px;color:#9ca3af;">Loading results…</div>';
+
+  // Load from results API
+  const survey = surveysCache.find(s => s.id === surveyId);
+  if (!survey?.surveyUrl) {
+    document.getElementById('results-content').innerHTML = '<div style="padding:20px;color:#9ca3af;">No data yet — survey not yet activated.</div>';
+    return;
+  }
+
+  const params = new URLSearchParams(survey.surveyUrl);
+  const slug = params.get('slug') || '';
+  selectedSurvey = survey;
+
+  try {
+    const res = await fetch(`/api/survey-results?slug=${encodeURIComponent(slug)}`);
+    const data = await res.json();
+    renderAdminResults(survey, data);
+  } catch (e) {
+    document.getElementById('results-content').innerHTML = '<div style="padding:20px;color:#dc2626;">Failed to load results.</div>';
+  }
+}
+
+function renderAdminResults(survey, data) {
+  const count = data.count || 0;
+  document.getElementById('results-content').innerHTML = `
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px;">${survey.surveyName}</div>
+      <div style="font-size:10px;color:#9ca3af;">
+        <span class="${survey.active?'ldot':''}"></span>${count} responses
+        ${survey.closeDate ? ' · closes ' + new Date(survey.closeDate).toLocaleDateString('en-AU') : ''}
+      </div>
+    </div>
+    ${count === 0 ? '<div style="padding:20px;text-align:center;color:#9ca3af;">No responses yet.</div>' : ''}
+    ${renderAdminResultsCharts(data)}`;
+}
+
+function renderAdminResultsCharts(data) {
+  if (!data.utilityScores && !data.partA && !data.serviceRatings) return '';
+  let html = '';
+
+  const items = data.utilityScores || data.partA || data.serviceRatings || [];
+  if (items.length) {
+    html += '<div style="font-size:11px;font-weight:700;margin-bottom:8px;color:#374151;">Priority / Preference Scores</div>';
+    items.slice(0,8).forEach((item, i) => {
+      const pct = item.bestPct || Math.round((item.avg / 5) * 100);
+      const label = item.label;
+      const fills = ['#0f4c3a','#059669','#34d399','#6ee7b7','#a7f3d0','#d1fae5'];
+      html += `<div class="bar-r"><div class="bar-lbl">${label}</div><div class="bar-trk"><div class="bar-fill" style="width:${pct}%;background:${fills[i]||fills[5]}">${pct}%</div></div></div>`;
+    });
+  }
+  return html;
+}
+
+function openResultsPublic() {
+  if (selectedSurvey?.resultsUrl) window.open(selectedSurvey.resultsUrl, '_blank');
+}
+function copyResultsLink() {
+  if (selectedSurvey?.resultsUrl) { navigator.clipboard.writeText(selectedSurvey.resultsUrl); showToast('Link copied!'); }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function slugify(str) {
+  return str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 80);
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#dc2626' : '#0f172a';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

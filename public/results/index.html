@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Survey Results — VillageFirst</title>
+  <meta name="robots" content="noindex">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f0; color: #1e293b; min-height: 100vh; }
+
+    .vf-topnav { background: #0f4c3a; padding: 10px 20px; display: flex; align-items: center; gap: 12px; }
+    .vf-topnav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 12px; }
+    .vf-topnav a:hover { color: #fff; }
+    .vf-topnav-sep { color: rgba(255,255,255,0.3); }
+
+    .vf-container { max-width: 800px; margin: 0 auto; padding: 20px 16px 60px; }
+
+    .vf-results-header {
+      background: #0f4c3a; color: #fff;
+      padding: 16px 20px; border-radius: 10px 10px 0 0;
+    }
+    .vf-results-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+    .vf-results-meta { font-size: 11px; opacity: 0.7; }
+    .vf-snapshot-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,0.15); border-radius: 20px;
+      padding: 3px 10px; font-size: 11px; margin-top: 8px;
+    }
+
+    .vf-results-body { background: #fff; border-radius: 0 0 10px 10px; padding: 20px; border: 1px solid #e2e8f0; border-top: none; }
+
+    .vf-kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+    .vf-kpi { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
+    .vf-kpi-num { font-size: 26px; font-weight: 900; }
+    .vf-kpi-label { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+
+    .vf-section-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #374151; margin-bottom: 10px; margin-top: 20px; }
+
+    .vf-bar-chart { display: flex; flex-direction: column; gap: 8px; }
+    .vf-bar-row { display: flex; align-items: center; gap: 10px; }
+    .vf-bar-label { font-size: 11px; color: #374151; width: 200px; flex-shrink: 0; }
+    .vf-bar-track { flex: 1; height: 22px; background: #f1f5f9; border-radius: 5px; overflow: hidden; }
+    .vf-bar-fill { height: 100%; border-radius: 5px; display: flex; align-items: center; padding: 0 8px; font-size: 10px; font-weight: 800; color: #fff; transition: width 0.8s ease; }
+    .vf-bar-n { font-size: 10px; color: #9ca3af; flex-shrink: 0; width: 30px; text-align: right; }
+
+    .vf-finding {
+      background: #f0fdf4; border: 1px solid #86efac; border-radius: 7px;
+      padding: 12px 14px; font-size: 12px; color: #166534; line-height: 1.6; margin-top: 14px;
+    }
+    .vf-finding strong { font-size: 13px; display: block; margin-bottom: 4px; }
+
+    .vf-respondent-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .vf-respondent-chip {
+      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;
+      padding: 8px 12px; text-align: center; flex: 1; min-width: 100px;
+    }
+    .vf-respondent-count { font-size: 20px; font-weight: 800; color: #059669; }
+    .vf-respondent-label { font-size: 10px; color: #64748b; margin-top: 2px; }
+
+    .vf-open-text { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
+    .vf-comment { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; }
+    .vf-comment-who { font-size: 10px; font-weight: 700; color: #9ca3af; margin-bottom: 4px; }
+    .vf-comment-text { font-size: 12px; color: #374151; line-height: 1.5; }
+
+    .vf-state { background: #fff; border-radius: 10px; padding: 40px 24px; text-align: center; border: 1px solid #e2e8f0; }
+    .vf-state h2 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .vf-state p { font-size: 13px; color: #64748b; }
+
+    .vf-spinner { width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #059669; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .vf-live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #34d399; animation: pulse 1.5s infinite; margin-right: 4px; }
+
+    @media (max-width: 600px) {
+      .vf-kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .vf-bar-label { width: 130px; font-size: 10px; }
+    }
+
+    .vf-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: #059669; color: #fff; border: none; border-radius: 7px;
+      padding: 10px 22px; font-size: 13px; font-weight: 700; cursor: pointer;
+      text-decoration: none; margin-top: 10px;
+    }
+
+    /* Colours for bar fills */
+    .vf-c1 { background: #0f4c3a; }
+    .vf-c2 { background: #059669; }
+    .vf-c3 { background: #34d399; color: #166534; }
+    .vf-c4 { background: #6ee7b7; color: #166534; }
+    .vf-c5 { background: #a7f3d0; color: #166534; }
+    .vf-c6 { background: #d1fae5; color: #6b7280; }
+  </style>
+</head>
+<body>
+
+<nav class="vf-topnav">
+  <a href="/projects/">← Back to Project Hub</a>
+  <span class="vf-topnav-sep">·</span>
+  <a id="survey-link" href="/survey/">Complete Survey</a>
+  <span class="vf-topnav-sep">·</span>
+  <a href="/">VillageFirst Website</a>
+</nav>
+
+<div class="vf-container">
+  <div id="results-root"></div>
+</div>
+
+<script>
+(function () {
+  const API_BASE = '/api';
+
+  async function init() {
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('slug') || '';
+
+    if (!slug) {
+      renderError('No survey specified.');
+      return;
+    }
+
+    // Update survey link
+    document.getElementById('survey-link').href = `/survey/?slug=${encodeURIComponent(slug)}`;
+
+    renderLoading();
+
+    try {
+      const [configRes, resultsRes] = await Promise.all([
+        fetch(`${API_BASE}/survey-config?slug=${encodeURIComponent(slug)}`),
+        fetch(`${API_BASE}/survey-results?slug=${encodeURIComponent(slug)}`),
+      ]);
+
+      const configData = await configRes.json();
+      const resultsData = await resultsRes.json();
+
+      if (configData.status === 'not-found') { renderError('Survey not found.'); return; }
+
+      // Check results visibility
+      const visibility = configData.survey?.resultsVisibility || 'public';
+      if (visibility === 'committee-only') {
+        renderError('Results for this survey are available to committee members only.');
+        return;
+      }
+      if (visibility === 'after-close' && configData.status !== 'closed') {
+        renderInfo('Results will be published once the survey closes.');
+        return;
+      }
+
+      renderResults(configData.survey, resultsData, configData.status);
+    } catch (err) {
+      console.error(err);
+      renderError('Could not load results. Please try again.');
+    }
+  }
+
+  function root() { return document.getElementById('results-root'); }
+
+  function renderLoading() {
+    root().innerHTML = `<div class="vf-state"><div class="vf-spinner"></div><p>Loading results…</p></div>`;
+  }
+
+  function renderError(msg) {
+    root().innerHTML = `<div class="vf-state"><h2>⚠️ ${msg}</h2><a href="/" class="vf-btn">Return to website</a></div>`;
+  }
+
+  function renderInfo(msg) {
+    root().innerHTML = `<div class="vf-state"><h2>📅 ${msg}</h2><a href="/" class="vf-btn">Return to website</a></div>`;
+  }
+
+  function renderResults(survey, data, status) {
+    const isLive = status === 'active';
+    const count = data.count || 0;
+    const snapshotDate = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    let html = `
+      <div class="vf-results-header">
+        <div class="vf-results-title">${survey?.surveyName || 'Community Survey Results'}</div>
+        <div class="vf-results-meta">
+          ${survey?.snapshotLabel || 'VillageFirst Community Survey'}
+        </div>
+        <div class="vf-snapshot-badge">
+          ${isLive ? '<span class="vf-live-dot"></span>Live' : '📸 Snapshot'}
+          · ${snapshotDate} · n = ${count} responses
+          ${isLive ? ' · Survey still open' : ''}
+        </div>
+      </div>
+      <div class="vf-results-body">`;
+
+    if (count === 0) {
+      html += `<div style="text-align:center;padding:30px;color:#9ca3af;">No responses yet. Be the first to respond!</div>`;
+    } else {
+      // KPIs
+      html += `
+        <div class="vf-kpi-row">
+          <div class="vf-kpi"><div class="vf-kpi-num" style="color:#059669;">${count}</div><div class="vf-kpi-label">Total Responses</div></div>
+          ${buildRespondentKpis(data.respondentBreakdown)}
+        </div>`;
+
+      // Template-specific results
+      const template = data.template || survey?.template;
+      if (template === 'conjoint-design-options') html += renderConjointResults(data);
+      else if (template === 'priority-ranking') html += renderMaxDiffResults(data);
+      else if (template === 'annual-satisfaction') html += renderSatisfactionResults(data);
+
+      // Open text
+      if (data.openText?.length) {
+        html += `
+          <div class="vf-section-title" style="margin-top:24px;">Open Responses (anonymised)</div>
+          <div class="vf-open-text">
+            ${data.openText.slice(0, 30).map(r => `
+              <div class="vf-comment">
+                <div class="vf-comment-who">${r.person || 'Community member'}</div>
+                <div class="vf-comment-text">${escHtml(r.text || r.comments || '')}</div>
+                ${r.additionalComments ? `<div class="vf-comment-text" style="margin-top:6px;">${escHtml(r.additionalComments)}</div>` : ''}
+              </div>`).join('')}
+          </div>`;
+      }
+    }
+
+    html += `</div>`; // close results-body
+    root().innerHTML = html;
+  }
+
+  function buildRespondentKpis(breakdown) {
+    if (!breakdown) return '';
+    const sorted = Object.entries(breakdown).sort((a,b) => b[1]-a[1]).slice(0, 2);
+    return sorted.map(([label, n]) => `
+      <div class="vf-kpi">
+        <div class="vf-kpi-num" style="color:#2563eb;">${n}</div>
+        <div class="vf-kpi-label">${label}</div>
+      </div>`).join('');
+  }
+
+  function renderConjointResults(data) {
+    let html = '';
+
+    // Respondent breakdown
+    if (data.respondentBreakdown) {
+      html += `<div class="vf-section-title">Who responded?</div><div class="vf-respondent-grid">
+        ${Object.entries(data.respondentBreakdown).map(([k,v]) => `
+          <div class="vf-respondent-chip"><div class="vf-respondent-count">${v}</div><div class="vf-respondent-label">${k}</div></div>`).join('')}
+      </div>`;
+    }
+
+    // Part A — shared features
+    if (data.partA?.length) {
+      html += `<div class="vf-section-title">Shared Feature Support (avg 1–5)</div><div class="vf-bar-chart">`;
+      const sorted = [...data.partA].sort((a,b) => b.avg - a.avg);
+      sorted.forEach((f, i) => {
+        const pct = Math.round((f.avg / 5) * 100);
+        html += `<div class="vf-bar-row">
+          <div class="vf-bar-label">${f.label}</div>
+          <div class="vf-bar-track"><div class="vf-bar-fill vf-c${Math.min(i+1,6)}" style="width:${pct}%">${f.avg.toFixed(1)}</div></div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Conjoint tasks
+    if (data.conjoint?.length) {
+      html += `<div class="vf-section-title">Conjoint Analysis — Package Choices</div>`;
+      data.conjoint.forEach(task => {
+        html += `
+          <div style="margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;">${task.task}</div>
+            <div class="vf-bar-chart">
+              <div class="vf-bar-row">
+                <div class="vf-bar-label">${task.option1}</div>
+                <div class="vf-bar-track"><div class="vf-bar-fill vf-c2" style="width:${task.option1Pct}%">${task.option1Pct}%</div></div>
+                <div class="vf-bar-n">${task.option1Count}</div>
+              </div>
+              <div class="vf-bar-row">
+                <div class="vf-bar-label">${task.option2}</div>
+                <div class="vf-bar-track"><div class="vf-bar-fill vf-c3" style="width:${task.option2Pct}%">${task.option2Pct}%</div></div>
+                <div class="vf-bar-n">${task.option2Count}</div>
+              </div>
+            </div>
+          </div>`;
+      });
+    }
+
+    // Overall preference
+    if (data.overall && Object.keys(data.overall).length) {
+      const total = Object.values(data.overall).reduce((s,v)=>s+v,0);
+      html += `<div class="vf-section-title">Overall Preference</div><div class="vf-bar-chart">`;
+      Object.entries(data.overall).sort((a,b)=>b[1]-a[1]).forEach(([k,v], i) => {
+        const pct = Math.round((v/total)*100);
+        html += `<div class="vf-bar-row">
+          <div class="vf-bar-label">${k}</div>
+          <div class="vf-bar-track"><div class="vf-bar-fill vf-c${i+1}" style="width:${pct}%">${pct}%</div></div>
+          <div class="vf-bar-n">${v}</div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    return html;
+  }
+
+  function renderMaxDiffResults(data) {
+    let html = `<div class="vf-section-title">Community Priority Score</div><div class="vf-bar-chart">`;
+
+    if (data.utilityScores?.length) {
+      const max = data.utilityScores[0]?.bestPct || 100;
+      data.utilityScores.forEach((item, i) => {
+        const pct = item.bestPct;
+        html += `<div class="vf-bar-row">
+          <div class="vf-bar-label">${item.label}</div>
+          <div class="vf-bar-track"><div class="vf-bar-fill vf-c${Math.min(i+1,6)}" style="width:${pct}%">${pct}%</div></div>
+          <div class="vf-bar-n">${item.bestCount}</div>
+        </div>`;
+      });
+    }
+
+    html += `</div>`;
+
+    // Respondent breakdown
+    if (data.respondentBreakdown) {
+      html += `<div class="vf-section-title" style="margin-top:20px;">Who responded?</div><div class="vf-respondent-grid">
+        ${Object.entries(data.respondentBreakdown).map(([k,v]) => `
+          <div class="vf-respondent-chip"><div class="vf-respondent-count">${v}</div><div class="vf-respondent-label">${k}</div></div>`).join('')}
+      </div>`;
+    }
+
+    return html;
+  }
+
+  function renderSatisfactionResults(data) {
+    let html = '';
+
+    if (data.serviceRatings?.length) {
+      html += `<div class="vf-section-title">Service & Facility Satisfaction (avg 1–5)</div><div class="vf-bar-chart">`;
+      const sorted = [...data.serviceRatings].sort((a,b) => b.avg - a.avg);
+      sorted.forEach((s, i) => {
+        const pct = Math.round((s.avg / 5) * 100);
+        html += `<div class="vf-bar-row">
+          <div class="vf-bar-label">${s.label}</div>
+          <div class="vf-bar-track"><div class="vf-bar-fill vf-c${Math.min(i+1,6)}" style="width:${pct}%">${s.avg.toFixed(1)}</div></div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    if (data.nps !== null && data.nps !== undefined) {
+      const npsColour = data.nps >= 50 ? '#059669' : data.nps >= 0 ? '#d97706' : '#dc2626';
+      html += `
+        <div class="vf-kpi" style="margin-top:16px;max-width:200px;">
+          <div class="vf-kpi-num" style="color:${npsColour};">${data.nps}</div>
+          <div class="vf-kpi-label">Net Promoter Score (n=${data.npsCount})</div>
+        </div>`;
+    }
+
+    if (data.respondentBreakdown) {
+      html += `<div class="vf-section-title" style="margin-top:20px;">Who responded?</div><div class="vf-respondent-grid">
+        ${Object.entries(data.respondentBreakdown).map(([k,v]) => `
+          <div class="vf-respondent-chip"><div class="vf-respondent-count">${v}</div><div class="vf-respondent-label">${k}</div></div>`).join('')}
+      </div>`;
+    }
+
+    return html;
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else { init(); }
+})();
+</script>
+
+</body>
+</html>
