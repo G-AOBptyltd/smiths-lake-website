@@ -731,6 +731,7 @@
       const payload = {
         sheetId: surveyConfig.sheetId,
         slug: getSlug(),
+        template: surveyConfig.template,
         ...responses,
       };
 

@@ -100,31 +100,38 @@ export const handler = async (event) => {
 
 /**
  * Convert the response data object into an ordered array of values.
- * Field order matches column layout for each template.
+ * Uses template-specific column order to match the sheet header exactly.
  */
 function buildRowValues(data) {
-  // Known field order based on template schema
-  const knownOrder = [
-    'respondentType', 'planReviewed',
-    // conjoint-design-options: Part A shared features
-    'a1','a2','a3','a4','a5','a6','a7','a8','a9','a10',
-    // Part B key differences
-    'b1','b2','b3',
-    // Part C conjoint tasks
-    'c1','c2','c3','c4',
-    // Part D priorities
-    'd1_a','d1_b','d1_c',
-    // Part E overall + open text
-    'e1','e2','e3',
-    // priority-ranking: utility scores
-    'item1','item2','item3','item4','item5','item6','item7','item8',
-    // annual-satisfaction: ratings + NPS + open text
-    's1','s2','s3','s4','s5','s6','s7','s8','s9','s10',
-    'nps','priorityText','additionalComments',
-  ];
+  const template = data.template || '';
 
-  const used = new Set();
-  const ordered = knownOrder.map(k => {
+  let fieldOrder;
+  if (template === 'priority-ranking') {
+    fieldOrder = [
+      'respondentType',
+      'item1','item2','item3','item4','item5','item6','item7','item8',
+      'priorityText',
+    ];
+  } else if (template === 'annual-satisfaction') {
+    fieldOrder = [
+      'respondentType',
+      's1','s2','s3','s4','s5','s6','s7','s8','s9','s10',
+      'nps','priorityText','additionalComments',
+    ];
+  } else {
+    // conjoint-design-options (default)
+    fieldOrder = [
+      'respondentType', 'planReviewed',
+      'a1','a2','a3','a4','a5','a6','a7','a8','a9','a10',
+      'b1','b2','b3',
+      'c1','c2','c3','c4',
+      'd1_a','d1_b','d1_c',
+      'e1','e2','e3',
+    ];
+  }
+
+  const used = new Set(['sheetId', 'slug', 'template']);
+  const ordered = fieldOrder.map(k => {
     used.add(k);
     return data[k] !== undefined ? String(data[k]) : '';
   });
