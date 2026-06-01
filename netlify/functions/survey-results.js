@@ -274,15 +274,14 @@ async function getSurveyBySlug(slug) {
 }
 
 async function getSheets() {
-  const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!keyJson) return null;
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+  if (!clientId || !clientSecret || !refreshToken) return null;
   try {
     const { google } = await import('googleapis');
-    const credentials = JSON.parse(keyJson);
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
+    const auth = new google.auth.OAuth2(clientId, clientSecret);
+    auth.setCredentials({ refresh_token: refreshToken });
     return google.sheets({ version: 'v4', auth });
   } catch (e) {
     console.error('Failed to init Google Sheets auth:', e);

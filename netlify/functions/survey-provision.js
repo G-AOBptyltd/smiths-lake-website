@@ -197,32 +197,29 @@ async function updateNotionProjectPage(pageId, { surveyUrl, resultsUrl }) {
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
-async function getSheets() {
-  const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!keyJson) return null;
+async function getOAuthClient() {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+  if (!clientId || !clientSecret || !refreshToken) return null;
   try {
     const { google } = await import('googleapis');
-    const credentials = JSON.parse(keyJson);
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive.file'],
-    });
-    return google.sheets({ version: 'v4', auth });
+    const auth = new google.auth.OAuth2(clientId, clientSecret);
+    auth.setCredentials({ refresh_token: refreshToken });
+    return { google, auth };
   } catch (e) { console.error(e); return null; }
 }
 
+async function getSheets() {
+  const client = await getOAuthClient();
+  if (!client) return null;
+  return client.google.sheets({ version: 'v4', auth: client.auth });
+}
+
 async function getDrive() {
-  const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!keyJson) return null;
-  try {
-    const { google } = await import('googleapis');
-    const credentials = JSON.parse(keyJson);
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: ['https://www.googleapis.com/auth/drive.file'],
-    });
-    return google.drive({ version: 'v3', auth });
-  } catch (e) { return null; }
+  const client = await getOAuthClient();
+  if (!client) return null;
+  return client.google.drive({ version: 'v3', auth: client.auth });
 }
 
 function corsHeaders() {
