@@ -103,7 +103,14 @@ export const handler = async (event) => {
  * Uses template-specific column order to match the sheet header exactly.
  */
 function buildRowValues(data) {
-  const template = data.template || '';
+  // Auto-detect template from field names if not explicitly provided
+  // This handles browser-cached versions of survey-engine.js
+  let template = data.template || '';
+  if (!template) {
+    if (data.item1 !== undefined || data.item2 !== undefined) template = 'priority-ranking';
+    else if (data.s1 !== undefined) template = 'annual-satisfaction';
+    else template = 'conjoint-design-options';
+  }
 
   let fieldOrder;
   if (template === 'priority-ranking') {
