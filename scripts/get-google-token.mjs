@@ -32,7 +32,8 @@ const authUrl =
   `&response_type=code` +
   `&scope=${encodeURIComponent(SCOPES)}` +
   `&access_type=offline` +
-  `&prompt=consent`;
+  `&prompt=consent` +
+  `&login_hint=greg%40agilityopsbusinessptyltd.com.au`;
 
 console.log('\n─────────────────────────────────────────────────────');
 console.log('Step 1: Open this URL in your browser and sign in as admin@villagefirst.org.au:');
