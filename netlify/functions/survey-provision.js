@@ -36,20 +36,25 @@ export const handler = async (event) => {
     return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
 
-  const { surveyNotionId, slug, template, surveyName, projectNotionId, config } = body;
+  const {
+    surveyNotionId: existingNotionId,
+    slug, template, surveyName, projectNotionId, config,
+    // Fields for creating a new Notion record (when no surveyNotionId provided)
+    village, openDate, closeDate, respondentTypes, resultsVisibility, snapshotLabel,
+  } = body;
 
-  if (!surveyNotionId || !slug || !template) {
-    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Missing required fields' }) };
+  if (!slug || !template) {
+    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Missing required fields: slug and template' }) };
   }
 
   try {
     // 1. Create Google Sheet
-    const sheetId = await createSurveySheet(surveyName || slug, template, config);
+    const sheetId = await createSurveySheet(surveyName || slug, template, config || {});
     if (!sheetId) {
       return {
         statusCode: 503,
         headers: corsHeaders(),
-        body: JSON.stringify({ error: 'Google Sheets not configured. Add GOOGLE_SERVICE_ACCOUNT_KEY to Netlify env vars.' }),
+        body: JSON.stringify({ error: 'Google Sheets not configured. Add GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN to Netlify env vars.' }),
       };
     }
 
@@ -57,8 +62,29 @@ export const handler = async (event) => {
     const surveyUrl = `${SITE_BASE}/survey/?slug=${slug}`;
     const resultsUrl = `${SITE_BASE}/results/?slug=${slug}`;
 
-    // 3. Update Notion survey record
-    await updateNotionSurveyPage(surveyNotionId, { sheetId, surveyUrl, resultsUrl });
+    // 3. Create or update Notion survey record
+    let surveyNotionId = existingNotionId;
+    if (!surveyNotionId) {
+      // Create new Notion record
+      surveyNotionId = await createNotionSurveyRecord({
+        surveyName: surveyName || slug,
+        village: village || 'Smiths Lake',
+        template,
+        openDate,
+        closeDate,
+        respondentTypes: respondentTypes || ['Village Resident', 'Property Owner', 'Regular Visitor', 'Other'],
+        config: config || {},
+        visibility: resultsVisibility || 'public',
+        snapshotLabel: snapshotLabel || '',
+        projectNotionId: projectNotionId || '',
+        sheetId,
+        surveyUrl,
+        resultsUrl,
+      });
+    } else {
+      // Update existing record
+      await updateNotionSurveyPage(surveyNotionId, { sheetId, surveyUrl, resultsUrl });
+    }
 
     // 4. Write URLs back to linked PPCA project (if provided)
     if (projectNotionId) {
@@ -68,7 +94,7 @@ export const handler = async (event) => {
     return {
       statusCode: 200,
       headers: corsHeaders(),
-      body: JSON.stringify({ success: true, sheetId, surveyUrl, resultsUrl }),
+      body: JSON.stringify({ success: true, sheetId, surveyUrl, resultsUrl, surveyNotionId }),
     };
   } catch (err) {
     console.error('survey-provision error:', err);
@@ -159,6 +185,38 @@ function buildHeader(template, config) {
 }
 
 // ─── Notion ───────────────────────────────────────────────────────────────────
+
+async function createNotionSurveyRecord({ surveyName, village, template, openDate, closeDate, respondentTypes, config, visibility, snapshotLabel, projectNotionId, sheetId, surveyUrl, resultsUrl }) {
+  const DB_ID = process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596';
+  const properties = {
+    'Survey Name': { title: [{ text: { content: surveyName } }] },
+    'Village': { select: { name: village } },
+    'Template': { select: { name: template } },
+    'Active': { checkbox: true },
+    'Results Visibility': { select: { name: visibility || 'public' } },
+    'Respondent Types': { rich_text: [{ text: { content: JSON.stringify(respondentTypes) } }] },
+    'Config': { rich_text: [{ text: { content: JSON.stringify(config) } }] },
+    'Snapshot Label': { rich_text: [{ text: { content: snapshotLabel || '' } }] },
+    'Sheet ID': { rich_text: [{ text: { content: sheetId } }] },
+    'Survey URL': { url: surveyUrl },
+    'Results URL': { url: resultsUrl },
+  };
+  if (openDate) properties['Open Date'] = { date: { start: openDate } };
+  if (closeDate) properties['Close Date'] = { date: { start: closeDate } };
+  if (projectNotionId) properties['Project Notion ID'] = { rich_text: [{ text: { content: projectNotionId } }] };
+
+  const res = await fetch('https://api.notion.com/v1/pages', {
+    method: 'POST',
+    headers: notionHeaders(),
+    body: JSON.stringify({ parent: { database_id: DB_ID }, properties }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Failed to create Notion record: ${err}`);
+  }
+  const page = await res.json();
+  return page.id;
+}
 
 function notionHeaders() {
   return {
