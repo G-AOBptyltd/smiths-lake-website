@@ -9,8 +9,6 @@
  * Response: { success: true } | { error: '...' }
  */
 
-const { google } = await import('googleapis').catch(() => null);
-
 // Simple in-memory rate limiter (resets on function cold start)
 const rateLimitMap = new Map();
 const RATE_LIMIT = 5;        // max submissions
@@ -141,8 +139,9 @@ function buildRowValues(data) {
 
 async function getSheets() {
   const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!keyJson || !google) return null;
+  if (!keyJson) return null;
   try {
+    const { google } = await import('googleapis');
     const credentials = JSON.parse(keyJson);
     const auth = new google.auth.GoogleAuth({
       credentials,

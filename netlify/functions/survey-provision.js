@@ -13,8 +13,6 @@
  * Response: { success: true, sheetId, surveyUrl, resultsUrl }
  */
 
-const { google } = await import('googleapis').catch(() => null);
-
 const NOTION_VERSION = '2022-06-28';
 const SITE_BASE = process.env.SITE_URL || 'https://villagefirst.org.au';
 
@@ -201,8 +199,9 @@ async function updateNotionProjectPage(pageId, { surveyUrl, resultsUrl }) {
 
 async function getSheets() {
   const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!keyJson || !google) return null;
+  if (!keyJson) return null;
   try {
+    const { google } = await import('googleapis');
     const credentials = JSON.parse(keyJson);
     const auth = new google.auth.GoogleAuth({
       credentials,
@@ -214,8 +213,9 @@ async function getSheets() {
 
 async function getDrive() {
   const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!keyJson || !google) return null;
+  if (!keyJson) return null;
   try {
+    const { google } = await import('googleapis');
     const credentials = JSON.parse(keyJson);
     const auth = new google.auth.GoogleAuth({
       credentials,

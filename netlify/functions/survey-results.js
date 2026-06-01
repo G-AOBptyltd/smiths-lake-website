@@ -14,8 +14,6 @@
  *   { count, template, respondentBreakdown, serviceRatings, nps, openText }
  */
 
-const { google } = await import('googleapis').catch(() => null);
-
 const NOTION_VERSION = '2022-06-28';
 const DB_ID = process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596';
 
@@ -277,8 +275,9 @@ async function getSurveyBySlug(slug) {
 
 async function getSheets() {
   const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-  if (!keyJson || !google) return null;
+  if (!keyJson) return null;
   try {
+    const { google } = await import('googleapis');
     const credentials = JSON.parse(keyJson);
     const auth = new google.auth.GoogleAuth({
       credentials,
