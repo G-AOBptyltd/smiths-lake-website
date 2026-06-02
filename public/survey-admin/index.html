@@ -482,27 +482,71 @@ function showPanel(id, el) {
 
 // ── Dashboard ───────────────────────────────────────────────────────────────
 async function loadDashboard() {
-  try {
-    const res = await fetch('/api/survey-config?slug=_dashboard');
-    // Config endpoint returns not-found for dashboard slug — that's fine
-    // For MVP: show static state
-    document.getElementById('stat-active').textContent = '1';
-    document.getElementById('stat-total').textContent = '1';
+  const surveysEl = document.getElementById('dashboard-surveys');
+  surveysEl.innerHTML = '<div style="padding:20px;color:#9ca3af;font-size:11px;">Loading surveys…</div>';
 
-    const surveysEl = document.getElementById('dashboard-surveys');
-    surveysEl.innerHTML = `
-      <div class="s-cards">
-        <div class="s-card" onclick="loadAndShowResults('rec-reserve-priorities')">
-          <div class="sc-icon">🎯</div>
+  try {
+    const res = await fetch('/api/survey-list?village=Smiths%20Lake');
+    if (!res.ok) throw new Error('Failed to load');
+    const { surveys } = await res.json();
+
+    const active = surveys.filter(s => s.active);
+    document.getElementById('stat-active').textContent = active.length;
+    document.getElementById('stat-total').textContent = surveys.length;
+
+    if (!surveys.length) {
+      surveysEl.innerHTML = '<div class="empty-state"><div class="es-icon">📋</div><div class="es-title">No surveys yet</div><div class="es-sub">Create your first survey to get started.</div><button class="btn btn-g" onclick="showPanel(\'builder\',null);resetBuilder();">+ New Survey</button></div>';
+      return;
+    }
+
+    surveysEl.innerHTML = '<div class="s-cards">' + surveys.map(s => {
+      const slug = (s.surveyUrl || '').split('slug=')[1] || slugify(s.surveyName);
+      const isActive = s.active;
+      const tmplIcon = s.template === 'priority-ranking' ? '🎯' : s.template === 'conjoint-design-options' ? '⚖️' : '📋';
+      const closeLbl = s.closeDate ? ' · Closes ' + new Date(s.closeDate).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}) : '';
+      return `
+        <div class="s-card" onclick="loadAndShowResults('${slug}')">
+          <div class="sc-icon">${tmplIcon}</div>
           <div class="sc-info">
-            <div class="sc-title">Recreation Reserve — Community Priorities</div>
-            <div class="sc-meta"><span class="ldot"></span>priority-ranking · Closes 30 Jun 2026</div>
+            <div class="sc-title">${s.surveyName}</div>
+            <div class="sc-meta">${isActive?'<span class="ldot"></span>':''} ${s.template}${closeLbl}</div>
           </div>
-          <span class="tag t-live">Live</span>
-          <button class="btn btn-s" style="font-size:10px;padding:3px 8px;" onclick="event.stopPropagation();loadAndShowResults('rec-reserve-priorities')">Results →</button>
-        </div>
-      </div>`;
-  } catch(e) {}
+          <span class="tag ${isActive ? 't-live' : 't-draft'}">${isActive ? 'Live' : 'Paused'}</span>
+          <button class="btn btn-s" style="font-size:10px;padding:3px 8px;" onclick="event.stopPropagation();loadAndShowResults('${slug}')">Results →</button>
+          <div class="tog ${isActive ? 'on' : 'off'}" id="tog-${s.id}" onclick="event.stopPropagation();toggleSurvey('${s.id}',${!isActive})">
+            <div class="tog-k"></div>
+          </div>
+        </div>`;
+    }).join('') + '</div>';
+  } catch(e) {
+    surveysEl.innerHTML = '<div style="padding:20px;color:#dc2626;font-size:11px;">Failed to load surveys. Check Notion connection.</div>';
+    console.error(e);
+  }
+}
+
+async function toggleSurvey(notionId, newActive) {
+  const togEl = document.getElementById('tog-' + notionId);
+  if (togEl) { togEl.style.opacity = '0.5'; togEl.style.pointerEvents = 'none'; }
+
+  try {
+    const email = currentUser?.email || '';
+    const res = await fetch('/api/survey-toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Email': email },
+      body: JSON.stringify({ surveyNotionId: notionId, active: newActive }),
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showToast(newActive ? '✅ Survey is now Live' : '⏸ Survey paused');
+      loadDashboard(); // refresh
+    } else {
+      showToast('⚠️ ' + (data.error || 'Toggle failed'));
+      if (togEl) { togEl.style.opacity = '1'; togEl.style.pointerEvents = ''; }
+    }
+  } catch(e) {
+    showToast('⚠️ Network error');
+    if (togEl) { togEl.style.opacity = '1'; togEl.style.pointerEvents = ''; }
+  }
 }
 
 // ── Results ─────────────────────────────────────────────────────────────────

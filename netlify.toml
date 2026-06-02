@@ -14,6 +14,16 @@
   force = true
 
 # Survey Platform API — proxy Netlify Functions to clean /api/* paths
+[[redirects]]
+  from = "/api/survey-list"
+  to = "/.netlify/functions/survey-list"
+  status = 200
+
+[[redirects]]
+  from = "/api/survey-toggle"
+  to = "/.netlify/functions/survey-toggle"
+  status = 200
+
 # Must appear BEFORE the 404 catch-all
 [[redirects]]
   from = "/api/survey-config"
