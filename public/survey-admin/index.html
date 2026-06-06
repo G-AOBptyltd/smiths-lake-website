@@ -692,12 +692,20 @@ async function loadVillages() {
     let villages = (data.villages && data.villages.length) ? data.villages : [{ name:'Smiths Lake', status:'live' }];
     villages = villages.map(v => typeof v === 'string' ? { name:v, status:'live' } : { name:v.name, status:(v.status||'live') });
     villagesData = villages;
-    if (!villages.some(v => v.name === activeVillage)) activeVillage = villages[0].name;
+    // Self-heal: if the stored active village is gone (deleted/renamed/never valid),
+    // fall back to the first available village and persist it.
+    if (!villages.some(v => v.name === activeVillage)) {
+      activeVillage = villages[0].name;
+      localStorage.setItem('vf_active_village', activeVillage);
+    }
     const sel = document.getElementById('village-switch');
-    if (sel) sel.innerHTML = villages.map(v => {
-      const tag = v.status && v.status !== 'live' ? '  ('+v.status+')' : '';
-      return `<option value="${escHtml(v.name)}" ${v.name===activeVillage?'selected':''}>📍 ${escHtml(v.name)}${escHtml(tag)}</option>`;
-    }).join('');
+    if (sel) {
+      sel.innerHTML = villages.map(v => {
+        const tag = v.status && v.status !== 'live' ? '  ('+v.status+')' : '';
+        return `<option value="${escHtml(v.name)}" ${v.name===activeVillage?'selected':''}>📍 ${escHtml(v.name)}${escHtml(tag)}</option>`;
+      }).join('');
+      sel.value = activeVillage;   // keep the control in sync with state
+    }
     const ab = document.getElementById('add-village-btn'); if (ab) ab.style.display = 'inline-block';
     const nv = document.getElementById('nav-villages');
     const isSuper = currentUser && currentUser.app_metadata && (currentUser.app_metadata.roles||[]).includes('super-admin');
@@ -801,6 +809,7 @@ function switchToVillage(name) { setVillage(name); const nav=document.querySelec
 function setVillage(v) {
   activeVillage = v;
   localStorage.setItem('vf_active_village', v);
+  const sel = document.getElementById('village-switch'); if (sel) sel.value = v;  // keep control in sync
   projectsCache = null; resultsSurveys = null;   // re-scope cached lists
   applyVillageLabels();
   renderVillageLifecycle();
@@ -812,7 +821,15 @@ async function addVillage() {
   try {
     const res = await fetch('/api/village-add', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ village: name }) });
     const data = await res.json();
-    if (res.ok && data.success) { showToast('✅ Village added'); await loadVillages(); setVillage(name); }
+    if (res.ok && data.success) {
+      showToast('✅ Village added');
+      await loadVillages();
+      // Only switch to the new village if it actually came back in the list —
+      // avoids stranding the UI on a village the backend hasn't registered.
+      if (villagesData.some(v => v.name === name)) setVillage(name);
+      else { showToast('⚠️ Added, but not yet listed — refreshing'); setTimeout(loadVillages, 1500); }
+      if (currentPanel === 'villages') renderAllVillages();
+    }
     else showToast('⚠️ ' + (data.error || 'Could not add village'));
   } catch(_) { showToast('⚠️ Network error'); }
 }

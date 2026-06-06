@@ -5,6 +5,10 @@
 # Netlify Functions — Survey Platform
 [functions]
   directory = "netlify/functions"
+  # Force esbuild so shared modules (auth/villages helpers) are inlined into each
+  # function bundle. Without this, Netlify can omit imported helper files and the
+  # importing functions crash at load (blank 502).
+  node_bundler = "esbuild"
 
 # Redirect www to non-www
 [[redirects]]
