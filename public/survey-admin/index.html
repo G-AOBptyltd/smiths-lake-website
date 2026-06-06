@@ -194,10 +194,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="sidebar">
       <div class="s-sec" style="margin-top:4px;">Manage</div>
       <div class="s-item on" onclick="showPanel('dashboard',this)">🏠 Dashboard</div>
-      <div class="s-item" onclick="showPanel('builder',this)">➕ New Survey</div>
+      <div class="s-item" onclick="resetBuilder();showPanel('builder',this)">➕ New Survey</div>
       <hr class="s-divider">
       <div class="s-sec">Analyse</div>
-      <div class="s-item" onclick="showPanel('results',this)">📈 Results</div>
+      <div class="s-item" onclick="showPanel('results',this);loadResults()">📈 Results</div>
       <hr class="s-divider">
       <div class="s-sec">Village</div>
       <div class="s-item" onclick="showPanel('settings',this)">⚙️ Settings</div>
@@ -269,7 +269,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <div id="ws2" style="display:none;">
             <div class="f-row">
               <div class="f-f"><div class="f-l">Survey name <span class="f-req">*</span></div><input class="f-i" id="b-name" placeholder="e.g. Recreation Reserve — Community Priorities"></div>
-              <div class="f-f"><div class="f-l">Linked project name</div><input class="f-i" id="b-proj" placeholder="Project display name (optional)"></div>
+              <div class="f-f"><div class="f-l">Linked project <span style="font-weight:400;color:#9ca3af;">(optional)</span></div><select class="f-i" id="b-proj" onchange="onProjectPick()"><option value="">— None (standalone survey) —</option></select></div>
             </div>
             <div class="f-row">
               <div class="f-f"><div class="f-l">Opens</div><input class="f-i" id="b-open" type="date"></div>
@@ -305,7 +305,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
             <div style="display:flex;gap:7px;margin-top:4px;">
               <button class="btn btn-s" onclick="setWiz(1)">← Back</button>
-              <button class="btn btn-g" onclick="saveDetails()">Next: Questions →</button>
+              <button class="btn btn-g" id="details-next-btn" onclick="saveDetails()">Next: Questions →</button>
             </div>
           </div>
 
@@ -404,7 +404,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="panel" id="panel-results">
         <div class="ph">
           <div><div class="ph-title">Results</div><div class="ph-sub">Live data from Google Sheets</div></div>
-          <div class="ph-acts">
+          <div class="ph-acts" style="display:flex;gap:8px;align-items:center;">
+            <select class="f-i" id="results-survey-select" style="min-width:240px;font-size:12px;" onchange="loadResults(this.value)"></select>
             <button class="btn btn-s" id="results-link-btn" style="display:none;" onclick="window.open(currentResultsUrl,'_blank')">📊 View Public →</button>
           </div>
         </div>
@@ -450,7 +451,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 let currentUser = null;
 let currentResultsUrl = '';
 const bd = {
-  template: '', surveyName: '', projName: '', openDate: '', closeDate: '',
+  template: '', surveyName: '', projName: '', projNotionId: '', editingId: '', openDate: '', closeDate: '',
   respondentTypes: ['Village Resident','Property Owner (non-resident)','Regular Visitor','Other'],
   visibility: 'public', snapshotLabel: '', description: '',
   // template-specific
@@ -487,11 +488,12 @@ function showPanel(id, el) {
   document.querySelectorAll('.s-item').forEach(s=>s.classList.remove('on'));
   document.getElementById('panel-'+id).classList.add('on');
   if(el) el.classList.add('on');
-  if(id==='results') loadResults();
+  // results loads are triggered explicitly by callers (avoids double-render race)
 }
 
 // ── Dashboard ───────────────────────────────────────────────────────────────
 async function loadDashboard() {
+  resultsSurveys = null;        // refresh the Results selector list after changes
   const surveysEl = document.getElementById('dashboard-surveys');
   surveysEl.innerHTML = '<div style="padding:20px;color:#9ca3af;font-size:11px;">Loading surveys…</div>';
 
@@ -509,25 +511,30 @@ async function loadDashboard() {
       return;
     }
 
-    surveysEl.innerHTML = '<div class="s-cards">' + surveys.map(s => {
+    const cardList = surveys.map(s => {
       const slug = (s.surveyUrl || '').split('slug=')[1] || slugify(s.surveyName);
       const isActive = s.active;
       const tmplIcon = s.template === 'priority-ranking' ? '🎯' : s.template === 'conjoint-design-options' ? '⚖️' : '📋';
       const closeLbl = s.closeDate ? ' · Closes ' + new Date(s.closeDate).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}) : '';
       return `
-        <div class="s-card" onclick="loadAndShowResults('${slug}')">
-          <div class="sc-icon">${tmplIcon}</div>
-          <div class="sc-info">
-            <div class="sc-title">${s.surveyName}</div>
-            <div class="sc-meta">${isActive?'<span class="ldot"></span>':''} ${s.template}${closeLbl}</div>
+        <div class="s-card">
+          <div class="sc-icon" onclick="loadAndShowResults('${slug}')" style="cursor:pointer;">${tmplIcon}</div>
+          <div class="sc-info" onclick="loadAndShowResults('${slug}')" style="cursor:pointer;">
+            <div class="sc-title">${escHtml(s.surveyName)}</div>
+            <div class="sc-meta">${isActive?'<span class="ldot"></span>':''} ${s.template}${closeLbl} · <span id="count-${s.id}" style="color:#64748b;">… responses</span> <span id="sync-${s.id}"></span></div>
           </div>
           <span class="tag ${isActive ? 't-live' : 't-draft'}">${isActive ? 'Live' : 'Paused'}</span>
-          <button class="btn btn-s" style="font-size:10px;padding:3px 8px;" onclick="event.stopPropagation();loadAndShowResults('${slug}')">Results →</button>
+          <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" title="Edit survey" onclick="event.stopPropagation();editSurvey('${s.id}','${slug}')">Edit</button>
+          <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" title="Copy survey link" onclick="event.stopPropagation();copyLink('survey','${slug}')">🔗 Survey</button>
+          <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" title="Open survey" onclick="event.stopPropagation();openSurvey('${slug}')">↗ Open</button>
+          <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" onclick="event.stopPropagation();loadAndShowResults('${slug}')">Results →</button>
           <div class="tog ${isActive ? 'on' : 'off'}" id="tog-${s.id}" onclick="event.stopPropagation();toggleSurvey('${s.id}',${!isActive})">
             <div class="tog-k"></div>
           </div>
         </div>`;
-    }).join('') + '</div>';
+    }).join('');
+    surveysEl.innerHTML = '<div class="s-cards">' + cardList + '</div>';
+    loadAllHealth(surveys);  // fill response counts + sheet-sync per card
   } catch(e) {
     surveysEl.innerHTML = '<div style="padding:20px;color:#dc2626;font-size:11px;">Failed to load surveys. Check Notion connection.</div>';
     console.error(e);
@@ -559,18 +566,76 @@ async function toggleSurvey(notionId, newActive) {
 }
 
 // ── Results ─────────────────────────────────────────────────────────────────
+let resultsSurveys = null;
+function slugOf(s){ return (s.surveyUrl||'').split('slug=')[1] || slugify(s.surveyName); }
+async function ensureResultsSelector() {
+  const sel = document.getElementById('results-survey-select');
+  if (!sel) return;
+  if (!resultsSurveys) {
+    try { const r = await fetch('/api/survey-list?village=' + encodeURIComponent('Smiths Lake')); resultsSurveys = (await r.json()).surveys || []; }
+    catch(_) { resultsSurveys = []; }
+  }
+  sel.innerHTML = '<option value="">All surveys (overview)</option>' + resultsSurveys.map(s =>
+    `<option value="${slugOf(s)}">${escHtml(s.surveyName)} · ${s.active ? 'Live' : 'Paused'}</option>`
+  ).join('');
+}
+
+// Overview: one card per survey (active or not) with status + live response count.
+function renderResultsOverview() {
+  const el = document.getElementById('results-content');
+  const list = resultsSurveys || [];
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state"><div class="es-icon">📈</div><div class="es-title">No surveys yet</div><div class="es-sub">Create a survey to see results here.</div></div>';
+    return;
+  }
+  el.innerHTML = '<div class="s-cards">' + list.map(s => {
+    const slug = slugOf(s);
+    const icon = s.template === 'priority-ranking' ? '🎯' : s.template === 'conjoint-design-options' ? '⚖️' : '📋';
+    return `<div class="s-card" style="cursor:pointer;" onclick="loadResults('${slug}')">
+      <div class="sc-icon">${icon}</div>
+      <div class="sc-info">
+        <div class="sc-title">${escHtml(s.surveyName)}</div>
+        <div class="sc-meta">${s.active?'<span class="ldot"></span>':''} ${s.template} · <span id="ov-count-${s.id}" style="color:#64748b;">… responses</span></div>
+      </div>
+      <span class="tag ${s.active?'t-live':'t-draft'}">${s.active?'Live':'Paused'}</span>
+      <button class="btn btn-s" style="font-size:10px;padding:3px 8px;" onclick="event.stopPropagation();loadResults('${slug}')">View results →</button>
+    </div>`;
+  }).join('') + '</div>';
+  loadOverviewCounts(list);
+}
+async function loadOverviewCounts(list) {
+  await Promise.all(list.map(async s => {
+    try {
+      const res = await fetch(`/api/survey-health?slug=${encodeURIComponent(slugOf(s))}`, { headers: await authHeaders() });
+      const h = await res.json();
+      const c = document.getElementById('ov-count-' + s.id);
+      if (c) c.textContent = (h.responseCount ?? 0) + ' response' + (h.responseCount===1?'':'s');
+    } catch(_) {}
+  }));
+}
+
 async function loadResults(slug) {
-  const s = slug || 'rec-reserve-priorities';
+  await ensureResultsSelector();
+  const sel = document.getElementById('results-survey-select');
+  if (!slug) {                       // overview mode
+    if (sel) sel.value = '';
+    document.getElementById('results-link-btn').style.display = 'none';
+    renderResultsOverview();
+    return;
+  }
+  if (sel) sel.value = slug;          // detailed mode
+  const s = slug;
   currentResultsUrl = `https://villagefirst.org.au/results/?slug=${s}`;
   document.getElementById('results-link-btn').style.display='inline-flex';
   const el = document.getElementById('results-content');
   el.innerHTML = '<div style="padding:20px;color:#9ca3af;">Loading…</div>';
+  const backLink = '<div style="margin-bottom:10px;"><a onclick="loadResults()" style="cursor:pointer;color:#2563eb;font-size:12px;">← All results</a></div>';
   try {
     const res = await fetch(`/api/survey-results?slug=${encodeURIComponent(s)}`, { headers: await authHeaders() });
     const data = await res.json();
-    if(data.restricted) { el.innerHTML='<div style="padding:20px;color:#9ca3af;">'+(data.message||'Results are restricted.')+'</div>'; return; }
-    if(!data.count) { el.innerHTML='<div style="padding:20px;color:#9ca3af;">No responses yet.</div>'; return; }
-    let html = `<div class="kpis">
+    if(data.restricted) { el.innerHTML=backLink+'<div style="padding:20px;color:#9ca3af;">'+(data.message||'Results are restricted.')+'</div>'; return; }
+    if(!data.count) { el.innerHTML=backLink+'<div style="padding:20px;color:#9ca3af;">No responses yet.</div>'; return; }
+    let html = backLink + `<div class="kpis">
       <div class="kpi"><div class="kpi-n" style="color:#059669;">${data.count}</div><div class="kpi-l">Total Responses</div></div>
       ${Object.entries(data.respondentBreakdown||{}).slice(0,2).map(([k,v])=>`<div class="kpi"><div class="kpi-n" style="color:#2563eb;">${v}</div><div class="kpi-l">${k}</div></div>`).join('')}
     </div>`;
@@ -600,18 +665,114 @@ function loadAndShowResults(slug) {
   loadResults(slug);
 }
 
-function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Card actions: links, open, health ───────────────────────────────────────
+const SITE_ORIGIN = 'https://villagefirst.org.au';
+function surveyLink(slug){ return `${SITE_ORIGIN}/survey/?slug=${slug}`; }
+function resultsLink(slug){ return `${SITE_ORIGIN}/results/?slug=${slug}`; }
+
+function copyLink(kind, slug) {
+  const url = kind === 'results' ? resultsLink(slug) : surveyLink(slug);
+  navigator.clipboard.writeText(url).then(
+    () => showToast('🔗 ' + (kind==='results'?'Results':'Survey') + ' link copied'),
+    () => showToast('Copy this link: ' + url)
+  );
+}
+function openSurvey(slug){ window.open(surveyLink(slug), '_blank', 'noopener'); }
+
+async function loadAllHealth(surveys) {
+  await Promise.all(surveys.map(async s => {
+    const slug = (s.surveyUrl || '').split('slug=')[1] || slugify(s.surveyName);
+    try {
+      const res = await fetch(`/api/survey-health?slug=${encodeURIComponent(slug)}`, { headers: await authHeaders() });
+      const h = await res.json();
+      const cEl = document.getElementById('count-' + s.id);
+      if (cEl) cEl.textContent = (h.responseCount ?? 0) + ' response' + ((h.responseCount===1)?'':'s');
+      const syncEl = document.getElementById('sync-' + s.id);
+      if (syncEl) syncEl.innerHTML = h.sheetOk ? '· <span style="color:#059669;" title="Sheet syncing">● synced</span>' : '· <span style="color:#dc2626;" title="Sheet not reachable">▲ sync issue</span>';
+    } catch (_) {}
+  }));
+}
+
+// ── Edit existing survey (safe fields only — D4) ─────────────────────────────
+function setRespPills(types) {
+  bd.respondentTypes = Array.isArray(types) ? types.slice() : bd.respondentTypes;
+  document.querySelectorAll('#resp-pills .p-pill').forEach(p => {
+    const label = p.textContent.trim();
+    // match on the value passed to togPill via known mapping
+    const map = {'Village Resident':'Village Resident','Property Owner':'Property Owner (non-resident)','Regular Visitor':'Regular Visitor','Business Owner':'Business Owner','Other':'Other'};
+    const val = map[label] || label;
+    p.classList.toggle('on', bd.respondentTypes.includes(val));
+  });
+}
+
+async function editSurvey(notionId, slug) {
+  try {
+    const res = await fetch(`/api/survey-config?slug=${encodeURIComponent(slug)}`);
+    const data = await res.json();
+    const sv = data.survey || {};
+    bd.editingId = notionId;
+    bd.template = sv.template || '';
+    // Prefill Details fields
+    document.getElementById('b-name').value = sv.surveyName || '';
+    document.getElementById('b-open').value = (sv.openDate || '').split('T')[0] || '';
+    document.getElementById('b-close').value = (sv.closeDate || '').split('T')[0] || '';
+    document.getElementById('b-vis').value = sv.resultsVisibility || 'public';
+    document.getElementById('b-snap').value = sv.snapshotLabel || '';
+    document.getElementById('b-desc').value = sv.purpose || (sv.config && sv.config.purposeStatement) || '';
+    setRespPills(sv.respondentTypes);
+    await loadProjectsDropdown(sv.projectName || '');
+    // Switch builder into edit mode: Details only
+    document.querySelector('#panel-builder .ph-title').textContent = 'Edit survey';
+    const nextBtn = document.getElementById('details-next-btn');
+    if (nextBtn) nextBtn.textContent = 'Save changes';
+    showPanel('builder', null);
+    setWiz(2);
+  } catch (e) { showToast('Could not load survey for editing.'); }
+}
+
+// ── Project dropdown ─────────────────────────────────────────────────────────
+let projectsCache = null;
+async function loadProjectsDropdown(selectName) {
+  const sel = document.getElementById('b-proj');
+  if (!sel) return;
+  try {
+    if (!projectsCache) {
+      const res = await fetch('/api/project-list?village=' + encodeURIComponent('Smiths Lake'));
+      const data = await res.json();
+      projectsCache = data.projects || [];
+    }
+    sel.innerHTML = '<option value="">— None (standalone survey) —</option>' +
+      projectsCache.map(p => `<option value="${escHtml(p.id)}" data-name="${escHtml(p.title)}">${escHtml(p.title)}</option>`).join('');
+    if (selectName) {
+      const match = projectsCache.find(p => p.title === selectName);
+      if (match) { sel.value = match.id; bd.projNotionId = match.id; bd.projName = match.title; }
+    }
+  } catch (_) {}
+}
+function onProjectPick() {
+  const sel = document.getElementById('b-proj');
+  const opt = sel.selectedOptions[0];
+  bd.projNotionId = sel.value || '';
+  bd.projName = opt ? (opt.dataset.name || '') : '';
+}
 
 // ── Builder ─────────────────────────────────────────────────────────────────
 let wizStep = 1;
 
 function resetBuilder() {
-  bd.template=''; bd.surveyName=''; bd.projName=''; bd.openDate=''; bd.closeDate='';
+  bd.template=''; bd.surveyName=''; bd.projName=''; bd.projNotionId=''; bd.editingId=''; bd.openDate=''; bd.closeDate='';
   bd.respondentTypes=['Village Resident','Property Owner (non-resident)','Regular Visitor','Other'];
   bd.items=[]; bd.sharedFeatures=[]; bd.attributes=[]; bd.serviceRatings=[];
   bd.rounds=4; bd.setSize=5; bd.openQuestion=''; bd.opt1Name=''; bd.opt2Name='';
   bd.description=''; bd.snapshotLabel=''; bd.npsQ=''; bd.priorityQ='';
   document.querySelectorAll('.tmpl-opt').forEach(t=>t.classList.remove('sel'));
+  const phT=document.querySelector('#panel-builder .ph-title'); if(phT) phT.textContent='New Survey';
+  const nb=document.getElementById('details-next-btn'); if(nb) nb.textContent='Next: Questions →';
+  ['b-name','b-snap','b-desc'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';});
+  setRespPills(['Village Resident','Property Owner (non-resident)','Regular Visitor','Other']);
+  loadProjectsDropdown('');
   setWiz(1);
 }
 
@@ -646,13 +807,39 @@ function saveDetails() {
   const name=document.getElementById('b-name').value.trim();
   if(!name){showToast('Please enter a survey name.');return;}
   bd.surveyName=name;
-  bd.projName=document.getElementById('b-proj').value.trim();
+  onProjectPick(); // capture projName + projNotionId from dropdown
   bd.openDate=document.getElementById('b-open').value;
   bd.closeDate=document.getElementById('b-close').value;
   bd.visibility=document.getElementById('b-vis').value;
   bd.snapshotLabel=document.getElementById('b-snap').value.trim();
   bd.description=document.getElementById('b-desc').value.trim();
+  if(bd.editingId){ saveEdit(); return; }   // edit mode: save safe fields, skip question steps
   setWiz(3);
+}
+
+async function saveEdit() {
+  const btn=document.getElementById('details-next-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Saving…'; }
+  try {
+    const res=await fetch('/api/survey-update',{
+      method:'POST', headers:await authHeaders(),
+      body:JSON.stringify({
+        surveyNotionId: bd.editingId,
+        surveyName: bd.surveyName,
+        purpose: bd.description,
+        openDate: bd.openDate || '',
+        closeDate: bd.closeDate || '',
+        resultsVisibility: bd.visibility,
+        respondentTypes: bd.respondentTypes,
+        snapshotLabel: bd.snapshotLabel,
+        projectName: bd.projName,
+        projectNotionId: bd.projNotionId,
+      }),
+    });
+    const data=await res.json();
+    if(res.ok && data.success){ showToast('✅ Survey updated'); resetBuilder(); showPanel('dashboard',null); loadDashboard(); }
+    else { showToast('⚠️ '+(data.error||'Update failed')); if(btn){btn.disabled=false;btn.textContent='Save changes';} }
+  } catch(e){ showToast('⚠️ Network error'); if(btn){btn.disabled=false;btn.textContent='Save changes';} }
 }
 
 function showQuestionsForTemplate() {
@@ -773,7 +960,7 @@ async function activateSurvey() {
         slug, template:bd.template, surveyName:bd.surveyName,
         village:'Smiths Lake', openDate:bd.openDate, closeDate:bd.closeDate,
         respondentTypes:bd.respondentTypes, resultsVisibility:bd.visibility,
-        snapshotLabel:bd.snapshotLabel, projectNotionId:'',
+        snapshotLabel:bd.snapshotLabel, projectName:bd.projName, projectNotionId:bd.projNotionId||'',
         config:buildConfig(),
       }),
     });
