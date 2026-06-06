@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Surveys — VillageFirst</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#f4f2ed;color:#2c2c2a;}
+  .topbar{background:#1A7A6E;color:#fff;padding:12px 20px;font-size:14px;display:flex;gap:18px;align-items:center;}
+  .topbar a{color:#fff;text-decoration:none;opacity:.9;font-size:13px;}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 16px 60px;}
+  h1{font-size:22px;color:#1A7A6E;margin-bottom:4px;}
+  .sub{font-size:13px;color:#5f5e5a;margin-bottom:20px;}
+  .card{display:block;background:#fff;border:1px solid #d3d1c7;border-radius:10px;padding:16px 18px;margin-bottom:12px;text-decoration:none;color:inherit;transition:border-color .15s,box-shadow .15s;}
+  .card:hover{border-color:#1A7A6E;box-shadow:0 2px 8px rgba(0,0,0,.05);}
+  .card-title{font-size:16px;font-weight:600;color:#185FA5;margin-bottom:3px;}
+  .card-meta{font-size:12px;color:#5f5e5a;}
+  .pill{display:inline-block;font-size:10px;font-weight:700;color:#1A7A6E;background:#E1F5EE;border-radius:10px;padding:2px 8px;margin-left:6px;}
+  .state{text-align:center;color:#9ca3af;padding:40px 0;font-size:14px;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="/">← VillageFirst Website</a>
+  <span style="font-weight:600;">Community Surveys</span>
+</div>
+<div class="wrap">
+  <h1>Have your say</h1>
+  <p class="sub">Open community surveys for Smiths Lake. Your input helps guide local decisions.</p>
+  <div id="list"><div class="state">Loading surveys…</div></div>
+</div>
+<script>
+(async function(){
+  const VILLAGE = 'Smiths Lake';
+  const listEl = document.getElementById('list');
+  function slugify(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');}
+  try{
+    const res = await fetch('/api/survey-list?village=' + encodeURIComponent(VILLAGE));
+    const data = await res.json();
+    const surveys = (data.surveys || []).filter(s => s.active);  // only live surveys are public
+    if(!surveys.length){ listEl.innerHTML = '<div class="state">There are no open surveys right now. Please check back soon.</div>'; return; }
+    listEl.innerHTML = surveys.map(s => {
+      const slug = (s.surveyUrl || '').split('slug=')[1] || slugify(s.surveyName);
+      const closeLbl = s.closeDate ? 'Closes ' + new Date(s.closeDate).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}) : 'Open now';
+      return `<a class="card" href="/survey/?slug=${slug}">
+        <div class="card-title">${(s.surveyName||'Community Survey').replace(/</g,'&lt;')}<span class="pill">Open</span></div>
+        <div class="card-meta">${closeLbl}</div>
+      </a>`;
+    }).join('');
+  }catch(e){ listEl.innerHTML = '<div class="state">Could not load surveys. Please try again later.</div>'; }
+})();
+</script>
+</body>
+</html>
