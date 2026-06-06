@@ -1105,6 +1105,7 @@ async function loadAccess() {
         <div style="font-size:16px;">👤</div>
         <div class="acc-info" style="flex:1;"><div class="acc-name">${escHtml(u.email)}</div><div class="acc-scope" style="font-size:11px;color:#9ca3af;">${roleLabel(u.roles)}${u.confirmed?'':' · invited (pending)'}</div></div>
         <select class="f-i" style="max-width:170px;font-size:12px;" onchange="setUserRole('${u.id}',this.value)">${opts}</select>
+        <button class="btn btn-s" style="font-size:11px;padding:3px 8px;color:#dc2626;margin-left:8px;" title="Remove access" onclick="removeUser('${u.id}', ${jsArg(u.email)})">Remove</button>
       </div>`;
     }).join('');
   } catch (e) { el.innerHTML = '<div class="info-box">Could not load users.</div>'; }
@@ -1117,6 +1118,17 @@ async function setUserRole(userId, role) {
     else showToast('⚠️ '+(data.error||'Could not update role'));
   } catch(_) { showToast('⚠️ Network error'); }
 }
+async function removeUser(userId, email) {
+  if (email && currentUser && email.toLowerCase() === (currentUser.email||'').toLowerCase()) { showToast("You can't remove your own access."); return; }
+  if (!confirm(`Remove ${email}?\n\nThey lose all admin access (and any pending invite is cancelled). You can re-invite them later.`)) return;
+  try {
+    const res = await fetch('/api/identity-admin', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ action:'delete', userId }) });
+    const data = await res.json();
+    if (res.ok && data.success) { showToast('Access removed'); loadAccess(); }
+    else showToast('⚠️ ' + (data.error || 'Could not remove'));
+  } catch(_) { showToast('⚠️ Network error'); }
+}
+
 async function inviteUser() {
   const email = document.getElementById('invite-email').value.trim();
   const role = document.getElementById('invite-role')?.value || '';

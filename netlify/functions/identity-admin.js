@@ -92,6 +92,14 @@ export const handler = async (event, context) => {
       return resp(200, { success: true, roles });
     }
 
+    if (action === 'delete') {
+      const { userId } = body;
+      if (!userId) return resp(400, { error: 'Missing userId' });
+      const res = await fetch(`${identity.url}/admin/users/${userId}`, { method: 'DELETE', headers: adminHeaders });
+      if (!res.ok) { const t = await res.text(); console.error('delete user error:', t); return resp(502, { error: 'Could not remove user' }); }
+      return resp(200, { success: true });
+    }
+
     return resp(400, { error: 'Unknown action' });
   } catch (e) { console.error(e); return resp(500, { error: 'Internal error' }); }
 };
