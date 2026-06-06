@@ -22,18 +22,38 @@ function isSuper(user) {
   return !!email && allowed.includes(email);
 }
 
+// Fallback: derive villages from the VF Surveys "Village" select options when the
+// VF Villages DB can't be read (e.g. the integration isn't connected to it yet).
+// Everything defaults to status 'live' so the admin keeps working.
+async function villagesFromSurveys() {
+  try {
+    const r = await fetch(`https://api.notion.com/v1/databases/${process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596'}`, { headers: nh() });
+    if (!r.ok) return [];
+    const db = await r.json();
+    const opts = db.properties?.['Village']?.select?.options || [];
+    return opts.map(o => ({ name: o.name, status: 'live' })).filter(v => v.name);
+  } catch (_) { return []; }
+}
+
 export const handler = async (event, context) => {
   if (event.httpMethod !== 'GET') return { statusCode: 405, body: 'Method Not Allowed' };
   try {
+    let villages = [];
+    let warning;
     const res = await fetch(`https://api.notion.com/v1/databases/${VILLAGES_DB_ID}/query`, {
       method: 'POST', headers: nh(), body: JSON.stringify({ sorts: [{ timestamp: 'created_time', direction: 'ascending' }] }),
     });
-    if (!res.ok) return resp(502, { error: 'Failed to load villages' });
-    const data = await res.json();
-    let villages = (data.results || []).map(p => ({
-      name: p.properties['Village Name']?.title?.[0]?.plain_text || '',
-      status: p.properties['Status']?.select?.name || 'live',
-    })).filter(v => v.name);
+    if (res.ok) {
+      const data = await res.json();
+      villages = (data.results || []).map(p => ({
+        name: p.properties['Village Name']?.title?.[0]?.plain_text || '',
+        status: p.properties['Status']?.select?.name || 'live',
+      })).filter(v => v.name);
+    } else {
+      // VF Villages unreadable — fail open to the survey tags so the admin still loads.
+      warning = 'villages-db-unreadable';
+      villages = await villagesFromSurveys();
+    }
 
     const user = getIdentityUser(context);
     if (user && !isSuper(user)) {
@@ -42,10 +62,13 @@ export const handler = async (event, context) => {
       if (scoped.length) villages = scoped;
     }
     if (!villages.length) villages = [{ name: 'Smiths Lake', status: 'live' }];
-    return resp(200, { villages });
+    return resp(200, warning ? { villages, warning } : { villages });
   } catch (e) {
     console.error('village-list error:', e);
-    return resp(500, { error: 'Internal error' });
+    // Last-resort fail-open so the switcher never blanks the whole admin.
+    let villages = await villagesFromSurveys();
+    if (!villages.length) villages = [{ name: 'Smiths Lake', status: 'live' }];
+    return resp(200, { villages, warning: 'villages-list-error' });
   }
 };
 
