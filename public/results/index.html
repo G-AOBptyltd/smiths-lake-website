@@ -206,7 +206,8 @@
       if (template === 'conjoint-design-options') html += renderConjointResults(data);
       else if (template === 'priority-ranking') html += renderMaxDiffResults(data);
       else if (template === 'annual-satisfaction') html += renderSatisfactionResults(data);
-      else if (template === 'likert-agreement' || template === 'star-rating' || template === 'quick-poll') html += renderRatingResults(data);
+      else if (template === 'likert-agreement' || template === 'star-rating' || template === 'quick-poll'
+            || template === 'ranked-choice' || template === 'budget-allocation' || template === 'importance-performance' || template === 'demographic') html += renderRatingResults(data);
       else if (template === 'multi-section') html += renderMultiSectionResults(data);
 
       // Open text

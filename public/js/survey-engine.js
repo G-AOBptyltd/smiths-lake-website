@@ -149,7 +149,142 @@
     else if (t === 'quick-poll') renderQuickPoll();
     else if (t === 'open-feedback') renderOpenFeedback();
     else if (t === 'multi-section') renderMultiSection();
+    else if (t === 'ranked-choice') renderRankedChoice();
+    else if (t === 'budget-allocation') renderBudgetAllocation();
+    else if (t === 'importance-performance') renderIPA();
+    else if (t === 'demographic') renderDemographic();
     else renderError(`Unknown template: ${t}`);
+  }
+
+  function renderIntroCard(introDefault) {
+    const cfg = surveyConfig.config;
+    return `
+      <div class="vf-intro-card">
+        <p>${cfg.description || cfg.purposeStatement || introDefault}</p>
+        <div class="vf-field" style="margin-top:12px;">
+          <div class="vf-field-label">I am a:</div>
+          <div class="vf-pills" id="respondent-pills">
+            ${surveyConfig.respondentTypes.map(t => `<button class="vf-pill" data-value="${t}">${t}</button>`).join('')}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ─── RANKED-CHOICE (order a short list, 1 = highest) ─────────────────────────
+  function renderRankedChoice() {
+    const cfg = surveyConfig.config;
+    const items = (cfg.items || []).map(x => (x && x.label) ? x.label : x);
+    const N = items.length;
+    root().innerHTML = `
+      <div class="vf-survey">${renderSurveyHeader()}
+        ${renderIntroCard('Rank these in order of priority (1 = highest).')}
+        <div class="vf-part-label" style="margin-top:20px;">Rank these — 1 = highest priority</div>
+        <div class="vf-rating-list">
+          ${items.map((s, i) => `<div class="vf-rating-row"><span class="vf-rating-label">${s}</span>
+            <select class="vf-textarea" style="max-width:90px;padding:6px;" id="rk${i + 1}">
+              ${['', ...Array.from({ length: N }, (_, k) => k + 1)].map(v => `<option value="${v}" ${responses['rk' + (i + 1)] == v ? 'selected' : ''}>${v || '—'}</option>`).join('')}
+            </select></div>`).join('')}
+        </div>
+        <div class="vf-nav"><span></span><button class="vf-btn" id="submit-btn">Submit →</button></div>
+      </div>`;
+    attachPillHandlers('respondent-pills', 'respondentType', responses);
+    document.getElementById('submit-btn').onclick = async () => {
+      if (!responses.respondentType) { alert('Please select who you are.'); return; }
+      for (let i = 0; i < N; i++) { const v = document.getElementById('rk' + (i + 1)).value; if (!v) { alert('Please rank every item.'); return; } responses['rk' + (i + 1)] = v; }
+      await submitSurvey();
+    };
+  }
+
+  // ─── BUDGET-ALLOCATION (distribute N points) ─────────────────────────────────
+  function renderBudgetAllocation() {
+    const cfg = surveyConfig.config;
+    const items = (cfg.items || []).map(x => (x && x.label) ? x.label : x);
+    const total = cfg.total || 100;
+    root().innerHTML = `
+      <div class="vf-survey">${renderSurveyHeader()}
+        ${renderIntroCard(`Distribute exactly ${total} points across the options below.`)}
+        <div class="vf-part-label" style="margin-top:20px;">Allocate ${total} points</div>
+        <div class="vf-rating-list">
+          ${items.map((s, i) => `<div class="vf-rating-row"><span class="vf-rating-label">${s}</span>
+            <input type="number" min="0" max="${total}" class="vf-textarea bg-alloc" style="max-width:90px;padding:6px;" id="al${i + 1}" value="${responses['al' + (i + 1)] || 0}"></div>`).join('')}
+        </div>
+        <div id="budget-total" style="font-weight:700;margin-top:8px;">Total: 0 / ${total}</div>
+        <div class="vf-nav"><span></span><button class="vf-btn" id="submit-btn">Submit →</button></div>
+      </div>`;
+    attachPillHandlers('respondent-pills', 'respondentType', responses);
+    const recalc = () => {
+      let sum = 0; items.forEach((_, i) => sum += Number(document.getElementById('al' + (i + 1)).value) || 0);
+      const el = document.getElementById('budget-total');
+      el.textContent = `Total: ${sum} / ${total}`;
+      el.style.color = sum === total ? '#059669' : '#dc2626';
+      return sum;
+    };
+    document.querySelectorAll('.bg-alloc').forEach(inp => inp.addEventListener('input', recalc));
+    recalc();
+    document.getElementById('submit-btn').onclick = async () => {
+      if (!responses.respondentType) { alert('Please select who you are.'); return; }
+      let sum = 0; items.forEach((_, i) => { const v = Number(document.getElementById('al' + (i + 1)).value) || 0; responses['al' + (i + 1)] = v; sum += v; });
+      if (sum !== total) { alert(`Please allocate exactly ${total} points (currently ${sum}).`); return; }
+      await submitSurvey();
+    };
+  }
+
+  // ─── IMPORTANCE vs PERFORMANCE (rate each on two scales) ─────────────────────
+  function renderIPA() {
+    const cfg = surveyConfig.config;
+    const items = (cfg.items || []).map(x => (x && x.label) ? x.label : x);
+    root().innerHTML = `
+      <div class="vf-survey">${renderSurveyHeader()}
+        ${renderIntroCard('For each item, rate how important it is and how well it performs today (1–5).')}
+        <div class="vf-part-label" style="margin-top:20px;">Importance &amp; performance (1–5)</div>
+        ${items.map((s, i) => `
+          <div style="margin-bottom:14px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:4px;">${s}</div>
+            <div class="vf-rating-list">
+              ${renderRatingRow(`imp${i + 1}`, 'Importance', responses[`imp${i + 1}`])}
+              ${renderRatingRow(`perf${i + 1}`, 'Performance now', responses[`perf${i + 1}`])}
+            </div>
+          </div>`).join('')}
+        <div class="vf-nav"><span></span><button class="vf-btn" id="submit-btn">Submit →</button></div>
+      </div>`;
+    attachPillHandlers('respondent-pills', 'respondentType', responses);
+    attachRatingHandlers(responses);
+    document.getElementById('submit-btn').onclick = async () => {
+      if (!responses.respondentType) { alert('Please select who you are.'); return; }
+      if (items.some((_, i) => !responses[`imp${i + 1}`] || !responses[`perf${i + 1}`])) { alert('Please rate importance and performance for every item.'); return; }
+      await submitSurvey();
+    };
+  }
+
+  // ─── DEMOGRAPHIC (profile questions: choice or text) ─────────────────────────
+  function renderDemographic() {
+    const cfg = surveyConfig.config;
+    const fields = (cfg.fields || []).map(f => (typeof f === 'string') ? { label: f, options: [] } : f);
+    root().innerHTML = `
+      <div class="vf-survey">${renderSurveyHeader()}
+        ${renderIntroCard('A few quick questions about you. This helps us understand who responded.')}
+        ${fields.map((f, i) => {
+          const opts = f.options || [];
+          if (opts.length) {
+            return `<div class="vf-field" style="margin-top:16px;"><div class="vf-field-label">${f.label}</div>
+              <div class="vf-pills" id="demo-${i + 1}">${opts.map(o => `<button class="vf-pill" data-value="${(o && o.label) ? o.label : o}">${(o && o.label) ? o.label : o}</button>`).join('')}</div></div>`;
+          }
+          return `<div class="vf-field" style="margin-top:16px;"><label class="vf-field-label">${f.label}</label>
+            <input class="vf-textarea" id="demo-${i + 1}-text" placeholder="Your answer…" value="${responses[`d${i + 1}`] || ''}"></div>`;
+        }).join('')}
+        <div class="vf-nav"><span></span><button class="vf-btn" id="submit-btn">Submit →</button></div>
+      </div>`;
+    attachPillHandlers('respondent-pills', 'respondentType', responses);
+    fields.forEach((f, i) => { if ((f.options || []).length) attachPillHandlers(`demo-${i + 1}`, `d${i + 1}`, responses); });
+    document.getElementById('submit-btn').onclick = async () => {
+      if (!responses.respondentType) { alert('Please select who you are.'); return; }
+      for (let i = 0; i < fields.length; i++) {
+        const f = fields[i];
+        if ((f.options || []).length) { if (!responses[`d${i + 1}`]) { alert(`Please answer: ${f.label}`); return; } }
+        else { responses[`d${i + 1}`] = document.getElementById(`demo-${i + 1}-text`)?.value || ''; }
+      }
+      await submitSurvey();
+    };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

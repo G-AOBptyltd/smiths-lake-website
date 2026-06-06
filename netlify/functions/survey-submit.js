@@ -242,6 +242,14 @@ function buildRowValues(data, survey) {
     fieldOrder = ['respondentType', 'choice'];
   } else if (template === 'open-feedback') {
     fieldOrder = ['respondentType', ...numKeys('q')];
+  } else if (template === 'ranked-choice') {
+    fieldOrder = ['respondentType', ...numKeys('rk')];
+  } else if (template === 'budget-allocation') {
+    fieldOrder = ['respondentType', ...numKeys('al')];
+  } else if (template === 'importance-performance') {
+    fieldOrder = ['respondentType', ...numKeys('imp'), ...numKeys('perf')];
+  } else if (template === 'demographic') {
+    fieldOrder = ['respondentType', ...numKeys('d')];
   } else if (template === 'priority-ranking') {
     fieldOrder = [
       'respondentType',

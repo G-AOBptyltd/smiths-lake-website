@@ -279,6 +279,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <div class="tmpl-name">Open Feedback / Ideas</div>
                 <div class="tmpl-desc">Open-text prompts for ideas and comments.</div>
               </div>
+              <div class="tmpl-opt" id="tmpl-ranked" onclick="selTmpl('ranked-choice',this)">
+                <div class="tmpl-icon">🔢</div>
+                <div class="tmpl-name">Ranked Choice</div>
+                <div class="tmpl-desc">Order a short list 1…n by priority.</div>
+              </div>
+              <div class="tmpl-opt" id="tmpl-budget" onclick="selTmpl('budget-allocation',this)">
+                <div class="tmpl-icon">💰</div>
+                <div class="tmpl-name">Budget Allocation</div>
+                <div class="tmpl-desc">Distribute 100 points across options (trade-offs).</div>
+              </div>
+              <div class="tmpl-opt" id="tmpl-ipa" onclick="selTmpl('importance-performance',this)">
+                <div class="tmpl-icon">📈</div>
+                <div class="tmpl-name">Importance vs Performance</div>
+                <div class="tmpl-desc">Rate each item on importance and current performance.</div>
+              </div>
+              <div class="tmpl-opt" id="tmpl-demo" onclick="selTmpl('demographic',this)">
+                <div class="tmpl-icon">👤</div>
+                <div class="tmpl-name">Demographic / Registration</div>
+                <div class="tmpl-desc">Profile questions (choice or short text).</div>
+              </div>
             </div>
             <div style="display:flex;gap:7px;margin-top:4px;">
               <button class="btn btn-g" onclick="if(!bd.selectedTemplates.length){showToast('Please choose at least one template.');return;}setWiz(2)">Next: Details →</button>
@@ -427,6 +447,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </div>
             </div>
 
+            <!-- ranked-choice questions -->
+            <div id="q-ranked" style="display:none;">
+              <div class="f-l" style="margin-bottom:6px;">Items to rank <span class="f-req">*</span> <span style="font-weight:400;font-size:10px;text-transform:none;color:#9ca3af;">— respondents order them 1…n</span></div>
+              <div class="item-list" id="rankitems-list"></div>
+              <div class="add-row">
+                <input class="f-i" id="new-rankitem" placeholder="Add an item..." style="flex:1;" onkeydown="if(event.key==='Enter'){addGeneric('rankItems','new-rankitem','rankitems-list');event.preventDefault();}">
+                <button class="btn btn-g" onclick="addGeneric('rankItems','new-rankitem','rankitems-list')">+ Add</button>
+              </div>
+            </div>
+
+            <!-- budget-allocation questions -->
+            <div id="q-budget" style="display:none;">
+              <div class="f-row"><div class="f-f"><div class="f-l">Total points to allocate</div><input class="f-i" id="b-budget-total" type="number" min="10" value="100"></div></div>
+              <div class="f-l" style="margin:8px 0 6px;">Options to fund <span class="f-req">*</span></div>
+              <div class="item-list" id="budgetitems-list"></div>
+              <div class="add-row">
+                <input class="f-i" id="new-budgetitem" placeholder="Add an option..." style="flex:1;" onkeydown="if(event.key==='Enter'){addGeneric('budgetItems','new-budgetitem','budgetitems-list');event.preventDefault();}">
+                <button class="btn btn-g" onclick="addGeneric('budgetItems','new-budgetitem','budgetitems-list')">+ Add</button>
+              </div>
+            </div>
+
+            <!-- importance-performance questions -->
+            <div id="q-ipa" style="display:none;">
+              <div class="f-l" style="margin-bottom:6px;">Items to assess <span class="f-req">*</span> <span style="font-weight:400;font-size:10px;text-transform:none;color:#9ca3af;">— each rated on importance &amp; performance</span></div>
+              <div class="item-list" id="ipaitems-list"></div>
+              <div class="add-row">
+                <input class="f-i" id="new-ipaitem" placeholder="Add an item..." style="flex:1;" onkeydown="if(event.key==='Enter'){addGeneric('ipaItems','new-ipaitem','ipaitems-list');event.preventDefault();}">
+                <button class="btn btn-g" onclick="addGeneric('ipaItems','new-ipaitem','ipaitems-list')">+ Add</button>
+              </div>
+            </div>
+
+            <!-- demographic questions -->
+            <div id="q-demo" style="display:none;">
+              <div class="f-l" style="margin-bottom:6px;">Profile questions <span class="f-req">*</span> <span style="font-weight:400;font-size:10px;text-transform:none;color:#9ca3af;">— for multiple choice add options after a pipe, e.g. "Age group | Under 40, 40–60, 60+". No pipe = short text.</span></div>
+              <div class="item-list" id="demofields-list"></div>
+              <div class="add-row">
+                <input class="f-i" id="new-demofield" placeholder='e.g. How long have you lived here? | <2 yrs, 2–10 yrs, 10+ yrs' style="flex:1;" onkeydown="if(event.key==='Enter'){addGeneric('demoFields','new-demofield','demofields-list');event.preventDefault();}">
+                <button class="btn btn-g" onclick="addGeneric('demoFields','new-demofield','demofields-list')">+ Add</button>
+              </div>
+            </div>
+
             <div style="display:flex;gap:7px;margin-top:14px;">
               <button class="btn btn-s" onclick="setWiz(2)">← Back</button>
               <button class="btn btn-g" onclick="saveQuestions()">Next: Activate →</button>
@@ -551,6 +612,8 @@ const bd = {
   opt1Name: '', opt2Name: '', npsQ: '', priorityQ: '',
   // new templates (batch 1)
   statements: [], starItems: [], pollOptions: [], prompts: [], pollQuestion: '',
+  // new templates (batch 2)
+  rankItems: [], budgetItems: [], budgetTotal: 100, ipaItems: [], demoFields: [],
 };
 
 // Generic editable list helper (used by new templates)
@@ -636,6 +699,7 @@ async function loadDashboard() {
           <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" title="Open survey" onclick="event.stopPropagation();openSurvey('${slug}')">↗ Open</button>
           <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" onclick="event.stopPropagation();loadAndShowResults('${slug}')">Results →</button>
           <select class="f-i" style="max-width:118px;font-size:11px;padding:3px 6px;" title="Lifecycle status" onclick="event.stopPropagation()" onchange="setStatus('${s.id}',this.value)">${statusOpts}</select>
+          <button class="btn btn-s" style="font-size:10px;padding:3px 7px;color:#dc2626;" title="Delete survey" onclick="event.stopPropagation();deleteSurvey('${s.id}', ${JSON.stringify(s.surveyName)})">🗑</button>
         </div>`;
     }).join('');
     surveysEl.innerHTML = '<div class="s-cards">' + cardList + '</div>';
@@ -668,6 +732,17 @@ async function toggleSurvey(notionId, newActive) {
     showToast('⚠️ Network error');
     if (togEl) { togEl.style.opacity = '1'; togEl.style.pointerEvents = ''; }
   }
+}
+
+// Delete (archive) a survey — recoverable in Notion; response sheet kept.
+async function deleteSurvey(notionId, name) {
+  if (!confirm(`Delete "${name}"?\n\nIt will be archived (recoverable from Notion trash) and removed from the dashboard. The survey's response sheet is kept.`)) return;
+  try {
+    const res = await fetch('/api/survey-delete', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ surveyNotionId: notionId }) });
+    const data = await res.json();
+    if (res.ok && data.success) { showToast('🗑 Survey archived'); loadDashboard(); }
+    else showToast('⚠️ ' + (data.error || 'Delete failed'));
+  } catch(_) { showToast('⚠️ Network error'); }
 }
 
 // Lifecycle status control (draft/scheduled/live/paused/closed) via survey-update
@@ -964,6 +1039,7 @@ function resetBuilder() {
   bd.respondentTypes=defaultPills.slice();
   bd.items=[]; bd.sharedFeatures=[]; bd.attributes=[]; bd.serviceRatings=[];
   bd.statements=[]; bd.starItems=[]; bd.pollOptions=[]; bd.prompts=[]; bd.pollQuestion='';
+  bd.rankItems=[]; bd.budgetItems=[]; bd.budgetTotal=100; bd.ipaItems=[]; bd.demoFields=[];
   bd.rounds=4; bd.setSize=5; bd.openQuestion=''; bd.opt1Name=''; bd.opt2Name='';
   bd.description=''; bd.snapshotLabel=''; bd.npsQ=''; bd.priorityQ=''; bd.visibility=st.defaultVis||'public';
   document.querySelectorAll('.tmpl-opt').forEach(t=>t.classList.remove('sel'));
@@ -992,8 +1068,8 @@ function setWiz(n) {
 }
 
 const SECTIONABLE = ['likert-agreement','star-rating','quick-poll','open-feedback'];
-const TMPL_CARD_ID = {'conjoint-design-options':'tmpl-conjoint','priority-ranking':'tmpl-maxdiff','annual-satisfaction':'tmpl-sat','quick-poll':'tmpl-quickpoll','likert-agreement':'tmpl-likert','star-rating':'tmpl-star','open-feedback':'tmpl-open'};
-const TMPL_LABEL = {'conjoint-design-options':'Design Option Preference','priority-ranking':'Priority Ranking','annual-satisfaction':'Annual Satisfaction','quick-poll':'Quick Poll','likert-agreement':'Likert Agreement','star-rating':'Star / Rating Review','open-feedback':'Open Feedback'};
+const TMPL_CARD_ID = {'conjoint-design-options':'tmpl-conjoint','priority-ranking':'tmpl-maxdiff','annual-satisfaction':'tmpl-sat','quick-poll':'tmpl-quickpoll','likert-agreement':'tmpl-likert','star-rating':'tmpl-star','open-feedback':'tmpl-open','ranked-choice':'tmpl-ranked','budget-allocation':'tmpl-budget','importance-performance':'tmpl-ipa','demographic':'tmpl-demo'};
+const TMPL_LABEL = {'conjoint-design-options':'Design Option Preference','priority-ranking':'Priority Ranking','annual-satisfaction':'Annual Satisfaction','quick-poll':'Quick Poll','likert-agreement':'Likert Agreement','star-rating':'Star / Rating Review','open-feedback':'Open Feedback','ranked-choice':'Ranked Choice','budget-allocation':'Budget Allocation','importance-performance':'Importance vs Performance','demographic':'Demographic'};
 
 function selTmpl(t, el) {
   const sel = bd.selectedTemplates;
@@ -1060,6 +1136,7 @@ function showQuestionsForTemplate() {
   const map = {
     'priority-ranking':'q-maxdiff', 'conjoint-design-options':'q-conjoint', 'annual-satisfaction':'q-sat',
     'likert-agreement':'q-likert', 'star-rating':'q-star', 'quick-poll':'q-quickpoll', 'open-feedback':'q-open',
+    'ranked-choice':'q-ranked', 'budget-allocation':'q-budget', 'importance-performance':'q-ipa', 'demographic':'q-demo',
   };
   Object.values(map).forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
   (bd.selectedTemplates.length?bd.selectedTemplates:[bd.template]).forEach(t=>{ const id=map[t]; if(id){ const el=document.getElementById(id); if(el) el.style.display='block'; } });
@@ -1071,7 +1148,12 @@ function showQuestionsForTemplate() {
   renderGenericList('starItems','staritems-list');
   renderGenericList('pollOptions','polloptions-list');
   renderGenericList('prompts','prompts-list');
+  renderGenericList('rankItems','rankitems-list');
+  renderGenericList('budgetItems','budgetitems-list');
+  renderGenericList('ipaItems','ipaitems-list');
+  renderGenericList('demoFields','demofields-list');
   const pq=document.getElementById('b-pollq'); if(pq) pq.value=bd.pollQuestion||'';
+  const bt=document.getElementById('b-budget-total'); if(bt) bt.value=bd.budgetTotal||100;
 }
 
 // Item list helpers
@@ -1150,6 +1232,15 @@ function saveQuestions() {
       if(bd.pollOptions.length<2){showToast('Add at least 2 options.');return;}
     } else if(t==='open-feedback') {
       if(bd.prompts.length<1){showToast('Add at least 1 question.');return;}
+    } else if(t==='ranked-choice') {
+      if(bd.rankItems.length<2){showToast('Add at least 2 items to rank.');return;}
+    } else if(t==='budget-allocation') {
+      bd.budgetTotal=parseInt(document.getElementById('b-budget-total').value)||100;
+      if(bd.budgetItems.length<2){showToast('Add at least 2 options to fund.');return;}
+    } else if(t==='importance-performance') {
+      if(bd.ipaItems.length<1){showToast('Add at least 1 item to assess.');return;}
+    } else if(t==='demographic') {
+      if(bd.demoFields.length<1){showToast('Add at least 1 profile question.');return;}
     }
   }
   setWiz(4);
@@ -1189,8 +1280,26 @@ function buildConfigFor(t) {
     return { ...base, question:bd.pollQuestion, options:bd.pollOptions };
   } else if(t==='open-feedback') {
     return { ...base, prompts:bd.prompts };
+  } else if(t==='ranked-choice') {
+    return { ...base, items:bd.rankItems.map(l=>({label:l})) };
+  } else if(t==='budget-allocation') {
+    return { ...base, items:bd.budgetItems.map(l=>({label:l})), total:bd.budgetTotal||100 };
+  } else if(t==='importance-performance') {
+    return { ...base, items:bd.ipaItems.map(l=>({label:l})) };
+  } else if(t==='demographic') {
+    return { ...base, fields:bd.demoFields.map(parseDemoField) };
   }
   return base;
+}
+
+// "Label | opt1, opt2" → {label, options:[...]}; no pipe → {label, options:[]} (short text)
+function parseDemoField(raw) {
+  const s = String(raw||'');
+  const pipe = s.indexOf('|');
+  if (pipe === -1) return { label: s.trim(), options: [] };
+  const label = s.slice(0, pipe).trim();
+  const options = s.slice(pipe + 1).split(',').map(o => o.trim()).filter(Boolean);
+  return { label, options };
 }
 
 // Resolve the final {template, config} for activation — single or multi-section.

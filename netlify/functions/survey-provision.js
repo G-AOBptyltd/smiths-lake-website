@@ -203,6 +203,26 @@ function buildHeader(template, config) {
     return [...base, ...cols];
   }
 
+  if (template === 'ranked-choice') {
+    const items = config?.items || [];
+    return [...base, ...items.map((_, i) => `rk${i + 1}`)];
+  }
+
+  if (template === 'budget-allocation') {
+    const items = config?.items || [];
+    return [...base, ...items.map((_, i) => `al${i + 1}`)];
+  }
+
+  if (template === 'importance-performance') {
+    const items = config?.items || [];
+    return [...base, ...items.map((_, i) => `imp${i + 1}`), ...items.map((_, i) => `perf${i + 1}`)];
+  }
+
+  if (template === 'demographic') {
+    const fields = config?.fields || [];
+    return [...base, ...fields.map((_, i) => `d${i + 1}`)];
+  }
+
   if (template === 'multi-section') {
     return [...base, ...multiSectionColumns(config)];
   }

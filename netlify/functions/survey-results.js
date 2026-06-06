@@ -132,11 +132,78 @@ function aggregate(rows, header, template, config) {
     return aggregateQuickPoll(rows, header, count, respondentBreakdown);
   } else if (template === 'open-feedback') {
     return aggregateOpenFeedback(rows, header, count, respondentBreakdown, config);
+  } else if (template === 'ranked-choice') {
+    return aggregateRanked(rows, header, count, respondentBreakdown, config);
+  } else if (template === 'budget-allocation') {
+    return aggregateBudget(rows, header, count, respondentBreakdown, config);
+  } else if (template === 'importance-performance') {
+    return aggregateIPA(rows, header, count, respondentBreakdown, config);
+  } else if (template === 'demographic') {
+    return aggregateDemographic(rows, header, count, respondentBreakdown, config);
   } else if (template === 'multi-section') {
     return aggregateMultiSection(rows, header, count, respondentBreakdown, config);
   }
 
   return { count, respondentBreakdown, raw: rows.slice(0, 5) };
+}
+
+function aggregateRanked(rows, header, count, respondentBreakdown, config) {
+  const items = config.items || [];
+  const N = items.length;
+  const serviceRatings = items.map((item, i) => {
+    const label = (item && item.label) ? item.label : item;
+    const col = header.indexOf(`rk${i + 1}`);
+    const vals = rows.map(r => Number(r[col])).filter(v => !isNaN(v) && v > 0);
+    const avg = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+    const score = avg ? Math.round(((N - avg + 1) / N) * 100) : 0;
+    return { label: `${label} (avg rank ${avg ? avg.toFixed(1) : '–'})`, bestPct: score, n: vals.length };
+  }).sort((a, b) => b.bestPct - a.bestPct);
+  return { count, respondentBreakdown, serviceRatings };
+}
+
+function aggregateBudget(rows, header, count, respondentBreakdown, config) {
+  const items = config.items || [];
+  const total = config.total || 100;
+  const serviceRatings = items.map((item, i) => {
+    const label = (item && item.label) ? item.label : item;
+    const col = header.indexOf(`al${i + 1}`);
+    const vals = rows.map(r => Number(r[col])).filter(v => !isNaN(v));
+    const avg = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+    return { label: `${label} (avg ${avg.toFixed(0)} pts)`, bestPct: Math.round((avg / total) * 100), n: vals.length };
+  }).sort((a, b) => b.bestPct - a.bestPct);
+  return { count, respondentBreakdown, serviceRatings };
+}
+
+function aggregateIPA(rows, header, count, respondentBreakdown, config) {
+  const items = config.items || [];
+  const serviceRatings = items.map((item, i) => {
+    const label = (item && item.label) ? item.label : item;
+    const ic = header.indexOf(`imp${i + 1}`), pc = header.indexOf(`perf${i + 1}`);
+    const iv = rows.map(r => Number(r[ic])).filter(v => !isNaN(v) && v > 0);
+    const pv = rows.map(r => Number(r[pc])).filter(v => !isNaN(v) && v > 0);
+    const ia = iv.length ? iv.reduce((s, v) => s + v, 0) / iv.length : 0;
+    const pa = pv.length ? pv.reduce((s, v) => s + v, 0) / pv.length : 0;
+    const gap = ia - pa;
+    return { label: `${label} (imp ${ia.toFixed(1)} / perf ${pa.toFixed(1)})`, bestPct: Math.round((Math.max(0, gap) / 4) * 100), n: iv.length };
+  }).sort((a, b) => b.bestPct - a.bestPct);
+  return { count, respondentBreakdown, serviceRatings };
+}
+
+function aggregateDemographic(rows, header, count, respondentBreakdown, config) {
+  const fields = (config.fields || []).map(f => (typeof f === 'string') ? { label: f, options: [] } : f);
+  const serviceRatings = [];
+  const openText = [];
+  fields.forEach((f, i) => {
+    const col = header.indexOf(`d${i + 1}`);
+    if ((f.options || []).length) {
+      const counts = {};
+      rows.forEach(r => { const v = r[col]; if (v) counts[v] = (counts[v] || 0) + 1; });
+      Object.entries(counts).forEach(([opt, n]) => serviceRatings.push({ label: `${f.label}: ${opt}`, bestPct: count ? Math.round((n / count) * 100) : 0, n }));
+    } else {
+      rows.forEach((r, ri) => { const v = r[col]; if (v) openText.push({ person: `Person ${ri + 1}`, text: `${f.label}: ${v}` }); });
+    }
+  });
+  return { count, respondentBreakdown, serviceRatings, openText };
 }
 
 // Aggregate each section independently → { sections: [{title, template, serviceRatings?, openText?}] }
