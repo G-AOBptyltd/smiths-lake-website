@@ -332,6 +332,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   <option value="public">Public — live as responses come in</option>
                   <option value="committee-only">Committee only</option>
                   <option value="after-close">Public after close</option>
+                  <option value="respondent-after-completion">Respondent sees results after completing</option>
                 </select>
               </div>
               <div class="f-f">
@@ -342,6 +343,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <div class="f-f">
               <div class="f-l">Purpose statement <span style="font-weight:400;color:#9ca3af;">(shown at top of survey)</span></div>
               <textarea class="f-i" id="b-desc" rows="2" style="resize:none;" placeholder="Your feedback will inform the PPCA committee submission."></textarea>
+            </div>
+            <div class="f-f">
+              <label class="f-l" style="display:flex;align-items:center;gap:6px;cursor:pointer;text-transform:none;font-weight:400;">
+                <input type="checkbox" id="b-moderate"> Moderate comments — hide individual comments from public results before they show
+              </label>
             </div>
             <div style="display:flex;gap:7px;margin-top:4px;">
               <button class="btn btn-s" onclick="setWiz(1)">← Back</button>
@@ -480,11 +486,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
             <!-- demographic questions -->
             <div id="q-demo" style="display:none;">
-              <div class="f-l" style="margin-bottom:6px;">Profile questions <span class="f-req">*</span> <span style="font-weight:400;font-size:10px;text-transform:none;color:#9ca3af;">— for multiple choice add options after a pipe, e.g. "Age group | Under 40, 40–60, 60+". No pipe = short text.</span></div>
+              <div class="f-l" style="margin-bottom:6px;">Profile questions <span class="f-req">*</span> <span style="font-weight:400;font-size:10px;text-transform:none;color:#9ca3af;">— add options for multiple choice, or leave options blank for a short-text answer</span></div>
               <div class="item-list" id="demofields-list"></div>
               <div class="add-row">
-                <input class="f-i" id="new-demofield" placeholder='e.g. How long have you lived here? | <2 yrs, 2–10 yrs, 10+ yrs' style="flex:1;" onkeydown="if(event.key==='Enter'){addGeneric('demoFields','new-demofield','demofields-list');event.preventDefault();}">
-                <button class="btn btn-g" onclick="addGeneric('demoFields','new-demofield','demofields-list')">+ Add</button>
+                <input class="f-i" id="new-demofield-label" placeholder="Question, e.g. How long have you lived here?" style="flex:2;">
+                <input class="f-i" id="new-demofield-opts" placeholder="Options (comma-separated, optional)" style="flex:2;" onkeydown="if(event.key==='Enter'){addDemoField();event.preventDefault();}">
+                <button class="btn btn-g" onclick="addDemoField()">+ Add</button>
               </div>
             </div>
 
@@ -528,6 +535,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <div><div class="ph-title">Results</div><div class="ph-sub">Live data from Google Sheets</div></div>
           <div class="ph-acts" style="display:flex;gap:8px;align-items:center;">
             <select class="f-i" id="results-survey-select" style="min-width:240px;font-size:12px;" onchange="loadResults(this.value)"></select>
+            <button class="btn btn-s" id="results-export-btn" style="display:none;" onclick="exportCsv()">⬇ Export CSV</button>
             <button class="btn btn-s" id="results-link-btn" style="display:none;" onclick="window.open(currentResultsUrl,'_blank')">📊 View Public →</button>
           </div>
         </div>
@@ -551,6 +559,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   <option value="public">Public — live as responses come in</option>
                   <option value="committee-only">Committee only</option>
                   <option value="after-close">Public after close</option>
+                  <option value="respondent-after-completion">Respondent sees results after completing</option>
                 </select>
               </div>
               <div class="f-f"><div class="f-l">Default eligible respondents</div>
@@ -614,6 +623,7 @@ const bd = {
   statements: [], starItems: [], pollOptions: [], prompts: [], pollQuestion: '',
   // new templates (batch 2)
   rankItems: [], budgetItems: [], budgetTotal: 100, ipaItems: [], demoFields: [],
+  commentsModerated: false,
 };
 
 // Generic editable list helper (used by new templates)
@@ -626,6 +636,16 @@ function addGeneric(arrKey, inputId, containerId) {
   const inp = document.getElementById(inputId);
   if (!inp || !inp.value.trim()) return;
   bd[arrKey].push(inp.value.trim()); inp.value=''; renderGenericList(arrKey, containerId);
+}
+// Demographic: combine label + options into the stored "Label | a, b" form.
+function addDemoField() {
+  const l = document.getElementById('new-demofield-label');
+  const o = document.getElementById('new-demofield-opts');
+  const label = (l.value||'').trim();
+  if (!label) return;
+  const opts = (o.value||'').trim();
+  bd.demoFields.push(opts ? `${label} | ${opts}` : label);
+  l.value=''; o.value=''; renderGenericList('demoFields','demofields-list');
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────
@@ -695,6 +715,7 @@ async function loadDashboard() {
           </div>
           <span class="tag ${st==='live' ? 't-live' : 't-draft'}">${st.charAt(0).toUpperCase()+st.slice(1)}</span>
           <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" title="Edit survey" onclick="event.stopPropagation();editSurvey('${s.id}','${slug}')">Edit</button>
+          <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" title="Duplicate &amp; relaunch (edit questions)" onclick="event.stopPropagation();duplicateSurvey('${slug}')">Duplicate</button>
           <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" title="Copy survey link" onclick="event.stopPropagation();copyLink('survey','${slug}')">🔗 Survey</button>
           <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" title="Open survey" onclick="event.stopPropagation();openSurvey('${slug}')">↗ Open</button>
           <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" onclick="event.stopPropagation();loadAndShowResults('${slug}')">Results →</button>
@@ -742,6 +763,16 @@ async function deleteSurvey(notionId, name) {
     const data = await res.json();
     if (res.ok && data.success) { showToast('🗑 Survey archived'); loadDashboard(); }
     else showToast('⚠️ ' + (data.error || 'Delete failed'));
+  } catch(_) { showToast('⚠️ Network error'); }
+}
+
+// Hide/show a public comment (moderation)
+async function moderateComment(surveyNotionId, commentText, hide) {
+  try {
+    const res = await fetch('/api/survey-moderate', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ surveyNotionId, commentText, hidden: hide }) });
+    const data = await res.json();
+    if (res.ok && data.success) { showToast(hide ? 'Comment hidden from public' : 'Comment shown'); const sel=document.getElementById('results-survey-select'); loadResults(sel ? sel.value : undefined); }
+    else showToast('⚠️ ' + (data.error || 'Failed'));
   } catch(_) { showToast('⚠️ Network error'); }
 }
 
@@ -810,6 +841,7 @@ async function loadResults(slug) {
   if (!slug) {                       // overview mode
     if (sel) sel.value = '';
     document.getElementById('results-link-btn').style.display = 'none';
+    document.getElementById('results-export-btn').style.display = 'none';
     renderResultsOverview();
     return;
   }
@@ -817,6 +849,7 @@ async function loadResults(slug) {
   const s = slug;
   currentResultsUrl = `https://villagefirst.org.au/results/?slug=${s}`;
   document.getElementById('results-link-btn').style.display='inline-flex';
+  document.getElementById('results-export-btn').style.display='inline-flex';
   const el = document.getElementById('results-content');
   el.innerHTML = '<div style="padding:20px;color:#9ca3af;">Loading…</div>';
   const backLink = '<div style="margin-bottom:10px;"><a onclick="loadResults()" style="cursor:pointer;color:#2563eb;font-size:12px;">← All results</a></div>';
@@ -851,14 +884,33 @@ async function loadResults(slug) {
       html+='</div>';
     }
     if(data.openText?.length) {
-      html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:13px;"><div style="font-size:11px;font-weight:700;margin-bottom:6px;">Open Responses</div>';
-      data.openText.slice(0,5).forEach(r=>{
-        html+=`<div style="background:#f8fafc;border-radius:5px;padding:7px 9px;margin-bottom:5px;font-size:10px;color:#374151;">${escHtml(r.text||r.comments||'')}</div>`;
+      const moderated = !!data.survey?.commentsModerated;
+      const hiddenSet = new Set(data.survey?.hiddenComments || []);
+      const sid = data.survey?.id || '';
+      html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:13px;"><div style="font-size:11px;font-weight:700;margin-bottom:6px;">Open Responses'+(moderated?' <span style="font-weight:400;color:#9ca3af;">— moderated</span>':'')+'</div>';
+      data.openText.slice(0,30).forEach(r=>{
+        const txt = r.text||r.comments||'';
+        const isHidden = hiddenSet.has(txt);
+        const btn = moderated ? `<button class="btn btn-s" style="font-size:9px;padding:2px 6px;margin-left:6px;${isHidden?'color:#059669;':'color:#dc2626;'}" onclick='moderateComment(${JSON.stringify(sid)}, ${JSON.stringify(txt)}, ${!isHidden})'>${isHidden?'Show':'Hide'}</button>` : '';
+        html+=`<div style="background:${isHidden?'#fef2f2':'#f8fafc'};border-radius:5px;padding:7px 9px;margin-bottom:5px;font-size:10px;color:#374151;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>${escHtml(txt)}${isHidden?' <em style="color:#dc2626;">(hidden from public)</em>':''}</span>${btn}</div>`;
       });
       html+='</div>';
     }
     el.innerHTML=html;
   } catch(e){ el.innerHTML='<div style="padding:20px;color:#dc2626;">Failed to load results.</div>'; }
+}
+
+async function exportCsv() {
+  const slug = document.getElementById('results-survey-select')?.value;
+  if (!slug) { showToast('Pick a survey first'); return; }
+  try {
+    const res = await fetch('/api/survey-export?slug=' + encodeURIComponent(slug), { headers: await authHeaders() });
+    if (!res.ok) { showToast('⚠️ Export failed'); return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = slug + '-responses.csv';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  } catch (_) { showToast('⚠️ Export error'); }
 }
 
 function loadAndShowResults(slug) {
@@ -908,6 +960,59 @@ function setRespPills(types) {
   });
 }
 
+// Populate bd.* question arrays from a saved config for a given template (reverse of buildConfigFor).
+function configToBd(t, c) {
+  c = c || {};
+  const labels = a => (a || []).map(x => (x && x.label) ? x.label : x);
+  if (t === 'priority-ranking') { bd.items = labels(c.items); bd.rounds = c.rounds || 4; bd.setSize = c.setSize || 5; bd.openQuestion = c.openQuestion || ''; }
+  else if (t === 'conjoint-design-options') { bd.opt1Name = c.option1Name || ''; bd.opt2Name = c.option2Name || ''; bd.sharedFeatures = (c.sharedFeatures || []).slice(); bd.attributes = (c.attributes || []).map(a => ({ ...a })); }
+  else if (t === 'annual-satisfaction') { bd.serviceRatings = (c.serviceRatings || []).slice(); bd.npsQ = c.npsQuestion || ''; bd.priorityQ = c.priorityQuestion || ''; }
+  else if (t === 'likert-agreement') { bd.statements = labels(c.statements || c.items); }
+  else if (t === 'star-rating') { bd.starItems = labels(c.items || c.serviceRatings); }
+  else if (t === 'quick-poll') { bd.pollQuestion = c.question || ''; bd.pollOptions = labels(c.options); }
+  else if (t === 'open-feedback') { bd.prompts = labels(c.prompts || c.items); }
+  else if (t === 'ranked-choice') { bd.rankItems = labels(c.items); }
+  else if (t === 'budget-allocation') { bd.budgetItems = labels(c.items); bd.budgetTotal = c.total || 100; }
+  else if (t === 'importance-performance') { bd.ipaItems = labels(c.items); }
+  else if (t === 'demographic') { bd.demoFields = (c.fields || []).map(f => (typeof f === 'string') ? f : ((f.options && f.options.length) ? `${f.label} | ${f.options.join(', ')}` : f.label)); }
+}
+
+// Duplicate-and-relaunch: rehydrate the builder from an existing survey as a NEW draft.
+async function duplicateSurvey(slug) {
+  try {
+    const res = await fetch(`/api/survey-config?slug=${encodeURIComponent(slug)}`);
+    const sv = (await res.json()).survey || {};
+    resetBuilder();
+    const cfg = sv.config || {};
+    if (sv.template === 'multi-section') {
+      bd.selectedTemplates = (cfg.sections || []).map(s => s.template);
+      (cfg.sections || []).forEach(s => configToBd(s.template, s.config));
+    } else {
+      bd.selectedTemplates = [sv.template];
+      configToBd(sv.template, cfg);
+    }
+    bd.template = bd.selectedTemplates[0] || '';
+    bd.editingId = '';                                  // NEW survey, not an edit
+    bd.description = sv.purpose || cfg.purposeStatement || '';
+    bd.snapshotLabel = sv.snapshotLabel || '';
+    bd.visibility = sv.resultsVisibility || 'public';
+    if (Array.isArray(sv.respondentTypes)) bd.respondentTypes = sv.respondentTypes.slice();
+    // Prefill Details inputs
+    document.getElementById('b-name').value = 'Copy of ' + (sv.surveyName || 'survey');
+    document.getElementById('b-desc').value = bd.description;
+    document.getElementById('b-snap').value = bd.snapshotLabel;
+    document.getElementById('b-vis').value = bd.visibility;
+    setRespPills(bd.respondentTypes);
+    await loadProjectsDropdown(sv.projectName || '');
+    // Reflect template selection on the cards
+    document.querySelectorAll('.tmpl-opt').forEach(o => o.classList.remove('sel'));
+    bd.selectedTemplates.forEach(x => { const e = document.getElementById(TMPL_CARD_ID[x]); if (e) e.classList.add('sel'); });
+    showPanel('builder', null);
+    setWiz(1);
+    showToast('Duplicated — edit questions, then activate as a new survey');
+  } catch (e) { showToast('Could not duplicate survey.'); }
+}
+
 async function editSurvey(notionId, slug) {
   try {
     const res = await fetch(`/api/survey-config?slug=${encodeURIComponent(slug)}`);
@@ -922,6 +1027,7 @@ async function editSurvey(notionId, slug) {
     document.getElementById('b-vis').value = sv.resultsVisibility || 'public';
     document.getElementById('b-snap').value = sv.snapshotLabel || '';
     document.getElementById('b-desc').value = sv.purpose || (sv.config && sv.config.purposeStatement) || '';
+    bd.commentsModerated = !!sv.commentsModerated; const me=document.getElementById('b-moderate'); if(me) me.checked = bd.commentsModerated;
     setRespPills(sv.respondentTypes);
     await loadProjectsDropdown(sv.projectName || '');
     // Switch builder into edit mode: Details only
@@ -1047,6 +1153,7 @@ function resetBuilder() {
   const nb=document.getElementById('details-next-btn'); if(nb) nb.textContent='Next: Questions →';
   ['b-name','b-snap','b-desc'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';});
   const visEl=document.getElementById('b-vis'); if(visEl) visEl.value=st.defaultVis||'public';
+  bd.commentsModerated=false; const modEl=document.getElementById('b-moderate'); if(modEl) modEl.checked=false;
   setRespPills(defaultPills);
   loadProjectsDropdown('');
   setWiz(1);
@@ -1103,6 +1210,7 @@ function saveDetails() {
   bd.visibility=document.getElementById('b-vis').value;
   bd.snapshotLabel=document.getElementById('b-snap').value.trim();
   bd.description=document.getElementById('b-desc').value.trim();
+  bd.commentsModerated=!!document.getElementById('b-moderate')?.checked;
   if(bd.editingId){ saveEdit(); return; }   // edit mode: save safe fields, skip question steps
   setWiz(3);
 }
@@ -1124,6 +1232,7 @@ async function saveEdit() {
         snapshotLabel: bd.snapshotLabel,
         projectName: bd.projName,
         projectNotionId: bd.projNotionId,
+        commentsModerated: bd.commentsModerated,
       }),
     });
     const data=await res.json();
@@ -1331,6 +1440,7 @@ async function activateSurvey() {
         village:'Smiths Lake', openDate:bd.openDate, closeDate:bd.closeDate,
         respondentTypes:bd.respondentTypes, resultsVisibility:bd.visibility,
         snapshotLabel:bd.snapshotLabel, projectName:bd.projName, projectNotionId:bd.projNotionId||'',
+        commentsModerated:bd.commentsModerated,
         config,
       }),
     });

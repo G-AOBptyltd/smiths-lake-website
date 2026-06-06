@@ -127,12 +127,19 @@
   }
 
   function renderThankYou() {
+    // For 'respondent-after-completion' visibility, link results with a completion flag
+    // so the person who just submitted can see them even though they're not public.
+    let resultsHref = surveyConfig.resultsUrl || '';
+    if (resultsHref && surveyConfig.resultsVisibility === 'respondent-after-completion') {
+      resultsHref += (resultsHref.includes('?') ? '&' : '?') + 'completed=1';
+    }
+    const showResults = resultsHref && (surveyConfig.resultsVisibility === 'public' || surveyConfig.resultsVisibility === 'respondent-after-completion');
     root().innerHTML = `
       <div class="vf-state vf-thankyou">
         <div class="vf-state-icon">🙏</div>
         <h2>Thank you for your response!</h2>
         <p>Your submission has been recorded. The ${surveyConfig.village} PPCA committee will review all responses.</p>
-        ${surveyConfig.resultsUrl ? `<a href="${surveyConfig.resultsUrl}" class="vf-btn">View live results</a>` : ''}
+        ${showResults ? `<a href="${resultsHref}" class="vf-btn">View results</a>` : ''}
         <a href="/" class="vf-btn vf-btn-secondary">Return to website</a>
       </div>`;
   }

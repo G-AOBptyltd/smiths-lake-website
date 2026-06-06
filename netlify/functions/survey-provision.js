@@ -41,7 +41,7 @@ export const handler = async (event, context) => {
     surveyNotionId: existingNotionId,
     slug, template, surveyName, projectNotionId, config,
     // Fields for creating a new Notion record (when no surveyNotionId provided)
-    village, openDate, closeDate, respondentTypes, resultsVisibility, snapshotLabel,
+    village, openDate, closeDate, respondentTypes, resultsVisibility, snapshotLabel, commentsModerated,
   } = body;
 
   if (!slug || !template) {
@@ -79,6 +79,7 @@ export const handler = async (event, context) => {
         config: config || {},
         visibility: resultsVisibility || 'public',
         snapshotLabel: snapshotLabel || '',
+        commentsModerated: !!commentsModerated,
         projectNotionId: projectNotionId || '',
         sheetId,
         surveyUrl,
@@ -250,7 +251,7 @@ function multiSectionColumns(config) {
 
 // ─── Notion ───────────────────────────────────────────────────────────────────
 
-async function createNotionSurveyRecord({ surveyName, slug, purpose, village, template, openDate, closeDate, respondentTypes, config, visibility, snapshotLabel, projectNotionId, sheetId, surveyUrl, resultsUrl }) {
+async function createNotionSurveyRecord({ surveyName, slug, purpose, village, template, openDate, closeDate, respondentTypes, config, visibility, snapshotLabel, commentsModerated, projectNotionId, sheetId, surveyUrl, resultsUrl }) {
   const DB_ID = process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596';
   // NOTE: Slug, Status and Purpose require the Phase 0 schema migration to exist
   // on the VF Surveys DB before this runs in production.
@@ -263,6 +264,7 @@ async function createNotionSurveyRecord({ surveyName, slug, purpose, village, te
     'Template': { select: { name: template } },
     'Active': { checkbox: true },
     'Results Visibility': { select: { name: visibility || 'public' } },
+    'Comments Moderated': { checkbox: !!commentsModerated },
     'Respondent Types': { rich_text: [{ text: { content: JSON.stringify(respondentTypes) } }] },
     'Config': { rich_text: [{ text: { content: JSON.stringify(config) } }] },
     'Snapshot Label': { rich_text: [{ text: { content: snapshotLabel || '' } }] },

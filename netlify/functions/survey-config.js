@@ -133,6 +133,7 @@ function parseSurveyPage(page) {
     status: p['Status']?.select?.name || '',
     slug: p['Slug']?.rich_text?.[0]?.plain_text || '',
     purpose: p['Purpose']?.rich_text?.[0]?.plain_text || '',
+    commentsModerated: p['Comments Moderated']?.checkbox || false,
     openDate: p['Open Date']?.date?.start || null,
     closeDate: p['Close Date']?.date?.start || null,
     projectName: p['Project Name']?.rich_text?.[0]?.plain_text || '',
