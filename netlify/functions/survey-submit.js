@@ -9,6 +9,8 @@
  * Response: { success: true } | { error: '...' }
  */
 
+import { getVillageStatus } from './_villages.js';
+
 // Simple in-memory rate limiter (resets on function cold start)
 const rateLimitMap = new Map();
 const RATE_LIMIT = 5;        // max submissions
@@ -72,6 +74,10 @@ export const handler = async (event) => {
   }
   // Re-check status + window: block submissions to draft/scheduled/paused/closed surveys.
   if (effectiveStatus(survey) !== 'active') {
+    return { statusCode: 409, headers: corsHeaders(), body: JSON.stringify({ error: 'This survey is not currently open for responses.' }) };
+  }
+  // Village override: a suspended/archived village blocks all its surveys.
+  if ((await getVillageStatus(survey.village)) !== 'live') {
     return { statusCode: 409, headers: corsHeaders(), body: JSON.stringify({ error: 'This survey is not currently open for responses.' }) };
   }
   if (!survey.sheetId) {
@@ -170,6 +176,7 @@ async function resolveSurvey(slug) {
     active: p['Active']?.checkbox || false,
     status: p['Status']?.select?.name || '',
     template: p['Template']?.select?.name || '',
+    village: p['Village']?.select?.name || '',
     config,
     openDate: p['Open Date']?.date?.start || null,
     closeDate: p['Close Date']?.date?.start || null,

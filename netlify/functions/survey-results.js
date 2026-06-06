@@ -15,6 +15,7 @@
  */
 
 import { getIdentityUser, hasRole } from './_auth.js';
+import { getVillageStatus } from './_villages.js';
 
 const NOTION_VERSION = '2022-06-28';
 const DB_ID = process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596';
@@ -48,6 +49,8 @@ export const handler = async (event, context) => {
     else if (vis === 'after-close') allowed = status === 'closed'; // public only once closed
     else if (vis === 'respondent-after-completion') allowed = justCompleted; // shown right after submitting
     // 'committee' / 'committee-only' / 'admin' → not public
+    // Archived village removes public access to its results (super-admin still allowed).
+    if (!isStaff && (await getVillageStatus(survey.village)) === 'archived') allowed = false;
     if (!allowed) {
       return {
         statusCode: 200,

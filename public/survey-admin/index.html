@@ -51,6 +51,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn-s{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;}
 .btn-s:hover{background:#e2e8f0;}
 .btn-danger{background:#fee2e2;color:#dc2626;}
+.btn-o{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;}
+.btn-o:hover{background:#ffedd5;}
+.btn-r{background:#dc2626;color:#fff;}
+.btn-r:hover{background:#b91c1c;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
 .pb{padding:14px 18px;}
 
 /* Metrics */
@@ -580,8 +585,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </div>
               <button class="btn btn-g" onclick="saveSettings()">Save defaults</button>
             </div>
+            <div class="set-card"><div class="set-title">🚦 Village Lifecycle</div>
+              <div id="village-lifecycle"><div class="info-box">Loading…</div></div>
+            </div>
             <div class="set-card"><div class="set-title">ℹ️ Admin Info</div>
-              <div class="info-box">Survey credentials and API keys are managed in Netlify environment variables. Contact AOB (greg@villagefirst.org.au) to change them.</div>
+              <div class="info-box">Survey credentials and API keys are managed in Netlify environment variables. Contact AOB (support@agilityops.com.au) to change them.</div>
             </div>
           </div>
         </div>
@@ -662,28 +670,81 @@ netlifyIdentity.on('logout', () => { currentUser=null; document.getElementById('
 
 // ── Active village (multi-village) ───────────────────────────────────────────
 let activeVillage = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+let villagesData = [];   // [{name,status}]
+const STATUS_BADGE = { live:'🟢 Live', suspended:'⏸️ Suspended', archived:'🗄️ Archived' };
+function villageStatusOf(name){ const v = villagesData.find(x => x.name === name); return (v && v.status) || 'live'; }
 function monthYear(){ return new Date().toLocaleDateString('en-AU',{month:'long',year:'numeric'}); }
 async function loadVillages() {
   try {
     const r = await fetch('/api/village-list', { headers: await authHeaders() });
     const data = await r.json();
-    const villages = (data.villages && data.villages.length) ? data.villages : ['Smiths Lake'];
-    if (!villages.includes(activeVillage)) activeVillage = villages[0];
+    // Backend now returns [{name,status}]; tolerate legacy string arrays.
+    let villages = (data.villages && data.villages.length) ? data.villages : [{ name:'Smiths Lake', status:'live' }];
+    villages = villages.map(v => typeof v === 'string' ? { name:v, status:'live' } : { name:v.name, status:(v.status||'live') });
+    villagesData = villages;
+    if (!villages.some(v => v.name === activeVillage)) activeVillage = villages[0].name;
     const sel = document.getElementById('village-switch');
-    if (sel) sel.innerHTML = villages.map(v => `<option value="${escHtml(v)}" ${v===activeVillage?'selected':''}>📍 ${escHtml(v)}</option>`).join('');
+    if (sel) sel.innerHTML = villages.map(v => {
+      const tag = v.status && v.status !== 'live' ? '  ('+v.status+')' : '';
+      return `<option value="${escHtml(v.name)}" ${v.name===activeVillage?'selected':''}>📍 ${escHtml(v.name)}${escHtml(tag)}</option>`;
+    }).join('');
     const ab = document.getElementById('add-village-btn'); if (ab) ab.style.display = 'inline-block';
     applyVillageLabels();
+    renderVillageLifecycle();
   } catch(_) {}
 }
 function applyVillageLabels() {
   const sub = document.getElementById('dash-sub'); if (sub) sub.textContent = activeVillage + ' · ' + monthYear();
   const sv = document.getElementById('set-village-name'); if (sv) sv.value = activeVillage;
 }
+// ── Village lifecycle (super-admin): Live · Suspended · Archived · Delete ──────
+function renderVillageLifecycle() {
+  const box = document.getElementById('village-lifecycle');
+  if (!box) return;
+  const status = villageStatusOf(activeVillage);
+  const isSuper = currentUser && currentUser.app_metadata && (currentUser.app_metadata.roles||[]).includes('super-admin');
+  if (!isSuper) { box.innerHTML = '<div class="info-box">Lifecycle changes are restricted to super-admins.</div>'; return; }
+  const b = (s,label,cls) => `<button class="btn ${cls}" ${status===s?'disabled':''} onclick="setVillageStatus('${s}')">${label}</button>`;
+  box.innerHTML =
+    `<div style="margin-bottom:10px;">Current status: <strong>${STATUS_BADGE[status]||status}</strong></div>` +
+    `<div style="display:flex;gap:8px;flex-wrap:wrap;">` +
+      b('live','Set Live','btn-g') +
+      b('suspended','Suspend','btn-o') +
+      b('archived','Archive','btn-o') +
+    `</div>` +
+    `<div style="font-size:12px;color:#64748b;margin-top:8px;">Suspend pauses every survey in this village. Archive also removes public access (still visible to you here).</div>` +
+    `<hr style="border:none;border-top:1px solid #e2e8f0;margin:14px 0;">` +
+    `<button class="btn btn-r" ${status==='archived'?'':'disabled'} onclick="deleteVillage()">Delete village…</button>` +
+    `<div style="font-size:12px;color:#64748b;margin-top:6px;">${status==='archived'?'Permanent. Requires double-confirmation.':'Archive the village first to enable deletion.'}</div>`;
+}
+async function setVillageStatus(status) {
+  const labels = { live:'set Live', suspended:'Suspend', archived:'Archive' };
+  if (!confirm(`${labels[status]||status} "${activeVillage}"?` + (status==='suspended'?'\n\nAll surveys in this village will be paused.':status==='archived'?'\n\nAll surveys stop and public access is removed.':''))) return;
+  try {
+    const res = await fetch('/api/village-status', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ village: activeVillage, status }) });
+    const data = await res.json();
+    if (res.ok && data.success) { showToast('✅ Village ' + status); await loadVillages(); }
+    else showToast('⚠️ ' + (data.error || 'Could not update village'));
+  } catch(_) { showToast('⚠️ Network error'); }
+}
+async function deleteVillage() {
+  if (villageStatusOf(activeVillage) !== 'archived') { showToast('⚠️ Archive the village first'); return; }
+  if (!confirm(`Delete "${activeVillage}"? This cannot be undone.`)) return;
+  const typed = (prompt(`Type the village name to confirm deletion:\n${activeVillage}`) || '').trim();
+  if (typed !== activeVillage) { showToast('⚠️ Name did not match — delete cancelled'); return; }
+  try {
+    const res = await fetch('/api/village-remove', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ village: activeVillage }) });
+    const data = await res.json();
+    if (res.ok && data.success) { showToast('✅ Village deleted'); localStorage.removeItem('vf_active_village'); activeVillage='Smiths Lake'; await loadVillages(); setVillage(activeVillage); }
+    else showToast('⚠️ ' + (data.error || 'Could not delete village'));
+  } catch(_) { showToast('⚠️ Network error'); }
+}
 function setVillage(v) {
   activeVillage = v;
   localStorage.setItem('vf_active_village', v);
   projectsCache = null; resultsSurveys = null;   // re-scope cached lists
   applyVillageLabels();
+  renderVillageLifecycle();
   loadDashboard();
 }
 async function addVillage() {

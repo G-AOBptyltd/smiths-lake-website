@@ -8,6 +8,8 @@
  *   { survey: {...}, status: 'active' | 'closed' | 'scheduled' | 'not-found' }
  */
 
+import { getVillageStatus } from './_villages.js';
+
 const NOTION_VERSION = '2022-06-28';
 const DB_ID = process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596';
 
@@ -78,7 +80,11 @@ export const handler = async (event) => {
     }
 
     const survey = parseSurveyPage(page);
-    const status = getSurveyStatus(survey);
+    let status = getSurveyStatus(survey);
+
+    // Village override gate: a suspended/archived village closes its surveys to the public.
+    const vStatus = await getVillageStatus(survey.village);
+    if (vStatus === 'suspended' || vStatus === 'archived') status = 'closed';
 
     return {
       statusCode: 200,

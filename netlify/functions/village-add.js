@@ -1,14 +1,15 @@
 /**
- * village-add.js — POST /api/village-add
- *
- * Adds a new option to the VF Surveys "Village" select. Super-admin only.
+ * village-add.js — POST /api/village-add  (super-admin)
+ * Creates a VF Villages row (status=live) AND adds the name as a Village select
+ * option on VF Surveys (so surveys can be tagged to it).
  * Body: { village }
  */
 
 import { requireRole } from './_auth.js';
 
 const NOTION_VERSION = '2022-06-28';
-const DB_ID = process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596';
+const SURVEYS_DB_ID = process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596';
+const VILLAGES_DB_ID = process.env.NOTION_VF_VILLAGES_DB_ID || '2c6272ccd9174103a077087c5de250d0';
 
 function nh() {
   return { Authorization: `Bearer ${process.env.NOTION_API_KEY}`, 'Notion-Version': NOTION_VERSION, 'Content-Type': 'application/json' };
@@ -27,18 +28,30 @@ export const handler = async (event, context) => {
   if (!name) return resp(400, { error: 'Missing village name' });
 
   try {
-    const dbRes = await fetch(`https://api.notion.com/v1/databases/${DB_ID}`, { headers: nh() });
-    if (!dbRes.ok) return resp(502, { error: 'Failed to read database' });
-    const db = await dbRes.json();
-    const opts = db.properties?.['Village']?.select?.options || [];
-    if (opts.some(o => o.name.toLowerCase() === name.toLowerCase())) return resp(200, { success: true, message: 'Village already exists' });
+    // 1. VF Surveys Village select option (for tagging)
+    const dbRes = await fetch(`https://api.notion.com/v1/databases/${SURVEYS_DB_ID}`, { headers: nh() });
+    if (dbRes.ok) {
+      const db = await dbRes.json();
+      const opts = db.properties?.['Village']?.select?.options || [];
+      if (!opts.some(o => o.name.toLowerCase() === name.toLowerCase())) {
+        await fetch(`https://api.notion.com/v1/databases/${SURVEYS_DB_ID}`, {
+          method: 'PATCH', headers: nh(),
+          body: JSON.stringify({ properties: { Village: { select: { options: [...opts.map(o => ({ id: o.id, name: o.name })), { name }] } } } }),
+        });
+      }
+    }
 
-    const newOpts = [...opts.map(o => ({ id: o.id, name: o.name })), { name }];
-    const patch = await fetch(`https://api.notion.com/v1/databases/${DB_ID}`, {
-      method: 'PATCH', headers: nh(),
-      body: JSON.stringify({ properties: { Village: { select: { options: newOpts } } } }),
+    // 2. VF Villages row (metadata + status)
+    const q = await fetch(`https://api.notion.com/v1/databases/${VILLAGES_DB_ID}/query`, {
+      method: 'POST', headers: nh(), body: JSON.stringify({ filter: { property: 'Village Name', title: { equals: name } }, page_size: 1 }),
     });
-    if (!patch.ok) { const t = await patch.text(); console.error('village-add error:', t); return resp(502, { error: 'Failed to add village' }); }
+    const existing = q.ok ? ((await q.json()).results || []) : [];
+    if (!existing.length) {
+      await fetch('https://api.notion.com/v1/pages', {
+        method: 'POST', headers: nh(),
+        body: JSON.stringify({ parent: { database_id: VILLAGES_DB_ID }, properties: { 'Village Name': { title: [{ text: { content: name } }] }, 'Status': { select: { name: 'live' } } } }),
+      });
+    }
     return resp(200, { success: true });
   } catch (e) {
     console.error('village-add error:', e);
