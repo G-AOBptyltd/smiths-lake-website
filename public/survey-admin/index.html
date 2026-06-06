@@ -206,6 +206,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="s-item" onclick="showPanel('results',this);loadResults()">📈 Results</div>
       <hr class="s-divider">
       <div class="s-sec">Village</div>
+      <div class="s-item" id="nav-villages" style="display:none;" onclick="showPanel('villages',this);renderAllVillages()">🏘️ All Villages</div>
       <div class="s-item" onclick="showPanel('settings',this);loadSettings()">⚙️ Settings</div>
       <div class="s-item" onclick="showPanel('access',this);loadAccess()">👥 Access</div>
     </div>
@@ -556,6 +557,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
       </div>
 
+      <!-- ALL VILLAGES -->
+      <div class="panel" id="panel-villages">
+        <div class="ph">
+          <div><div class="ph-title">All Villages</div><div class="ph-sub">Manage every village's lifecycle from one place</div></div>
+          <div class="ph-acts"><button class="btn btn-g" onclick="addVillage()">+ Village</button></div>
+        </div>
+        <div class="pb"><div id="villages-table"><div style="padding:20px;color:#9ca3af;font-size:11px;">Loading…</div></div></div>
+      </div>
+
       <!-- SETTINGS -->
       <div class="panel" id="panel-settings">
         <div class="ph"><div><div class="ph-title">Settings</div></div></div>
@@ -689,6 +699,9 @@ async function loadVillages() {
       return `<option value="${escHtml(v.name)}" ${v.name===activeVillage?'selected':''}>📍 ${escHtml(v.name)}${escHtml(tag)}</option>`;
     }).join('');
     const ab = document.getElementById('add-village-btn'); if (ab) ab.style.display = 'inline-block';
+    const nv = document.getElementById('nav-villages');
+    const isSuper = currentUser && currentUser.app_metadata && (currentUser.app_metadata.roles||[]).includes('super-admin');
+    if (nv) nv.style.display = (isSuper || villages.length > 1) ? 'block' : 'none';
     applyVillageLabels();
     renderVillageLifecycle();
   } catch(_) {}
@@ -717,28 +730,74 @@ function renderVillageLifecycle() {
     `<button class="btn btn-r" ${status==='archived'?'':'disabled'} onclick="deleteVillage()">Delete village…</button>` +
     `<div style="font-size:12px;color:#64748b;margin-top:6px;">${status==='archived'?'Permanent. Requires double-confirmation.':'Archive the village first to enable deletion.'}</div>`;
 }
-async function setVillageStatus(status) {
+async function setVillageStatus(status, village) {
+  village = village || activeVillage;
   const labels = { live:'set Live', suspended:'Suspend', archived:'Archive' };
-  if (!confirm(`${labels[status]||status} "${activeVillage}"?` + (status==='suspended'?'\n\nAll surveys in this village will be paused.':status==='archived'?'\n\nAll surveys stop and public access is removed.':''))) return;
+  if (!confirm(`${labels[status]||status} "${village}"?` + (status==='suspended'?'\n\nAll surveys in this village will be paused.':status==='archived'?'\n\nAll surveys stop and public access is removed.':''))) return;
   try {
-    const res = await fetch('/api/village-status', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ village: activeVillage, status }) });
+    const res = await fetch('/api/village-status', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ village, status }) });
     const data = await res.json();
-    if (res.ok && data.success) { showToast('✅ Village ' + status); await loadVillages(); }
+    if (res.ok && data.success) { showToast('✅ Village ' + status); await loadVillages(); if (currentPanel==='villages') renderAllVillages(); }
     else showToast('⚠️ ' + (data.error || 'Could not update village'));
   } catch(_) { showToast('⚠️ Network error'); }
 }
-async function deleteVillage() {
-  if (villageStatusOf(activeVillage) !== 'archived') { showToast('⚠️ Archive the village first'); return; }
-  if (!confirm(`Delete "${activeVillage}"? This cannot be undone.`)) return;
-  const typed = (prompt(`Type the village name to confirm deletion:\n${activeVillage}`) || '').trim();
-  if (typed !== activeVillage) { showToast('⚠️ Name did not match — delete cancelled'); return; }
+async function deleteVillage(village) {
+  village = village || activeVillage;
+  if (villageStatusOf(village) !== 'archived') { showToast('⚠️ Archive the village first'); return; }
+  if (!confirm(`Delete "${village}"? This cannot be undone.`)) return;
+  const typed = (prompt(`Type the village name to confirm deletion:\n${village}`) || '').trim();
+  if (typed !== village) { showToast('⚠️ Name did not match — delete cancelled'); return; }
   try {
-    const res = await fetch('/api/village-remove', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ village: activeVillage }) });
+    const res = await fetch('/api/village-remove', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ village }) });
     const data = await res.json();
-    if (res.ok && data.success) { showToast('✅ Village deleted'); localStorage.removeItem('vf_active_village'); activeVillage='Smiths Lake'; await loadVillages(); setVillage(activeVillage); }
+    if (res.ok && data.success) {
+      showToast('✅ Village deleted');
+      if (activeVillage === village) { localStorage.removeItem('vf_active_village'); activeVillage='Smiths Lake'; }
+      await loadVillages();
+      if (currentPanel==='villages') renderAllVillages(); else setVillage(activeVillage);
+    }
     else showToast('⚠️ ' + (data.error || 'Could not delete village'));
   } catch(_) { showToast('⚠️ Network error'); }
 }
+// ── All Villages table ───────────────────────────────────────────────────────
+async function renderAllVillages() {
+  const box = document.getElementById('villages-table');
+  if (!box) return;
+  const isSuper = currentUser && currentUser.app_metadata && (currentUser.app_metadata.roles||[]).includes('super-admin');
+  if (!villagesData.length) await loadVillages();
+  // Fetch survey counts per village in parallel (best-effort).
+  const counts = {};
+  await Promise.all(villagesData.map(async v => {
+    try { const r = await fetch('/api/survey-list?village=' + encodeURIComponent(v.name)); counts[v.name] = r.ok ? ((await r.json()).surveys||[]).length : '—'; }
+    catch(_) { counts[v.name] = '—'; }
+  }));
+  const rows = villagesData.map(v => {
+    const st = v.status || 'live';
+    const isActive = v.name === activeVillage;
+    const act = isSuper ? (
+      `<button class="btn btn-g" style="font-size:10px;padding:3px 8px;" ${st==='live'?'disabled':''} onclick="setVillageStatus('live',${jsArg(v.name)})">Live</button> ` +
+      `<button class="btn btn-o" style="font-size:10px;padding:3px 8px;" ${st==='suspended'?'disabled':''} onclick="setVillageStatus('suspended',${jsArg(v.name)})">Suspend</button> ` +
+      `<button class="btn btn-o" style="font-size:10px;padding:3px 8px;" ${st==='archived'?'disabled':''} onclick="setVillageStatus('archived',${jsArg(v.name)})">Archive</button> ` +
+      `<button class="btn btn-r" style="font-size:10px;padding:3px 8px;" ${st==='archived'?'':'disabled'} onclick="deleteVillage(${jsArg(v.name)})">Delete</button>`
+    ) : '<span style="color:#9ca3af;font-size:11px;">View only</span>';
+    return `<tr style="border-top:1px solid #e2e8f0;">
+      <td style="padding:9px 10px;font-weight:600;">${escHtml(v.name)} ${isActive?'<span style="font-size:10px;color:#059669;">• current</span>':''}</td>
+      <td style="padding:9px 10px;">${STATUS_BADGE[st]||st}</td>
+      <td style="padding:9px 10px;text-align:center;">${counts[v.name]}</td>
+      <td style="padding:9px 10px;"><button class="btn btn-s" style="font-size:10px;padding:3px 8px;" onclick="switchToVillage(${jsArg(v.name)})">Open</button></td>
+      <td style="padding:9px 10px;text-align:right;white-space:nowrap;">${act}</td>
+    </tr>`;
+  }).join('');
+  box.innerHTML =
+    `<table style="width:100%;border-collapse:collapse;font-size:12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+       <thead><tr style="background:#f8fafc;text-align:left;color:#64748b;font-size:11px;">
+         <th style="padding:9px 10px;">Village</th><th style="padding:9px 10px;">Status</th>
+         <th style="padding:9px 10px;text-align:center;">Surveys</th><th style="padding:9px 10px;">Admin</th>
+         <th style="padding:9px 10px;text-align:right;">Lifecycle</th>
+       </tr></thead><tbody>${rows}</tbody></table>` +
+    (isSuper ? '<div style="font-size:12px;color:#64748b;margin-top:10px;">Suspend pauses every survey in a village. Archive also removes public access (still visible here). Delete needs the village archived with no surveys, plus typed confirmation.</div>' : '');
+}
+function switchToVillage(name) { setVillage(name); const nav=document.querySelector('.sidebar .s-item'); showPanel('dashboard', null); document.querySelectorAll('.sidebar .s-item').forEach(e=>e.classList.remove('on')); if(nav)nav.classList.add('on'); }
 function setVillage(v) {
   activeVillage = v;
   localStorage.setItem('vf_active_village', v);
@@ -777,7 +836,9 @@ async function authHeaders() {
 }
 
 // ── Panels ─────────────────────────────────────────────────────────────────
+let currentPanel = 'dashboard';
 function showPanel(id, el) {
+  currentPanel = id;
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.s-item').forEach(s=>s.classList.remove('on'));
   document.getElementById('panel-'+id).classList.add('on');
