@@ -242,7 +242,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
           <!-- Step 1: Template -->
           <div id="ws1">
-            <div class="f-l" style="margin-bottom:8px;">Choose a template <span class="f-req">*</span></div>
+            <div class="f-l" style="margin-bottom:8px;">Choose a template <span class="f-req">*</span> <span style="font-weight:400;font-size:10px;text-transform:none;color:#9ca3af;">— tip: select several of Quick Poll / Likert / Star / Open Feedback to build one combined multi-section survey</span></div>
             <div class="tmpl-grid">
               <div class="tmpl-opt" id="tmpl-conjoint" onclick="selTmpl('conjoint-design-options',this)">
                 <div class="tmpl-icon">⚖️</div>
@@ -281,7 +281,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </div>
             </div>
             <div style="display:flex;gap:7px;margin-top:4px;">
-              <button class="btn btn-g" onclick="if(!bd.template){showToast('Please choose a template.');return;}setWiz(2)">Next: Details →</button>
+              <button class="btn btn-g" onclick="if(!bd.selectedTemplates.length){showToast('Please choose at least one template.');return;}setWiz(2)">Next: Details →</button>
             </div>
           </div>
 
@@ -542,7 +542,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 let currentUser = null;
 let currentResultsUrl = '';
 const bd = {
-  template: '', surveyName: '', projName: '', projNotionId: '', editingId: '', openDate: '', closeDate: '',
+  template: '', selectedTemplates: [], surveyName: '', projName: '', projNotionId: '', editingId: '', openDate: '', closeDate: '',
   respondentTypes: ['Village Resident','Property Owner (non-resident)','Regular Visitor','Other'],
   visibility: 'public', snapshotLabel: '', description: '',
   // template-specific
@@ -754,6 +754,17 @@ async function loadResults(slug) {
       <div class="kpi"><div class="kpi-n" style="color:#059669;">${data.count}</div><div class="kpi-l">Total Responses</div></div>
       ${Object.entries(data.respondentBreakdown||{}).slice(0,2).map(([k,v])=>`<div class="kpi"><div class="kpi-n" style="color:#2563eb;">${v}</div><div class="kpi-l">${k}</div></div>`).join('')}
     </div>`;
+    if(data.sections){
+      data.sections.forEach(sec=>{
+        html += `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:13px;margin-bottom:10px;"><div style="font-size:11px;font-weight:700;margin-bottom:8px;">${escHtml(sec.title||sec.template)}</div>`;
+        const its=sec.serviceRatings||[];
+        if(its.length){ const fills=['#0f4c3a','#059669','#34d399','#6ee7b7','#a7f3d0']; its.forEach((item,i)=>{ const pct=item.bestPct||Math.round((item.avg/5)*100)||0; html+=`<div class="bar-r"><div class="bar-lbl">${escHtml(item.label)}</div><div class="bar-trk"><div class="bar-fill" style="width:${pct}%;background:${fills[i%5]}">${pct}%</div></div></div>`; }); }
+        if(sec.openText&&sec.openText.length){ html+='<div style="margin-top:8px;">'+sec.openText.slice(0,5).map(r=>`<div style="background:#f8fafc;border-radius:5px;padding:7px 9px;margin-bottom:5px;font-size:10px;color:#374151;">${escHtml(r.text||'')}</div>`).join('')+'</div>'; }
+        if(!its.length && !(sec.openText&&sec.openText.length)) html+='<div style="font-size:10px;color:#9ca3af;">No responses in this section yet.</div>';
+        html+='</div>';
+      });
+      el.innerHTML=html; return;
+    }
     const items = data.utilityScores||data.partA||data.serviceRatings||[];
     if(items.length) {
       html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:13px;margin-bottom:10px;"><div style="font-size:11px;font-weight:700;margin-bottom:8px;">Community Priority Score</div>';
@@ -949,7 +960,7 @@ let wizStep = 1;
 function resetBuilder() {
   const st = getSettings();
   const defaultPills = st.defaultPills || ['Village Resident','Property Owner (non-resident)','Regular Visitor','Other'];
-  bd.template=''; bd.surveyName=''; bd.projName=''; bd.projNotionId=''; bd.editingId=''; bd.openDate=''; bd.closeDate='';
+  bd.template=''; bd.selectedTemplates=[]; bd.surveyName=''; bd.projName=''; bd.projNotionId=''; bd.editingId=''; bd.openDate=''; bd.closeDate='';
   bd.respondentTypes=defaultPills.slice();
   bd.items=[]; bd.sharedFeatures=[]; bd.attributes=[]; bd.serviceRatings=[];
   bd.statements=[]; bd.starItems=[]; bd.pollOptions=[]; bd.prompts=[]; bd.pollQuestion='';
@@ -980,10 +991,24 @@ function setWiz(n) {
   if(n===4) buildSummary();
 }
 
+const SECTIONABLE = ['likert-agreement','star-rating','quick-poll','open-feedback'];
+const TMPL_CARD_ID = {'conjoint-design-options':'tmpl-conjoint','priority-ranking':'tmpl-maxdiff','annual-satisfaction':'tmpl-sat','quick-poll':'tmpl-quickpoll','likert-agreement':'tmpl-likert','star-rating':'tmpl-star','open-feedback':'tmpl-open'};
+const TMPL_LABEL = {'conjoint-design-options':'Design Option Preference','priority-ranking':'Priority Ranking','annual-satisfaction':'Annual Satisfaction','quick-poll':'Quick Poll','likert-agreement':'Likert Agreement','star-rating':'Star / Rating Review','open-feedback':'Open Feedback'};
+
 function selTmpl(t, el) {
-  bd.template=t;
+  const sel = bd.selectedTemplates;
+  const hasNonSectionable = sel.some(x => !SECTIONABLE.includes(x));
+  if (!SECTIONABLE.includes(t)) {
+    bd.selectedTemplates = [t];                 // standalone instrument → sole selection
+  } else if (hasNonSectionable) {
+    bd.selectedTemplates = [t];                 // replace a standalone with this sectionable one
+  } else {
+    const i = sel.indexOf(t);
+    if (i > -1) sel.splice(i,1); else sel.push(t);   // toggle within the combinable set
+  }
+  bd.template = bd.selectedTemplates[0] || '';
   document.querySelectorAll('.tmpl-opt').forEach(o=>o.classList.remove('sel'));
-  el.classList.add('sel');
+  bd.selectedTemplates.forEach(x=>{ const e=document.getElementById(TMPL_CARD_ID[x]); if(e) e.classList.add('sel'); });
 }
 
 function togPill(el, val) {
@@ -1037,7 +1062,7 @@ function showQuestionsForTemplate() {
     'likert-agreement':'q-likert', 'star-rating':'q-star', 'quick-poll':'q-quickpoll', 'open-feedback':'q-open',
   };
   Object.values(map).forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
-  const show=map[bd.template]; if(show){ const el=document.getElementById(show); if(el) el.style.display='block'; }
+  (bd.selectedTemplates.length?bd.selectedTemplates:[bd.template]).forEach(t=>{ const id=map[t]; if(id){ const el=document.getElementById(id); if(el) el.style.display='block'; } });
   renderItemList();
   renderSharedList();
   renderAttrList();
@@ -1101,29 +1126,31 @@ function renderServiceList() {
 function addService() { const i=document.getElementById('new-service'); if(!i.value.trim()) return; bd.serviceRatings.push(i.value.trim()); i.value=''; renderServiceList(); }
 
 function saveQuestions() {
-  if(bd.template==='priority-ranking') {
-    if(bd.items.length<2){showToast('Add at least 2 items.');return;}
-    bd.rounds=parseInt(document.getElementById('b-rounds').value)||4;
-    bd.setSize=parseInt(document.getElementById('b-setsize').value)||5;
-    bd.openQuestion=document.getElementById('b-openq').value.trim();
-  } else if(bd.template==='conjoint-design-options') {
-    bd.opt1Name=document.getElementById('c-opt1').value.trim()||'Option 1';
-    bd.opt2Name=document.getElementById('c-opt2').value.trim()||'Option 2';
-    if(bd.sharedFeatures.length<1){showToast('Add at least 1 shared feature.');return;}
-  } else if(bd.template==='annual-satisfaction') {
-    if(bd.serviceRatings.length<1){showToast('Add at least 1 service rating.');return;}
-    bd.npsQ=document.getElementById('b-nps').value.trim();
-    bd.priorityQ=document.getElementById('b-priQ').value.trim();
-  } else if(bd.template==='likert-agreement') {
-    if(bd.statements.length<1){showToast('Add at least 1 statement.');return;}
-  } else if(bd.template==='star-rating') {
-    if(bd.starItems.length<1){showToast('Add at least 1 item to rate.');return;}
-  } else if(bd.template==='quick-poll') {
-    bd.pollQuestion=document.getElementById('b-pollq').value.trim();
-    if(!bd.pollQuestion){showToast('Enter a poll question.');return;}
-    if(bd.pollOptions.length<2){showToast('Add at least 2 options.');return;}
-  } else if(bd.template==='open-feedback') {
-    if(bd.prompts.length<1){showToast('Add at least 1 question.');return;}
+  for (const t of (bd.selectedTemplates.length?bd.selectedTemplates:[bd.template])) {
+    if(t==='priority-ranking') {
+      if(bd.items.length<2){showToast('Add at least 2 items.');return;}
+      bd.rounds=parseInt(document.getElementById('b-rounds').value)||4;
+      bd.setSize=parseInt(document.getElementById('b-setsize').value)||5;
+      bd.openQuestion=document.getElementById('b-openq').value.trim();
+    } else if(t==='conjoint-design-options') {
+      bd.opt1Name=document.getElementById('c-opt1').value.trim()||'Option 1';
+      bd.opt2Name=document.getElementById('c-opt2').value.trim()||'Option 2';
+      if(bd.sharedFeatures.length<1){showToast('Add at least 1 shared feature.');return;}
+    } else if(t==='annual-satisfaction') {
+      if(bd.serviceRatings.length<1){showToast('Add at least 1 service rating.');return;}
+      bd.npsQ=document.getElementById('b-nps').value.trim();
+      bd.priorityQ=document.getElementById('b-priQ').value.trim();
+    } else if(t==='likert-agreement') {
+      if(bd.statements.length<1){showToast('Add at least 1 statement.');return;}
+    } else if(t==='star-rating') {
+      if(bd.starItems.length<1){showToast('Add at least 1 item to rate.');return;}
+    } else if(t==='quick-poll') {
+      bd.pollQuestion=document.getElementById('b-pollq').value.trim();
+      if(!bd.pollQuestion){showToast('Enter a poll question.');return;}
+      if(bd.pollOptions.length<2){showToast('Add at least 2 options.');return;}
+    } else if(t==='open-feedback') {
+      if(bd.prompts.length<1){showToast('Add at least 1 question.');return;}
+    }
   }
   setWiz(4);
 }
@@ -1132,7 +1159,7 @@ function buildSummary() {
   const slug=slugify(bd.surveyName);
   const chips=document.getElementById('summary-chips');
   chips.innerHTML=[
-    bd.template, 'Smiths Lake',
+    (bd.selectedTemplates.length>1 ? 'multi-section: '+bd.selectedTemplates.join(' + ') : bd.template), 'Smiths Lake',
     bd.openDate||'No open date',
     bd.closeDate||'No close date',
     bd.template==='priority-ranking'?`${bd.items.length} items · ${bd.rounds} rounds`:'',
@@ -1141,43 +1168,61 @@ function buildSummary() {
   document.getElementById('sum-results-url').textContent=`villagefirst.org.au/results/?slug=${slug}`;
 }
 
-function buildConfig() {
+function sectionTitleFor(t){ return {'likert-agreement':'Your views','star-rating':'Your ratings','quick-poll':'Quick question','open-feedback':'Your feedback'}[t] || (TMPL_LABEL[t]||'Section'); }
+
+function buildConfigFor(t) {
   const base = { description:bd.description, purposeStatement:bd.description };
-  if(bd.template==='priority-ranking') {
+  if(t==='priority-ranking') {
     return { ...base, items:bd.items.map(l=>({label:l})), rounds:bd.rounds, setSize:bd.setSize,
       openQuestion:bd.openQuestion||"Is there anything else you'd like the committee to consider?" };
-  } else if(bd.template==='conjoint-design-options') {
+  } else if(t==='conjoint-design-options') {
     return { ...base, option1Name:bd.opt1Name, option2Name:bd.opt2Name,
       sharedFeatures:bd.sharedFeatures, attributes:bd.attributes };
-  } else if(bd.template==='annual-satisfaction') {
+  } else if(t==='annual-satisfaction') {
     return { ...base, serviceRatings:bd.serviceRatings,
       npsQuestion:bd.npsQ, priorityQuestion:bd.priorityQ||"What one thing should the PPCA focus on in the year ahead?" };
-  } else if(bd.template==='likert-agreement') {
+  } else if(t==='likert-agreement') {
     return { ...base, statements:bd.statements };
-  } else if(bd.template==='star-rating') {
+  } else if(t==='star-rating') {
     return { ...base, items:bd.starItems };
-  } else if(bd.template==='quick-poll') {
+  } else if(t==='quick-poll') {
     return { ...base, question:bd.pollQuestion, options:bd.pollOptions };
-  } else if(bd.template==='open-feedback') {
+  } else if(t==='open-feedback') {
     return { ...base, prompts:bd.prompts };
   }
   return base;
+}
+
+// Resolve the final {template, config} for activation — single or multi-section.
+function resolveTemplateAndConfig() {
+  if (bd.selectedTemplates.length > 1) {
+    return {
+      template: 'multi-section',
+      config: {
+        description: bd.description, purposeStatement: bd.description,
+        sections: bd.selectedTemplates.map(t => ({ template: t, title: sectionTitleFor(t), config: buildConfigFor(t) })),
+      },
+    };
+  }
+  const t = bd.selectedTemplates[0] || bd.template;
+  return { template: t, config: buildConfigFor(t) };
 }
 
 async function activateSurvey() {
   const btn=document.getElementById('act-btn');
   btn.disabled=true; btn.textContent='Activating…';
   const slug=slugify(bd.surveyName);
+  const { template, config } = resolveTemplateAndConfig();
   try {
     const res=await fetch('/api/survey-provision',{
       method:'POST',
       headers:await authHeaders(),
       body:JSON.stringify({
-        slug, template:bd.template, surveyName:bd.surveyName,
+        slug, template, surveyName:bd.surveyName,
         village:'Smiths Lake', openDate:bd.openDate, closeDate:bd.closeDate,
         respondentTypes:bd.respondentTypes, resultsVisibility:bd.visibility,
         snapshotLabel:bd.snapshotLabel, projectName:bd.projName, projectNotionId:bd.projNotionId||'',
-        config:buildConfig(),
+        config,
       }),
     });
     const data=await res.json();

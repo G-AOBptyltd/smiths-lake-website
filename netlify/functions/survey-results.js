@@ -132,9 +132,49 @@ function aggregate(rows, header, template, config) {
     return aggregateQuickPoll(rows, header, count, respondentBreakdown);
   } else if (template === 'open-feedback') {
     return aggregateOpenFeedback(rows, header, count, respondentBreakdown, config);
+  } else if (template === 'multi-section') {
+    return aggregateMultiSection(rows, header, count, respondentBreakdown, config);
   }
 
   return { count, respondentBreakdown, raw: rows.slice(0, 5) };
+}
+
+// Aggregate each section independently → { sections: [{title, template, serviceRatings?, openText?}] }
+function aggregateMultiSection(rows, header, count, respondentBreakdown, config) {
+  const sections = (config.sections || []).map((sec, si) => {
+    const idx = si + 1;
+    const c = sec.config || {};
+    const t = sec.template;
+    const title = sec.title || t;
+    if (t === 'likert-agreement' || t === 'star-rating') {
+      const items = (t === 'likert-agreement' ? (c.statements || c.items) : (c.items || c.serviceRatings)) || [];
+      const pfx = t === 'likert-agreement' ? 'l' : 'r';
+      const serviceRatings = items.map((item, i) => {
+        const label = (item && item.label) ? item.label : item;
+        const col = header.indexOf(`s${idx}_${pfx}${i + 1}`);
+        const vals = rows.map(r => Number(r[col])).filter(v => !isNaN(v) && v > 0);
+        const avg = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+        return { label, avg: Math.round(avg * 100) / 100, n: vals.length };
+      });
+      const cCol = header.indexOf(`s${idx}_comment`);
+      const openText = rows.map((r, i) => ({ person: `Person ${i + 1}`, text: cCol > -1 ? (r[cCol] || '') : '' })).filter(r => r.text);
+      return { title, template: t, serviceRatings, openText };
+    } else if (t === 'quick-poll') {
+      const col = header.indexOf(`s${idx}_choice`);
+      const counts = {};
+      rows.forEach(r => { const v = r[col]; if (v) counts[v] = (counts[v] || 0) + 1; });
+      const serviceRatings = Object.entries(counts).map(([label, n]) => ({ label, bestPct: count ? Math.round((n / count) * 100) : 0, n })).sort((a, b) => b.n - a.n);
+      return { title, template: t, serviceRatings };
+    } else if (t === 'open-feedback') {
+      const pr = c.prompts || c.items || [];
+      const cols = (pr.length ? pr.map((_, i) => `s${idx}_q${i + 1}`) : [`s${idx}_q1`]).map(k => header.indexOf(k)).filter(i => i > -1);
+      const openText = [];
+      rows.forEach((r, i) => { const parts = cols.map(cc => r[cc]).filter(Boolean); if (parts.length) openText.push({ person: `Person ${i + 1}`, text: parts.join(' — ') }); });
+      return { title, template: t, openText };
+    }
+    return { title, template: t };
+  });
+  return { count, respondentBreakdown, sections };
 }
 
 // Average 1–5 ratings per item → serviceRatings shape (reuses existing bar rendering).

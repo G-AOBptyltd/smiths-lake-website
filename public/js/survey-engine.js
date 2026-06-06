@@ -148,6 +148,7 @@
     else if (t === 'star-rating') renderRatingTemplate({ prefix: 'r', items: surveyConfig.config.items || surveyConfig.config.serviceRatings || [], scaleNote: '1 = Poor, 5 = Excellent', heading: 'Your ratings', introDefault: 'Please rate each of the following.' });
     else if (t === 'quick-poll') renderQuickPoll();
     else if (t === 'open-feedback') renderOpenFeedback();
+    else if (t === 'multi-section') renderMultiSection();
     else renderError(`Unknown template: ${t}`);
   }
 
@@ -757,6 +758,123 @@
       prompts.forEach((_, i) => { responses[`q${i + 1}`] = document.getElementById(`q${i + 1}`)?.value || ''; });
       await submitSurvey();
     };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TEMPLATE: MULTI-SECTION (combine simple templates into one survey)
+  // Supported section types: likert-agreement, star-rating, quick-poll, open-feedback
+  // Fields are namespaced per section: s1_l1, s1_comment, s2_choice, s3_q1 …
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function sectionTitle(t) {
+    return ({ 'likert-agreement': 'Your views', 'star-rating': 'Your ratings', 'quick-poll': 'Quick question', 'open-feedback': 'Your feedback' })[t] || 'Section';
+  }
+
+  function renderSectionBlock(el, idx, section) {
+    const c = section.config || {};
+    const t = section.template;
+    if (t === 'likert-agreement' || t === 'star-rating') {
+      const items = (t === 'likert-agreement' ? (c.statements || c.items) : (c.items || c.serviceRatings)) || [];
+      const labels = items.map(x => (x && x.label) ? x.label : x);
+      const pfx = t === 'likert-agreement' ? 'l' : 'r';
+      const note = t === 'likert-agreement' ? '1 = Strongly disagree, 5 = Strongly agree' : '1 = Poor, 5 = Excellent';
+      el.innerHTML = `
+        <p class="vf-part-desc">${note}.</p>
+        <div class="vf-rating-list">
+          ${labels.map((s, i) => renderRatingRow(`s${idx}_${pfx}${i + 1}`, s, responses[`s${idx}_${pfx}${i + 1}`])).join('')}
+        </div>
+        <div class="vf-field" style="margin-top:16px;"><label class="vf-field-label">Any comments?</label>
+          <textarea class="vf-textarea" id="sec${idx}-comment" rows="2" placeholder="Optional…">${responses[`s${idx}_comment`] || ''}</textarea></div>`;
+      attachRatingHandlers(responses);
+    } else if (t === 'quick-poll') {
+      const q = c.question || 'Your view';
+      const options = (c.options || []).map(o => (o && o.label) ? o.label : o);
+      el.innerHTML = `<div class="vf-field"><div class="vf-field-label">${q}</div>
+        <div class="vf-pills" id="sec${idx}-poll">${options.map(o => `<button class="vf-pill" data-value="${o}">${o}</button>`).join('')}</div></div>`;
+      attachPillHandlers(`sec${idx}-poll`, `s${idx}_choice`, responses);
+    } else if (t === 'open-feedback') {
+      const prompts = (c.prompts || c.items || [c.question || 'Share your feedback']).map(p => (p && p.label) ? p.label : p);
+      el.innerHTML = prompts.map((p, i) => `
+        <div class="vf-field" style="margin-top:14px;"><label class="vf-field-label">${p}</label>
+          <textarea class="vf-textarea" id="sec${idx}-q${i + 1}" rows="3" placeholder="Your response…">${responses[`s${idx}_q${i + 1}`] || ''}</textarea></div>`).join('');
+    } else {
+      el.innerHTML = `<p class="vf-part-desc">This section type isn't supported in combined surveys.</p>`;
+    }
+  }
+
+  function collectSectionBlock(idx, section) {
+    const c = section.config || {};
+    const t = section.template;
+    if (t === 'likert-agreement' || t === 'star-rating') {
+      const items = (t === 'likert-agreement' ? (c.statements || c.items) : (c.items || c.serviceRatings)) || [];
+      const pfx = t === 'likert-agreement' ? 'l' : 'r';
+      if (items.some((_, i) => !responses[`s${idx}_${pfx}${i + 1}`])) { alert('Please rate every item in this section.'); return false; }
+      responses[`s${idx}_comment`] = document.getElementById(`sec${idx}-comment`)?.value || '';
+    } else if (t === 'quick-poll') {
+      if (!responses[`s${idx}_choice`]) { alert('Please choose an option.'); return false; }
+    } else if (t === 'open-feedback') {
+      const prompts = c.prompts || c.items || [c.question || 'x'];
+      prompts.forEach((_, i) => { responses[`s${idx}_q${i + 1}`] = document.getElementById(`sec${idx}-q${i + 1}`)?.value || ''; });
+    }
+    return true;
+  }
+
+  function renderMultiSection() {
+    const cfg = surveyConfig.config;
+    const sections = cfg.sections || [];
+    const parts = [];
+
+    parts.push({
+      label: 'About this survey',
+      render: (el) => {
+        el.innerHTML = `
+          <div class="vf-intro-card">
+            <p>${cfg.description || 'Your feedback will inform the committee.'}</p>
+            <div class="vf-field" style="margin-top:12px;">
+              <div class="vf-field-label">I am a:</div>
+              <div class="vf-pills" id="respondent-pills">
+                ${surveyConfig.respondentTypes.map(t => `<button class="vf-pill" data-value="${t}">${t}</button>`).join('')}
+              </div>
+            </div>
+          </div>`;
+        attachPillHandlers('respondent-pills', 'respondentType', responses);
+      },
+      collect: () => { if (!responses.respondentType) { alert('Please select who you are.'); return false; } return true; },
+    });
+
+    sections.forEach((section, si) => {
+      const idx = si + 1;
+      parts.push({
+        label: section.title || sectionTitle(section.template),
+        render: (el) => renderSectionBlock(el, idx, section),
+        collect: () => collectSectionBlock(idx, section),
+      });
+    });
+
+    function showPart(i) {
+      const part = parts[i];
+      const isLast = i === parts.length - 1;
+      const progress = Math.round((i / parts.length) * 100);
+      root().innerHTML = `
+        <div class="vf-survey">
+          ${renderSurveyHeader()}
+          <div class="vf-progress-bar"><div class="vf-progress-fill" style="width:${progress}%"></div></div>
+          <div class="vf-part-label">${part.label}</div>
+          <div class="vf-part-content" id="part-content"></div>
+          <div class="vf-nav">
+            ${i > 0 ? `<button class="vf-btn vf-btn-secondary" id="prev-btn">← Back</button>` : '<span></span>'}
+            <button class="vf-btn" id="next-btn">${isLast ? 'Submit →' : 'Next →'}</button>
+          </div>
+        </div>`;
+      part.render(document.getElementById('part-content'));
+      if (i > 0) document.getElementById('prev-btn').onclick = () => showPart(i - 1);
+      document.getElementById('next-btn').onclick = async () => {
+        if (!part.collect()) return;
+        if (isLast) await submitSurvey();
+        else showPart(i + 1);
+      };
+    }
+    showPart(0);
   }
 
   // ─── Shared render helpers ─────────────────────────────────────────────────
