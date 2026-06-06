@@ -203,8 +203,49 @@ function buildHeader(template, config) {
     return [...base, ...cols];
   }
 
+  if (template === 'ranked-choice') {
+    const items = config?.items || [];
+    return [...base, ...items.map((_, i) => `rk${i + 1}`)];
+  }
+
+  if (template === 'budget-allocation') {
+    const items = config?.items || [];
+    return [...base, ...items.map((_, i) => `al${i + 1}`)];
+  }
+
+  if (template === 'importance-performance') {
+    const items = config?.items || [];
+    return [...base, ...items.map((_, i) => `imp${i + 1}`), ...items.map((_, i) => `perf${i + 1}`)];
+  }
+
+  if (template === 'demographic') {
+    const fields = config?.fields || [];
+    return [...base, ...fields.map((_, i) => `d${i + 1}`)];
+  }
+
+  if (template === 'multi-section') {
+    return [...base, ...multiSectionColumns(config)];
+  }
+
   // Generic fallback
   return [...base, 'data'];
+}
+
+// Deterministic per-section column order for multi-section surveys.
+// Shared shape used by both survey-provision (header) and survey-submit (row order).
+function multiSectionColumns(config) {
+  const sections = config?.sections || [];
+  const cols = [];
+  sections.forEach((sec, si) => {
+    const idx = si + 1;
+    const c = sec.config || {};
+    const t = sec.template;
+    if (t === 'likert-agreement') { (c.statements || c.items || []).forEach((_, i) => cols.push(`s${idx}_l${i + 1}`)); cols.push(`s${idx}_comment`); }
+    else if (t === 'star-rating') { (c.items || c.serviceRatings || []).forEach((_, i) => cols.push(`s${idx}_r${i + 1}`)); cols.push(`s${idx}_comment`); }
+    else if (t === 'quick-poll') { cols.push(`s${idx}_choice`); }
+    else if (t === 'open-feedback') { const pr = c.prompts || c.items || []; (pr.length ? pr : ['x']).forEach((_, i) => cols.push(`s${idx}_q${i + 1}`)); }
+  });
+  return cols;
 }
 
 // ─── Notion ───────────────────────────────────────────────────────────────────

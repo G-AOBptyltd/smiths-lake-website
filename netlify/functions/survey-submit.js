@@ -83,7 +83,7 @@ export const handler = async (event) => {
   // Build the row — id, submittedAt, [template-ordered fields], then slug (isolation/audit key, trailing so it never shifts existing columns)
   const id = Date.now().toString();
   const submittedAt = new Date().toISOString();
-  const row = [id, submittedAt, ...buildRowValues(responseData), slug];
+  const row = [id, submittedAt, ...buildRowValues(responseData, survey), slug];
 
   try {
     const sheets = await getSheets();
@@ -163,13 +163,33 @@ async function resolveSurvey(slug) {
   }
   if (!page) return null;
   const p = page.properties;
+  let config = {};
+  try { config = JSON.parse(p['Config']?.rich_text?.[0]?.plain_text || '{}'); } catch (_) {}
   return {
     sheetId: p['Sheet ID']?.rich_text?.[0]?.plain_text || '',
     active: p['Active']?.checkbox || false,
     status: p['Status']?.select?.name || '',
+    template: p['Template']?.select?.name || '',
+    config,
     openDate: p['Open Date']?.date?.start || null,
     closeDate: p['Close Date']?.date?.start || null,
   };
+}
+
+// Deterministic per-section column order (mirrors survey-provision.multiSectionColumns).
+function multiSectionColumns(config) {
+  const sections = config?.sections || [];
+  const cols = [];
+  sections.forEach((sec, si) => {
+    const idx = si + 1;
+    const c = sec.config || {};
+    const t = sec.template;
+    if (t === 'likert-agreement') { (c.statements || c.items || []).forEach((_, i) => cols.push(`s${idx}_l${i + 1}`)); cols.push(`s${idx}_comment`); }
+    else if (t === 'star-rating') { (c.items || c.serviceRatings || []).forEach((_, i) => cols.push(`s${idx}_r${i + 1}`)); cols.push(`s${idx}_comment`); }
+    else if (t === 'quick-poll') { cols.push(`s${idx}_choice`); }
+    else if (t === 'open-feedback') { const pr = c.prompts || c.items || []; (pr.length ? pr : ['x']).forEach((_, i) => cols.push(`s${idx}_q${i + 1}`)); }
+  });
+  return cols;
 }
 
 // 'active' means open for responses. Explicit Status wins; else derive from Active + dates.
@@ -189,14 +209,23 @@ function effectiveStatus(s) {
  * Convert the response data object into an ordered array of values.
  * Uses template-specific column order to match the sheet header exactly.
  */
-function buildRowValues(data) {
+function buildRowValues(data, survey) {
   // Auto-detect template from field names if not explicitly provided
   // This handles browser-cached versions of survey-engine.js
-  let template = data.template || '';
+  let template = data.template || (survey && survey.template) || '';
   if (!template) {
     if (data.item1 !== undefined || data.item2 !== undefined) template = 'priority-ranking';
     else if (data.s1 !== undefined) template = 'annual-satisfaction';
     else template = 'conjoint-design-options';
+  }
+
+  // Multi-section: order columns exactly as the sheet header was built from config.
+  if (template === 'multi-section') {
+    const fieldOrder = ['respondentType', ...multiSectionColumns(survey && survey.config)];
+    const used = new Set(['sheetId', 'slug', 'template']);
+    const ordered = fieldOrder.map(k => { used.add(k); return data[k] !== undefined ? String(data[k]) : ''; });
+    Object.entries(data).forEach(([k, v]) => { if (!used.has(k)) ordered.push(String(v)); });
+    return ordered;
   }
 
   // Ordered numeric keys present in the data for a given prefix (e.g. l1,l2,…)
@@ -213,6 +242,14 @@ function buildRowValues(data) {
     fieldOrder = ['respondentType', 'choice'];
   } else if (template === 'open-feedback') {
     fieldOrder = ['respondentType', ...numKeys('q')];
+  } else if (template === 'ranked-choice') {
+    fieldOrder = ['respondentType', ...numKeys('rk')];
+  } else if (template === 'budget-allocation') {
+    fieldOrder = ['respondentType', ...numKeys('al')];
+  } else if (template === 'importance-performance') {
+    fieldOrder = ['respondentType', ...numKeys('imp'), ...numKeys('perf')];
+  } else if (template === 'demographic') {
+    fieldOrder = ['respondentType', ...numKeys('d')];
   } else if (template === 'priority-ranking') {
     fieldOrder = [
       'respondentType',
