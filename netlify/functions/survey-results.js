@@ -250,6 +250,51 @@ function aggregateMultiSection(rows, header, count, respondentBreakdown, config)
       const openText = [];
       rows.forEach((r, i) => { const parts = cols.map(cc => r[cc]).filter(Boolean); if (parts.length) openText.push({ person: `Person ${i + 1}`, text: parts.join(' — ') }); });
       return { title, template: t, openText };
+    } else if (t === 'ranked-choice') {
+      const items = c.items || []; const N = items.length;
+      const serviceRatings = items.map((item, i) => {
+        const label = (item && item.label) ? item.label : item;
+        const col = header.indexOf(`s${idx}_rk${i + 1}`);
+        const vals = rows.map(r => Number(r[col])).filter(v => !isNaN(v) && v > 0);
+        const avg = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+        return { label: `${label} (avg rank ${avg ? avg.toFixed(1) : '–'})`, bestPct: avg ? Math.round(((N - avg + 1) / N) * 100) : 0, n: vals.length };
+      }).sort((a, b) => b.bestPct - a.bestPct);
+      return { title, template: t, serviceRatings };
+    } else if (t === 'budget-allocation') {
+      const items = c.items || []; const total = c.total || 100;
+      const serviceRatings = items.map((item, i) => {
+        const label = (item && item.label) ? item.label : item;
+        const col = header.indexOf(`s${idx}_al${i + 1}`);
+        const vals = rows.map(r => Number(r[col])).filter(v => !isNaN(v));
+        const avg = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+        return { label: `${label} (avg ${avg.toFixed(0)} pts)`, bestPct: Math.round((avg / total) * 100), n: vals.length };
+      }).sort((a, b) => b.bestPct - a.bestPct);
+      return { title, template: t, serviceRatings };
+    } else if (t === 'importance-performance') {
+      const items = c.items || [];
+      const serviceRatings = items.map((item, i) => {
+        const label = (item && item.label) ? item.label : item;
+        const ic = header.indexOf(`s${idx}_imp${i + 1}`), pc = header.indexOf(`s${idx}_perf${i + 1}`);
+        const iv = rows.map(r => Number(r[ic])).filter(v => !isNaN(v) && v > 0);
+        const pv = rows.map(r => Number(r[pc])).filter(v => !isNaN(v) && v > 0);
+        const ia = iv.length ? iv.reduce((s, v) => s + v, 0) / iv.length : 0;
+        const pa = pv.length ? pv.reduce((s, v) => s + v, 0) / pv.length : 0;
+        return { label: `${label} (imp ${ia.toFixed(1)} / perf ${pa.toFixed(1)})`, bestPct: Math.round((Math.max(0, ia - pa) / 4) * 100), n: iv.length };
+      }).sort((a, b) => b.bestPct - a.bestPct);
+      return { title, template: t, serviceRatings };
+    } else if (t === 'demographic') {
+      const fields = (c.fields || []).map(f => (typeof f === 'string') ? { label: f, options: [] } : f);
+      const serviceRatings = []; const openText = [];
+      fields.forEach((f, i) => {
+        const col = header.indexOf(`s${idx}_d${i + 1}`);
+        if ((f.options || []).length) {
+          const counts = {}; rows.forEach(r => { const v = r[col]; if (v) counts[v] = (counts[v] || 0) + 1; });
+          Object.entries(counts).forEach(([opt, n]) => serviceRatings.push({ label: `${f.label}: ${opt}`, bestPct: count ? Math.round((n / count) * 100) : 0, n }));
+        } else {
+          rows.forEach((r, ri) => { const v = r[col]; if (v) openText.push({ person: `Person ${ri + 1}`, text: `${f.label}: ${v}` }); });
+        }
+      });
+      return { title, template: t, serviceRatings, openText };
     }
     return { title, template: t };
   });

@@ -242,23 +242,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
           <!-- Step 1: Template -->
           <div id="ws1">
-            <div class="f-l" style="margin-bottom:8px;">Choose a template <span class="f-req">*</span> <span style="font-weight:400;font-size:10px;text-transform:none;color:#9ca3af;">— tip: select several of Quick Poll / Likert / Star / Open Feedback to build one combined multi-section survey</span></div>
+            <div class="f-l" style="margin-bottom:4px;">Choose a template <span class="f-req">*</span></div>
+
+            <div style="margin:10px 0 4px;font-size:12px;font-weight:700;color:#0f766e;">🧩 Combinable question types <span style="font-weight:400;font-size:10px;color:#9ca3af;">— pick one, or select several to build a single multi-section survey</span></div>
             <div class="tmpl-grid">
-              <div class="tmpl-opt" id="tmpl-conjoint" onclick="selTmpl('conjoint-design-options',this)">
-                <div class="tmpl-icon">⚖️</div>
-                <div class="tmpl-name">Design Option Preference</div>
-                <div class="tmpl-desc">Two competing designs. Community rates features and picks preference.</div>
-              </div>
-              <div class="tmpl-opt" id="tmpl-maxdiff" onclick="selTmpl('priority-ranking',this)">
-                <div class="tmpl-icon">🎯</div>
-                <div class="tmpl-name">Priority Ranking</div>
-                <div class="tmpl-desc">MaxDiff best/worst. Ranks features or projects under resource constraints.</div>
-              </div>
-              <div class="tmpl-opt" id="tmpl-sat" onclick="selTmpl('annual-satisfaction',this)">
-                <div class="tmpl-icon">📋</div>
-                <div class="tmpl-name">Annual Satisfaction</div>
-                <div class="tmpl-desc">Recurring pulse check. Service ratings + NPS + open text.</div>
-              </div>
               <div class="tmpl-opt" id="tmpl-quickpoll" onclick="selTmpl('quick-poll',this)">
                 <div class="tmpl-icon">🗳️</div>
                 <div class="tmpl-name">Quick Poll</div>
@@ -298,6 +285,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <div class="tmpl-icon">👤</div>
                 <div class="tmpl-name">Demographic / Registration</div>
                 <div class="tmpl-desc">Profile questions (choice or short text).</div>
+              </div>
+            </div>
+
+            <div style="margin:16px 0 4px;font-size:12px;font-weight:700;color:#7c3aed;">📐 Standalone instruments <span style="font-weight:400;font-size:10px;color:#9ca3af;">— complete methodologies, used on their own (not combinable)</span></div>
+            <div class="tmpl-grid">
+              <div class="tmpl-opt" id="tmpl-conjoint" onclick="selTmpl('conjoint-design-options',this)">
+                <div class="tmpl-icon">⚖️</div>
+                <div class="tmpl-name">Design Option Preference</div>
+                <div class="tmpl-desc">Two competing designs. Community rates features and picks preference.</div>
+              </div>
+              <div class="tmpl-opt" id="tmpl-maxdiff" onclick="selTmpl('priority-ranking',this)">
+                <div class="tmpl-icon">🎯</div>
+                <div class="tmpl-name">Priority Ranking</div>
+                <div class="tmpl-desc">MaxDiff best/worst. Ranks features or projects under resource constraints.</div>
+              </div>
+              <div class="tmpl-opt" id="tmpl-sat" onclick="selTmpl('annual-satisfaction',this)">
+                <div class="tmpl-icon">📋</div>
+                <div class="tmpl-name">Annual Satisfaction</div>
+                <div class="tmpl-desc">Recurring pulse check. Service ratings + NPS + open text.</div>
               </div>
             </div>
             <div style="display:flex;gap:7px;margin-top:4px;">
@@ -1113,9 +1119,10 @@ async function setUserRole(userId, role) {
 }
 async function inviteUser() {
   const email = document.getElementById('invite-email').value.trim();
+  const role = document.getElementById('invite-role')?.value || '';
   if (!email) { showToast('Enter an email to invite.'); return; }
   try {
-    const res = await fetch('/api/identity-admin', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ action:'invite', email }) });
+    const res = await fetch('/api/identity-admin', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ action:'invite', email, role }) });
     const data = await res.json();
     if (res.ok && data.success) { showToast('✅ '+(data.message||'Invitation sent')); document.getElementById('invite-email').value=''; loadAccess(); }
     else showToast('⚠️ '+(data.error||'Invite failed'));
@@ -1176,7 +1183,7 @@ function setWiz(n) {
   if(n===4) buildSummary();
 }
 
-const SECTIONABLE = ['likert-agreement','star-rating','quick-poll','open-feedback'];
+const SECTIONABLE = ['likert-agreement','star-rating','quick-poll','open-feedback','ranked-choice','budget-allocation','importance-performance','demographic'];
 const TMPL_CARD_ID = {'conjoint-design-options':'tmpl-conjoint','priority-ranking':'tmpl-maxdiff','annual-satisfaction':'tmpl-sat','quick-poll':'tmpl-quickpoll','likert-agreement':'tmpl-likert','star-rating':'tmpl-star','open-feedback':'tmpl-open','ranked-choice':'tmpl-ranked','budget-allocation':'tmpl-budget','importance-performance':'tmpl-ipa','demographic':'tmpl-demo'};
 const TMPL_LABEL = {'conjoint-design-options':'Design Option Preference','priority-ranking':'Priority Ranking','annual-satisfaction':'Annual Satisfaction','quick-poll':'Quick Poll','likert-agreement':'Likert Agreement','star-rating':'Star / Rating Review','open-feedback':'Open Feedback','ranked-choice':'Ranked Choice','budget-allocation':'Budget Allocation','importance-performance':'Importance vs Performance','demographic':'Demographic'};
 

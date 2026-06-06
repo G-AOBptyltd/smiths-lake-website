@@ -245,6 +245,10 @@ function multiSectionColumns(config) {
     else if (t === 'star-rating') { (c.items || c.serviceRatings || []).forEach((_, i) => cols.push(`s${idx}_r${i + 1}`)); cols.push(`s${idx}_comment`); }
     else if (t === 'quick-poll') { cols.push(`s${idx}_choice`); }
     else if (t === 'open-feedback') { const pr = c.prompts || c.items || []; (pr.length ? pr : ['x']).forEach((_, i) => cols.push(`s${idx}_q${i + 1}`)); }
+    else if (t === 'ranked-choice') { (c.items || []).forEach((_, i) => cols.push(`s${idx}_rk${i + 1}`)); }
+    else if (t === 'budget-allocation') { (c.items || []).forEach((_, i) => cols.push(`s${idx}_al${i + 1}`)); }
+    else if (t === 'importance-performance') { (c.items || []).forEach((_, i) => cols.push(`s${idx}_imp${i + 1}`)); (c.items || []).forEach((_, i) => cols.push(`s${idx}_perf${i + 1}`)); }
+    else if (t === 'demographic') { (c.fields || []).forEach((_, i) => cols.push(`s${idx}_d${i + 1}`)); }
   });
   return cols;
 }

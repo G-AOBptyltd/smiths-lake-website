@@ -53,6 +53,7 @@ export const handler = async (event, context) => {
   try {
     if (action === 'invite') {
       const email = (body.email || '').trim();
+      const role = (body.role || '').trim();
       if (!email) return resp(400, { error: 'Missing email' });
       const res = await fetch(`${identity.url}/invite`, {
         method: 'POST', headers: adminHeaders, body: JSON.stringify({ email }),
@@ -62,7 +63,17 @@ export const handler = async (event, context) => {
         console.error('invite error:', t);
         return resp(502, { error: 'Invite failed. The user may already exist, or invites must be enabled in Netlify Identity.' });
       }
-      return resp(200, { success: true, message: `Invitation sent to ${email}` });
+      // Pre-assign the chosen role so the user has access as soon as they accept.
+      if (role) {
+        try {
+          const lr = await fetch(`${identity.url}/admin/users`, { headers: adminHeaders });
+          if (lr.ok) {
+            const u = ((await lr.json()).users || []).find(x => (x.email || '').toLowerCase() === email.toLowerCase());
+            if (u) await fetch(`${identity.url}/admin/users/${u.id}`, { method: 'PUT', headers: adminHeaders, body: JSON.stringify({ app_metadata: { roles: [role] } }) });
+          }
+        } catch (e) { console.error('invite role assign failed (non-fatal):', e); }
+      }
+      return resp(200, { success: true, message: `Invitation sent to ${email}${role ? ' (' + role + ')' : ''}` });
     }
 
     if (action === 'setrole') {

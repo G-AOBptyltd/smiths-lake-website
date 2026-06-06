@@ -110,6 +110,18 @@ try {
   </script>
 </head>
 <body>
+  <!-- Survey admin invite/recovery handler: Netlify Identity links land on the site root with
+       a #invite_token / #recovery_token hash. Bounce those to /survey-admin/ where the Identity
+       widget completes set-password and signs the admin in. -->
+  <script>
+    (function () {
+      var h = window.location.hash || '';
+      if ((h.indexOf('invite_token=') > -1 || h.indexOf('recovery_token=') > -1)
+          && window.location.pathname.indexOf('/survey-admin') !== 0) {
+        window.location.replace('/survey-admin/' + h);
+      }
+    })();
+  </script>
   <a href="#main-content" class="skip-link">Skip to main content</a>
   
   <Header />
