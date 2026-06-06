@@ -183,7 +183,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div id="app">
   <div class="topbar">
     <div class="topbar-brand">🏘️ VillageFirst · Surveys</div>
-    <div class="village-chip">📍 Smiths Lake</div>
+    <select class="village-chip" id="village-switch" style="cursor:pointer;" onchange="setVillage(this.value)"><option>📍 Smiths Lake</option></select>
+    <button class="village-chip" id="add-village-btn" style="cursor:pointer;display:none;margin-left:6px;" title="Add a village" onclick="addVillage()">＋ Village</button>
     <div class="topbar-sp"></div>
     <span class="topbar-user" id="user-email"></span>
     <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
@@ -556,7 +557,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="pb">
           <div class="set-grid">
             <div class="set-card"><div class="set-title">🏘️ Village Profile</div>
-              <div class="f-f"><div class="f-l">Village name</div><input class="f-i" value="Smiths Lake" readonly style="background:#f9fafb;"></div>
+              <div class="f-f"><div class="f-l">Village name</div><input class="f-i" id="set-village-name" value="Smiths Lake" readonly style="background:#f9fafb;"></div>
               <div class="f-f"><div class="f-l">Site URL</div><input class="f-i" value="villagefirst.org.au" readonly style="background:#f9fafb;"></div>
             </div>
             <div class="set-card"><div class="set-title">⚙️ New-survey defaults <span style="font-weight:400;color:#9ca3af;font-size:10px;">(applied when you create a survey)</span></div>
@@ -659,10 +660,48 @@ netlifyIdentity.on('init', u => { if(u){currentUser=u;showApp();} });
 netlifyIdentity.on('login', u => { currentUser=u; netlifyIdentity.close(); showApp(); });
 netlifyIdentity.on('logout', () => { currentUser=null; document.getElementById('auth-screen').style.display='flex'; document.getElementById('app').style.display='none'; });
 
+// ── Active village (multi-village) ───────────────────────────────────────────
+let activeVillage = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+function monthYear(){ return new Date().toLocaleDateString('en-AU',{month:'long',year:'numeric'}); }
+async function loadVillages() {
+  try {
+    const r = await fetch('/api/village-list', { headers: await authHeaders() });
+    const data = await r.json();
+    const villages = (data.villages && data.villages.length) ? data.villages : ['Smiths Lake'];
+    if (!villages.includes(activeVillage)) activeVillage = villages[0];
+    const sel = document.getElementById('village-switch');
+    if (sel) sel.innerHTML = villages.map(v => `<option value="${escHtml(v)}" ${v===activeVillage?'selected':''}>📍 ${escHtml(v)}</option>`).join('');
+    const ab = document.getElementById('add-village-btn'); if (ab) ab.style.display = 'inline-block';
+    applyVillageLabels();
+  } catch(_) {}
+}
+function applyVillageLabels() {
+  const sub = document.getElementById('dash-sub'); if (sub) sub.textContent = activeVillage + ' · ' + monthYear();
+  const sv = document.getElementById('set-village-name'); if (sv) sv.value = activeVillage;
+}
+function setVillage(v) {
+  activeVillage = v;
+  localStorage.setItem('vf_active_village', v);
+  projectsCache = null; resultsSurveys = null;   // re-scope cached lists
+  applyVillageLabels();
+  loadDashboard();
+}
+async function addVillage() {
+  const name = (prompt('New village name:') || '').trim();
+  if (!name) return;
+  try {
+    const res = await fetch('/api/village-add', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ village: name }) });
+    const data = await res.json();
+    if (res.ok && data.success) { showToast('✅ Village added'); await loadVillages(); setVillage(name); }
+    else showToast('⚠️ ' + (data.error || 'Could not add village'));
+  } catch(_) { showToast('⚠️ Network error'); }
+}
+
 function showApp() {
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   document.getElementById('user-email').textContent = currentUser?.email || '';
+  loadVillages();
   loadDashboard();
 }
 
@@ -692,7 +731,7 @@ async function loadDashboard() {
   surveysEl.innerHTML = '<div style="padding:20px;color:#9ca3af;font-size:11px;">Loading surveys…</div>';
 
   try {
-    const res = await fetch('/api/survey-list?village=Smiths%20Lake');
+    const res = await fetch('/api/survey-list?village=' + encodeURIComponent(activeVillage));
     if (!res.ok) throw new Error('Failed to load');
     const { surveys } = await res.json();
 
@@ -799,7 +838,7 @@ async function ensureResultsSelector() {
   const sel = document.getElementById('results-survey-select');
   if (!sel) return;
   if (!resultsSurveys) {
-    try { const r = await fetch('/api/survey-list?village=' + encodeURIComponent('Smiths Lake')); resultsSurveys = (await r.json()).surveys || []; }
+    try { const r = await fetch('/api/survey-list?village=' + encodeURIComponent(activeVillage)); resultsSurveys = (await r.json()).surveys || []; }
     catch(_) { resultsSurveys = []; }
   }
   sel.innerHTML = '<option value="">All surveys (overview)</option>' + resultsSurveys.map(s =>
@@ -1054,7 +1093,7 @@ async function loadProjectsDropdown(selectName) {
   if (!sel) return;
   try {
     if (!projectsCache) {
-      const res = await fetch('/api/project-list?village=' + encodeURIComponent('Smiths Lake'));
+      const res = await fetch('/api/project-list?village=' + encodeURIComponent(activeVillage));
       const data = await res.json();
       projectsCache = data.projects || [];
     }
@@ -1380,7 +1419,7 @@ function buildSummary() {
   const slug=slugify(bd.surveyName);
   const chips=document.getElementById('summary-chips');
   chips.innerHTML=[
-    (bd.selectedTemplates.length>1 ? 'multi-section: '+bd.selectedTemplates.join(' + ') : bd.template), 'Smiths Lake',
+    (bd.selectedTemplates.length>1 ? 'multi-section: '+bd.selectedTemplates.join(' + ') : bd.template), activeVillage,
     bd.openDate||'No open date',
     bd.closeDate||'No close date',
     bd.template==='priority-ranking'?`${bd.items.length} items · ${bd.rounds} rounds`:'',
@@ -1458,7 +1497,7 @@ async function activateSurvey() {
       headers:await authHeaders(),
       body:JSON.stringify({
         slug, template, surveyName:bd.surveyName,
-        village:'Smiths Lake', openDate:bd.openDate, closeDate:bd.closeDate,
+        village:activeVillage, openDate:bd.openDate, closeDate:bd.closeDate,
         respondentTypes:bd.respondentTypes, resultsVisibility:bd.visibility,
         snapshotLabel:bd.snapshotLabel, projectName:bd.projName, projectNotionId:bd.projNotionId||'',
         commentsModerated:bd.commentsModerated,
