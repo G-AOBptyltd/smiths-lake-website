@@ -137,6 +137,9 @@
 
       if (configData.status === 'not-found') { renderError('Survey not found.'); return; }
 
+      // Server-side visibility enforcement is authoritative.
+      if (resultsData.restricted) { renderInfo(resultsData.message || 'Results for this survey are not publicly available.'); return; }
+
       // Check results visibility
       const visibility = configData.survey?.resultsVisibility || 'public';
       if (visibility === 'committee-only') {
