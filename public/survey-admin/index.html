@@ -200,8 +200,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="s-item" onclick="showPanel('results',this);loadResults()">📈 Results</div>
       <hr class="s-divider">
       <div class="s-sec">Village</div>
-      <div class="s-item" onclick="showPanel('settings',this)">⚙️ Settings</div>
-      <div class="s-item" onclick="showPanel('access',this)">👥 Access</div>
+      <div class="s-item" onclick="showPanel('settings',this);loadSettings()">⚙️ Settings</div>
+      <div class="s-item" onclick="showPanel('access',this);loadAccess()">👥 Access</div>
     </div>
 
     <!-- Main -->
@@ -423,6 +423,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <div class="f-f"><div class="f-l">Village name</div><input class="f-i" value="Smiths Lake" readonly style="background:#f9fafb;"></div>
               <div class="f-f"><div class="f-l">Site URL</div><input class="f-i" value="villagefirst.org.au" readonly style="background:#f9fafb;"></div>
             </div>
+            <div class="set-card"><div class="set-title">⚙️ New-survey defaults <span style="font-weight:400;color:#9ca3af;font-size:10px;">(applied when you create a survey)</span></div>
+              <div class="f-f"><div class="f-l">Default results visibility</div>
+                <select class="f-i" id="set-default-vis">
+                  <option value="public">Public — live as responses come in</option>
+                  <option value="committee-only">Committee only</option>
+                  <option value="after-close">Public after close</option>
+                </select>
+              </div>
+              <div class="f-f"><div class="f-l">Default eligible respondents</div>
+                <div class="pill-row" id="set-default-pills">
+                  <div class="p-pill on" onclick="this.classList.toggle('on')" data-v="Village Resident">Village Resident</div>
+                  <div class="p-pill on" onclick="this.classList.toggle('on')" data-v="Property Owner (non-resident)">Property Owner</div>
+                  <div class="p-pill on" onclick="this.classList.toggle('on')" data-v="Regular Visitor">Regular Visitor</div>
+                  <div class="p-pill" onclick="this.classList.toggle('on')" data-v="Business Owner">Business Owner</div>
+                  <div class="p-pill on" onclick="this.classList.toggle('on')" data-v="Other">Other</div>
+                </div>
+              </div>
+              <button class="btn btn-g" onclick="saveSettings()">Save defaults</button>
+            </div>
             <div class="set-card"><div class="set-title">ℹ️ Admin Info</div>
               <div class="info-box">Survey credentials and API keys are managed in Netlify environment variables. Contact AOB (greg@villagefirst.org.au) to change them.</div>
             </div>
@@ -432,11 +451,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
       <!-- ACCESS -->
       <div class="panel" id="panel-access">
-        <div class="ph"><div><div class="ph-title">Access & Permissions</div></div></div>
+        <div class="ph"><div><div class="ph-title">Access &amp; Permissions</div><div class="ph-sub">Manage who can administer surveys</div></div></div>
         <div class="pb">
-          <div class="acc-row"><div style="font-size:16px;">👤</div><div class="acc-info"><div class="acc-name">greg@agilityops.com.au</div><div class="acc-scope">AOB · All villages</div></div><span class="acc-badge ab-super">Super Admin</span></div>
-          <div class="acc-row"><div style="font-size:16px;">👤</div><div class="acc-info"><div class="acc-name">admin@villagefirst.org.au</div><div class="acc-scope">Smiths Lake · Village Admin</div></div><span class="acc-badge ab-admin">Village Admin</span></div>
-          <div class="info-box">To add or remove admin access, go to Netlify Identity → Users → Invite users, and update <code style="font-size:10px;">SURVEY_ADMIN_EMAILS</code> in Environment variables.</div>
+          <div id="invite-row" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:14px;">
+            <div style="flex:2;min-width:200px;"><div class="f-l">Invite by email</div><input class="f-i" id="invite-email" placeholder="name@example.com"></div>
+            <div style="flex:1;min-width:150px;"><div class="f-l">Role</div>
+              <select class="f-i" id="invite-role">
+                <option value="smithslake:steward">Survey Steward</option>
+                <option value="smithslake:admin">Village Admin</option>
+                <option value="smithslake:viewer">Committee Viewer</option>
+                <option value="super-admin">Super Admin</option>
+              </select>
+            </div>
+            <button class="btn btn-g" onclick="inviteUser()">Send invite</button>
+          </div>
+          <div id="access-content"><div style="padding:16px;color:#9ca3af;font-size:12px;">Loading users…</div></div>
+          <div class="info-box" style="margin-top:12px;">Invites are emailed via Netlify Identity. New users appear here once they accept. Roles take effect on their next sign-in.</div>
         </div>
       </div>
 
@@ -514,8 +544,10 @@ async function loadDashboard() {
     const cardList = surveys.map(s => {
       const slug = (s.surveyUrl || '').split('slug=')[1] || slugify(s.surveyName);
       const isActive = s.active;
+      const st = (s.status||'').toLowerCase() || (isActive ? 'live' : 'paused');
       const tmplIcon = s.template === 'priority-ranking' ? '🎯' : s.template === 'conjoint-design-options' ? '⚖️' : '📋';
       const closeLbl = s.closeDate ? ' · Closes ' + new Date(s.closeDate).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}) : '';
+      const statusOpts = ['draft','scheduled','live','paused','closed'].map(o=>`<option value="${o}" ${o===st?'selected':''}>${o.charAt(0).toUpperCase()+o.slice(1)}</option>`).join('');
       return `
         <div class="s-card">
           <div class="sc-icon" onclick="loadAndShowResults('${slug}')" style="cursor:pointer;">${tmplIcon}</div>
@@ -523,14 +555,12 @@ async function loadDashboard() {
             <div class="sc-title">${escHtml(s.surveyName)}</div>
             <div class="sc-meta">${isActive?'<span class="ldot"></span>':''} ${s.template}${closeLbl} · <span id="count-${s.id}" style="color:#64748b;">… responses</span> <span id="sync-${s.id}"></span></div>
           </div>
-          <span class="tag ${isActive ? 't-live' : 't-draft'}">${isActive ? 'Live' : 'Paused'}</span>
+          <span class="tag ${st==='live' ? 't-live' : 't-draft'}">${st.charAt(0).toUpperCase()+st.slice(1)}</span>
           <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" title="Edit survey" onclick="event.stopPropagation();editSurvey('${s.id}','${slug}')">Edit</button>
           <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" title="Copy survey link" onclick="event.stopPropagation();copyLink('survey','${slug}')">🔗 Survey</button>
           <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" title="Open survey" onclick="event.stopPropagation();openSurvey('${slug}')">↗ Open</button>
           <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" onclick="event.stopPropagation();loadAndShowResults('${slug}')">Results →</button>
-          <div class="tog ${isActive ? 'on' : 'off'}" id="tog-${s.id}" onclick="event.stopPropagation();toggleSurvey('${s.id}',${!isActive})">
-            <div class="tog-k"></div>
-          </div>
+          <select class="f-i" style="max-width:118px;font-size:11px;padding:3px 6px;" title="Lifecycle status" onclick="event.stopPropagation()" onchange="setStatus('${s.id}',this.value)">${statusOpts}</select>
         </div>`;
     }).join('');
     surveysEl.innerHTML = '<div class="s-cards">' + cardList + '</div>';
@@ -563,6 +593,16 @@ async function toggleSurvey(notionId, newActive) {
     showToast('⚠️ Network error');
     if (togEl) { togEl.style.opacity = '1'; togEl.style.pointerEvents = ''; }
   }
+}
+
+// Lifecycle status control (draft/scheduled/live/paused/closed) via survey-update
+async function setStatus(notionId, status) {
+  try {
+    const res = await fetch('/api/survey-update', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ surveyNotionId: notionId, status }) });
+    const data = await res.json();
+    if (res.ok && data.success) { showToast('✅ Status: ' + status); loadDashboard(); }
+    else showToast('⚠️ ' + (data.error || 'Could not update status'));
+  } catch(_) { showToast('⚠️ Network error'); }
 }
 
 // ── Results ─────────────────────────────────────────────────────────────────
@@ -758,20 +798,93 @@ function onProjectPick() {
   bd.projName = opt ? (opt.dataset.name || '') : '';
 }
 
+// ── Access management (in-app, super-admin) ──────────────────────────────────
+const ROLE_OPTS = [
+  { v:'', l:'No role' },
+  { v:'smithslake:steward', l:'Survey Steward' },
+  { v:'smithslake:admin', l:'Village Admin' },
+  { v:'smithslake:viewer', l:'Committee Viewer' },
+  { v:'super-admin', l:'Super Admin' },
+];
+function roleLabel(roles){
+  const r=(roles||[])[0]||'';
+  if(r==='super-admin') return 'Super Admin';
+  if(r.endsWith(':admin')) return 'Village Admin';
+  if(r.endsWith(':steward')) return 'Survey Steward';
+  if(r.endsWith(':viewer')) return 'Committee Viewer';
+  return 'No role';
+}
+async function loadAccess() {
+  const el = document.getElementById('access-content');
+  el.innerHTML = '<div style="padding:16px;color:#9ca3af;font-size:12px;">Loading users…</div>';
+  try {
+    const res = await fetch('/api/identity-admin', { headers: await authHeaders() });
+    if (res.status === 503) { el.innerHTML = '<div class="info-box">In-app user management needs Netlify Identity\'s admin context. If this persists, manage users in Netlify → Identity.</div>'; return; }
+    if (!res.ok) { el.innerHTML = '<div class="info-box">Could not load users ('+res.status+').</div>'; return; }
+    const { users } = await res.json();
+    if (!users || !users.length) { el.innerHTML = '<div style="padding:16px;color:#9ca3af;font-size:12px;">No users yet. Invite someone above.</div>'; return; }
+    el.innerHTML = users.map(u => {
+      const cur = (u.roles||[])[0] || '';
+      const opts = ROLE_OPTS.map(o => `<option value="${o.v}" ${o.v===cur?'selected':''}>${o.l}</option>`).join('');
+      return `<div class="acc-row" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+        <div style="font-size:16px;">👤</div>
+        <div class="acc-info" style="flex:1;"><div class="acc-name">${escHtml(u.email)}</div><div class="acc-scope" style="font-size:11px;color:#9ca3af;">${roleLabel(u.roles)}${u.confirmed?'':' · invited (pending)'}</div></div>
+        <select class="f-i" style="max-width:170px;font-size:12px;" onchange="setUserRole('${u.id}',this.value)">${opts}</select>
+      </div>`;
+    }).join('');
+  } catch (e) { el.innerHTML = '<div class="info-box">Could not load users.</div>'; }
+}
+async function setUserRole(userId, role) {
+  try {
+    const res = await fetch('/api/identity-admin', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ action:'setrole', userId, role }) });
+    const data = await res.json();
+    if (res.ok && data.success) showToast('✅ Role updated (applies on their next sign-in)');
+    else showToast('⚠️ '+(data.error||'Could not update role'));
+  } catch(_) { showToast('⚠️ Network error'); }
+}
+async function inviteUser() {
+  const email = document.getElementById('invite-email').value.trim();
+  if (!email) { showToast('Enter an email to invite.'); return; }
+  try {
+    const res = await fetch('/api/identity-admin', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ action:'invite', email }) });
+    const data = await res.json();
+    if (res.ok && data.success) { showToast('✅ '+(data.message||'Invitation sent')); document.getElementById('invite-email').value=''; loadAccess(); }
+    else showToast('⚠️ '+(data.error||'Invite failed'));
+  } catch(_) { showToast('⚠️ Network error'); }
+}
+
+// ── Settings: new-survey defaults (stored locally) ───────────────────────────
+function getSettings(){ try{ return JSON.parse(localStorage.getItem('vf_admin_settings')||'{}'); }catch(_){ return {}; } }
+function loadSettings(){
+  const s=getSettings();
+  const vis=document.getElementById('set-default-vis'); if(vis) vis.value=s.defaultVis||'public';
+  const pills=s.defaultPills||['Village Resident','Property Owner (non-resident)','Regular Visitor','Other'];
+  document.querySelectorAll('#set-default-pills .p-pill').forEach(p=>p.classList.toggle('on', pills.includes(p.dataset.v)));
+}
+function saveSettings(){
+  const vis=document.getElementById('set-default-vis').value;
+  const pills=[...document.querySelectorAll('#set-default-pills .p-pill.on')].map(p=>p.dataset.v);
+  localStorage.setItem('vf_admin_settings', JSON.stringify({defaultVis:vis, defaultPills:pills}));
+  showToast('✅ Defaults saved');
+}
+
 // ── Builder ─────────────────────────────────────────────────────────────────
 let wizStep = 1;
 
 function resetBuilder() {
+  const st = getSettings();
+  const defaultPills = st.defaultPills || ['Village Resident','Property Owner (non-resident)','Regular Visitor','Other'];
   bd.template=''; bd.surveyName=''; bd.projName=''; bd.projNotionId=''; bd.editingId=''; bd.openDate=''; bd.closeDate='';
-  bd.respondentTypes=['Village Resident','Property Owner (non-resident)','Regular Visitor','Other'];
+  bd.respondentTypes=defaultPills.slice();
   bd.items=[]; bd.sharedFeatures=[]; bd.attributes=[]; bd.serviceRatings=[];
   bd.rounds=4; bd.setSize=5; bd.openQuestion=''; bd.opt1Name=''; bd.opt2Name='';
-  bd.description=''; bd.snapshotLabel=''; bd.npsQ=''; bd.priorityQ='';
+  bd.description=''; bd.snapshotLabel=''; bd.npsQ=''; bd.priorityQ=''; bd.visibility=st.defaultVis||'public';
   document.querySelectorAll('.tmpl-opt').forEach(t=>t.classList.remove('sel'));
   const phT=document.querySelector('#panel-builder .ph-title'); if(phT) phT.textContent='New Survey';
   const nb=document.getElementById('details-next-btn'); if(nb) nb.textContent='Next: Questions →';
   ['b-name','b-snap','b-desc'].forEach(id=>{const e=document.getElementById(id); if(e) e.value='';});
-  setRespPills(['Village Resident','Property Owner (non-resident)','Regular Visitor','Other']);
+  const visEl=document.getElementById('b-vis'); if(visEl) visEl.value=st.defaultVis||'public';
+  setRespPills(defaultPills);
   loadProjectsDropdown('');
   setWiz(1);
 }
