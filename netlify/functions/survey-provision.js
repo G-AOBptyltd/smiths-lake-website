@@ -41,7 +41,7 @@ export const handler = async (event, context) => {
     surveyNotionId: existingNotionId,
     slug, template, surveyName, projectNotionId, config,
     // Fields for creating a new Notion record (when no surveyNotionId provided)
-    village, openDate, closeDate, respondentTypes, resultsVisibility, snapshotLabel,
+    village, openDate, closeDate, respondentTypes, resultsVisibility, snapshotLabel, commentsModerated,
   } = body;
 
   if (!slug || !template) {
@@ -79,6 +79,7 @@ export const handler = async (event, context) => {
         config: config || {},
         visibility: resultsVisibility || 'public',
         snapshotLabel: snapshotLabel || '',
+        commentsModerated: !!commentsModerated,
         projectNotionId: projectNotionId || '',
         sheetId,
         surveyUrl,
@@ -244,13 +245,17 @@ function multiSectionColumns(config) {
     else if (t === 'star-rating') { (c.items || c.serviceRatings || []).forEach((_, i) => cols.push(`s${idx}_r${i + 1}`)); cols.push(`s${idx}_comment`); }
     else if (t === 'quick-poll') { cols.push(`s${idx}_choice`); }
     else if (t === 'open-feedback') { const pr = c.prompts || c.items || []; (pr.length ? pr : ['x']).forEach((_, i) => cols.push(`s${idx}_q${i + 1}`)); }
+    else if (t === 'ranked-choice') { (c.items || []).forEach((_, i) => cols.push(`s${idx}_rk${i + 1}`)); }
+    else if (t === 'budget-allocation') { (c.items || []).forEach((_, i) => cols.push(`s${idx}_al${i + 1}`)); }
+    else if (t === 'importance-performance') { (c.items || []).forEach((_, i) => cols.push(`s${idx}_imp${i + 1}`)); (c.items || []).forEach((_, i) => cols.push(`s${idx}_perf${i + 1}`)); }
+    else if (t === 'demographic') { (c.fields || []).forEach((_, i) => cols.push(`s${idx}_d${i + 1}`)); }
   });
   return cols;
 }
 
 // ─── Notion ───────────────────────────────────────────────────────────────────
 
-async function createNotionSurveyRecord({ surveyName, slug, purpose, village, template, openDate, closeDate, respondentTypes, config, visibility, snapshotLabel, projectNotionId, sheetId, surveyUrl, resultsUrl }) {
+async function createNotionSurveyRecord({ surveyName, slug, purpose, village, template, openDate, closeDate, respondentTypes, config, visibility, snapshotLabel, commentsModerated, projectNotionId, sheetId, surveyUrl, resultsUrl }) {
   const DB_ID = process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596';
   // NOTE: Slug, Status and Purpose require the Phase 0 schema migration to exist
   // on the VF Surveys DB before this runs in production.
@@ -263,6 +268,7 @@ async function createNotionSurveyRecord({ surveyName, slug, purpose, village, te
     'Template': { select: { name: template } },
     'Active': { checkbox: true },
     'Results Visibility': { select: { name: visibility || 'public' } },
+    'Comments Moderated': { checkbox: !!commentsModerated },
     'Respondent Types': { rich_text: [{ text: { content: JSON.stringify(respondentTypes) } }] },
     'Config': { rich_text: [{ text: { content: JSON.stringify(config) } }] },
     'Snapshot Label': { rich_text: [{ text: { content: snapshotLabel || '' } }] },

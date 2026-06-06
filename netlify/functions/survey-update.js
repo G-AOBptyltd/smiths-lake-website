@@ -39,7 +39,7 @@ export const handler = async (event, context) => {
   const {
     surveyNotionId, surveyName, purpose, openDate, closeDate,
     resultsVisibility, respondentTypes, snapshotLabel,
-    projectName, projectNotionId, status,
+    projectName, projectNotionId, status, commentsModerated,
   } = body;
 
   if (!surveyNotionId) {
@@ -55,6 +55,7 @@ export const handler = async (event, context) => {
   if (projectNotionId !== undefined) properties['Project Notion ID'] = { rich_text: [{ text: { content: String(projectNotionId) } }] };
   if (resultsVisibility !== undefined) properties['Results Visibility'] = { select: { name: String(resultsVisibility) } };
   if (Array.isArray(respondentTypes)) properties['Respondent Types'] = { rich_text: [{ text: { content: JSON.stringify(respondentTypes) } }] };
+  if (commentsModerated !== undefined) properties['Comments Moderated'] = { checkbox: !!commentsModerated };
   if (openDate !== undefined) properties['Open Date'] = openDate ? { date: { start: openDate } } : { date: null };
   if (closeDate !== undefined) properties['Close Date'] = closeDate ? { date: { start: closeDate } } : { date: null };
   if (status !== undefined) {

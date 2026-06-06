@@ -96,12 +96,21 @@
 </head>
 <body>
 
+<style>
+  @media print {
+    .vf-topnav, .no-print { display: none !important; }
+    body { background: #fff !important; }
+    .vf-container { max-width: 100% !important; }
+  }
+</style>
 <nav class="vf-topnav">
   <a href="/projects/">← Back to Project Hub</a>
   <span class="vf-topnav-sep">·</span>
   <a id="survey-link" href="/survey/">Complete Survey</a>
   <span class="vf-topnav-sep">·</span>
   <a href="/">VillageFirst Website</a>
+  <span class="vf-topnav-sep">·</span>
+  <a href="#" onclick="window.print();return false;">🖨 Print / Save PDF</a>
 </nav>
 
 <div class="vf-container">
@@ -127,9 +136,10 @@
     renderLoading();
 
     try {
+      const completed = new URLSearchParams(window.location.search).get('completed') === '1' ? '&completed=1' : '';
       const [configRes, resultsRes] = await Promise.all([
         fetch(`${API_BASE}/survey-config?slug=${encodeURIComponent(slug)}`),
-        fetch(`${API_BASE}/survey-results?slug=${encodeURIComponent(slug)}`),
+        fetch(`${API_BASE}/survey-results?slug=${encodeURIComponent(slug)}${completed}`),
       ]);
 
       const configData = await configRes.json();
@@ -206,8 +216,9 @@
       if (template === 'conjoint-design-options') html += renderConjointResults(data);
       else if (template === 'priority-ranking') html += renderMaxDiffResults(data);
       else if (template === 'annual-satisfaction') html += renderSatisfactionResults(data);
+      else if (template === 'importance-performance') html += renderIPAResults(data);
       else if (template === 'likert-agreement' || template === 'star-rating' || template === 'quick-poll'
-            || template === 'ranked-choice' || template === 'budget-allocation' || template === 'importance-performance' || template === 'demographic') html += renderRatingResults(data);
+            || template === 'ranked-choice' || template === 'budget-allocation' || template === 'demographic') html += renderRatingResults(data);
       else if (template === 'multi-section') html += renderMultiSectionResults(data);
 
       // Open text
@@ -245,6 +256,35 @@
   }
   function renderRatingResults(data) {
     return whoResponded(data.respondentBreakdown) + renderBars(data.serviceRatings || []);
+  }
+  function renderIPAResults(data) {
+    let html = whoResponded(data.respondentBreakdown);
+    const pts = data.ipa || [];
+    if (pts.length) {
+      const W = 360, H = 360, pad = 40, plotW = W - pad * 2, plotH = H - pad * 2;
+      const x = v => pad + ((v - 1) / 4) * plotW;          // performance →
+      const y = v => pad + ((5 - v) / 4) * plotH;          // importance ↑ (top = high)
+      const mx = x(3), my = y(3);
+      let svg = `<div class="vf-section-title" style="margin-top:18px;">Importance vs Performance</div>
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:420px;height:auto;font-family:inherit;">
+          <rect x="${pad}" y="${pad}" width="${plotW}" height="${plotH}" fill="#f8fafc" stroke="#e2e8f0"/>
+          <line x1="${mx}" y1="${pad}" x2="${mx}" y2="${pad+plotH}" stroke="#cbd5e1" stroke-dasharray="4"/>
+          <line x1="${pad}" y1="${my}" x2="${pad+plotW}" y2="${my}" stroke="#cbd5e1" stroke-dasharray="4"/>
+          <text x="${pad+6}" y="${pad+14}" font-size="9" fill="#dc2626">Focus here (high importance, low performance)</text>
+          <text x="${mx+6}" y="${pad+14}" font-size="9" fill="#059669">Keep up</text>
+          <text x="${pad+6}" y="${pad+plotH-6}" font-size="9" fill="#9ca3af">Lower priority</text>
+          <text x="${mx+6}" y="${pad+plotH-6}" font-size="9" fill="#9ca3af">Possible overkill</text>
+          <text x="${pad+plotW/2}" y="${H-8}" font-size="10" fill="#475569" text-anchor="middle">Performance →</text>
+          <text x="12" y="${pad+plotH/2}" font-size="10" fill="#475569" text-anchor="middle" transform="rotate(-90 12 ${pad+plotH/2})">Importance →</text>`;
+      pts.forEach(p => {
+        const cx = x(p.performance || 1), cy = y(p.importance || 1);
+        svg += `<circle cx="${cx}" cy="${cy}" r="5" fill="#1A7A6E" opacity="0.85"/><text x="${cx+8}" y="${cy+3}" font-size="9" fill="#2c2c2a">${escHtml(p.label)}</text>`;
+      });
+      svg += `</svg>`;
+      html += svg;
+    }
+    html += renderBars(data.serviceRatings || []);   // gap bars below the quadrant
+    return html;
   }
   function renderMultiSectionResults(data) {
     let html = whoResponded(data.respondentBreakdown);

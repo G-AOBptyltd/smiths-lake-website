@@ -70,6 +70,16 @@
   to = "/.netlify/functions/survey-delete"
   status = 200
 
+[[redirects]]
+  from = "/api/survey-export"
+  to = "/.netlify/functions/survey-export"
+  status = 200
+
+[[redirects]]
+  from = "/api/survey-moderate"
+  to = "/.netlify/functions/survey-moderate"
+  status = 200
+
 # Redirect old Blueys Beach project slug to current slug
 [[redirects]]
   from = "/projects/bluey-s-beach-village-centre/"

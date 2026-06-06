@@ -127,12 +127,19 @@
   }
 
   function renderThankYou() {
+    // For 'respondent-after-completion' visibility, link results with a completion flag
+    // so the person who just submitted can see them even though they're not public.
+    let resultsHref = surveyConfig.resultsUrl || '';
+    if (resultsHref && surveyConfig.resultsVisibility === 'respondent-after-completion') {
+      resultsHref += (resultsHref.includes('?') ? '&' : '?') + 'completed=1';
+    }
+    const showResults = resultsHref && (surveyConfig.resultsVisibility === 'public' || surveyConfig.resultsVisibility === 'respondent-after-completion');
     root().innerHTML = `
       <div class="vf-state vf-thankyou">
         <div class="vf-state-icon">🙏</div>
         <h2>Thank you for your response!</h2>
         <p>Your submission has been recorded. The ${surveyConfig.village} PPCA committee will review all responses.</p>
-        ${surveyConfig.resultsUrl ? `<a href="${surveyConfig.resultsUrl}" class="vf-btn">View live results</a>` : ''}
+        ${showResults ? `<a href="${resultsHref}" class="vf-btn">View results</a>` : ''}
         <a href="/" class="vf-btn vf-btn-secondary">Return to website</a>
       </div>`;
   }
@@ -932,6 +939,28 @@
       el.innerHTML = prompts.map((p, i) => `
         <div class="vf-field" style="margin-top:14px;"><label class="vf-field-label">${p}</label>
           <textarea class="vf-textarea" id="sec${idx}-q${i + 1}" rows="3" placeholder="Your response…">${responses[`s${idx}_q${i + 1}`] || ''}</textarea></div>`).join('');
+    } else if (t === 'ranked-choice') {
+      const items = (c.items || []).map(x => (x && x.label) ? x.label : x);
+      const N = items.length;
+      el.innerHTML = `<p class="vf-part-desc">Rank these — 1 = highest priority.</p><div class="vf-rating-list">${items.map((s, i) => `<div class="vf-rating-row"><span class="vf-rating-label">${s}</span><select class="vf-textarea" style="max-width:90px;padding:6px;" id="sec${idx}-rk${i + 1}">${['', ...Array.from({ length: N }, (_, k) => k + 1)].map(v => `<option value="${v}" ${responses[`s${idx}_rk${i + 1}`] == v ? 'selected' : ''}>${v || '—'}</option>`).join('')}</select></div>`).join('')}</div>`;
+    } else if (t === 'budget-allocation') {
+      const items = (c.items || []).map(x => (x && x.label) ? x.label : x);
+      const total = c.total || 100;
+      el.innerHTML = `<p class="vf-part-desc">Distribute exactly ${total} points.</p><div class="vf-rating-list">${items.map((s, i) => `<div class="vf-rating-row"><span class="vf-rating-label">${s}</span><input type="number" min="0" max="${total}" class="vf-textarea sec${idx}-alloc" style="max-width:90px;padding:6px;" id="sec${idx}-al${i + 1}" value="${responses[`s${idx}_al${i + 1}`] || 0}"></div>`).join('')}</div><div id="sec${idx}-total" style="font-weight:700;margin-top:8px;">Total: 0 / ${total}</div>`;
+      const recalc = () => { let sum = 0; items.forEach((_, i) => sum += Number(document.getElementById(`sec${idx}-al${i + 1}`).value) || 0); const e = document.getElementById(`sec${idx}-total`); e.textContent = `Total: ${sum} / ${total}`; e.style.color = sum === total ? '#059669' : '#dc2626'; };
+      document.querySelectorAll(`.sec${idx}-alloc`).forEach(inp => inp.addEventListener('input', recalc)); recalc();
+    } else if (t === 'importance-performance') {
+      const items = (c.items || []).map(x => (x && x.label) ? x.label : x);
+      el.innerHTML = items.map((s, i) => `<div style="margin-bottom:14px;"><div style="font-size:13px;font-weight:600;margin-bottom:4px;">${s}</div><div class="vf-rating-list">${renderRatingRow(`s${idx}_imp${i + 1}`, 'Importance', responses[`s${idx}_imp${i + 1}`])}${renderRatingRow(`s${idx}_perf${i + 1}`, 'Performance now', responses[`s${idx}_perf${i + 1}`])}</div></div>`).join('');
+      attachRatingHandlers(responses);
+    } else if (t === 'demographic') {
+      const fields = (c.fields || []).map(f => (typeof f === 'string') ? { label: f, options: [] } : f);
+      el.innerHTML = fields.map((f, i) => {
+        const opts = f.options || [];
+        if (opts.length) return `<div class="vf-field" style="margin-top:14px;"><div class="vf-field-label">${f.label}</div><div class="vf-pills" id="sec${idx}-demo${i + 1}">${opts.map(o => `<button class="vf-pill" data-value="${(o && o.label) ? o.label : o}">${(o && o.label) ? o.label : o}</button>`).join('')}</div></div>`;
+        return `<div class="vf-field" style="margin-top:14px;"><label class="vf-field-label">${f.label}</label><input class="vf-textarea" id="sec${idx}-demo${i + 1}-text" value="${responses[`s${idx}_d${i + 1}`] || ''}" placeholder="Your answer…"></div>`;
+      }).join('');
+      fields.forEach((f, i) => { if ((f.options || []).length) attachPillHandlers(`sec${idx}-demo${i + 1}`, `s${idx}_d${i + 1}`, responses); });
     } else {
       el.innerHTML = `<p class="vf-part-desc">This section type isn't supported in combined surveys.</p>`;
     }
@@ -950,6 +979,22 @@
     } else if (t === 'open-feedback') {
       const prompts = c.prompts || c.items || [c.question || 'x'];
       prompts.forEach((_, i) => { responses[`s${idx}_q${i + 1}`] = document.getElementById(`sec${idx}-q${i + 1}`)?.value || ''; });
+    } else if (t === 'ranked-choice') {
+      const items = c.items || [];
+      for (let i = 0; i < items.length; i++) { const v = document.getElementById(`sec${idx}-rk${i + 1}`)?.value; if (!v) { alert('Please rank every item in this section.'); return false; } responses[`s${idx}_rk${i + 1}`] = v; }
+    } else if (t === 'budget-allocation') {
+      const items = c.items || []; const total = c.total || 100; let sum = 0;
+      items.forEach((_, i) => { const v = Number(document.getElementById(`sec${idx}-al${i + 1}`)?.value) || 0; responses[`s${idx}_al${i + 1}`] = v; sum += v; });
+      if (sum !== total) { alert(`Please allocate exactly ${total} points in this section (currently ${sum}).`); return false; }
+    } else if (t === 'importance-performance') {
+      const items = c.items || [];
+      if (items.some((_, i) => !responses[`s${idx}_imp${i + 1}`] || !responses[`s${idx}_perf${i + 1}`])) { alert('Please rate importance and performance for every item.'); return false; }
+    } else if (t === 'demographic') {
+      const fields = (c.fields || []).map(f => (typeof f === 'string') ? { label: f, options: [] } : f);
+      for (let i = 0; i < fields.length; i++) {
+        if ((fields[i].options || []).length) { if (!responses[`s${idx}_d${i + 1}`]) { alert(`Please answer: ${fields[i].label}`); return false; } }
+        else { responses[`s${idx}_d${i + 1}`] = document.getElementById(`sec${idx}-demo${i + 1}-text`)?.value || ''; }
+      }
     }
     return true;
   }

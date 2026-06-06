@@ -41,11 +41,13 @@ export const handler = async (event, context) => {
     const isStaff = hasRole(user, { village: survey.village, anyOf: ['admin', 'steward', 'viewer'] });
     const vis = (survey.resultsVisibility || 'public').toLowerCase();
     const status = effectiveStatus(survey);
+    const justCompleted = event.queryStringParameters?.completed === '1';
     let allowed = false;
     if (isStaff) allowed = true;                                   // admins/committee always
     else if (vis === 'public') allowed = true;                     // open to everyone
     else if (vis === 'after-close') allowed = status === 'closed'; // public only once closed
-    // 'committee' / 'admin' / 'respondent-after-completion' → not public (respondent token = Phase 4)
+    else if (vis === 'respondent-after-completion') allowed = justCompleted; // shown right after submitting
+    // 'committee' / 'committee-only' / 'admin' → not public
     if (!allowed) {
       return {
         statusCode: 200,
@@ -95,6 +97,14 @@ export const handler = async (event, context) => {
 
     // 3. Aggregate based on template
     const aggregated = aggregate(dataRows, header, survey.template, survey.config);
+
+    // 3b. Comment moderation — for the public (non-staff), drop hidden comments (by text).
+    if (!isStaff && survey.commentsModerated) {
+      const hidden = new Set(survey.hiddenComments || []);
+      const strip = arr => (arr || []).filter(o => !hidden.has(o.text || o.comments || ''));
+      if (aggregated.openText) aggregated.openText = strip(aggregated.openText);
+      if (aggregated.sections) aggregated.sections.forEach(s => { if (s.openText) s.openText = strip(s.openText); });
+    }
 
     return {
       statusCode: 200,
@@ -176,6 +186,7 @@ function aggregateBudget(rows, header, count, respondentBreakdown, config) {
 
 function aggregateIPA(rows, header, count, respondentBreakdown, config) {
   const items = config.items || [];
+  const ipa = [];
   const serviceRatings = items.map((item, i) => {
     const label = (item && item.label) ? item.label : item;
     const ic = header.indexOf(`imp${i + 1}`), pc = header.indexOf(`perf${i + 1}`);
@@ -184,9 +195,10 @@ function aggregateIPA(rows, header, count, respondentBreakdown, config) {
     const ia = iv.length ? iv.reduce((s, v) => s + v, 0) / iv.length : 0;
     const pa = pv.length ? pv.reduce((s, v) => s + v, 0) / pv.length : 0;
     const gap = ia - pa;
+    ipa.push({ label, importance: Math.round(ia * 100) / 100, performance: Math.round(pa * 100) / 100, gap: Math.round(gap * 100) / 100 });
     return { label: `${label} (imp ${ia.toFixed(1)} / perf ${pa.toFixed(1)})`, bestPct: Math.round((Math.max(0, gap) / 4) * 100), n: iv.length };
   }).sort((a, b) => b.bestPct - a.bestPct);
-  return { count, respondentBreakdown, serviceRatings };
+  return { count, respondentBreakdown, serviceRatings, ipa };
 }
 
 function aggregateDemographic(rows, header, count, respondentBreakdown, config) {
@@ -238,6 +250,51 @@ function aggregateMultiSection(rows, header, count, respondentBreakdown, config)
       const openText = [];
       rows.forEach((r, i) => { const parts = cols.map(cc => r[cc]).filter(Boolean); if (parts.length) openText.push({ person: `Person ${i + 1}`, text: parts.join(' — ') }); });
       return { title, template: t, openText };
+    } else if (t === 'ranked-choice') {
+      const items = c.items || []; const N = items.length;
+      const serviceRatings = items.map((item, i) => {
+        const label = (item && item.label) ? item.label : item;
+        const col = header.indexOf(`s${idx}_rk${i + 1}`);
+        const vals = rows.map(r => Number(r[col])).filter(v => !isNaN(v) && v > 0);
+        const avg = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+        return { label: `${label} (avg rank ${avg ? avg.toFixed(1) : '–'})`, bestPct: avg ? Math.round(((N - avg + 1) / N) * 100) : 0, n: vals.length };
+      }).sort((a, b) => b.bestPct - a.bestPct);
+      return { title, template: t, serviceRatings };
+    } else if (t === 'budget-allocation') {
+      const items = c.items || []; const total = c.total || 100;
+      const serviceRatings = items.map((item, i) => {
+        const label = (item && item.label) ? item.label : item;
+        const col = header.indexOf(`s${idx}_al${i + 1}`);
+        const vals = rows.map(r => Number(r[col])).filter(v => !isNaN(v));
+        const avg = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+        return { label: `${label} (avg ${avg.toFixed(0)} pts)`, bestPct: Math.round((avg / total) * 100), n: vals.length };
+      }).sort((a, b) => b.bestPct - a.bestPct);
+      return { title, template: t, serviceRatings };
+    } else if (t === 'importance-performance') {
+      const items = c.items || [];
+      const serviceRatings = items.map((item, i) => {
+        const label = (item && item.label) ? item.label : item;
+        const ic = header.indexOf(`s${idx}_imp${i + 1}`), pc = header.indexOf(`s${idx}_perf${i + 1}`);
+        const iv = rows.map(r => Number(r[ic])).filter(v => !isNaN(v) && v > 0);
+        const pv = rows.map(r => Number(r[pc])).filter(v => !isNaN(v) && v > 0);
+        const ia = iv.length ? iv.reduce((s, v) => s + v, 0) / iv.length : 0;
+        const pa = pv.length ? pv.reduce((s, v) => s + v, 0) / pv.length : 0;
+        return { label: `${label} (imp ${ia.toFixed(1)} / perf ${pa.toFixed(1)})`, bestPct: Math.round((Math.max(0, ia - pa) / 4) * 100), n: iv.length };
+      }).sort((a, b) => b.bestPct - a.bestPct);
+      return { title, template: t, serviceRatings };
+    } else if (t === 'demographic') {
+      const fields = (c.fields || []).map(f => (typeof f === 'string') ? { label: f, options: [] } : f);
+      const serviceRatings = []; const openText = [];
+      fields.forEach((f, i) => {
+        const col = header.indexOf(`s${idx}_d${i + 1}`);
+        if ((f.options || []).length) {
+          const counts = {}; rows.forEach(r => { const v = r[col]; if (v) counts[v] = (counts[v] || 0) + 1; });
+          Object.entries(counts).forEach(([opt, n]) => serviceRatings.push({ label: `${f.label}: ${opt}`, bestPct: count ? Math.round((n / count) * 100) : 0, n }));
+        } else {
+          rows.forEach((r, ri) => { const v = r[col]; if (v) openText.push({ person: `Person ${ri + 1}`, text: `${f.label}: ${v}` }); });
+        }
+      });
+      return { title, template: t, serviceRatings, openText };
     }
     return { title, template: t };
   });
@@ -464,10 +521,16 @@ async function getSurveyBySlug(slug) {
     resultsVisibility: p['Results Visibility']?.select?.name || 'public',
     active: p['Active']?.checkbox || false,
     status: p['Status']?.select?.name || '',
+    commentsModerated: p['Comments Moderated']?.checkbox || false,
+    hiddenComments: parseJsonArray(p['Hidden Comments']?.rich_text?.[0]?.plain_text),
     openDate: p['Open Date']?.date?.start || null,
     closeDate: p['Close Date']?.date?.start || null,
     config,
   };
+}
+
+function parseJsonArray(raw) {
+  try { const a = JSON.parse(raw || '[]'); return Array.isArray(a) ? a : []; } catch (_) { return []; }
 }
 
 // 'closed' once past close date / paused / Active off; mirrors survey-config + survey-submit.
