@@ -720,7 +720,7 @@ async function loadDashboard() {
           <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" title="Open survey" onclick="event.stopPropagation();openSurvey('${slug}')">↗ Open</button>
           <button class="btn btn-s" style="font-size:10px;padding:3px 7px;" onclick="event.stopPropagation();loadAndShowResults('${slug}')">Results →</button>
           <select class="f-i" style="max-width:118px;font-size:11px;padding:3px 6px;" title="Lifecycle status" onclick="event.stopPropagation()" onchange="setStatus('${s.id}',this.value)">${statusOpts}</select>
-          <button class="btn btn-s" style="font-size:10px;padding:3px 7px;color:#dc2626;" title="Delete survey" onclick="event.stopPropagation();deleteSurvey('${s.id}', ${JSON.stringify(s.surveyName)})">🗑</button>
+          <button class="btn btn-s" style="font-size:10px;padding:3px 7px;color:#dc2626;" title="Delete survey" onclick="event.stopPropagation();deleteSurvey('${s.id}', ${jsArg(s.surveyName)})">🗑</button>
         </div>`;
     }).join('');
     surveysEl.innerHTML = '<div class="s-cards">' + cardList + '</div>';
@@ -919,6 +919,8 @@ function loadAndShowResults(slug) {
 }
 
 function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// Safe single-quoted JS string literal for use inside a double-quoted onclick="" attribute.
+function jsArg(s){ return "'" + String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;') + "'"; }
 
 // ── Card actions: links, open, health ───────────────────────────────────────
 const SITE_ORIGIN = 'https://villagefirst.org.au';
