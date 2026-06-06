@@ -197,7 +197,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="s-item" onclick="resetBuilder();showPanel('builder',this)">➕ New Survey</div>
       <hr class="s-divider">
       <div class="s-sec">Analyse</div>
-      <div class="s-item" onclick="showPanel('results',this)">📈 Results</div>
+      <div class="s-item" onclick="showPanel('results',this);loadResults()">📈 Results</div>
       <hr class="s-divider">
       <div class="s-sec">Village</div>
       <div class="s-item" onclick="showPanel('settings',this)">⚙️ Settings</div>
@@ -404,7 +404,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="panel" id="panel-results">
         <div class="ph">
           <div><div class="ph-title">Results</div><div class="ph-sub">Live data from Google Sheets</div></div>
-          <div class="ph-acts">
+          <div class="ph-acts" style="display:flex;gap:8px;align-items:center;">
+            <select class="f-i" id="results-survey-select" style="min-width:240px;font-size:12px;" onchange="loadResults(this.value)"></select>
             <button class="btn btn-s" id="results-link-btn" style="display:none;" onclick="window.open(currentResultsUrl,'_blank')">📊 View Public →</button>
           </div>
         </div>
@@ -487,11 +488,12 @@ function showPanel(id, el) {
   document.querySelectorAll('.s-item').forEach(s=>s.classList.remove('on'));
   document.getElementById('panel-'+id).classList.add('on');
   if(el) el.classList.add('on');
-  if(id==='results') loadResults();
+  // results loads are triggered explicitly by callers (avoids double-render race)
 }
 
 // ── Dashboard ───────────────────────────────────────────────────────────────
 async function loadDashboard() {
+  resultsSurveys = null;        // refresh the Results selector list after changes
   const surveysEl = document.getElementById('dashboard-surveys');
   surveysEl.innerHTML = '<div style="padding:20px;color:#9ca3af;font-size:11px;">Loading surveys…</div>';
 
@@ -564,18 +566,76 @@ async function toggleSurvey(notionId, newActive) {
 }
 
 // ── Results ─────────────────────────────────────────────────────────────────
+let resultsSurveys = null;
+function slugOf(s){ return (s.surveyUrl||'').split('slug=')[1] || slugify(s.surveyName); }
+async function ensureResultsSelector() {
+  const sel = document.getElementById('results-survey-select');
+  if (!sel) return;
+  if (!resultsSurveys) {
+    try { const r = await fetch('/api/survey-list?village=' + encodeURIComponent('Smiths Lake')); resultsSurveys = (await r.json()).surveys || []; }
+    catch(_) { resultsSurveys = []; }
+  }
+  sel.innerHTML = '<option value="">All surveys (overview)</option>' + resultsSurveys.map(s =>
+    `<option value="${slugOf(s)}">${escHtml(s.surveyName)} · ${s.active ? 'Live' : 'Paused'}</option>`
+  ).join('');
+}
+
+// Overview: one card per survey (active or not) with status + live response count.
+function renderResultsOverview() {
+  const el = document.getElementById('results-content');
+  const list = resultsSurveys || [];
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state"><div class="es-icon">📈</div><div class="es-title">No surveys yet</div><div class="es-sub">Create a survey to see results here.</div></div>';
+    return;
+  }
+  el.innerHTML = '<div class="s-cards">' + list.map(s => {
+    const slug = slugOf(s);
+    const icon = s.template === 'priority-ranking' ? '🎯' : s.template === 'conjoint-design-options' ? '⚖️' : '📋';
+    return `<div class="s-card" style="cursor:pointer;" onclick="loadResults('${slug}')">
+      <div class="sc-icon">${icon}</div>
+      <div class="sc-info">
+        <div class="sc-title">${escHtml(s.surveyName)}</div>
+        <div class="sc-meta">${s.active?'<span class="ldot"></span>':''} ${s.template} · <span id="ov-count-${s.id}" style="color:#64748b;">… responses</span></div>
+      </div>
+      <span class="tag ${s.active?'t-live':'t-draft'}">${s.active?'Live':'Paused'}</span>
+      <button class="btn btn-s" style="font-size:10px;padding:3px 8px;" onclick="event.stopPropagation();loadResults('${slug}')">View results →</button>
+    </div>`;
+  }).join('') + '</div>';
+  loadOverviewCounts(list);
+}
+async function loadOverviewCounts(list) {
+  await Promise.all(list.map(async s => {
+    try {
+      const res = await fetch(`/api/survey-health?slug=${encodeURIComponent(slugOf(s))}`, { headers: await authHeaders() });
+      const h = await res.json();
+      const c = document.getElementById('ov-count-' + s.id);
+      if (c) c.textContent = (h.responseCount ?? 0) + ' response' + (h.responseCount===1?'':'s');
+    } catch(_) {}
+  }));
+}
+
 async function loadResults(slug) {
-  const s = slug || 'rec-reserve-priorities';
+  await ensureResultsSelector();
+  const sel = document.getElementById('results-survey-select');
+  if (!slug) {                       // overview mode
+    if (sel) sel.value = '';
+    document.getElementById('results-link-btn').style.display = 'none';
+    renderResultsOverview();
+    return;
+  }
+  if (sel) sel.value = slug;          // detailed mode
+  const s = slug;
   currentResultsUrl = `https://villagefirst.org.au/results/?slug=${s}`;
   document.getElementById('results-link-btn').style.display='inline-flex';
   const el = document.getElementById('results-content');
   el.innerHTML = '<div style="padding:20px;color:#9ca3af;">Loading…</div>';
+  const backLink = '<div style="margin-bottom:10px;"><a onclick="loadResults()" style="cursor:pointer;color:#2563eb;font-size:12px;">← All results</a></div>';
   try {
     const res = await fetch(`/api/survey-results?slug=${encodeURIComponent(s)}`, { headers: await authHeaders() });
     const data = await res.json();
-    if(data.restricted) { el.innerHTML='<div style="padding:20px;color:#9ca3af;">'+(data.message||'Results are restricted.')+'</div>'; return; }
-    if(!data.count) { el.innerHTML='<div style="padding:20px;color:#9ca3af;">No responses yet.</div>'; return; }
-    let html = `<div class="kpis">
+    if(data.restricted) { el.innerHTML=backLink+'<div style="padding:20px;color:#9ca3af;">'+(data.message||'Results are restricted.')+'</div>'; return; }
+    if(!data.count) { el.innerHTML=backLink+'<div style="padding:20px;color:#9ca3af;">No responses yet.</div>'; return; }
+    let html = backLink + `<div class="kpis">
       <div class="kpi"><div class="kpi-n" style="color:#059669;">${data.count}</div><div class="kpi-l">Total Responses</div></div>
       ${Object.entries(data.respondentBreakdown||{}).slice(0,2).map(([k,v])=>`<div class="kpi"><div class="kpi-n" style="color:#2563eb;">${v}</div><div class="kpi-l">${k}</div></div>`).join('')}
     </div>`;
