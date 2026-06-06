@@ -259,6 +259,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <div class="tmpl-name">Annual Satisfaction</div>
                 <div class="tmpl-desc">Recurring pulse check. Service ratings + NPS + open text.</div>
               </div>
+              <div class="tmpl-opt" id="tmpl-quickpoll" onclick="selTmpl('quick-poll',this)">
+                <div class="tmpl-icon">🗳️</div>
+                <div class="tmpl-name">Quick Poll</div>
+                <div class="tmpl-desc">One question, single choice. Fast pulse / go–no-go vote.</div>
+              </div>
+              <div class="tmpl-opt" id="tmpl-likert" onclick="selTmpl('likert-agreement',this)">
+                <div class="tmpl-icon">📊</div>
+                <div class="tmpl-name">Likert Agreement</div>
+                <div class="tmpl-desc">Statements rated strongly disagree → strongly agree.</div>
+              </div>
+              <div class="tmpl-opt" id="tmpl-star" onclick="selTmpl('star-rating',this)">
+                <div class="tmpl-icon">⭐</div>
+                <div class="tmpl-name">Star / Rating Review</div>
+                <div class="tmpl-desc">Rate items or services 1–5 with an optional comment.</div>
+              </div>
+              <div class="tmpl-opt" id="tmpl-open" onclick="selTmpl('open-feedback',this)">
+                <div class="tmpl-icon">💬</div>
+                <div class="tmpl-name">Open Feedback / Ideas</div>
+                <div class="tmpl-desc">Open-text prompts for ideas and comments.</div>
+              </div>
             </div>
             <div style="display:flex;gap:7px;margin-top:4px;">
               <button class="btn btn-g" onclick="if(!bd.template){showToast('Please choose a template.');return;}setWiz(2)">Next: Details →</button>
@@ -363,6 +383,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <div class="f-f">
                 <div class="f-l">Priority question</div>
                 <input class="f-i" id="b-priQ" placeholder="What one thing should the PPCA focus on in the year ahead?">
+              </div>
+            </div>
+
+            <!-- likert-agreement questions -->
+            <div id="q-likert" style="display:none;">
+              <div class="f-l" style="margin-bottom:6px;">Statements to rate <span class="f-req">*</span> <span style="font-weight:400;font-size:10px;text-transform:none;color:#9ca3af;">— respondents rate agreement 1–5</span></div>
+              <div class="item-list" id="statements-list"></div>
+              <div class="add-row">
+                <input class="f-i" id="new-statement" placeholder="Add a statement..." style="flex:1;" onkeydown="if(event.key==='Enter'){addGeneric('statements','new-statement','statements-list');event.preventDefault();}">
+                <button class="btn btn-g" onclick="addGeneric('statements','new-statement','statements-list')">+ Add</button>
+              </div>
+            </div>
+
+            <!-- star-rating questions -->
+            <div id="q-star" style="display:none;">
+              <div class="f-l" style="margin-bottom:6px;">Items to rate <span class="f-req">*</span> <span style="font-weight:400;font-size:10px;text-transform:none;color:#9ca3af;">— rated 1–5</span></div>
+              <div class="item-list" id="staritems-list"></div>
+              <div class="add-row">
+                <input class="f-i" id="new-staritem" placeholder="Add an item..." style="flex:1;" onkeydown="if(event.key==='Enter'){addGeneric('starItems','new-staritem','staritems-list');event.preventDefault();}">
+                <button class="btn btn-g" onclick="addGeneric('starItems','new-staritem','staritems-list')">+ Add</button>
+              </div>
+            </div>
+
+            <!-- quick-poll questions -->
+            <div id="q-quickpoll" style="display:none;">
+              <div class="f-f"><div class="f-l">Poll question <span class="f-req">*</span></div><input class="f-i" id="b-pollq" placeholder="e.g. Should the PPCA proceed with the foreshore upgrade?"></div>
+              <div class="f-l" style="margin:12px 0 6px;">Answer options <span class="f-req">*</span></div>
+              <div class="item-list" id="polloptions-list"></div>
+              <div class="add-row">
+                <input class="f-i" id="new-polloption" placeholder="Add an option..." style="flex:1;" onkeydown="if(event.key==='Enter'){addGeneric('pollOptions','new-polloption','polloptions-list');event.preventDefault();}">
+                <button class="btn btn-g" onclick="addGeneric('pollOptions','new-polloption','polloptions-list')">+ Add</button>
+              </div>
+            </div>
+
+            <!-- open-feedback questions -->
+            <div id="q-open" style="display:none;">
+              <div class="f-l" style="margin-bottom:6px;">Open questions <span class="f-req">*</span> <span style="font-weight:400;font-size:10px;text-transform:none;color:#9ca3af;">— each shown as a text box</span></div>
+              <div class="item-list" id="prompts-list"></div>
+              <div class="add-row">
+                <input class="f-i" id="new-prompt" placeholder="Add a question..." style="flex:1;" onkeydown="if(event.key==='Enter'){addGeneric('prompts','new-prompt','prompts-list');event.preventDefault();}">
+                <button class="btn btn-g" onclick="addGeneric('prompts','new-prompt','prompts-list')">+ Add</button>
               </div>
             </div>
 
@@ -488,7 +549,21 @@ const bd = {
   items: [], sharedFeatures: [], attributes: [], serviceRatings: [],
   rounds: 4, setSize: 5, openQuestion: '',
   opt1Name: '', opt2Name: '', npsQ: '', priorityQ: '',
+  // new templates (batch 1)
+  statements: [], starItems: [], pollOptions: [], prompts: [], pollQuestion: '',
 };
+
+// Generic editable list helper (used by new templates)
+function renderGenericList(arrKey, containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = (bd[arrKey]||[]).map((v,i)=>`<div class="item-row"><input value="${escHtml(v)}" oninput="bd['${arrKey}'][${i}]=this.value" placeholder="Item ${i+1}"><button class="item-remove" onclick="bd['${arrKey}'].splice(${i},1);renderGenericList('${arrKey}','${containerId}')">✕</button></div>`).join('');
+}
+function addGeneric(arrKey, inputId, containerId) {
+  const inp = document.getElementById(inputId);
+  if (!inp || !inp.value.trim()) return;
+  bd[arrKey].push(inp.value.trim()); inp.value=''; renderGenericList(arrKey, containerId);
+}
 
 // ── Auth ──────────────────────────────────────────────────────────────────
 netlifyIdentity.on('init', u => { if(u){currentUser=u;showApp();} });
@@ -877,6 +952,7 @@ function resetBuilder() {
   bd.template=''; bd.surveyName=''; bd.projName=''; bd.projNotionId=''; bd.editingId=''; bd.openDate=''; bd.closeDate='';
   bd.respondentTypes=defaultPills.slice();
   bd.items=[]; bd.sharedFeatures=[]; bd.attributes=[]; bd.serviceRatings=[];
+  bd.statements=[]; bd.starItems=[]; bd.pollOptions=[]; bd.prompts=[]; bd.pollQuestion='';
   bd.rounds=4; bd.setSize=5; bd.openQuestion=''; bd.opt1Name=''; bd.opt2Name='';
   bd.description=''; bd.snapshotLabel=''; bd.npsQ=''; bd.priorityQ=''; bd.visibility=st.defaultVis||'public';
   document.querySelectorAll('.tmpl-opt').forEach(t=>t.classList.remove('sel'));
@@ -956,13 +1032,21 @@ async function saveEdit() {
 }
 
 function showQuestionsForTemplate() {
-  document.getElementById('q-maxdiff').style.display=bd.template==='priority-ranking'?'block':'none';
-  document.getElementById('q-conjoint').style.display=bd.template==='conjoint-design-options'?'block':'none';
-  document.getElementById('q-sat').style.display=bd.template==='annual-satisfaction'?'block':'none';
+  const map = {
+    'priority-ranking':'q-maxdiff', 'conjoint-design-options':'q-conjoint', 'annual-satisfaction':'q-sat',
+    'likert-agreement':'q-likert', 'star-rating':'q-star', 'quick-poll':'q-quickpoll', 'open-feedback':'q-open',
+  };
+  Object.values(map).forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+  const show=map[bd.template]; if(show){ const el=document.getElementById(show); if(el) el.style.display='block'; }
   renderItemList();
   renderSharedList();
   renderAttrList();
   renderServiceList();
+  renderGenericList('statements','statements-list');
+  renderGenericList('starItems','staritems-list');
+  renderGenericList('pollOptions','polloptions-list');
+  renderGenericList('prompts','prompts-list');
+  const pq=document.getElementById('b-pollq'); if(pq) pq.value=bd.pollQuestion||'';
 }
 
 // Item list helpers
@@ -1030,6 +1114,16 @@ function saveQuestions() {
     if(bd.serviceRatings.length<1){showToast('Add at least 1 service rating.');return;}
     bd.npsQ=document.getElementById('b-nps').value.trim();
     bd.priorityQ=document.getElementById('b-priQ').value.trim();
+  } else if(bd.template==='likert-agreement') {
+    if(bd.statements.length<1){showToast('Add at least 1 statement.');return;}
+  } else if(bd.template==='star-rating') {
+    if(bd.starItems.length<1){showToast('Add at least 1 item to rate.');return;}
+  } else if(bd.template==='quick-poll') {
+    bd.pollQuestion=document.getElementById('b-pollq').value.trim();
+    if(!bd.pollQuestion){showToast('Enter a poll question.');return;}
+    if(bd.pollOptions.length<2){showToast('Add at least 2 options.');return;}
+  } else if(bd.template==='open-feedback') {
+    if(bd.prompts.length<1){showToast('Add at least 1 question.');return;}
   }
   setWiz(4);
 }
@@ -1048,17 +1142,26 @@ function buildSummary() {
 }
 
 function buildConfig() {
+  const base = { description:bd.description, purposeStatement:bd.description };
   if(bd.template==='priority-ranking') {
-    return { description:bd.description, purposeStatement:bd.description,
-      items:bd.items.map(l=>({label:l})), rounds:bd.rounds, setSize:bd.setSize,
+    return { ...base, items:bd.items.map(l=>({label:l})), rounds:bd.rounds, setSize:bd.setSize,
       openQuestion:bd.openQuestion||"Is there anything else you'd like the committee to consider?" };
   } else if(bd.template==='conjoint-design-options') {
-    return { description:bd.description, option1Name:bd.opt1Name, option2Name:bd.opt2Name,
+    return { ...base, option1Name:bd.opt1Name, option2Name:bd.opt2Name,
       sharedFeatures:bd.sharedFeatures, attributes:bd.attributes };
-  } else {
-    return { description:bd.description, serviceRatings:bd.serviceRatings,
+  } else if(bd.template==='annual-satisfaction') {
+    return { ...base, serviceRatings:bd.serviceRatings,
       npsQuestion:bd.npsQ, priorityQuestion:bd.priorityQ||"What one thing should the PPCA focus on in the year ahead?" };
+  } else if(bd.template==='likert-agreement') {
+    return { ...base, statements:bd.statements };
+  } else if(bd.template==='star-rating') {
+    return { ...base, items:bd.starItems };
+  } else if(bd.template==='quick-poll') {
+    return { ...base, question:bd.pollQuestion, options:bd.pollOptions };
+  } else if(bd.template==='open-feedback') {
+    return { ...base, prompts:bd.prompts };
   }
+  return base;
 }
 
 async function activateSurvey() {

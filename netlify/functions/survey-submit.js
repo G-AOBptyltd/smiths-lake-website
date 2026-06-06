@@ -199,8 +199,21 @@ function buildRowValues(data) {
     else template = 'conjoint-design-options';
   }
 
+  // Ordered numeric keys present in the data for a given prefix (e.g. l1,l2,…)
+  const numKeys = (pfx) => Object.keys(data)
+    .filter(k => new RegExp(`^${pfx}\\d+$`).test(k))
+    .sort((a, b) => parseInt(a.slice(pfx.length)) - parseInt(b.slice(pfx.length)));
+
   let fieldOrder;
-  if (template === 'priority-ranking') {
+  if (template === 'likert-agreement') {
+    fieldOrder = ['respondentType', ...numKeys('l'), 'comment'];
+  } else if (template === 'star-rating') {
+    fieldOrder = ['respondentType', ...numKeys('r'), 'comment'];
+  } else if (template === 'quick-poll') {
+    fieldOrder = ['respondentType', 'choice'];
+  } else if (template === 'open-feedback') {
+    fieldOrder = ['respondentType', ...numKeys('q')];
+  } else if (template === 'priority-ranking') {
     fieldOrder = [
       'respondentType',
       'item1','item2','item3','item4','item5','item6','item7','item8',

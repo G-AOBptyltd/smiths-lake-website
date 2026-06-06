@@ -144,6 +144,10 @@
     if (t === 'conjoint-design-options') renderConjoint();
     else if (t === 'priority-ranking') renderMaxDiff();
     else if (t === 'annual-satisfaction') renderSatisfaction();
+    else if (t === 'likert-agreement') renderRatingTemplate({ prefix: 'l', items: surveyConfig.config.statements || surveyConfig.config.items || [], scaleNote: '1 = Strongly disagree, 5 = Strongly agree', heading: 'Your views', introDefault: 'Tell us how much you agree with each statement.' });
+    else if (t === 'star-rating') renderRatingTemplate({ prefix: 'r', items: surveyConfig.config.items || surveyConfig.config.serviceRatings || [], scaleNote: '1 = Poor, 5 = Excellent', heading: 'Your ratings', introDefault: 'Please rate each of the following.' });
+    else if (t === 'quick-poll') renderQuickPoll();
+    else if (t === 'open-feedback') renderOpenFeedback();
     else renderError(`Unknown template: ${t}`);
   }
 
@@ -640,6 +644,117 @@
       if (missing) { alert('Please rate all services before submitting.'); return; }
       responses.priorityText = document.getElementById('priority-text')?.value || '';
       responses.additionalComments = document.getElementById('additional-comments')?.value || '';
+      await submitSurvey();
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TEMPLATES: LIKERT-AGREEMENT / STAR-RATING (shared rating-list renderer)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function renderRatingTemplate({ prefix, items, scaleNote, heading, introDefault }) {
+    const cfg = surveyConfig.config;
+    const labels = items.map(x => (x && x.label) ? x.label : x);
+    root().innerHTML = `
+      <div class="vf-survey">
+        ${renderSurveyHeader()}
+        <div class="vf-intro-card">
+          <p>${cfg.description || cfg.purposeStatement || introDefault}</p>
+          <div class="vf-field" style="margin-top:16px;">
+            <div class="vf-field-label">I am a:</div>
+            <div class="vf-pills" id="respondent-pills">
+              ${surveyConfig.respondentTypes.map(t => `<button class="vf-pill" data-value="${t}">${t}</button>`).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="vf-part-label" style="margin-top:20px;">${heading}</div>
+        <p class="vf-part-desc">${scaleNote}.</p>
+        <div class="vf-rating-list">
+          ${labels.map((s, i) => renderRatingRow(`${prefix}${i + 1}`, s, responses[`${prefix}${i + 1}`])).join('')}
+        </div>
+        <div class="vf-field" style="margin-top:20px;">
+          <label class="vf-field-label">Any comments?</label>
+          <textarea class="vf-textarea" id="rt-comment" rows="3" placeholder="Optional…"></textarea>
+        </div>
+        <div class="vf-nav"><span></span><button class="vf-btn" id="submit-btn">Submit →</button></div>
+      </div>`;
+    attachPillHandlers('respondent-pills', 'respondentType', responses);
+    attachRatingHandlers(responses);
+    document.getElementById('submit-btn').onclick = async () => {
+      if (!responses.respondentType) { alert('Please select who you are.'); return; }
+      if (labels.some((_, i) => !responses[`${prefix}${i + 1}`])) { alert('Please rate every item before submitting.'); return; }
+      responses.comment = document.getElementById('rt-comment')?.value || '';
+      await submitSurvey();
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TEMPLATE: QUICK-POLL (single question, single choice)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function renderQuickPoll() {
+    const cfg = surveyConfig.config;
+    const question = cfg.question || cfg.description || 'Your view';
+    const options = (cfg.options || []).map(o => (o && o.label) ? o.label : o);
+    root().innerHTML = `
+      <div class="vf-survey">
+        ${renderSurveyHeader()}
+        <div class="vf-intro-card">
+          ${(cfg.purposeStatement || cfg.description) ? `<p>${cfg.purposeStatement || cfg.description}</p>` : ''}
+          <div class="vf-field" style="margin-top:12px;">
+            <div class="vf-field-label">I am a:</div>
+            <div class="vf-pills" id="respondent-pills">
+              ${surveyConfig.respondentTypes.map(t => `<button class="vf-pill" data-value="${t}">${t}</button>`).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="vf-field" style="margin-top:20px;">
+          <div class="vf-field-label">${question}</div>
+          <div class="vf-pills" id="poll-options">
+            ${options.map(o => `<button class="vf-pill" data-value="${o}">${o}</button>`).join('')}
+          </div>
+        </div>
+        <div class="vf-nav"><span></span><button class="vf-btn" id="submit-btn">Submit →</button></div>
+      </div>`;
+    attachPillHandlers('respondent-pills', 'respondentType', responses);
+    attachPillHandlers('poll-options', 'choice', responses);
+    document.getElementById('submit-btn').onclick = async () => {
+      if (!responses.respondentType) { alert('Please select who you are.'); return; }
+      if (!responses.choice) { alert('Please choose an option.'); return; }
+      await submitSurvey();
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TEMPLATE: OPEN-FEEDBACK (one or more open-text prompts)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function renderOpenFeedback() {
+    const cfg = surveyConfig.config;
+    const prompts = (cfg.prompts || cfg.items || [cfg.question || 'Share your feedback']).map(p => (p && p.label) ? p.label : p);
+    root().innerHTML = `
+      <div class="vf-survey">
+        ${renderSurveyHeader()}
+        <div class="vf-intro-card">
+          ${(cfg.purposeStatement || cfg.description) ? `<p>${cfg.purposeStatement || cfg.description}</p>` : ''}
+          <div class="vf-field" style="margin-top:12px;">
+            <div class="vf-field-label">I am a:</div>
+            <div class="vf-pills" id="respondent-pills">
+              ${surveyConfig.respondentTypes.map(t => `<button class="vf-pill" data-value="${t}">${t}</button>`).join('')}
+            </div>
+          </div>
+        </div>
+        ${prompts.map((p, i) => `
+          <div class="vf-field" style="margin-top:18px;">
+            <label class="vf-field-label">${p}</label>
+            <textarea class="vf-textarea" id="q${i + 1}" rows="3" placeholder="Your response…"></textarea>
+          </div>`).join('')}
+        <div class="vf-nav"><span></span><button class="vf-btn" id="submit-btn">Submit →</button></div>
+      </div>`;
+    attachPillHandlers('respondent-pills', 'respondentType', responses);
+    document.getElementById('submit-btn').onclick = async () => {
+      if (!responses.respondentType) { alert('Please select who you are.'); return; }
+      prompts.forEach((_, i) => { responses[`q${i + 1}`] = document.getElementById(`q${i + 1}`)?.value || ''; });
       await submitSurvey();
     };
   }

@@ -124,9 +124,54 @@ function aggregate(rows, header, template, config) {
     return aggregateMaxDiff(rows, header, count, respondentBreakdown, config);
   } else if (template === 'annual-satisfaction') {
     return aggregateSatisfaction(rows, header, count, respondentBreakdown, config);
+  } else if (template === 'likert-agreement') {
+    return aggregateRatingList(rows, header, count, respondentBreakdown, 'l', (config.statements || config.items || []), 'comment');
+  } else if (template === 'star-rating') {
+    return aggregateRatingList(rows, header, count, respondentBreakdown, 'r', (config.items || config.serviceRatings || []), 'comment');
+  } else if (template === 'quick-poll') {
+    return aggregateQuickPoll(rows, header, count, respondentBreakdown);
+  } else if (template === 'open-feedback') {
+    return aggregateOpenFeedback(rows, header, count, respondentBreakdown, config);
   }
 
   return { count, respondentBreakdown, raw: rows.slice(0, 5) };
+}
+
+// Average 1–5 ratings per item → serviceRatings shape (reuses existing bar rendering).
+function aggregateRatingList(rows, header, count, respondentBreakdown, prefix, items, commentField) {
+  const serviceRatings = items.map((item, i) => {
+    const label = (item && item.label) ? item.label : item;
+    const col = header.indexOf(`${prefix}${i + 1}`);
+    const vals = rows.map(r => Number(r[col])).filter(v => !isNaN(v) && v > 0);
+    const avg = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+    return { label, avg: Math.round(avg * 100) / 100, n: vals.length };
+  });
+  const cCol = header.indexOf(commentField);
+  const openText = rows.map((r, i) => ({ person: `Person ${i + 1}`, text: cCol > -1 ? (r[cCol] || '') : '' })).filter(r => r.text);
+  return { count, respondentBreakdown, serviceRatings, openText };
+}
+
+// Count choices → serviceRatings shape with bestPct so existing bar rendering shows %.
+function aggregateQuickPoll(rows, header, count, respondentBreakdown) {
+  const col = header.indexOf('choice');
+  const counts = {};
+  rows.forEach(r => { const v = r[col]; if (v) counts[v] = (counts[v] || 0) + 1; });
+  const serviceRatings = Object.entries(counts)
+    .map(([label, n]) => ({ label, bestPct: count ? Math.round((n / count) * 100) : 0, n }))
+    .sort((a, b) => b.n - a.n);
+  return { count, respondentBreakdown, serviceRatings };
+}
+
+// Collect all open-text answers → openText list.
+function aggregateOpenFeedback(rows, header, count, respondentBreakdown, config) {
+  const prompts = config.prompts || config.items || [];
+  const cols = (prompts.length ? prompts.map((_, i) => `q${i + 1}`) : ['q1']).map(k => header.indexOf(k)).filter(i => i > -1);
+  const openText = [];
+  rows.forEach((r, i) => {
+    const parts = cols.map(c => r[c]).filter(Boolean);
+    if (parts.length) openText.push({ person: `Person ${i + 1}`, text: parts.join(' — ') });
+  });
+  return { count, respondentBreakdown, openText };
 }
 
 function aggregateConjoint(rows, header, count, respondentBreakdown, config) {

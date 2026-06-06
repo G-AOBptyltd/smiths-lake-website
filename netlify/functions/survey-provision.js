@@ -183,6 +183,26 @@ function buildHeader(template, config) {
     ];
   }
 
+  if (template === 'likert-agreement') {
+    const statements = config?.statements || config?.items || [];
+    return [...base, ...statements.map((_, i) => `l${i + 1}`), 'comment'];
+  }
+
+  if (template === 'star-rating') {
+    const items = config?.items || config?.serviceRatings || [];
+    return [...base, ...items.map((_, i) => `r${i + 1}`), 'comment'];
+  }
+
+  if (template === 'quick-poll') {
+    return [...base, 'choice'];
+  }
+
+  if (template === 'open-feedback') {
+    const prompts = config?.prompts || config?.items || [];
+    const cols = prompts.length ? prompts.map((_, i) => `q${i + 1}`) : ['q1'];
+    return [...base, ...cols];
+  }
+
   // Generic fallback
   return [...base, 'data'];
 }
