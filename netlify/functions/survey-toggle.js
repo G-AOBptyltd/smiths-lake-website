@@ -5,14 +5,16 @@
  * Used by the admin dashboard toggle switches.
  *
  * Body: { surveyNotionId, active: true|false }
- * Auth: requires X-Admin-Email header matching SURVEY_ADMIN_EMAILS
+ * Auth: verified Netlify Identity token (Authorization: Bearer) + admin role
  *
  * Response: { success: true, active: boolean }
  */
 
+import { requireRole } from './_auth.js';
+
 const NOTION_VERSION = '2022-06-28';
 
-export const handler = async (event) => {
+export const handler = async (event, context) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: corsHeaders() };
   }
@@ -20,11 +22,10 @@ export const handler = async (event) => {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  // Auth check
-  const adminEmail = event.headers['x-admin-email'] || '';
-  const allowedEmails = (process.env.SURVEY_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
-  if (!allowedEmails.includes(adminEmail.toLowerCase())) {
-    return { statusCode: 403, headers: corsHeaders(), body: JSON.stringify({ error: 'Unauthorised' }) };
+  // Auth check — verified Identity token + admin role (no spoofable header)
+  const auth = requireRole(context, { anyOf: ['admin'] });
+  if (!auth.ok) {
+    return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };
   }
 
   let body;
@@ -74,6 +75,6 @@ function corsHeaders() {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Email',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 }

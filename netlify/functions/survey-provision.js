@@ -8,15 +8,17 @@
  * 4. Writes Survey URL + Results URL back to the linked PPCA project record
  *
  * Body: { surveyNotionId, slug, template, surveyName, config }
- * Auth: requires X-Admin-Email header matching SURVEY_ADMIN_EMAILS env var
+ * Auth: verified Netlify Identity token (Authorization: Bearer) + admin role
  *
  * Response: { success: true, sheetId, surveyUrl, resultsUrl }
  */
 
+import { requireRole } from './_auth.js';
+
 const NOTION_VERSION = '2022-06-28';
 const SITE_BASE = process.env.SITE_URL || 'https://villagefirst.org.au';
 
-export const handler = async (event) => {
+export const handler = async (event, context) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 204, headers: corsHeaders() };
   }
@@ -24,11 +26,10 @@ export const handler = async (event) => {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  // Auth check — admin emails
-  const adminEmail = event.headers['x-admin-email'] || '';
-  const allowedEmails = (process.env.SURVEY_ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
-  if (!allowedEmails.includes(adminEmail.toLowerCase())) {
-    return { statusCode: 403, headers: corsHeaders(), body: JSON.stringify({ error: 'Unauthorised' }) };
+  // Auth check — verified Identity token + admin role (no spoofable header)
+  const auth = requireRole(context, { anyOf: ['admin'] });
+  if (!auth.ok) {
+    return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };
   }
 
   let body;
@@ -68,6 +69,8 @@ export const handler = async (event) => {
       // Create new Notion record
       surveyNotionId = await createNotionSurveyRecord({
         surveyName: surveyName || slug,
+        slug,
+        purpose: (config && config.description) || '',
         village: village || 'Smiths Lake',
         template,
         openDate,
@@ -186,10 +189,15 @@ function buildHeader(template, config) {
 
 // ─── Notion ───────────────────────────────────────────────────────────────────
 
-async function createNotionSurveyRecord({ surveyName, village, template, openDate, closeDate, respondentTypes, config, visibility, snapshotLabel, projectNotionId, sheetId, surveyUrl, resultsUrl }) {
+async function createNotionSurveyRecord({ surveyName, slug, purpose, village, template, openDate, closeDate, respondentTypes, config, visibility, snapshotLabel, projectNotionId, sheetId, surveyUrl, resultsUrl }) {
   const DB_ID = process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596';
+  // NOTE: Slug, Status and Purpose require the Phase 0 schema migration to exist
+  // on the VF Surveys DB before this runs in production.
   const properties = {
     'Survey Name': { title: [{ text: { content: surveyName } }] },
+    'Slug': { rich_text: [{ text: { content: slug || '' } }] },
+    'Status': { select: { name: 'live' } },
+    'Purpose': { rich_text: [{ text: { content: purpose || '' } }] },
     'Village': { select: { name: village } },
     'Template': { select: { name: template } },
     'Active': { checkbox: true },
@@ -285,6 +293,6 @@ function corsHeaders() {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Email',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 }

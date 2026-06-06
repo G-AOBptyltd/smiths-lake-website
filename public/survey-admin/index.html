@@ -471,6 +471,16 @@ function showApp() {
   loadDashboard();
 }
 
+// Verified Identity token for admin API calls (replaces the old X-Admin-Email header)
+async function authHeaders() {
+  let token = '';
+  try {
+    const u = (window.netlifyIdentity && netlifyIdentity.currentUser) ? netlifyIdentity.currentUser() : null;
+    if (u) token = await u.jwt();
+  } catch (_) {}
+  return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+}
+
 // ── Panels ─────────────────────────────────────────────────────────────────
 function showPanel(id, el) {
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
@@ -529,10 +539,9 @@ async function toggleSurvey(notionId, newActive) {
   if (togEl) { togEl.style.opacity = '0.5'; togEl.style.pointerEvents = 'none'; }
 
   try {
-    const email = currentUser?.email || '';
     const res = await fetch('/api/survey-toggle', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Email': email },
+      headers: await authHeaders(),
       body: JSON.stringify({ surveyNotionId: notionId, active: newActive }),
     });
     const data = await res.json();
@@ -557,8 +566,9 @@ async function loadResults(slug) {
   const el = document.getElementById('results-content');
   el.innerHTML = '<div style="padding:20px;color:#9ca3af;">Loading…</div>';
   try {
-    const res = await fetch(`/api/survey-results?slug=${encodeURIComponent(s)}`);
+    const res = await fetch(`/api/survey-results?slug=${encodeURIComponent(s)}`, { headers: await authHeaders() });
     const data = await res.json();
+    if(data.restricted) { el.innerHTML='<div style="padding:20px;color:#9ca3af;">'+(data.message||'Results are restricted.')+'</div>'; return; }
     if(!data.count) { el.innerHTML='<div style="padding:20px;color:#9ca3af;">No responses yet.</div>'; return; }
     let html = `<div class="kpis">
       <div class="kpi"><div class="kpi-n" style="color:#059669;">${data.count}</div><div class="kpi-l">Total Responses</div></div>
@@ -756,10 +766,9 @@ async function activateSurvey() {
   btn.disabled=true; btn.textContent='Activating…';
   const slug=slugify(bd.surveyName);
   try {
-    const email=currentUser?.email||'';
     const res=await fetch('/api/survey-provision',{
       method:'POST',
-      headers:{'Content-Type':'application/json','X-Admin-Email':email},
+      headers:await authHeaders(),
       body:JSON.stringify({
         slug, template:bd.template, surveyName:bd.surveyName,
         village:'Smiths Lake', openDate:bd.openDate, closeDate:bd.closeDate,

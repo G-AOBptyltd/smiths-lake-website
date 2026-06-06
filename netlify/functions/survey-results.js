@@ -14,10 +14,12 @@
  *   { count, template, respondentBreakdown, serviceRatings, nps, openText }
  */
 
+import { getIdentityUser, hasRole } from './_auth.js';
+
 const NOTION_VERSION = '2022-06-28';
 const DB_ID = process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596';
 
-export const handler = async (event) => {
+export const handler = async (event, context) => {
   if (event.httpMethod !== 'GET') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
@@ -32,6 +34,31 @@ export const handler = async (event) => {
     const survey = await getSurveyBySlug(slug);
     if (!survey) {
       return { statusCode: 404, headers: corsHeaders(), body: JSON.stringify({ error: 'Survey not found' }) };
+    }
+
+    // 1b. Enforce per-survey results visibility (the v1.0 gap).
+    const user = getIdentityUser(context);
+    const isStaff = hasRole(user, { village: survey.village, anyOf: ['admin', 'steward', 'viewer'] });
+    const vis = (survey.resultsVisibility || 'public').toLowerCase();
+    const status = effectiveStatus(survey);
+    let allowed = false;
+    if (isStaff) allowed = true;                                   // admins/committee always
+    else if (vis === 'public') allowed = true;                     // open to everyone
+    else if (vis === 'after-close') allowed = status === 'closed'; // public only once closed
+    // 'committee' / 'admin' / 'respondent-after-completion' → not public (respondent token = Phase 4)
+    if (!allowed) {
+      return {
+        statusCode: 200,
+        headers: corsHeaders(),
+        body: JSON.stringify({
+          restricted: true,
+          visibility: vis,
+          status,
+          message: vis === 'after-close'
+            ? 'Results will be published when this survey closes.'
+            : 'Results for this survey are not publicly available.',
+        }),
+      };
     }
 
     if (!survey.sheetId) {
@@ -238,24 +265,37 @@ function aggregateSatisfaction(rows, header, count, respondentBreakdown, config)
   return { count, respondentBreakdown, serviceRatings, nps, npsCount: npsScores.length, openText };
 }
 
-async function getSurveyBySlug(slug) {
-  const res = await fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
-      'Notion-Version': NOTION_VERSION,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({}),
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
+function notionHeaders() {
+  return {
+    Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
+    'Notion-Version': NOTION_VERSION,
+    'Content-Type': 'application/json',
+  };
+}
 
-  const page = data.results.find(p => {
-    const url = p.properties['Survey URL']?.url || '';
-    const name = p.properties['Survey Name']?.title?.[0]?.plain_text || '';
-    return url.includes(slug) || slugify(name) === slug;
+async function getSurveyBySlug(slug) {
+  // Prefer exact Slug-property match; fall back to URL/name scan for un-migrated rows.
+  let page = null;
+  const filtered = await fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
+    method: 'POST', headers: notionHeaders(),
+    body: JSON.stringify({ filter: { property: 'Slug', rich_text: { equals: slug } } }),
   });
+  if (filtered.ok) {
+    const fdata = await filtered.json();
+    page = (fdata.results || [])[0] || null;
+  }
+  if (!page) {
+    const res = await fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
+      method: 'POST', headers: notionHeaders(), body: JSON.stringify({}),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    page = data.results.find(p => {
+      const url = p.properties['Survey URL']?.url || '';
+      const name = p.properties['Survey Name']?.title?.[0]?.plain_text || '';
+      return url.includes(slug) || slugify(name) === slug;
+    });
+  }
   if (!page) return null;
 
   const p = page.properties;
@@ -265,12 +305,30 @@ async function getSurveyBySlug(slug) {
   return {
     id: page.id,
     template: p['Template']?.select?.name || '',
+    village: p['Village']?.select?.name || '',
     sheetId: p['Sheet ID']?.rich_text?.[0]?.plain_text || '',
     surveyName: p['Survey Name']?.title?.[0]?.plain_text || '',
     snapshotLabel: p['Snapshot Label']?.rich_text?.[0]?.plain_text || '',
     resultsVisibility: p['Results Visibility']?.select?.name || 'public',
+    active: p['Active']?.checkbox || false,
+    status: p['Status']?.select?.name || '',
+    openDate: p['Open Date']?.date?.start || null,
+    closeDate: p['Close Date']?.date?.start || null,
     config,
   };
+}
+
+// 'closed' once past close date / paused / Active off; mirrors survey-config + survey-submit.
+function effectiveStatus(s) {
+  const now = new Date();
+  const st = (s.status || '').toLowerCase();
+  if (st === 'draft') return 'draft';
+  if (st === 'paused' || st === 'closed') return 'closed';
+  const open = st === 'live' || st === 'scheduled' ? true : !!s.active;
+  if (!open) return 'closed';
+  if (s.openDate && new Date(s.openDate) > now) return 'scheduled';
+  if (s.closeDate && new Date(s.closeDate) < now) return 'closed';
+  return 'active';
 }
 
 async function getSheets() {

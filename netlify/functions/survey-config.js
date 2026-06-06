@@ -34,31 +34,40 @@ export const handler = async (event) => {
   }
 
   try {
-    // Query all surveys matching this slug in Survey URL
-    const res = await fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
+    // Prefer an exact Slug-property match (fast, collision-safe); fall back to a
+    // full scan by URL/name for rows not yet migrated to the Slug property.
+    let page = null;
+    const filtered = await fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
       method: 'POST',
       headers: notionHeaders(),
-      body: JSON.stringify({}), // fetch all, filter client-side on slug
+      body: JSON.stringify({ filter: { property: 'Slug', rich_text: { equals: slug } } }),
     });
-
-    if (!res.ok) {
-      console.error('Notion API error:', res.status);
-      return {
-        statusCode: 502,
-        headers: corsHeaders(),
-        body: JSON.stringify({ error: 'Failed to load survey config' }),
-      };
+    if (filtered.ok) {
+      const fdata = await filtered.json();
+      page = (fdata.results || [])[0] || null;
     }
 
-    const data = await res.json();
-
-    // Find the survey whose URL contains this slug
-    const page = data.results.find(p => {
-      const url = p.properties['Survey URL']?.url || '';
-      const name = p.properties['Survey Name']?.title?.[0]?.plain_text || '';
-      // Match on slug in URL, or slugified survey name as fallback
-      return url.includes(slug) || slugify(name) === slug;
-    });
+    if (!page) {
+      const res = await fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
+        method: 'POST',
+        headers: notionHeaders(),
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        console.error('Notion API error:', res.status);
+        return {
+          statusCode: 502,
+          headers: corsHeaders(),
+          body: JSON.stringify({ error: 'Failed to load survey config' }),
+        };
+      }
+      const data = await res.json();
+      page = data.results.find(p => {
+        const url = p.properties['Survey URL']?.url || '';
+        const name = p.properties['Survey Name']?.title?.[0]?.plain_text || '';
+        return url.includes(slug) || slugify(name) === slug;
+      });
+    }
 
     if (!page) {
       return {
@@ -88,7 +97,11 @@ export const handler = async (event) => {
 
 function getSurveyStatus(survey) {
   const now = new Date();
-  if (!survey.active) return 'closed';
+  const st = (survey.status || '').toLowerCase();
+  if (st === 'draft') return 'scheduled';        // not publicly open; show "not yet" page
+  if (st === 'paused' || st === 'closed') return 'closed';
+  const open = st === 'live' || st === 'scheduled' ? true : !!survey.active;
+  if (!open) return 'closed';
   if (survey.openDate && new Date(survey.openDate) > now) return 'scheduled';
   if (survey.closeDate && new Date(survey.closeDate) < now) return 'closed';
   return 'active';
@@ -117,6 +130,9 @@ function parseSurveyPage(page) {
     village: p['Village']?.select?.name || '',
     template: p['Template']?.select?.name || '',
     active: p['Active']?.checkbox || false,
+    status: p['Status']?.select?.name || '',
+    slug: p['Slug']?.rich_text?.[0]?.plain_text || '',
+    purpose: p['Purpose']?.rich_text?.[0]?.plain_text || '',
     openDate: p['Open Date']?.date?.start || null,
     closeDate: p['Close Date']?.date?.start || null,
     projectName: p['Project Name']?.rich_text?.[0]?.plain_text || '',

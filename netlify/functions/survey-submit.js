@@ -52,16 +52,38 @@ export const handler = async (event) => {
     return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
 
-  const { sheetId, ...responseData } = body;
+  // Ignore any client-supplied sheetId — never trust the browser (security).
+  const { sheetId: _ignoredClientSheetId, slug, ...responseData } = body;
 
-  if (!sheetId) {
-    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Missing sheetId' }) };
+  if (!slug) {
+    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Missing slug' }) };
   }
 
-  // Build the row — generic approach: id, submittedAt, then all remaining fields
+  // Resolve the survey server-side from its slug: get the real sheetId + status.
+  let survey;
+  try {
+    survey = await resolveSurvey(slug);
+  } catch (e) {
+    console.error('resolveSurvey error:', e);
+    return { statusCode: 502, headers: corsHeaders(), body: JSON.stringify({ error: 'Could not verify survey' }) };
+  }
+  if (!survey) {
+    return { statusCode: 404, headers: corsHeaders(), body: JSON.stringify({ error: 'Survey not found' }) };
+  }
+  // Re-check status + window: block submissions to draft/scheduled/paused/closed surveys.
+  if (effectiveStatus(survey) !== 'active') {
+    return { statusCode: 409, headers: corsHeaders(), body: JSON.stringify({ error: 'This survey is not currently open for responses.' }) };
+  }
+  if (!survey.sheetId) {
+    return { statusCode: 503, headers: corsHeaders(), body: JSON.stringify({ error: 'Survey has no data store yet. Contact admin.' }) };
+  }
+
+  const sheetId = survey.sheetId;
+
+  // Build the row — id, submittedAt, [template-ordered fields], then slug (isolation/audit key, trailing so it never shifts existing columns)
   const id = Date.now().toString();
   const submittedAt = new Date().toISOString();
-  const row = [id, submittedAt, ...buildRowValues(responseData)];
+  const row = [id, submittedAt, ...buildRowValues(responseData), slug];
 
   try {
     const sheets = await getSheets();
@@ -97,6 +119,71 @@ export const handler = async (event) => {
     };
   }
 };
+
+// ─── Survey resolution + status (server-side; never trust the client) ─────────
+
+const NOTION_VERSION = '2022-06-28';
+const DB_ID = process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596';
+
+function notionHeaders() {
+  return {
+    Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
+    'Notion-Version': NOTION_VERSION,
+    'Content-Type': 'application/json',
+  };
+}
+
+function slugify(str) {
+  return String(str || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+async function resolveSurvey(slug) {
+  // Prefer an exact Slug-property match; fall back to URL/name scan for un-migrated rows.
+  let page = null;
+  const filtered = await fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
+    method: 'POST',
+    headers: notionHeaders(),
+    body: JSON.stringify({ filter: { property: 'Slug', rich_text: { equals: slug } } }),
+  });
+  if (filtered.ok) {
+    const data = await filtered.json();
+    page = (data.results || [])[0] || null;
+  }
+  if (!page) {
+    const all = await fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
+      method: 'POST', headers: notionHeaders(), body: JSON.stringify({}),
+    });
+    if (!all.ok) return null;
+    const data = await all.json();
+    page = (data.results || []).find(p => {
+      const url = p.properties['Survey URL']?.url || '';
+      const name = p.properties['Survey Name']?.title?.[0]?.plain_text || '';
+      return url.includes(slug) || slugify(name) === slug;
+    }) || null;
+  }
+  if (!page) return null;
+  const p = page.properties;
+  return {
+    sheetId: p['Sheet ID']?.rich_text?.[0]?.plain_text || '',
+    active: p['Active']?.checkbox || false,
+    status: p['Status']?.select?.name || '',
+    openDate: p['Open Date']?.date?.start || null,
+    closeDate: p['Close Date']?.date?.start || null,
+  };
+}
+
+// 'active' means open for responses. Explicit Status wins; else derive from Active + dates.
+function effectiveStatus(s) {
+  const now = new Date();
+  const st = (s.status || '').toLowerCase();
+  if (st === 'draft') return 'draft';
+  if (st === 'paused' || st === 'closed') return 'closed';
+  const open = st === 'live' || st === 'scheduled' ? true : !!s.active;
+  if (!open) return 'closed';
+  if (s.openDate && new Date(s.openDate) > now) return 'scheduled';
+  if (s.closeDate && new Date(s.closeDate) < now) return 'closed';
+  return 'active';
+}
 
 /**
  * Convert the response data object into an ordered array of values.
