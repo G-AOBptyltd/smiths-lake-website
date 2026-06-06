@@ -64,6 +64,7 @@ function parsePage(page) {
     village: p['Village']?.select?.name || '',
     template: p['Template']?.select?.name || '',
     active: p['Active']?.checkbox || false,
+    status: p['Status']?.select?.name || '',
     openDate: p['Open Date']?.date?.start || null,
     closeDate: p['Close Date']?.date?.start || null,
     surveyUrl: p['Survey URL']?.url || '',
