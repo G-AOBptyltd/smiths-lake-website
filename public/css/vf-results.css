@@ -117,6 +117,12 @@
 .vfr-root .scard .meta{display:flex;gap:14px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:9px;margin-top:auto}
 .vfr-root .scard .meta b{color:var(--ink)}
 .vfr-root .scard .view{margin-left:auto;color:var(--accent);font-weight:800}
+/* admin-only per-card actions (e.g. results-public toggle) */
+.vfr-root .scard-actions{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding-top:9px;font-size:11.5px;color:var(--muted)}
+.vfr-root .sa-toggle{margin-left:auto;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:30px;padding:4px 10px;font:inherit;font-size:11px;font-weight:700;color:var(--muted);cursor:pointer}
+.vfr-root .sa-toggle .dot{width:8px;height:8px;border-radius:50%;background:#cbd5e1}
+.vfr-root .sa-toggle.on{color:#166534;border-color:#86efac;background:#f0fdf4}
+.vfr-root .sa-toggle.on .dot{background:#22c55e}
 
 @media(max-width:760px){
   .vfr-root .g2,.vfr-root .g3,.vfr-root .g4,.vfr-root .dist-grid,.vfr-root .hub-grid{grid-template-columns:1fr}

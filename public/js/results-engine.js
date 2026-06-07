@@ -134,6 +134,7 @@
     const cnt=s.responseCount!=null?s.responseCount:'—';
     const close=s.closeDate?('closes '+new Date(s.closeDate).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})):'';
     a.innerHTML=`<div class="top"><span class="ico">${TPL_ICON[s.template]||'📋'}</span><div style="flex:1"><div class="nm">${esc(s.surveyName)}</div><div class="tpl">${esc((s.template||'').replace(/-/g,' '))}</div></div><span class="pill ${st}">${st[0].toUpperCase()+st.slice(1)}</span></div><div class="meta"><span><b>${cnt}</b> responses</span>${close?`<span>${esc(close)}</span>`:''}<span class="view">View results →</span></div>`;
+    if(opts.cardActions){const act=opts.cardActions(s);if(act){if(typeof act==='string'){a.appendChild(el('div','scard-actions',act))}else{a.appendChild(act)}}}
     return a;
   }
   function renderHub(container,surveys,opts){

@@ -1070,7 +1070,37 @@ async function renderResultsOverview() {
       if (h && h.responseCount != null) s.responseCount = h.responseCount;
     } catch (_) {}
   }));
-  VFResults.renderHub(el, list, { includeAll: true, village: activeVillage, onSelect: (slug) => loadResults(slug) });
+  VFResults.renderHub(el, list, {
+    includeAll: true, village: activeVillage,
+    onSelect: (slug) => loadResults(slug),
+    cardActions: (s) => {
+      const isPublic = ((s.resultsVisibility || 'public') === 'public');
+      const wrap = document.createElement('div'); wrap.className = 'scard-actions';
+      wrap.appendChild(document.createTextNode('Public results'));
+      const b = document.createElement('button');
+      b.className = 'sa-toggle' + (isPublic ? ' on' : '');
+      b.innerHTML = '<span class="dot"></span>' + (isPublic ? 'On' : 'Off');
+      b.title = isPublic ? 'Visible on the public hub — click to hide (committee-only)' : 'Hidden from the public hub — click to make public';
+      b.onclick = (e) => { e.preventDefault(); e.stopPropagation(); setSurveyVisibility(s.id, isPublic ? 'committee-only' : 'public', s.surveyName); };
+      wrap.appendChild(b);
+      return wrap;
+    }
+  });
+}
+
+// Inline results-visibility toggle from the Results overview cards.
+async function setSurveyVisibility(notionId, visibility, name) {
+  try {
+    const res = await fetch('/api/survey-update', {
+      method: 'POST', headers: await authHeaders(),
+      body: JSON.stringify({ surveyNotionId: notionId, resultsVisibility: visibility })
+    });
+    if (!res.ok) { showToast('⚠️ Could not update visibility'); return; }
+    const s = (resultsSurveys || []).find(x => x.id === notionId);
+    if (s) s.resultsVisibility = visibility;
+    showToast(visibility === 'public' ? `✅ ${name || 'Survey'} results are public` : `🔒 ${name || 'Survey'} hidden from public`);
+    renderResultsOverview();
+  } catch (_) { showToast('⚠️ Update error'); }
 }
 
 async function loadResults(slug) {
