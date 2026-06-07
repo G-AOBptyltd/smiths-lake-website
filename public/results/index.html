@@ -138,6 +138,8 @@
 <nav class="vf-topnav">
   <a href="/projects/">← Back to Project Hub</a>
   <span class="sep">·</span>
+  <a id="navAllResults" href="/results/">📊 All Results</a>
+  <span class="sep">·</span>
   <a id="survey-link" href="/survey/">Complete Survey</a>
   <span class="sep">·</span>
   <a href="/">VillageFirst Website</a>
@@ -339,6 +341,7 @@
     cr.innerHTML=html;cr.style.display='';
     const sub=document.getElementById('subnav');sub.style.display='';
     document.getElementById('allResults').href=`/results/?village=${encodeURIComponent(village)}`;
+    document.getElementById('navAllResults').href=`/results/?village=${encodeURIComponent(village)}`;
     fetchVillageSurveys(village).then(list=>{
       const items=list.filter(publicViewable);
       const sel=document.getElementById('surveySwitch');sel.innerHTML='';
@@ -356,6 +359,7 @@
 
   async function renderHub(village){
     document.getElementById('survey-link').href='/survey/';
+    document.getElementById('navAllResults').href=`/results/?village=${encodeURIComponent(village)}`;
     document.getElementById('hEye').textContent=village+' · VillageFirst Community Surveys';
     document.getElementById('hTitle').textContent='Community Survey Results';
     document.getElementById('hSub').textContent='Browse results from across the village';
