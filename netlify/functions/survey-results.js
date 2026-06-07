@@ -120,6 +120,13 @@ export const handler = async (event, context) => {
   }
 };
 
+// Per-value 1–5 distribution counts → [n1,n2,n3,n4,n5]. Drives the histogram cards.
+function dist5(vals) {
+  const d = [0, 0, 0, 0, 0];
+  vals.forEach(v => { const k = Math.round(v); if (k >= 1 && k <= 5) d[k - 1]++; });
+  return d;
+}
+
 function aggregate(rows, header, template, config) {
   const count = rows.length;
 
@@ -236,7 +243,7 @@ function aggregateMultiSection(rows, header, count, respondentBreakdown, config)
         const col = header.indexOf(`s${idx}_${pfx}${i + 1}`);
         const vals = rows.map(r => Number(r[col])).filter(v => !isNaN(v) && v > 0);
         const avg = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
-        return { label, avg: Math.round(avg * 100) / 100, n: vals.length };
+        return { label, avg: Math.round(avg * 100) / 100, n: vals.length, dist: dist5(vals) };
       });
       const cCol = header.indexOf(`s${idx}_comment`);
       const openText = rows.map((r, i) => ({ person: `Person ${i + 1}`, text: cCol > -1 ? (r[cCol] || '') : '' })).filter(r => r.text);
@@ -311,7 +318,7 @@ function aggregateRatingList(rows, header, count, respondentBreakdown, prefix, i
     const col = header.indexOf(`${prefix}${i + 1}`);
     const vals = rows.map(r => Number(r[col])).filter(v => !isNaN(v) && v > 0);
     const avg = vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
-    return { label, avg: Math.round(avg * 100) / 100, n: vals.length };
+    return { label, avg: Math.round(avg * 100) / 100, n: vals.length, dist: dist5(vals) };
   });
   const cCol = header.indexOf(commentField);
   const openText = rows.map((r, i) => ({ person: `Person ${i + 1}`, text: cCol > -1 ? (r[cCol] || '') : '' })).filter(r => r.text);
@@ -350,7 +357,7 @@ function aggregateConjoint(rows, header, count, respondentBreakdown, config) {
     const col = getCol(`a${i + 1}`);
     const ratings = rows.map(r => Number(r[col])).filter(v => !isNaN(v) && v > 0);
     const avg = ratings.length ? ratings.reduce((s, v) => s + v, 0) / ratings.length : 0;
-    return { label, avg: Math.round(avg * 100) / 100, n: ratings.length };
+    return { label, avg: Math.round(avg * 100) / 100, n: ratings.length, dist: dist5(ratings) };
   });
 
   // Part B — key differences importance (b1–b3)
@@ -359,7 +366,7 @@ function aggregateConjoint(rows, header, count, respondentBreakdown, config) {
     const col = getCol(`b${i + 1}`);
     const ratings = rows.map(r => Number(r[col])).filter(v => !isNaN(v) && v > 0);
     const avg = ratings.length ? ratings.reduce((s, v) => s + v, 0) / ratings.length : 0;
-    return { label: attr.label, avg: Math.round(avg * 100) / 100, n: ratings.length };
+    return { label: attr.label, avg: Math.round(avg * 100) / 100, n: ratings.length, dist: dist5(ratings) };
   });
 
   // Part C — conjoint tasks (c1–c4: x or y choice)
@@ -460,7 +467,7 @@ function aggregateSatisfaction(rows, header, count, respondentBreakdown, config)
     const col = header.indexOf(`s${i + 1}`);
     const ratings = rows.map(r => Number(r[col])).filter(v => !isNaN(v) && v > 0);
     const avg = ratings.length ? ratings.reduce((s, v) => s + v, 0) / ratings.length : 0;
-    return { label, avg: Math.round(avg * 100) / 100, n: ratings.length };
+    return { label, avg: Math.round(avg * 100) / 100, n: ratings.length, dist: dist5(ratings) };
   });
 
   const npsCol = header.indexOf('nps');

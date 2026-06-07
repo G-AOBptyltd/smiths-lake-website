@@ -1,452 +1,323 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="default">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Survey Results — VillageFirst</title>
   <meta name="robots" content="noindex">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f0; color: #1e293b; min-height: 100vh; }
-
-    .vf-topnav { background: #0f4c3a; padding: 10px 20px; display: flex; align-items: center; gap: 12px; }
-    .vf-topnav a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 12px; }
-    .vf-topnav a:hover { color: #fff; }
-    .vf-topnav-sep { color: rgba(255,255,255,0.3); }
-
-    .vf-container { max-width: 800px; margin: 0 auto; padding: 20px 16px 60px; }
-
-    .vf-results-header {
-      background: #0f4c3a; color: #fff;
-      padding: 16px 20px; border-radius: 10px 10px 0 0;
+    :root{
+      --primary:#0f4c3a;--primary-2:#15795f;--accent:#0f8f80;
+      --grad:linear-gradient(135deg,#0f4c3a 0%,#15795f 60%,#0f8f80 100%);
+      --ink:#16261f;--muted:#6b7c75;--line:#e3ece8;--bg:#eef4f1;--card:#fff;
+      --tint1:#ecfdf5;--tint2:#eff6ff;--tint3:#fffbeb;--tint4:#f5f3ff;
+      --kn1:#059669;--kn2:#2563eb;--kn3:#e08a1e;--kn4:#7c3aed;
+      --pos:#0f8f80;--neg:#e11d63;
+      --shadow:0 1px 2px rgba(16,40,30,.04),0 10px 28px rgba(16,40,30,.07);
     }
-    .vf-results-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
-    .vf-results-meta { font-size: 11px; opacity: 0.7; }
-    .vf-snapshot-badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      background: rgba(255,255,255,0.15); border-radius: 20px;
-      padding: 3px 10px; font-size: 11px; margin-top: 8px;
-    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
 
-    .vf-results-body { background: #fff; border-radius: 0 0 10px 10px; padding: 20px; border: 1px solid #e2e8f0; border-top: none; }
+    .vf-topnav{background:#0c2c22;padding:9px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .vf-topnav a,.vf-topnav button.lnk{color:rgba(255,255,255,.8);text-decoration:none;font-size:12px;background:none;border:0;cursor:pointer;font:inherit;font-size:12px}
+    .vf-topnav a:hover,.vf-topnav button.lnk:hover{color:#fff}
+    .vf-topnav .sep{color:rgba(255,255,255,.3)}
+    .vf-topnav .right{margin-left:auto;display:flex;gap:12px;align-items:center}
 
-    .vf-kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-    .vf-kpi { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: center; }
-    .vf-kpi-num { font-size: 26px; font-weight: 900; }
-    .vf-kpi-label { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+    .hero{background:var(--grad);color:#fff;padding:28px 0 24px;position:relative;overflow:hidden}
+    .hero::after{content:"";position:absolute;right:-60px;top:-60px;width:300px;height:300px;background:radial-gradient(circle,rgba(255,255,255,.10),transparent 70%)}
+    .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+    .hero .eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.78;font-weight:700}
+    .hero h1{font-size:25px;font-weight:800;letter-spacing:-.01em;margin-top:4px}
+    .hero .sub{opacity:.85;font-size:13px;margin-top:5px}
+    .badge{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.18);border-radius:30px;padding:5px 14px;font-size:12px;margin-top:13px}
+    .live-dot{width:8px;height:8px;border-radius:50%;background:#bdf5d8;animation:pulse 1.8s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(189,245,216,.7)}70%{box-shadow:0 0 0 9px rgba(189,245,216,0)}100%{box-shadow:0 0 0 0 rgba(189,245,216,0)}}
 
-    .vf-section-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #374151; margin-bottom: 10px; margin-top: 20px; }
+    .tabs{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.93);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+    .tabs-inner{max-width:1040px;margin:0 auto;display:flex;gap:2px;overflow-x:auto;padding:0 12px}
+    .tab{border:0;background:none;font:inherit;font-size:13px;font-weight:600;color:var(--muted);padding:13px 14px 11px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+    .tab:hover{color:var(--primary-2)}
+    .tab.on{color:var(--primary);border-bottom-color:var(--accent)}
 
-    .vf-bar-chart { display: flex; flex-direction: column; gap: 8px; }
-    .vf-bar-row { display: flex; align-items: center; gap: 10px; }
-    .vf-bar-label { font-size: 11px; color: #374151; width: 200px; flex-shrink: 0; }
-    .vf-bar-track { flex: 1; height: 22px; background: #f1f5f9; border-radius: 5px; overflow: hidden; }
-    .vf-bar-fill { height: 100%; border-radius: 5px; display: flex; align-items: center; padding: 0 8px; font-size: 10px; font-weight: 800; color: #fff; transition: width 0.8s ease; }
-    .vf-bar-n { font-size: 10px; color: #9ca3af; flex-shrink: 0; width: 30px; text-align: right; }
+    main{max-width:1040px;margin:0 auto;padding:22px 20px 70px}
+    .panel{display:none;animation:fade .35s ease}.panel.on{display:block}
+    @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-    .vf-finding {
-      background: #f0fdf4; border: 1px solid #86efac; border-radius: 7px;
-      padding: 12px 14px; font-size: 12px; color: #166534; line-height: 1.6; margin-top: 14px;
-    }
-    .vf-finding strong { font-size: 13px; display: block; margin-bottom: 4px; }
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px 20px}
+    .grid{display:grid;gap:14px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+    .ctitle{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--primary-2);margin-bottom:12px}
 
-    .vf-respondent-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-    .vf-respondent-chip {
-      background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;
-      padding: 8px 12px; text-align: center; flex: 1; min-width: 100px;
-    }
-    .vf-respondent-count { font-size: 20px; font-weight: 800; color: #059669; }
-    .vf-respondent-label { font-size: 10px; color: #64748b; margin-top: 2px; }
+    .headline{background:var(--grad);color:#fff;border-radius:14px;padding:17px 20px;font-size:15.5px;font-weight:600;line-height:1.5;box-shadow:var(--shadow)}
+    .headline b{font-weight:800}.headline .ht{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.82;font-weight:800;display:block;margin-bottom:6px}
 
-    .vf-open-text { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
-    .vf-comment { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; }
-    .vf-comment-who { font-size: 10px; font-weight: 700; color: #9ca3af; margin-bottom: 4px; }
-    .vf-comment-text { font-size: 12px; color: #374151; line-height: 1.5; }
+    .kpi{border-radius:14px;padding:16px;border:1px solid var(--line)}
+    .kpi .n{font-size:31px;font-weight:900;line-height:1;letter-spacing:-.02em}.kpi .l{font-size:11.5px;color:var(--muted);margin-top:6px;font-weight:600}
+    .kpi.k1{background:var(--tint1)}.kpi.k1 .n{color:var(--kn1)}.kpi.k2{background:var(--tint2)}.kpi.k2 .n{color:var(--kn2)}
+    .kpi.k3{background:var(--tint3)}.kpi.k3 .n{color:var(--kn3)}.kpi.k4{background:var(--tint4)}.kpi.k4 .n{color:var(--kn4)}
 
-    .vf-state { background: #fff; border-radius: 10px; padding: 40px 24px; text-align: center; border: 1px solid #e2e8f0; }
-    .vf-state h2 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-    .vf-state p { font-size: 13px; color: #64748b; }
+    .callout{border-radius:12px;padding:14px 16px;font-size:13.5px;line-height:1.6;border-left:5px solid var(--accent);background:var(--tint1);color:#22302b}
+    .callout.blue{background:var(--tint2);border-color:var(--kn2)}.callout.amber{background:var(--tint3);border-color:var(--kn3)}
+    .callout b{font-weight:800}
+    .auto-tag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--accent);border-radius:5px;padding:2px 7px;margin-right:4px}
 
-    .vf-spinner { width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #059669; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .bars{display:flex;flex-direction:column;gap:11px}
+    .bar-row{display:grid;grid-template-columns:210px 1fr auto;align-items:center;gap:12px}
+    .bar-lab{font-size:12.5px;font-weight:600}.bar-lab small{display:block;color:var(--muted);font-weight:500;font-size:11px}
+    .track{height:26px;background:#f1f6f3;border-radius:7px;overflow:hidden}
+    .fill{height:100%;border-radius:7px;display:flex;align-items:center;padding:0 10px;color:#fff;font-size:11.5px;font-weight:800;width:0;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+    .bar-n{font-size:11px;color:var(--muted);min-width:34px;text-align:right}
+    .rank{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:var(--primary);color:#fff;font-size:11px;font-weight:800;margin-right:8px}
 
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    .vf-live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #34d399; animation: pulse 1.5s infinite; margin-right: 4px; }
+    .donut-wrap{display:flex;flex-direction:column;align-items:center}
+    .canvas-box{position:relative;width:100%;max-width:300px;height:240px}
 
-    @media (max-width: 600px) {
-      .vf-kpi-row { grid-template-columns: repeat(2, 1fr); }
-      .vf-bar-label { width: 130px; font-size: 10px; }
-    }
+    .dist-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .dist h4{font-size:13px;font-weight:700}.dist .avg{font-size:11.5px;color:var(--muted);margin:2px 0 8px}
 
-    .vf-btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      background: #059669; color: #fff; border: none; border-radius: 7px;
-      padding: 10px 22px; font-size: 13px; font-weight: 700; cursor: pointer;
-      text-decoration: none; margin-top: 10px;
-    }
+    .lik{display:flex;flex-direction:column;gap:14px}
+    .lik-top{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;margin-bottom:5px}.lik-top .agree{color:var(--pos);font-weight:800}
+    .lik-bar{display:flex;height:24px;border-radius:7px;overflow:hidden;background:#f1f6f3}
+    .lik-seg{height:100%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:700}
+    .lik-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:6px}
+    .lik-legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 
-    /* Colours for bar fills */
-    .vf-c1 { background: #0f4c3a; }
-    .vf-c2 { background: #059669; }
-    .vf-c3 { background: #34d399; color: #166534; }
-    .vf-c4 { background: #6ee7b7; color: #166534; }
-    .vf-c5 { background: #a7f3d0; color: #166534; }
-    .vf-c6 { background: #d1fae5; color: #6b7280; }
+    .gauge-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .gauge-box{position:relative;width:240px;height:140px}
+    .gauge-val{position:absolute;bottom:6px;left:0;right:0;text-align:center}
+    .gauge-val .gv{font-size:38px;font-weight:900;line-height:1}.gauge-val .gl{font-size:11px;color:var(--muted);font-weight:600}
+
+    .themechips{display:flex;flex-wrap:wrap;gap:8px}.tchip{border-radius:30px;padding:7px 14px;font-weight:700;color:#fff;font-size:13px}
+
+    .cmt{background:#f8fbf9;border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:10px}
+    .cmt .who{font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+    .cmt .tx{font-size:13.5px;color:#27332e}
+
+    .find{border-radius:12px;padding:15px 17px;margin-bottom:12px;border:1px solid var(--line);border-left:5px solid var(--accent);background:#fff}
+    .find h4{font-size:14px;font-weight:800;margin-bottom:5px}.find p{font-size:13px;color:#3b4a44}
+
+    .vf-state{background:#fff;border-radius:14px;padding:46px 24px;text-align:center;border:1px solid var(--line);box-shadow:var(--shadow)}
+    .vf-state h2{font-size:18px;font-weight:700;margin-bottom:8px}.vf-state p{font-size:13px;color:var(--muted)}
+    .vf-spinner{width:38px;height:38px;border:3px solid #e2e8f0;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .vf-btn{display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;border:none;border-radius:9px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;margin-top:14px}
+
+    .mt{margin-top:14px}
+    @media(max-width:760px){.g2,.g3,.g4,.dist-grid{grid-template-columns:1fr}.bar-row{grid-template-columns:120px 1fr auto}.bar-lab{font-size:11px}}
+    @media print{.vf-topnav,.tabs,.no-print{display:none!important}.panel{display:block!important}body{background:#fff}.hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   </style>
 </head>
 <body>
 
-<style>
-  @media print {
-    .vf-topnav, .no-print { display: none !important; }
-    body { background: #fff !important; }
-    .vf-container { max-width: 100% !important; }
-  }
-</style>
 <nav class="vf-topnav">
   <a href="/projects/">← Back to Project Hub</a>
-  <span class="vf-topnav-sep">·</span>
+  <span class="sep">·</span>
   <a id="survey-link" href="/survey/">Complete Survey</a>
-  <span class="vf-topnav-sep">·</span>
+  <span class="sep">·</span>
   <a href="/">VillageFirst Website</a>
-  <span class="vf-topnav-sep">·</span>
-  <a href="#" onclick="window.print();return false;">🖨 Print / Save PDF</a>
+  <div class="right">
+    <button class="lnk" id="greyToggle">◐ Greyscale</button>
+    <span class="sep">·</span>
+    <button class="lnk" onclick="window.print();return false;">🖨 Print / Save PDF</button>
+  </div>
 </nav>
 
-<div class="vf-container">
-  <div id="results-root"></div>
-</div>
+<header class="hero"><div class="wrap">
+  <div class="eyebrow" id="hEye">VillageFirst Community Survey</div>
+  <h1 id="hTitle">Loading…</h1>
+  <div class="sub" id="hSub"></div>
+  <span class="badge" id="hBadgeWrap" style="display:none"><span class="live-dot" id="hDot"></span><span id="hBadge"></span></span>
+</div></header>
+
+<div class="tabs" id="tabsWrap" style="display:none"><div class="tabs-inner" id="tabBar"></div></div>
+<main id="main"><div id="state"></div></main>
 
 <script>
-(function () {
-  const API_BASE = '/api';
+(function(){
+  const API_BASE='/api';
 
-  async function init() {
-    const params = new URLSearchParams(window.location.search);
-    const slug = params.get('slug') || '';
+  /* ============ THEMES ============ */
+  const THEMES={
+    default:{primary:'#0f4c3a',p2:'#15795f',accent:'#0f8f80',grad:'linear-gradient(135deg,#0f4c3a 0%,#15795f 60%,#0f8f80 100%)',tint:['#ecfdf5','#eff6ff','#fffbeb','#f5f3ff'],kn:['#059669','#2563eb','#e08a1e','#7c3aed'],pie:['#0f8f80','#2563eb','#5c8a1b','#e08a1e','#7c3aed','#e11d63','#64748b'],ramp:['#0f4c3a','#15795f','#0f8f80','#2db597','#34d399','#86efac','#bbf7d0'],dist:['#e11d63','#e08a1e','#cbd5e1','#2db597','#0f8f80']},
+    grey:{primary:'#111827',p2:'#374151',accent:'#4b5563',grad:'linear-gradient(135deg,#0b0f17 0%,#1f2937 55%,#374151 100%)',tint:['#f3f4f6','#f3f4f6','#f3f4f6','#f3f4f6'],kn:['#111827','#374151','#4b5563','#6b7280'],pie:['#111827','#374151','#4b5563','#6b7280','#9ca3af','#cbd5e1','#e5e7eb'],ramp:['#0b0f17','#1f2937','#374151','#4b5563','#6b7280','#9ca3af','#cbd5e1'],dist:['#111827','#4b5563','#9ca3af','#6b7280','#374151']}
+  };
+  const VILLAGE_THEMES={
+    'smiths lake':{primary:'#0b6b6b',p2:'#0e8a8a',accent:'#14b8a6',grad:'linear-gradient(135deg,#063f3f 0%,#0b6b6b 55%,#14b8a6 100%)',tint:['#ecfeff','#eff6ff','#f0fdf4','#fffbeb'],kn:['#0d9488','#2563eb','#16a34a','#d97706'],pie:['#0b6b6b','#14b8a6','#2563eb','#16a34a','#d97706','#7c3aed','#64748b'],ramp:['#063f3f','#0b6b6b','#0e8a8a','#14b8a6','#5eead4','#99f6e4','#cffafe'],dist:['#dc2626','#d97706','#cbd5e1','#2dd4bf','#0d9488']},
+    'blueys beach':{primary:'#0c4a8a',p2:'#1769aa',accent:'#2596d4',grad:'linear-gradient(135deg,#0c3a6e 0%,#1769aa 55%,#2596d4 100%)',tint:['#eff6ff','#fffbeb','#ecfeff','#fef2f2'],kn:['#1769aa','#d97706','#0891b2','#e11d63'],pie:['#1769aa','#2596d4','#e0a04e','#0891b2','#16a34a','#7c3aed','#64748b'],ramp:['#0c3a6e','#0c4a8a','#1769aa','#2596d4','#7cc4ec','#bfe1f6','#e3f2fc'],dist:['#dc2626','#e0a04e','#cbd5e1','#5cb3e0','#1769aa']},
+    'coomba park':{primary:'#2f6d3b',p2:'#3f8a4e',accent:'#5fae5f',grad:'linear-gradient(135deg,#1f4a28 0%,#2f6d3b 55%,#5fae5f 100%)',tint:['#f0fdf4','#eff6ff','#fffbeb','#f5f3ff'],kn:['#3f8a4e','#2563eb','#d97706','#7c3aed'],pie:['#2f6d3b','#5fae5f','#2563eb','#d97706','#0891b2','#7c3aed','#64748b'],ramp:['#1f4a28','#2f6d3b','#3f8a4e','#5fae5f','#9ed99e','#c9efc9','#e6f8e6'],dist:['#dc2626','#d97706','#cbd5e1','#86c186','#3f8a4e']}
+  };
+  let TH=THEMES.default, baseTheme=THEMES.default;
+  function setTheme(t){TH=t;const r=document.documentElement.style;r.setProperty('--primary',t.primary);r.setProperty('--primary-2',t.p2);r.setProperty('--accent',t.accent);r.setProperty('--grad',t.grad);t.tint.forEach((c,i)=>r.setProperty('--tint'+(i+1),c));t.kn.forEach((c,i)=>r.setProperty('--kn'+(i+1),c));r.setProperty('--pos',t.dist[4]);r.setProperty('--neg',t.dist[0])}
+  function themeForVillage(v){return VILLAGE_THEMES[(v||'').trim().toLowerCase()]||THEMES.default}
 
-    if (!slug) {
-      renderError('No survey specified.');
-      return;
-    }
+  /* ============ HELPERS ============ */
+  let charts=[];const clearCharts=()=>{charts.forEach(c=>{try{c.destroy()}catch(e){}});charts=[]};
+  const hasChart=typeof Chart!=='undefined';
+  const pct=(v,t)=>t?Math.round(v/t*100):0;
+  const num=v=>(v==null||isNaN(v))?0:v;
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+  const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=null)e.innerHTML=h;return e};
+  const ramp=i=>TH.ramp[Math.min(i,6)];
+  function topOf(o){const e=Object.entries(o||{}).sort((a,b)=>b[1]-a[1]);if(!e.length)return null;const t=e.reduce((s,[,v])=>s+v,0);return{label:e[0][0],n:e[0][1],pct:pct(e[0][1],t),total:t,entries:e}}
+  function countUp(node,to,suffix){if(!isFinite(to)){node.textContent=to+(suffix||'');return}let s=0,steps=26,i=0;const inc=to/steps;const id=setInterval(()=>{i++;s+=inc;if(i>=steps){s=to;clearInterval(id)}node.textContent=(Number.isInteger(to)?Math.round(s):s.toFixed(1))+(suffix||'')},18)}
 
-    // Update survey link
-    document.getElementById('survey-link').href = `/survey/?slug=${encodeURIComponent(slug)}`;
+  function kpiRow(items){const g=el('div','grid g4');items.forEach((it,i)=>{const k=el('div','kpi k'+((i%4)+1),`<div class="n">0</div><div class="l">${esc(it.l)}</div>`);g.appendChild(k);setTimeout(()=>{if(typeof it.n==='number')countUp(k.querySelector('.n'),it.n,it.suf||'');else k.querySelector('.n').textContent=it.n},30)});return g}
+  function rankedBars(rows,opts){opts=opts||{};const box=el('div','bars');rows.forEach((r,i)=>{const w=Math.max(num(r.val),2.5);const row=el('div','bar-row');row.innerHTML=`<div class="bar-lab">${opts.rankNum?`<span class="rank">${i+1}</span>`:''}${esc(r.label)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</div><div class="track"><div class="fill" style="background:${ramp(i)}">${esc(r.txt)}</div></div><div class="bar-n">${r.n!=null?'n='+r.n:''}</div>`;box.appendChild(row);requestAnimationFrame(()=>setTimeout(()=>{const f=row.querySelector('.fill');if(f)f.style.width=Math.min(w,100)+'%'},60+i*70))});return box}
+  function donut(obj,title){const wrap=el('div','donut-wrap');if(title)wrap.appendChild(el('div','ctitle',title));const cb=el('div','canvas-box');const cv=document.createElement('canvas');cb.appendChild(cv);wrap.appendChild(cb);if(hasChart)setTimeout(()=>charts.push(new Chart(cv,{type:'doughnut',data:{labels:Object.keys(obj),datasets:[{data:Object.values(obj),backgroundColor:TH.pie,borderColor:'#fff',borderWidth:2}]},options:{cutout:'62%',plugins:{legend:{position:'bottom',labels:{boxWidth:11,font:{size:11},padding:9}}}}})),20);return wrap}
+  function donutCard(title,obj){const c=el('div','card');c.appendChild(donut(obj,title));return c}
+  function distMini(items){const grid=el('div','dist-grid');items.forEach(it=>{const c=el('div','dist');c.innerHTML=`<h4>${esc(it.label)}</h4><div class="avg">avg ${num(it.avg).toFixed(2)} / 5 · n=${it.n||''}</div>`;const cb=el('div');cb.style.height='130px';const cv=document.createElement('canvas');cb.appendChild(cv);c.appendChild(cb);grid.appendChild(c);if(hasChart)setTimeout(()=>charts.push(new Chart(cv,{type:'bar',data:{labels:['1','2','3','4','5'],datasets:[{data:it.dist,backgroundColor:TH.dist,borderRadius:5}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0,font:{size:10}}},x:{ticks:{font:{size:10}}}}}})),20)});return grid}
+  function gauge(value,label,min,max){const wrap=el('div','gauge-wrap');const box=el('div','gauge-box');const cv=document.createElement('canvas');box.appendChild(cv);const v=el('div','gauge-val',`<div class="gv" style="color:${TH.accent}">${value}</div><div class="gl">${esc(label)}</div>`);box.appendChild(v);wrap.appendChild(box);const frac=Math.max(0,Math.min(1,(value-min)/(max-min)));if(hasChart)setTimeout(()=>charts.push(new Chart(cv,{type:'doughnut',data:{datasets:[{data:[frac,1-frac],backgroundColor:[TH.accent,'#eef2f0'],borderWidth:0}]},options:{rotation:-90,circumference:180,cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}}}})),20);return wrap}
+  function divergingLikert(items){const box=el('div','lik');const cols=TH.dist;items.forEach(s=>{const t=s.dist.reduce((a,b)=>a+b,0);const p=s.dist.map(d=>pct(d,t));const agree=p[3]+p[4];const row=el('div');row.innerHTML=`<div class="lik-top"><span>${esc(s.label)}</span><span class="agree">${agree}% agree</span></div>`;const bar=el('div','lik-bar');p.forEach((pp,i)=>{if(pp>0){const seg=el('div','lik-seg',pp>=8?pp+'%':'');seg.style.width=pp+'%';seg.style.background=cols[i];bar.appendChild(seg)}});row.appendChild(bar);box.appendChild(row)});const lg=el('div','lik-legend');['Strongly disagree','Disagree','Neutral','Agree','Strongly agree'].forEach((t,i)=>lg.appendChild(el('span',null,`<i style="background:${cols[i]}"></i>${t}`)));box.appendChild(lg);return box}
+  function quadrant(pts){const W=460,H=380,pad=46,pw=W-pad*2,ph=H-pad*2;const x=v=>pad+((v-1)/4)*pw,y=v=>pad+((5-v)/4)*ph;const mx=x(3),my=y(3);let svg=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:520px;height:auto;font-family:inherit"><rect x="${pad}" y="${pad}" width="${pw/2}" height="${ph/2}" fill="#fef2f2"/><rect x="${mx}" y="${pad}" width="${pw/2}" height="${ph/2}" fill="${TH.tint[0]}"/><rect x="${pad}" y="${my}" width="${pw/2}" height="${ph/2}" fill="#f8fafc"/><rect x="${mx}" y="${my}" width="${pw/2}" height="${ph/2}" fill="#f8fafc"/><line x1="${mx}" y1="${pad}" x2="${mx}" y2="${pad+ph}" stroke="#cbd5e1" stroke-dasharray="4"/><line x1="${pad}" y1="${my}" x2="${pad+pw}" y2="${my}" stroke="#cbd5e1" stroke-dasharray="4"/><text x="${pad+8}" y="${pad+16}" font-size="11" font-weight="700" fill="#dc2626">Focus here</text><text x="${mx+8}" y="${pad+16}" font-size="11" font-weight="700" fill="${TH.accent}">Keep it up</text><text x="${pad+8}" y="${pad+ph-8}" font-size="11" fill="#9ca3af">Lower priority</text><text x="${mx+8}" y="${pad+ph-8}" font-size="11" fill="#9ca3af">Possible overkill</text><text x="${pad+pw/2}" y="${H-10}" font-size="11" fill="#475569" text-anchor="middle">Performance →</text><text x="14" y="${pad+ph/2}" font-size="11" fill="#475569" text-anchor="middle" transform="rotate(-90 14 ${pad+ph/2})">Importance →</text>`;pts.forEach((p,i)=>{const cx=x(num(p.performance)||1),cy=y(num(p.importance)||1);svg+=`<circle cx="${cx}" cy="${cy}" r="7" fill="${ramp(i)}" opacity=".9"/><text x="${cx+10}" y="${cy+4}" font-size="10" fill="#16261f">${esc(p.label)}</text>`});return el('div','card',svg)}
+  function stacked100(items){const t=items.reduce((s,i)=>s+i.val,0)||1;const bar=el('div');bar.style.cssText='display:flex;height:34px;border-radius:9px;overflow:hidden;box-shadow:var(--shadow)';items.forEach((it,i)=>{const seg=el('div',null,pct(it.val,t)>=7?pct(it.val,t)+'%':'');seg.style.cssText=`width:${pct(it.val,t)}%;background:${ramp(i)};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800`;bar.appendChild(seg)});const lg=el('div');lg.style.cssText='display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:12px';items.forEach((it,i)=>lg.appendChild(el('span',null,`<i style="display:inline-block;width:11px;height:11px;border-radius:3px;background:${ramp(i)};margin-right:6px;vertical-align:-1px"></i>${esc(it.label)} — <b>${it.val}</b>`)));const box=el('div');box.appendChild(bar);box.appendChild(lg);return box}
+  function commentList(list){const c=el('div');list.slice(0,200).forEach(o=>{const main=o.comments||o.text||'';const extra=o.additionalComments?`<div class="tx" style="margin-top:6px">${esc(o.additionalComments)}</div>`:'';c.appendChild(el('div','cmt',`<div class="who">${esc(o.person||'Community member')}</div><div class="tx">${esc(main)}</div>${extra}`))});return c}
+  function responsesPanel(list){const p=el('div');p.appendChild(el('div','callout','Comments are shown as submitted, lightly moderated for readability. Names and identifying details are removed.'));const c=el('div','card mt');c.appendChild(el('div','ctitle',`Open responses (${list.length})`));c.appendChild(commentList(list));p.appendChild(c);return p}
+  function whoDonut(rb){return donutCard('Who responded?',rb)}
+  function headline(text){return el('div','headline',`<span class="ht">Headline</span>${text}`)}
+  function hasDist(arr){return arr&&arr.length&&arr.every(x=>Array.isArray(x.dist)&&x.dist.length===5)}
+  // ratings may be {avg} (1-5) or {bestPct} (% share). Normalise to a bar value/text.
+  function ratingBar(x){if(x.avg!=null&&x.bestPct==null)return{label:x.label,val:pct(x.avg,5),txt:num(x.avg).toFixed(1),n:x.n};return{label:x.label,val:num(x.bestPct),txt:num(x.bestPct)+'%',n:x.n!=null?x.n:x.bestCount}}
 
-    renderLoading();
+  /* ============ AUTO NARRATIVE ============ */
+  function findingsList(items){const wrap=el('div');wrap.appendChild(el('div','ctitle','Key findings'));wrap.appendChild(el('div','callout',`<span class="auto-tag">Auto</span>Generated from the live response data; refreshes as new responses arrive.`));items.forEach(([h,b])=>wrap.appendChild(el('div','find',`<h4>${esc(h)}</h4><p>${esc(b)}</p>`)));return wrap}
 
-    try {
-      const completed = new URLSearchParams(window.location.search).get('completed') === '1' ? '&completed=1' : '';
-      const [configRes, resultsRes] = await Promise.all([
+  /* ============ LAYOUTS (return {tabs:[{title,build}]}) ============ */
+  function L_conjoint(d){
+    const ov=topOf(d.overall);const tabs=[];
+    tabs.push({title:'Overview',build:()=>{const p=el('div');
+      if(ov)p.appendChild(headline(`<b>${esc(ov.label)}</b> is the leading design preference at <b>${ov.pct}%</b> of ${d.count} responses.`));
+      p.appendChild(kpiRow([{n:d.count,l:'Total Responses'},{n:Object.keys(d.respondentBreakdown||{}).length,l:'Respondent Groups'},{n:ov?ov.pct:0,l:ov?'Leading: '+ov.label:'Leading',suf:'%'},{n:(d.openText||[]).length,l:'Written Comments'}]));
+      const g=el('div','grid g2 mt');if(d.respondentBreakdown)g.appendChild(whoDonut(d.respondentBreakdown));if(ov)g.appendChild(donutCard('Overall preference',d.overall));p.appendChild(g);
+      if(ov){const pb=el('div','card mt');pb.appendChild(el('div','ctitle','Preference breakdown'));pb.appendChild(rankedBars(ov.entries.map(([k,v])=>({label:k,val:pct(v,ov.total),txt:pct(v,ov.total)+'%',n:v}))));p.appendChild(pb)}
+      return p}});
+    if(d.partA&&d.partA.length)tabs.push({title:'Shared Features',build:()=>{const p=el('div');p.appendChild(el('div','callout','<b>Shared features</b> rated 1–5 (appear in both designs).'));const c=el('div','card mt');c.appendChild(el('div','ctitle','Ranked by agreement'));c.appendChild(rankedBars([...d.partA].sort((a,b)=>b.avg-a.avg).map(f=>({label:f.label,val:pct(f.avg,5),txt:num(f.avg).toFixed(2),n:f.n})),{rankNum:true}));p.appendChild(c);if(hasDist(d.partA)){const cd=el('div','card mt');cd.appendChild(el('div','ctitle','Rating distributions (1–5)'));cd.appendChild(distMini(d.partA));p.appendChild(cd)}return p}});
+    if(d.partB&&d.partB.length)tabs.push({title:'Key Differences',build:()=>{const p=el('div');p.appendChild(el('div','callout blue','<b>Importance of the key differences</b> rated 1–5.'));const c=el('div','card mt');c.appendChild(el('div','ctitle','Importance'));if(hasDist(d.partB)){c.appendChild(distMini(d.partB.map(b=>({label:b.label,avg:b.avg,n:b.n,dist:b.dist}))))}else{c.appendChild(rankedBars(d.partB.map(b=>({label:b.label,val:pct(b.avg,5),txt:num(b.avg).toFixed(2),n:b.n})),{rankNum:true}))}p.appendChild(c);return p}});
+    if(d.conjoint&&d.conjoint.length)tabs.push({title:'Conjoint',build:()=>{const p=el('div');p.appendChild(el('div','callout amber','<b>Conjoint tasks</b> — package choices that isolate what drives preference.'));const cg=el('div','grid g2 mt');d.conjoint.forEach(t=>{const c=el('div','card');c.innerHTML=`<div class="ctitle" style="color:var(--ink)">${esc(t.task)}</div>`;c.appendChild(rankedBars([{label:t.option1,val:t.option1Pct,txt:t.option1Pct+'%',n:t.option1Count},{label:t.option2,val:t.option2Pct,txt:t.option2Pct+'%',n:t.option2Count}]));cg.appendChild(c)});p.appendChild(cg);return p}});
+    if(d.partD&&d.partD.length)tabs.push({title:'Priorities',build:()=>{const p=el('div');p.appendChild(el('div','callout','<b>Relative importance</b> — average of 100 points across the differences.'));const obj={};d.partD.forEach(x=>obj[x.label]=x.avg);const g=el('div','grid g2 mt');g.appendChild(donutCard('Average allocation',obj));const c=el('div','card');c.appendChild(el('div','ctitle','Allocation breakdown'));c.appendChild(rankedBars(d.partD.map(x=>({label:x.label,val:x.avg,txt:x.avg+'%'}))));g.appendChild(c);p.appendChild(g);return p}});
+    if(d.openText&&d.openText.length)tabs.push({title:'Responses',build:()=>responsesPanel(d.openText)});
+    tabs.push({title:'Analysis',build:()=>{const f=[];if(ov)f.push(['Leading preference',`${ov.label} leads at ${ov.pct}% of ${d.count} responses.`]);if(d.partA&&d.partA.length){const s=[...d.partA].sort((a,b)=>b.avg-a.avg);f.push(['Highest-rated shared feature',`${s[0].label} scored ${num(s[0].avg).toFixed(2)}/5.`])}if(d.partD&&d.partD.length){const s=[...d.partD].sort((a,b)=>b.avg-a.avg);f.push(['Top priority',`${s[0].label} attracts the most points (${s[0].avg}).`])}return findingsList(f)}});
+    return tabs;
+  }
+  function L_maxdiff(d){const top=(d.utilityScores||[])[0];const tabs=[];
+    tabs.push({title:'Overview',build:()=>{const p=el('div');if(top)p.appendChild(headline(`<b>${esc(top.label)}</b> is the clear community priority — best-rated by <b>${top.bestPct}%</b> of ${d.count} respondents.`));p.appendChild(kpiRow([{n:d.count,l:'Total Responses'},{n:(d.utilityScores||[]).length,l:'Options Ranked'},{n:top?top.bestPct:0,l:top?'Top: '+top.label:'Top',suf:'%'},{n:(d.openText||[]).length,l:'Comments'}]));const g=el('div','grid g2 mt');if(d.respondentBreakdown)g.appendChild(whoDonut(d.respondentBreakdown));const c=el('div','card');c.appendChild(el('div','ctitle','Community priority score'));c.appendChild(rankedBars((d.utilityScores||[]).map(u=>({label:u.label,val:u.bestPct,txt:u.bestPct+'%',n:u.bestCount})),{rankNum:true}));g.appendChild(c);p.appendChild(g);return p}});
+    if(d.utilityScores&&d.utilityScores.length)tabs.push({title:'Priority Scores',build:()=>{const p=el('div');p.appendChild(el('div','callout blue','<b>Best–Worst scoring:</b> net utility = chosen best minus worst. Higher = stronger priority.'));const c=el('div','card mt');c.appendChild(el('div','ctitle','Net utility'));c.appendChild(rankedBars(d.utilityScores.map(u=>({label:u.label,val:Math.max(3,num(u.utilityScore)+15),txt:(u.utilityScore>0?'+':'')+u.utilityScore,sub:`${u.bestCount} best · ${u.worstCount} worst`})),{rankNum:true}));p.appendChild(c);return p}});
+    if(d.openText&&d.openText.length)tabs.push({title:'Responses',build:()=>responsesPanel(d.openText)});
+    return tabs;
+  }
+  function L_satisfaction(d){const s=[...(d.serviceRatings||[])].sort((a,b)=>b.avg-a.avg);const top=s[0],low=s[s.length-1];const tabs=[];
+    tabs.push({title:'Overview',build:()=>{const p=el('div');if(top)p.appendChild(headline(`${d.nps!=null?'Overall NPS <b>'+d.nps+'</b>. ':''}<b>${esc(top.label)}</b> rates highest; <b>${esc(low.label)}</b> is the clearest area to improve.`));const k=el('div','grid g2 mt');if(d.nps!=null){const kl=el('div','card');kl.appendChild(gauge(d.nps,'Net Promoter Score (n='+(d.npsCount||0)+')',-100,100));k.appendChild(kl)}const kr=el('div');kr.appendChild(kpiRow([{n:d.count,l:'Responses'},{n:top?top.avg:0,l:'Highest rated'},{n:low?low.avg:0,l:'Lowest rated'},{n:Object.keys(d.respondentBreakdown||{}).length,l:'Groups'}]));k.appendChild(kr);p.appendChild(k);const g=el('div','grid g2 mt');if(d.respondentBreakdown)g.appendChild(whoDonut(d.respondentBreakdown));const c=el('div','card');c.appendChild(el('div','ctitle','Average satisfaction (1–5)'));c.appendChild(rankedBars(s.map(x=>({label:x.label,val:pct(x.avg,5),txt:num(x.avg).toFixed(1),n:x.n})),{rankNum:true}));g.appendChild(c);p.appendChild(g);return p}});
+    if(hasDist(s))tabs.push({title:'Ratings',build:()=>{const p=el('div');p.appendChild(el('div','callout blue','Distribution of 1–5 ratings per service.'));const c=el('div','card mt');c.appendChild(el('div','ctitle','Rating distributions'));c.appendChild(distMini(s));p.appendChild(c);return p}});
+    if(d.openText&&d.openText.length)tabs.push({title:'Responses',build:()=>responsesPanel(d.openText)});
+    return tabs;
+  }
+  function L_ratings(d,labelN){const s=[...(d.serviceRatings||[])];const isAvg=s.length&&s[0].avg!=null;if(isAvg)s.sort((a,b)=>b.avg-a.avg);const tabs=[];
+    tabs.push({title:'Overview',build:()=>{const p=el('div');if(s.length){const t=s[0];p.appendChild(headline(`<b>${esc(t.label)}</b> ${isAvg?'is rated highest at <b>'+num(t.avg).toFixed(1)+'/5</b>':'leads with <b>'+num(t.bestPct)+'%</b>'} of ${d.count} responses.`))}p.appendChild(kpiRow([{n:d.count,l:'Responses'},{n:s.length,l:'Items'},{n:Object.keys(d.respondentBreakdown||{}).length,l:'Groups'},{n:(d.openText||[]).length,l:'Comments'}]));const g=el('div','grid g2 mt');if(d.respondentBreakdown)g.appendChild(whoDonut(d.respondentBreakdown));const c=el('div','card');c.appendChild(el('div','ctitle',labelN||'Results'));c.appendChild(rankedBars(s.map(ratingBar),{rankNum:true}));g.appendChild(c);p.appendChild(g);if(hasDist(s)){const cd=el('div','card mt');cd.appendChild(el('div','ctitle','Rating distributions'));cd.appendChild(distMini(s));p.appendChild(cd)}return p}});
+    if(d.openText&&d.openText.length)tabs.push({title:'Responses',build:()=>responsesPanel(d.openText)});
+    return tabs;
+  }
+  function L_likert(d){const s=(d.serviceRatings||[]);const tabs=[];const useDiv=hasDist(s);
+    tabs.push({title:'Overview',build:()=>{const p=el('div');p.appendChild(kpiRow([{n:d.count,l:'Responses'},{n:s.length,l:'Statements'},{n:Object.keys(d.respondentBreakdown||{}).length,l:'Groups'},{n:(d.openText||[]).length,l:'Comments'}]));const c=el('div','card mt');c.appendChild(el('div','ctitle',useDiv?'Agreement (diverging) — % per level':'Average agreement (1–5)'));c.appendChild(useDiv?divergingLikert(s):rankedBars([...s].sort((a,b)=>b.avg-a.avg).map(ratingBar),{rankNum:true}));p.appendChild(c);return p}});
+    if(d.openText&&d.openText.length)tabs.push({title:'Responses',build:()=>responsesPanel(d.openText)});
+    return tabs;
+  }
+  function L_poll(d){const s=(d.serviceRatings||[]);const obj={};s.forEach(x=>obj[x.label]=x.n!=null?x.n:x.bestPct);const ov=topOf(obj);const tabs=[];
+    tabs.push({title:'Overview',build:()=>{const p=el('div');if(ov)p.appendChild(headline(`<b>${esc(ov.label)}</b> leads with <b>${ov.pct}%</b> of ${d.count} responses.`));p.appendChild(kpiRow([{n:d.count,l:'Total Responses'},{n:ov?ov.pct:0,l:ov?ov.label:'Top',suf:'%'},{n:s.length,l:'Options'},{n:Object.keys(d.respondentBreakdown||{}).length,l:'Groups'}]));const g=el('div','grid g2 mt');g.appendChild(donutCard('Result',obj));const c=el('div','card');c.appendChild(el('div','ctitle','Vote share'));c.appendChild(rankedBars(s.map(ratingBar),{rankNum:true}));g.appendChild(c);p.appendChild(g);return p}});
+    if(d.openText&&d.openText.length)tabs.push({title:'Responses',build:()=>responsesPanel(d.openText)});
+    return tabs;
+  }
+  function L_budget(d){const s=(d.serviceRatings||[]);const tabs=[];
+    tabs.push({title:'Overview',build:()=>{const p=el('div');if(s.length)p.appendChild(headline(`The community puts the most weight on <b>${esc(s[0].label)}</b>.`));p.appendChild(kpiRow([{n:d.count,l:'Responses'},{n:s.length,l:'Options'},{n:Object.keys(d.respondentBreakdown||{}).length,l:'Groups'},{n:(d.openText||[]).length,l:'Comments'}]));const c=el('div','card mt');c.appendChild(el('div','ctitle','Average allocation'));c.appendChild(rankedBars(s.map(ratingBar),{rankNum:true}));p.appendChild(c);return p}});
+    if(d.openText&&d.openText.length)tabs.push({title:'Responses',build:()=>responsesPanel(d.openText)});
+    return tabs;
+  }
+  function L_ipa(d){const ipa=d.ipa||[];const tabs=[];
+    tabs.push({title:'Overview',build:()=>{const p=el('div');const focus=ipa.filter(x=>x.importance>=3&&x.performance<3).sort((a,b)=>b.gap-a.gap);if(focus.length)p.appendChild(headline(`<b>${esc(focus.map(f=>f.label).join(' & '))}</b> are high-importance but low-performance — the clearest priorities to fix.`));p.appendChild(kpiRow([{n:d.count,l:'Responses'},{n:focus.length,l:'In "Focus here"'},{n:ipa.length,l:'Services'},{n:Object.keys(d.respondentBreakdown||{}).length,l:'Groups'}]));const g=el('div','grid g2 mt');if(ipa.length)g.appendChild(quadrant(ipa));const c=el('div','card');c.appendChild(el('div','ctitle','Importance − performance gap'));c.appendChild(rankedBars([...ipa].sort((a,b)=>b.gap-a.gap).map(x=>({label:x.label,val:Math.max(3,Math.abs(num(x.gap))/2*100),txt:(x.gap>0?'+':'')+num(x.gap).toFixed(1)})),{rankNum:true}));g.appendChild(c);p.appendChild(g);return p}});
+    if(d.openText&&d.openText.length)tabs.push({title:'Responses',build:()=>responsesPanel(d.openText)});
+    return tabs;
+  }
+  function L_demographic(d){const s=(d.serviceRatings||[]);const tabs=[];
+    tabs.push({title:'Overview',build:()=>{const p=el('div');p.appendChild(kpiRow([{n:d.count,l:'Total Registered'},{n:Object.keys(d.respondentBreakdown||{}).length,l:'Types'},{n:s.length,l:'Profile Values'},{n:(d.openText||[]).length,l:'Open Fields'}]));if(d.respondentBreakdown){const g=el('div','grid g3 mt');g.appendChild(whoDonut(d.respondentBreakdown));p.appendChild(g)}if(s.length){const c=el('div','card mt');c.appendChild(el('div','ctitle','Profile breakdown'));c.appendChild(rankedBars(s.map(ratingBar)));p.appendChild(c)}return p}});
+    if(d.openText&&d.openText.length)tabs.push({title:'Responses',build:()=>responsesPanel(d.openText)});
+    return tabs;
+  }
+  function L_open(d){return [{title:'Responses',build:()=>{const p=el('div');p.appendChild(headline(`<b>${(d.openText||[]).length}</b> ideas and comments submitted by the community.`));p.appendChild(responsesPanel(d.openText||[]));return p}}]}
+  function L_multisection(d){const tabs=[{title:'Overview',build:()=>{const p=el('div');p.appendChild(headline(`<b>${d.count}</b> responses across <b>${(d.sections||[]).length}</b> sections.`));p.appendChild(kpiRow([{n:d.count,l:'Responses'},{n:(d.sections||[]).length,l:'Sections'},{n:Object.keys(d.respondentBreakdown||{}).length,l:'Groups'},{n:(d.sections||[]).reduce((s,x)=>s+((x.openText||[]).length),0),l:'Comments'}]));if(d.respondentBreakdown){const g=el('div','grid g2 mt');g.appendChild(whoDonut(d.respondentBreakdown));p.appendChild(g)}return p}}];
+    (d.sections||[]).forEach((sec,i)=>{tabs.push({title:sec.title||('Section '+(i+1)),build:()=>{const p=el('div');if(sec.serviceRatings&&sec.serviceRatings.length){const c=el('div','card');c.appendChild(el('div','ctitle',esc(sec.title||sec.template)));c.appendChild(rankedBars(sec.serviceRatings.map(ratingBar),{rankNum:true}));p.appendChild(c);if(hasDist(sec.serviceRatings)){const cd=el('div','card mt');cd.appendChild(el('div','ctitle','Distributions'));cd.appendChild(distMini(sec.serviceRatings));p.appendChild(cd)}}if(sec.openText&&sec.openText.length)p.appendChild((()=>{const c=el('div','card mt');c.appendChild(el('div','ctitle','Responses'));c.appendChild(commentList(sec.openText));return c})());if(!(sec.serviceRatings&&sec.serviceRatings.length)&&!(sec.openText&&sec.openText.length))p.appendChild(el('div','vf-state','<p>No responses in this section yet.</p>'));return p}})});
+    return tabs;
+  }
+  const LAYOUTS={'conjoint-design-options':L_conjoint,'priority-ranking':L_maxdiff,'annual-satisfaction':L_satisfaction,'likert-agreement':L_likert,'star-rating':d=>L_ratings(d,'Average rating (1–5)'),'quick-poll':L_poll,'open-feedback':L_open,'ranked-choice':d=>L_ratings(d,'Overall ranking'),'budget-allocation':L_budget,'importance-performance':L_ipa,'demographic':L_demographic,'respondent-profile':L_demographic,'multi-section':L_multisection};
+
+  /* ============ MOUNT ============ */
+  function mountTabs(tabs){
+    const tabsWrap=document.getElementById('tabsWrap');const tabBar=document.getElementById('tabBar');const main=document.getElementById('main');
+    tabBar.innerHTML='';main.innerHTML='';
+    if(tabs.length>1){tabsWrap.style.display='';}else{tabsWrap.style.display='none';}
+    tabs.forEach((t,i)=>{
+      const b=el('button','tab'+(i===0?' on':''),esc(t.title));
+      const pan=el('div','panel'+(i===0?' on':''));pan.appendChild(t.build());main.appendChild(pan);
+      b.onclick=()=>{[...tabBar.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');[...main.children].forEach(x=>x.classList.remove('on'));main.children[i].classList.add('on');window.scrollTo({top:0,behavior:'smooth'})};
+      tabBar.appendChild(b);
+    });
+  }
+  function renderResults(survey,data,status){
+    const isLive=status==='active';
+    const count=data.count||0;
+    const snapDate=new Date().toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
+    document.getElementById('hEye').textContent=(survey&&survey.village?survey.village+' · ':'')+'VillageFirst Community Survey';
+    document.getElementById('hTitle').textContent=(survey&&survey.surveyName)||'Community Survey Results';
+    document.getElementById('hSub').textContent=(survey&&survey.snapshotLabel)||'';
+    const bw=document.getElementById('hBadgeWrap');bw.style.display='';
+    document.getElementById('hDot').style.display=isLive?'':'none';
+    document.getElementById('hBadge').innerHTML=`${isLive?'Live':'📸 Snapshot'} · ${snapDate} · n = ${count} responses${isLive?' · still open':''}`;
+    if(count===0){document.getElementById('tabsWrap').style.display='none';document.getElementById('main').innerHTML='<div class="vf-state"><h2>No responses yet</h2><p>Results will appear here as the community responds.</p></div>';return}
+    const tpl=data.template||(survey&&survey.template);
+    const layout=LAYOUTS[tpl];
+    if(!layout){document.getElementById('main').innerHTML='<div class="vf-state"><h2>Results received</h2><p>'+count+' responses recorded.</p></div>';return}
+    mountTabs(layout(data));
+  }
+
+  function state(html){document.getElementById('tabsWrap').style.display='none';document.getElementById('main').innerHTML='<div id="state">'+html+'</div>'}
+  function loading(){state('<div class="vf-state"><div class="vf-spinner"></div><p>Loading results…</p></div>')}
+  function errState(msg){document.getElementById('hTitle').textContent='Survey Results';state('<div class="vf-state"><h2>⚠️ '+esc(msg)+'</h2><a href="/" class="vf-btn">Return to website</a></div>')}
+  function infoState(msg){document.getElementById('hTitle').textContent='Survey Results';state('<div class="vf-state"><h2>📅 '+esc(msg)+'</h2><a href="/" class="vf-btn">Return to website</a></div>')}
+
+  // Greyscale / print toggle
+  document.getElementById('greyToggle').addEventListener('click',function(){
+    if(document.documentElement.dataset.grey==='1'){document.documentElement.dataset.grey='';setTheme(baseTheme);this.textContent='◐ Greyscale'}
+    else{document.documentElement.dataset.grey='1';setTheme(THEMES.grey);this.textContent='● Colour'}
+    if(window.__lastRender)window.__lastRender();
+  });
+
+  async function init(){
+    const params=new URLSearchParams(window.location.search);
+    const slug=params.get('slug')||'';
+    if(!slug){errState('No survey specified.');return}
+    document.getElementById('survey-link').href='/survey/?slug='+encodeURIComponent(slug);
+    loading();
+    try{
+      const completed=params.get('completed')==='1'?'&completed=1':'';
+      const [configRes,resultsRes]=await Promise.all([
         fetch(`${API_BASE}/survey-config?slug=${encodeURIComponent(slug)}`),
-        fetch(`${API_BASE}/survey-results?slug=${encodeURIComponent(slug)}${completed}`),
+        fetch(`${API_BASE}/survey-results?slug=${encodeURIComponent(slug)}${completed}`)
       ]);
-
-      const configData = await configRes.json();
-      const resultsData = await resultsRes.json();
-
-      if (configData.status === 'not-found') { renderError('Survey not found.'); return; }
-
-      // Server-side visibility enforcement is authoritative.
-      if (resultsData.restricted) { renderInfo(resultsData.message || 'Results for this survey are not publicly available.'); return; }
-
-      // Check results visibility
-      const visibility = configData.survey?.resultsVisibility || 'public';
-      if (visibility === 'committee-only') {
-        renderError('Results for this survey are available to committee members only.');
-        return;
-      }
-      if (visibility === 'after-close' && configData.status !== 'closed') {
-        renderInfo('Results will be published once the survey closes.');
-        return;
-      }
-
-      renderResults(configData.survey, resultsData, configData.status);
-    } catch (err) {
-      console.error(err);
-      renderError('Could not load results. Please try again.');
-    }
+      const configData=await configRes.json();
+      const resultsData=await resultsRes.json();
+      if(configData.status==='not-found'){errState('Survey not found.');return}
+      if(resultsData.restricted){infoState(resultsData.message||'Results for this survey are not publicly available.');return}
+      const visibility=(configData.survey&&configData.survey.resultsVisibility)||'public';
+      if(visibility==='committee-only'){errState('Results for this survey are available to committee members only.');return}
+      if(visibility==='after-close'&&configData.status!=='closed'){infoState('Results will be published once the survey closes.');return}
+      const survey=resultsData.survey||configData.survey||{};
+      baseTheme=themeForVillage(survey.village);
+      if(document.documentElement.dataset.grey!=='1')setTheme(baseTheme);
+      window.__lastRender=()=>{clearCharts();renderResults(survey,resultsData,configData.status)};
+      window.__lastRender();
+    }catch(err){console.error(err);errState('Could not load results. Please try again.');}
   }
 
-  function root() { return document.getElementById('results-root'); }
-
-  function renderLoading() {
-    root().innerHTML = `<div class="vf-state"><div class="vf-spinner"></div><p>Loading results…</p></div>`;
-  }
-
-  function renderError(msg) {
-    root().innerHTML = `<div class="vf-state"><h2>⚠️ ${msg}</h2><a href="/" class="vf-btn">Return to website</a></div>`;
-  }
-
-  function renderInfo(msg) {
-    root().innerHTML = `<div class="vf-state"><h2>📅 ${msg}</h2><a href="/" class="vf-btn">Return to website</a></div>`;
-  }
-
-  function renderResults(survey, data, status) {
-    const isLive = status === 'active';
-    const count = data.count || 0;
-    const snapshotDate = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
-
-    let html = `
-      <div class="vf-results-header">
-        <div class="vf-results-title">${survey?.surveyName || 'Community Survey Results'}</div>
-        <div class="vf-results-meta">
-          ${survey?.snapshotLabel || 'VillageFirst Community Survey'}
-        </div>
-        <div class="vf-snapshot-badge">
-          ${isLive ? '<span class="vf-live-dot"></span>Live' : '📸 Snapshot'}
-          · ${snapshotDate} · n = ${count} responses
-          ${isLive ? ' · Survey still open' : ''}
-        </div>
-      </div>
-      <div class="vf-results-body">`;
-
-    if (count === 0) {
-      html += `<div style="text-align:center;padding:30px;color:#9ca3af;">No responses yet. Be the first to respond!</div>`;
-    } else {
-      // KPIs
-      html += `
-        <div class="vf-kpi-row">
-          <div class="vf-kpi"><div class="vf-kpi-num" style="color:#059669;">${count}</div><div class="vf-kpi-label">Total Responses</div></div>
-          ${buildRespondentKpis(data.respondentBreakdown)}
-        </div>`;
-
-      // Template-specific results
-      const template = data.template || survey?.template;
-      if (template === 'conjoint-design-options') html += renderConjointResults(data);
-      else if (template === 'priority-ranking') html += renderMaxDiffResults(data);
-      else if (template === 'annual-satisfaction') html += renderSatisfactionResults(data);
-      else if (template === 'importance-performance') html += renderIPAResults(data);
-      else if (template === 'likert-agreement' || template === 'star-rating' || template === 'quick-poll'
-            || template === 'ranked-choice' || template === 'budget-allocation' || template === 'demographic') html += renderRatingResults(data);
-      else if (template === 'multi-section') html += renderMultiSectionResults(data);
-
-      // Open text
-      if (data.openText?.length) {
-        html += `
-          <div class="vf-section-title" style="margin-top:24px;">Open Responses (anonymised)</div>
-          <div class="vf-open-text">
-            ${data.openText.slice(0, 30).map(r => `
-              <div class="vf-comment">
-                <div class="vf-comment-who">${r.person || 'Community member'}</div>
-                <div class="vf-comment-text">${escHtml(r.text || r.comments || '')}</div>
-                ${r.additionalComments ? `<div class="vf-comment-text" style="margin-top:6px;">${escHtml(r.additionalComments)}</div>` : ''}
-              </div>`).join('')}
-          </div>`;
-      }
-    }
-
-    html += `</div>`; // close results-body
-    root().innerHTML = html;
-  }
-
-  function whoResponded(breakdown) {
-    if (!breakdown) return '';
-    return `<div class="vf-section-title">Who responded?</div><div class="vf-respondent-grid">${Object.entries(breakdown).map(([k,v])=>`<div class="vf-respondent-chip"><div class="vf-respondent-count">${v}</div><div class="vf-respondent-label">${escHtml(k)}</div></div>`).join('')}</div>`;
-  }
-  function renderBars(items) {
-    if (!items || !items.length) return '';
-    let html = `<div class="vf-bar-chart" style="margin-top:8px;">`;
-    items.forEach((f, i) => {
-      const pct = (f.bestPct != null) ? f.bestPct : Math.round(((f.avg || 0) / 5) * 100);
-      const lbl = (f.bestPct != null) ? `${pct}%` : ((f.avg != null) ? f.avg.toFixed(1) : '');
-      html += `<div class="vf-bar-row"><div class="vf-bar-label">${escHtml(f.label)}</div><div class="vf-bar-track"><div class="vf-bar-fill vf-c${Math.min(i+1,6)}" style="width:${pct}%">${lbl}</div></div></div>`;
-    });
-    return html + `</div>`;
-  }
-  function renderRatingResults(data) {
-    return whoResponded(data.respondentBreakdown) + renderBars(data.serviceRatings || []);
-  }
-  function renderIPAResults(data) {
-    let html = whoResponded(data.respondentBreakdown);
-    const pts = data.ipa || [];
-    if (pts.length) {
-      const W = 360, H = 360, pad = 40, plotW = W - pad * 2, plotH = H - pad * 2;
-      const x = v => pad + ((v - 1) / 4) * plotW;          // performance →
-      const y = v => pad + ((5 - v) / 4) * plotH;          // importance ↑ (top = high)
-      const mx = x(3), my = y(3);
-      let svg = `<div class="vf-section-title" style="margin-top:18px;">Importance vs Performance</div>
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:420px;height:auto;font-family:inherit;">
-          <rect x="${pad}" y="${pad}" width="${plotW}" height="${plotH}" fill="#f8fafc" stroke="#e2e8f0"/>
-          <line x1="${mx}" y1="${pad}" x2="${mx}" y2="${pad+plotH}" stroke="#cbd5e1" stroke-dasharray="4"/>
-          <line x1="${pad}" y1="${my}" x2="${pad+plotW}" y2="${my}" stroke="#cbd5e1" stroke-dasharray="4"/>
-          <text x="${pad+6}" y="${pad+14}" font-size="9" fill="#dc2626">Focus here (high importance, low performance)</text>
-          <text x="${mx+6}" y="${pad+14}" font-size="9" fill="#059669">Keep up</text>
-          <text x="${pad+6}" y="${pad+plotH-6}" font-size="9" fill="#9ca3af">Lower priority</text>
-          <text x="${mx+6}" y="${pad+plotH-6}" font-size="9" fill="#9ca3af">Possible overkill</text>
-          <text x="${pad+plotW/2}" y="${H-8}" font-size="10" fill="#475569" text-anchor="middle">Performance →</text>
-          <text x="12" y="${pad+plotH/2}" font-size="10" fill="#475569" text-anchor="middle" transform="rotate(-90 12 ${pad+plotH/2})">Importance →</text>`;
-      pts.forEach(p => {
-        const cx = x(p.performance || 1), cy = y(p.importance || 1);
-        svg += `<circle cx="${cx}" cy="${cy}" r="5" fill="#1A7A6E" opacity="0.85"/><text x="${cx+8}" y="${cy+3}" font-size="9" fill="#2c2c2a">${escHtml(p.label)}</text>`;
-      });
-      svg += `</svg>`;
-      html += svg;
-    }
-    html += renderBars(data.serviceRatings || []);   // gap bars below the quadrant
-    return html;
-  }
-  function renderMultiSectionResults(data) {
-    let html = whoResponded(data.respondentBreakdown);
-    (data.sections || []).forEach(sec => {
-      html += `<div class="vf-section-title" style="margin-top:20px;">${escHtml(sec.title || sec.template)}</div>`;
-      if (sec.serviceRatings && sec.serviceRatings.length) html += renderBars(sec.serviceRatings);
-      if (sec.openText && sec.openText.length) {
-        html += `<div class="vf-open-text">${sec.openText.slice(0,20).map(r=>`<div class="vf-comment"><div class="vf-comment-who">${r.person||'Community member'}</div><div class="vf-comment-text">${escHtml(r.text||'')}</div></div>`).join('')}</div>`;
-      }
-      if (!(sec.serviceRatings && sec.serviceRatings.length) && !(sec.openText && sec.openText.length)) html += `<div style="color:#9ca3af;font-size:13px;">No responses in this section yet.</div>`;
-    });
-    return html;
-  }
-
-  function buildRespondentKpis(breakdown) {
-    if (!breakdown) return '';
-    const sorted = Object.entries(breakdown).sort((a,b) => b[1]-a[1]).slice(0, 2);
-    return sorted.map(([label, n]) => `
-      <div class="vf-kpi">
-        <div class="vf-kpi-num" style="color:#2563eb;">${n}</div>
-        <div class="vf-kpi-label">${label}</div>
-      </div>`).join('');
-  }
-
-  function renderConjointResults(data) {
-    let html = '';
-
-    // Respondent breakdown
-    if (data.respondentBreakdown) {
-      html += `<div class="vf-section-title">Who responded?</div><div class="vf-respondent-grid">
-        ${Object.entries(data.respondentBreakdown).map(([k,v]) => `
-          <div class="vf-respondent-chip"><div class="vf-respondent-count">${v}</div><div class="vf-respondent-label">${k}</div></div>`).join('')}
-      </div>`;
-    }
-
-    // Part A — shared features
-    if (data.partA?.length) {
-      html += `<div class="vf-section-title">Shared Feature Support (avg 1–5)</div><div class="vf-bar-chart">`;
-      const sorted = [...data.partA].sort((a,b) => b.avg - a.avg);
-      sorted.forEach((f, i) => {
-        const pct = Math.round((f.avg / 5) * 100);
-        html += `<div class="vf-bar-row">
-          <div class="vf-bar-label">${f.label}</div>
-          <div class="vf-bar-track"><div class="vf-bar-fill vf-c${Math.min(i+1,6)}" style="width:${pct}%">${f.avg.toFixed(1)}</div></div>
-        </div>`;
-      });
-      html += `</div>`;
-    }
-
-    // Conjoint tasks
-    if (data.conjoint?.length) {
-      html += `<div class="vf-section-title">Conjoint Analysis — Package Choices</div>`;
-      data.conjoint.forEach(task => {
-        html += `
-          <div style="margin-bottom:12px;">
-            <div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;">${task.task}</div>
-            <div class="vf-bar-chart">
-              <div class="vf-bar-row">
-                <div class="vf-bar-label">${task.option1}</div>
-                <div class="vf-bar-track"><div class="vf-bar-fill vf-c2" style="width:${task.option1Pct}%">${task.option1Pct}%</div></div>
-                <div class="vf-bar-n">${task.option1Count}</div>
-              </div>
-              <div class="vf-bar-row">
-                <div class="vf-bar-label">${task.option2}</div>
-                <div class="vf-bar-track"><div class="vf-bar-fill vf-c3" style="width:${task.option2Pct}%">${task.option2Pct}%</div></div>
-                <div class="vf-bar-n">${task.option2Count}</div>
-              </div>
-            </div>
-          </div>`;
-      });
-    }
-
-    // Overall preference
-    if (data.overall && Object.keys(data.overall).length) {
-      const total = Object.values(data.overall).reduce((s,v)=>s+v,0);
-      html += `<div class="vf-section-title">Overall Preference</div><div class="vf-bar-chart">`;
-      Object.entries(data.overall).sort((a,b)=>b[1]-a[1]).forEach(([k,v], i) => {
-        const pct = Math.round((v/total)*100);
-        html += `<div class="vf-bar-row">
-          <div class="vf-bar-label">${k}</div>
-          <div class="vf-bar-track"><div class="vf-bar-fill vf-c${i+1}" style="width:${pct}%">${pct}%</div></div>
-          <div class="vf-bar-n">${v}</div>
-        </div>`;
-      });
-      html += `</div>`;
-    }
-
-    return html;
-  }
-
-  function renderMaxDiffResults(data) {
-    let html = `<div class="vf-section-title">Community Priority Score</div><div class="vf-bar-chart">`;
-
-    if (data.utilityScores?.length) {
-      const max = data.utilityScores[0]?.bestPct || 100;
-      data.utilityScores.forEach((item, i) => {
-        const pct = item.bestPct;
-        html += `<div class="vf-bar-row">
-          <div class="vf-bar-label">${item.label}</div>
-          <div class="vf-bar-track"><div class="vf-bar-fill vf-c${Math.min(i+1,6)}" style="width:${pct}%">${pct}%</div></div>
-          <div class="vf-bar-n">${item.bestCount}</div>
-        </div>`;
-      });
-    }
-
-    html += `</div>`;
-
-    // Respondent breakdown
-    if (data.respondentBreakdown) {
-      html += `<div class="vf-section-title" style="margin-top:20px;">Who responded?</div><div class="vf-respondent-grid">
-        ${Object.entries(data.respondentBreakdown).map(([k,v]) => `
-          <div class="vf-respondent-chip"><div class="vf-respondent-count">${v}</div><div class="vf-respondent-label">${k}</div></div>`).join('')}
-      </div>`;
-    }
-
-    return html;
-  }
-
-  function renderSatisfactionResults(data) {
-    let html = '';
-
-    if (data.serviceRatings?.length) {
-      html += `<div class="vf-section-title">Service & Facility Satisfaction (avg 1–5)</div><div class="vf-bar-chart">`;
-      const sorted = [...data.serviceRatings].sort((a,b) => b.avg - a.avg);
-      sorted.forEach((s, i) => {
-        const pct = Math.round((s.avg / 5) * 100);
-        html += `<div class="vf-bar-row">
-          <div class="vf-bar-label">${s.label}</div>
-          <div class="vf-bar-track"><div class="vf-bar-fill vf-c${Math.min(i+1,6)}" style="width:${pct}%">${s.avg.toFixed(1)}</div></div>
-        </div>`;
-      });
-      html += `</div>`;
-    }
-
-    if (data.nps !== null && data.nps !== undefined) {
-      const npsColour = data.nps >= 50 ? '#059669' : data.nps >= 0 ? '#d97706' : '#dc2626';
-      html += `
-        <div class="vf-kpi" style="margin-top:16px;max-width:200px;">
-          <div class="vf-kpi-num" style="color:${npsColour};">${data.nps}</div>
-          <div class="vf-kpi-label">Net Promoter Score (n=${data.npsCount})</div>
-        </div>`;
-    }
-
-    if (data.respondentBreakdown) {
-      html += `<div class="vf-section-title" style="margin-top:20px;">Who responded?</div><div class="vf-respondent-grid">
-        ${Object.entries(data.respondentBreakdown).map(([k,v]) => `
-          <div class="vf-respondent-chip"><div class="vf-respondent-count">${v}</div><div class="vf-respondent-label">${k}</div></div>`).join('')}
-      </div>`;
-    }
-
-    return html;
-  }
-
-  function escHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else { init(); }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
-
 </body>
 </html>
