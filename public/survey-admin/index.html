@@ -693,6 +693,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           .pb-qa .q{font-weight:700;color:#16261f;margin-top:9px;font-size:13px}
           .pb-qa .a{color:#475569;font-size:12.5px}
           .pb-qa .w{color:#0c7568;font-size:12.5px;font-style:italic;margin-top:1px}
+          .pb-bf{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 6px}
+          .pb-bf span{font-size:12px;border-radius:8px;padding:4px 11px;font-weight:600;line-height:1.4}
+          .pb-bf .good{background:#ecfdf5;color:#166534;border:1px solid #bbf7d0}
+          .pb-bf .bad{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
           .pb-tag{display:inline-block;background:#eef4f1;border-radius:6px;padding:1px 7px;font-weight:700;font-size:12px;color:#0f4c3a}
           @media(max-width:880px){.pb-layout{grid-template-columns:1fr}.pb-toc{display:none}.pb-tpl{grid-template-columns:1fr}}
         </style>
@@ -773,6 +777,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <div class="pb-faq">
 
                   <details><summary>✅ Quick Poll — one fast decision</summary><div class="pb-ty">
+                    <div class="pb-bf"><span class="good">✓ Best for: a single yes/no or pick-one decision you need fast</span><span class="bad">✕ Not for: nuanced topics or anything needing a "why"</span></div>
                     <span class="pb-ty-lbl">Purpose</span><p>Settle a single question quickly and get a clear majority. Best for go / no-go decisions where you don't need detail.</p>
                     <span class="pb-ty-lbl m">Methodology (plain English)</span><p>Ask one closed question with a few options. Everyone picks one; you read off the percentages and the most-chosen option wins. Keeping it to one question means almost everyone finishes.</p>
                     <span class="pb-ty-lbl e">Example — "Foreshore kiosk hours"</span>
@@ -782,6 +787,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   </div></details>
 
                   <details><summary>📋 Likert Agreement — measure attitudes</summary><div class="pb-ty">
+                    <div class="pb-bf"><span class="good">✓ Best for: measuring sentiment and finding where opinion splits</span><span class="bad">✕ Not for: ranking many options or collecting open ideas</span></div>
                     <span class="pb-ty-lbl">Purpose</span><p>Gauge how strongly people agree or disagree with a set of statements — and see where the community is united or divided.</p>
                     <span class="pb-ty-lbl m">Methodology (plain English)</span><p>List a few short statements. For each, people choose from Strongly disagree → Strongly agree (a 5-point scale). You report the share who agree and how opinions spread. Each statement should cover just one idea.</p>
                     <span class="pb-ty-lbl e">Example — "Village plan sentiment"</span>
@@ -792,6 +798,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   </div></details>
 
                   <details><summary>⭐ Star / Rating Review — satisfaction with things</summary><div class="pb-ty">
+                    <div class="pb-bf"><span class="good">✓ Best for: post-event or per-service satisfaction</span><span class="bad">✕ Not for: comparing trade-offs or choosing between concepts</span></div>
                     <span class="pb-ty-lbl">Purpose</span><p>Measure satisfaction with specific items — an event, a service, facilities — and pinpoint what worked and what didn't.</p>
                     <span class="pb-ty-lbl m">Methodology (plain English)</span><p>List the items; people rate each 1–5 stars, with an optional comment. You compare the average rating per item to see highs and lows.</p>
                     <span class="pb-ty-lbl e">Example — "Australia Day event"</span>
@@ -803,6 +810,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   </div></details>
 
                   <details><summary>💬 Open Feedback / Ideas — in their own words</summary><div class="pb-ty">
+                    <div class="pb-bf"><span class="good">✓ Best for: surfacing ideas and issues you didn't think to ask</span><span class="bad">✕ Not for: anything you need to measure precisely or rank</span></div>
                     <span class="pb-ty-lbl">Purpose</span><p>Gather ideas, concerns and suggestions freely — and discover things you didn't think to ask about.</p>
                     <span class="pb-ty-lbl m">Methodology (plain English)</span><p>Ask one or two open questions. Answers are read and grouped into themes, then counted, so common threads rise to the top. The platform auto-tags themes to help.</p>
                     <span class="pb-ty-lbl e">Example — "Have your say"</span>
@@ -813,6 +821,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   </div></details>
 
                   <details><summary>🎯 Priority Ranking (MaxDiff) — true priorities from a long list</summary><div class="pb-ty">
+                    <div class="pb-bf"><span class="good">✓ Best for: prioritising a long list (8+ items)</span><span class="bad">✕ Not for: short lists or when each item needs an absolute score</span></div>
                     <span class="pb-ty-lbl">Purpose</span><p>Find the community's genuine top priorities from a long list — without everything ending up "very important".</p>
                     <span class="pb-ty-lbl m">Methodology (plain English)</span><p>People see small groups of items and pick the <b>best</b> and <b>worst</b> in each. Repeat a few times with different groups. A score is built from how often each item is chosen best versus worst. The forced best/worst choice is what makes the priorities real.</p>
                     <span class="pb-ty-lbl e">Example — "Recreation reserve priorities"</span>
@@ -822,6 +831,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   </div></details>
 
                   <details><summary>🔢 Ranked Choice — full order of a short list</summary><div class="pb-ty">
+                    <div class="pb-bf"><span class="good">✓ Best for: fully ordering a short list (≤7 items)</span><span class="bad">✕ Not for: long lists (too hard to order) or budget splits</span></div>
                     <span class="pb-ty-lbl">Purpose</span><p>Get each person's complete order of preference for a short list (up to ~7 items).</p>
                     <span class="pb-ty-lbl m">Methodology (plain English)</span><p>People drag the items into order, 1st to last. You average everyone's positions to get the overall ranking. Best when the list is short enough to order in one go.</p>
                     <span class="pb-ty-lbl e">Example — "Foreshore upgrade options"</span>
@@ -831,6 +841,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   </div></details>
 
                   <details><summary>💰 Budget Allocation — priorities under a fixed budget</summary><div class="pb-ty">
+                    <div class="pb-bf"><span class="good">✓ Best for: spending/funding trade-offs and grant evidence</span><span class="bad">✕ Not for: yes/no decisions or measuring attitudes</span></div>
                     <span class="pb-ty-lbl">Purpose</span><p>Reveal real spending priorities when money is limited — strong, defensible evidence for grant applications.</p>
                     <span class="pb-ty-lbl m">Methodology (plain English)</span><p>Give everyone a fixed pot (say 100 points, or $100k) to split across the options. It must add up to the total, so people make genuine trade-offs. You report the average split.</p>
                     <span class="pb-ty-lbl e">Example — "$100k community grant"</span>
@@ -840,6 +851,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   </div></details>
 
                   <details><summary>📈 Importance vs Performance — what to fix first</summary><div class="pb-ty">
+                    <div class="pb-bf"><span class="good">✓ Best for: deciding what to improve first across services</span><span class="bad">✕ Not for: choosing between options or quick one-off polls</span></div>
                     <span class="pb-ty-lbl">Purpose</span><p>Decide where to act first by comparing how important something is against how well it's currently done.</p>
                     <span class="pb-ty-lbl m">Methodology (plain English)</span><p>For each service, ask two ratings: how <b>important</b> is it, and how well is it <b>performing</b> now (1–5 each). Items that are high-importance but low-performance are your priorities — the results plot onto a simple four-box "focus here" quadrant.</p>
                     <span class="pb-ty-lbl e">Example — "Village services"</span>
@@ -850,6 +862,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   </div></details>
 
                   <details><summary>⚖️ Design Option Preference (Conjoint) — choose between concepts</summary><div class="pb-ty">
+                    <div class="pb-bf"><span class="good">✓ Best for: choosing between 2 concepts and finding the real driver</span><span class="bad">✕ Not for: quick questions or long lists (higher respondent effort)</span></div>
                     <span class="pb-ty-lbl">Purpose</span><p>Choose between design concepts <b>and</b> understand what actually drives the choice — not just what people say matters.</p>
                     <span class="pb-ty-lbl m">Methodology (plain English)</span><p>People rate the features both designs share, rate how important the few key differences are, then make a series of package choices where those features are varied. Comparing the choices reveals which feature truly swings the decision. A final question captures the overall favourite.</p>
                     <span class="pb-ty-lbl e">Example — "Village centre design"</span>
@@ -861,6 +874,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   </div></details>
 
                   <details><summary>📊 Annual Satisfaction — yearly community pulse</summary><div class="pb-ty">
+                    <div class="pb-bf"><span class="good">✓ Best for: a repeatable yearly pulse with an NPS trend</span><span class="bad">✕ Not for: a single decision or deep prioritisation</span></div>
                     <span class="pb-ty-lbl">Purpose</span><p>A yearly health check of community sentiment you can track over time.</p>
                     <span class="pb-ty-lbl m">Methodology (plain English)</span><p>Rate a set of services 1–5, ask the "recommend" question (0–10) to produce an NPS advocacy score, and leave room for open comments. Run it the same way each year to see the trend.</p>
                     <span class="pb-ty-lbl e">Example — "Annual community pulse"</span>
@@ -872,6 +886,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   </div></details>
 
                   <details><summary>👥 Demographic / Registration — who responded</summary><div class="pb-ty">
+                    <div class="pb-bf"><span class="good">✓ Best for: profiling respondents or capturing membership</span><span class="bad">✕ Not for: measuring opinions (pair it with another type)</span></div>
                     <span class="pb-ty-lbl">Purpose</span><p>Understand who responded (to check the sample is representative) or capture member/registration details.</p>
                     <span class="pb-ty-lbl m">Methodology (plain English)</span><p>Ask a few structured profile questions — pick-lists for things you'll group by, open fields for details. You report counts per group and can split your other results by them.</p>
                     <span class="pb-ty-lbl e">Example — "Membership snapshot"</span>
@@ -883,6 +898,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   </div></details>
 
                   <details><summary>🗂️ Multi-section — combine several types</summary><div class="pb-ty">
+                    <div class="pb-bf"><span class="good">✓ Best for: a consultation needing several styles in one</span><span class="bad">✕ Not for: quick surveys (extra length cuts response rates)</span></div>
                     <span class="pb-ty-lbl">Purpose</span><p>When one survey needs more than one style — for example some ratings, a priority exercise, and an open comment.</p>
                     <span class="pb-ty-lbl m">Methodology (plain English)</span><p>Build several of the simple types above as sections within one flow; each section keeps its own analysis. Use sparingly — longer surveys lose responses.</p>
                     <span class="pb-ty-lbl e">Example — "Village plan consultation"</span>
