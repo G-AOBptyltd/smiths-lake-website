@@ -103,7 +103,7 @@
     const village=survey.village||'Smiths Lake';
     const cr=$('hCrumb');
     let html=`<a href="/results/?village=${encodeURIComponent(village)}">${VFResults.util.esc(village)}</a><span class="cs">›</span>`;
-    if(survey.projectName)html+=`<a href="/projects/">${VFResults.util.esc(survey.projectName)}</a><span class="cs">›</span>`;
+    if(survey.projectName){const projHref=survey.projectNotionId?`/results/?project=${encodeURIComponent(survey.projectNotionId)}&village=${encodeURIComponent(village)}`:'/projects/';html+=`<a href="${projHref}">${VFResults.util.esc(survey.projectName)}</a><span class="cs">›</span>`;}
     html+=`<span>${VFResults.util.esc(survey.surveyName||'Survey')}</span>`;
     cr.innerHTML=html;cr.style.display='';
     $('subnav').style.display='';
@@ -141,6 +141,26 @@
     VFResults.renderHub(document.getElementById('main'),surveys,{village,theme:curTheme});
   }
 
+  /* ---- project bundle (?project=<projectNotionId>) ---- */
+  async function renderProject(projectId,village){
+    $('survey-link').href='/survey/';
+    $('navAllResults').href=`/results/?village=${encodeURIComponent(village)}`;
+    applyTheme(VFResults.themeForVillage(village));
+    $('subnav').style.display='none';$('hCrumb').style.display='none';$('hBadgeWrap').style.display='none';
+    document.getElementById('main').innerHTML='<div class="vf-state"><div class="vf-spinner"></div><p>Loading project…</p></div>';
+    const all=await fetchVillageSurveys(village);
+    const matching=all.filter(s=>s.projectNotionId===projectId);
+    const projectName=(matching.find(s=>s.projectName)||{}).projectName||'Project Results';
+    $('hEye').textContent=village;
+    $('hTitle').textContent=projectName;
+    $('hSub').textContent=`All surveys linked to this project · ${matching.length} survey${matching.length===1?'':'s'}`;
+    if(!matching.length){VFResults.renderHub(document.getElementById('main'),[],{village,theme:curTheme});return}
+    // Live response counts (health endpoint = counts only, no content).
+    const visible=matching.filter(s=>s.slug).filter(VFResults.util.publicViewable);
+    await Promise.all(visible.map(async s=>{try{const r=await fetch(`${API}/survey-health?slug=${encodeURIComponent(s.slug)}`);const h=await r.json();if(h&&h.responseCount!=null)s.responseCount=h.responseCount}catch(_){}}));
+    VFResults.renderHub(document.getElementById('main'),matching,{village,theme:curTheme});
+  }
+
   /* ---- single survey ---- */
   function renderSurvey(survey,data,status){
     const isLive=status==='active';const count=data.count||0;
@@ -162,7 +182,12 @@
   async function init(){
     const params=new URLSearchParams(location.search);
     const slug=params.get('slug')||'';
-    if(!slug){renderHub(params.get('village')||'Smiths Lake');return}
+    const project=params.get('project')||'';
+    if(!slug){
+      const village=params.get('village')||'Smiths Lake';
+      if(project)renderProject(project,village);else renderHub(village);
+      return;
+    }
     $('survey-link').href='/survey/?slug='+encodeURIComponent(slug);
     document.getElementById('main').innerHTML='<div class="vf-state"><div class="vf-spinner"></div><p>Loading results…</p></div>';
     try{

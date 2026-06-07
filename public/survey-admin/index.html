@@ -770,43 +770,106 @@ async function deleteVillage(village) {
     else showToast('⚠️ ' + (data.error || 'Could not delete village'));
   } catch(_) { showToast('⚠️ Network error'); }
 }
-// ── All Villages table ───────────────────────────────────────────────────────
+// ── All Villages rollup ──────────────────────────────────────────────────────
+// Map a village lifecycle status → a shared .pill modifier class + label.
+function villagePill(st) {
+  switch (st) {
+    case 'live':       return { cls:'live',   label:'Live' };
+    case 'suspended':  return { cls:'paused', label:'Suspended' };
+    case 'archived':   return { cls:'closed', label:'Archived' };
+    case 'onboarding': return { cls:'draft',  label:'Onboarding' };
+    default:           return { cls:'draft',  label:(st||'—') };
+  }
+}
 async function renderAllVillages() {
   const box = document.getElementById('villages-table');
   if (!box) return;
   const isSuper = currentUser && currentUser.app_metadata && (currentUser.app_metadata.roles||[]).includes('super-admin');
   if (!villagesData.length) await loadVillages();
-  // Fetch survey counts per village in parallel (best-effort).
-  const counts = {};
+  // Fetch surveys per village in parallel (best-effort) — ONE call per village.
+  // Reused to derive total surveys, active surveys, and total responses.
+  const stats = {};
   await Promise.all(villagesData.map(async v => {
-    try { const r = await fetch('/api/survey-list?village=' + encodeURIComponent(v.name)); counts[v.name] = r.ok ? ((await r.json()).surveys||[]).length : '—'; }
-    catch(_) { counts[v.name] = '—'; }
+    try {
+      const r = await fetch('/api/survey-list?village=' + encodeURIComponent(v.name));
+      const list = r.ok ? ((await r.json()).surveys || []) : null;
+      if (!list) { stats[v.name] = { ok:false }; return; }
+      let active = 0, responses = 0, haveResp = false;
+      list.forEach(s => {
+        if (s && s.active) active++;
+        if (s && typeof s.responseCount === 'number') { responses += s.responseCount; haveResp = true; }
+      });
+      stats[v.name] = { ok:true, total:list.length, active, responses, haveResp };
+    } catch(_) { stats[v.name] = { ok:false }; }
   }));
-  const rows = villagesData.map(v => {
+
+  // ── Platform KPI strip (sums across all villages) ──
+  let kVillages = villagesData.length, kActive = 0, kTotal = 0, kResp = 0, kAnyResp = false;
+  villagesData.forEach(v => {
+    const s = stats[v.name];
+    if (s && s.ok) { kActive += s.active; kTotal += s.total; kResp += s.responses; if (s.haveResp) kAnyResp = true; }
+  });
+  const fmt = n => n.toLocaleString('en-AU');
+  const kpis =
+    `<div class="grid g4" style="margin-bottom:18px;">
+       <div class="kpi k1"><div class="n">${fmt(kVillages)}</div><div class="l">Villages</div></div>
+       <div class="kpi k2"><div class="n">${fmt(kActive)}</div><div class="l">Active surveys</div></div>
+       <div class="kpi k3"><div class="n">${fmt(kTotal)}</div><div class="l">Total surveys</div></div>
+       <div class="kpi k4"><div class="n">${kAnyResp ? fmt(kResp) : '—'}</div><div class="l">Total responses</div></div>
+     </div>`;
+
+  // ── Per-village cards ──
+  const cards = villagesData.map(v => {
     const st = v.status || 'live';
     const isActive = v.name === activeVillage;
-    const act = isSuper ? (
+    const p = villagePill(st);
+    const s = stats[v.name] || { ok:false };
+    const total     = s.ok ? s.total : '—';
+    const active    = s.ok ? s.active : '—';
+    const responses = (s.ok && s.haveResp) ? s.responses : '—';
+    // Participation bar: share of this village's surveys that are currently active.
+    const pct = (s.ok && s.total > 0) ? Math.round((s.active / s.total) * 100) : 0;
+    const bar = s.ok ? (
+      `<div style="margin-top:14px;">
+         <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);font-weight:600;margin-bottom:5px;">
+           <span>Surveys live</span><span>${pct}%</span></div>
+         <div style="height:7px;background:#f1f6f3;border-radius:6px;overflow:hidden;">
+           <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:6px;"></div></div>
+       </div>`
+    ) : '';
+    const stat = (label, val) =>
+      `<div style="flex:1;min-width:0;">
+         <div style="font-size:19px;font-weight:900;line-height:1;letter-spacing:-.01em;">${typeof val==='number'?fmt(val):val}</div>
+         <div style="font-size:10.5px;color:var(--muted);font-weight:600;margin-top:4px;">${label}</div>
+       </div>`;
+    const lifecycle = isSuper ? (
       `<button class="btn btn-g" style="font-size:10px;padding:3px 8px;" ${st==='live'?'disabled':''} onclick="setVillageStatus('live',${jsArg(v.name)})">Live</button> ` +
       `<button class="btn btn-o" style="font-size:10px;padding:3px 8px;" ${st==='suspended'?'disabled':''} onclick="setVillageStatus('suspended',${jsArg(v.name)})">Suspend</button> ` +
       `<button class="btn btn-o" style="font-size:10px;padding:3px 8px;" ${st==='archived'?'disabled':''} onclick="setVillageStatus('archived',${jsArg(v.name)})">Archive</button> ` +
       `<button class="btn btn-r" style="font-size:10px;padding:3px 8px;" ${st==='archived'?'':'disabled'} onclick="deleteVillage(${jsArg(v.name)})">Delete</button>`
     ) : '<span style="color:#9ca3af;font-size:11px;">View only</span>';
-    return `<tr style="border-top:1px solid #e2e8f0;">
-      <td style="padding:9px 10px;font-weight:600;">${escHtml(v.name)} ${isActive?'<span style="font-size:10px;color:#059669;">• current</span>':''}</td>
-      <td style="padding:9px 10px;">${STATUS_BADGE[st]||st}</td>
-      <td style="padding:9px 10px;text-align:center;">${counts[v.name]}</td>
-      <td style="padding:9px 10px;"><button class="btn btn-s" style="font-size:10px;padding:3px 8px;" onclick="switchToVillage(${jsArg(v.name)})">Open</button></td>
-      <td style="padding:9px 10px;text-align:right;white-space:nowrap;">${act}</td>
-    </tr>`;
+    return `<div class="card" style="display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:15.5px;font-weight:800;line-height:1.25;">${escHtml(v.name)}${isActive?' <span style="font-size:10px;color:var(--accent);font-weight:800;">• current</span>':''}</div>
+        </div>
+        <span class="pill ${p.cls}">${escHtml(p.label)}</span>
+      </div>
+      <div style="display:flex;gap:12px;">${stat('Active surveys',active)}${stat('Total surveys',total)}${stat('Responses',responses)}</div>
+      ${bar}
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:16px;padding-top:14px;">
+        <button class="btn btn-s" style="font-size:10px;padding:3px 8px;" onclick="switchToVillage(${jsArg(v.name)})">Open</button>
+        <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${lifecycle}</div>
+      </div>
+    </div>`;
   }).join('');
+
   box.innerHTML =
-    `<table style="width:100%;border-collapse:collapse;font-size:12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
-       <thead><tr style="background:#f8fafc;text-align:left;color:#64748b;font-size:11px;">
-         <th style="padding:9px 10px;">Village</th><th style="padding:9px 10px;">Status</th>
-         <th style="padding:9px 10px;text-align:center;">Surveys</th><th style="padding:9px 10px;">Admin</th>
-         <th style="padding:9px 10px;text-align:right;">Lifecycle</th>
-       </tr></thead><tbody>${rows}</tbody></table>` +
-    (isSuper ? '<div style="font-size:12px;color:#64748b;margin-top:10px;">Suspend pauses every survey in a village. Archive also removes public access (still visible here). Delete needs the village archived with no surveys, plus typed confirmation.</div>' : '');
+    `<div class="vfr-root">
+       ${kpis}
+       <div class="grid g3">${cards}</div>
+       ${isSuper ? '<div style="font-size:12px;color:var(--muted);margin-top:14px;">Suspend pauses every survey in a village. Archive also removes public access (still visible here). Delete needs the village archived with no surveys, plus typed confirmation.</div>' : ''}
+     </div>`;
 }
 function switchToVillage(name) { setVillage(name); const nav=document.querySelector('.sidebar .s-item'); showPanel('dashboard', null); document.querySelectorAll('.sidebar .s-item').forEach(e=>e.classList.remove('on')); if(nav)nav.classList.add('on'); }
 function setVillage(v) {
