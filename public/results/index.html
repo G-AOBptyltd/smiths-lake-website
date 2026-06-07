@@ -104,6 +104,31 @@
     .vf-btn{display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;border:none;border-radius:9px;padding:10px 22px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;margin-top:14px}
 
     .mt{margin-top:14px}
+
+    /* breadcrumb */
+    .crumb{display:flex;align-items:center;gap:7px;font-size:11.5px;opacity:.9;margin-bottom:6px;flex-wrap:wrap}
+    .crumb a{color:#fff;text-decoration:none;opacity:.85}.crumb a:hover{opacity:1;text-decoration:underline}
+    .crumb .cs{opacity:.5}
+    /* sub-nav bar */
+    .subnav{background:#fff;border-bottom:1px solid var(--line)}
+    .subnav-inner{display:flex;align-items:center;gap:12px;padding:10px 0;flex-wrap:wrap}
+    .subnav a.back{color:var(--primary-2);font-weight:700;font-size:13px;text-decoration:none}.subnav a.back:hover{text-decoration:underline}
+    .subnav .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+    .subnav select{font:inherit;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:7px 10px;max-width:260px;background:#fff;color:var(--ink)}
+    .navbtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 11px;font:inherit;font-size:13px;font-weight:600;color:var(--primary-2);cursor:pointer}
+    .navbtn:hover:not(:disabled){background:var(--tint1)}.navbtn:disabled{opacity:.35;cursor:default}
+    /* hub */
+    .hub-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .scard{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:10px;text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s}
+    .scard:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(16,40,30,.12)}
+    .scard .top{display:flex;align-items:flex-start;gap:10px}
+    .scard .ico{font-size:20px}.scard .nm{font-weight:800;font-size:14.5px;flex:1;line-height:1.3}
+    .scard .tpl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-top:2px}
+    .pill{font-size:10px;font-weight:800;border-radius:30px;padding:3px 9px;white-space:nowrap}
+    .pill.live{background:#dcfce7;color:#166534}.pill.paused{background:#fef3c7;color:#92500e}.pill.closed,.pill.scheduled{background:#e5e7eb;color:#4b5563}.pill.draft{background:#e0e7ff;color:#3730a3}
+    .scard .meta{display:flex;gap:14px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:9px;margin-top:auto}
+    .scard .meta b{color:var(--ink)}.scard .view{margin-left:auto;color:var(--accent);font-weight:800}
+    @media(max-width:760px){.hub-grid{grid-template-columns:1fr}}
     @media(max-width:760px){.g2,.g3,.g4,.dist-grid{grid-template-columns:1fr}.bar-row{grid-template-columns:120px 1fr auto}.bar-lab{font-size:11px}}
     @media print{.vf-topnav,.tabs,.no-print{display:none!important}.panel{display:block!important}body{background:#fff}.hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   </style>
@@ -124,11 +149,21 @@
 </nav>
 
 <header class="hero"><div class="wrap">
+  <div class="crumb" id="hCrumb" style="display:none"></div>
   <div class="eyebrow" id="hEye">VillageFirst Community Survey</div>
   <h1 id="hTitle">Loading…</h1>
   <div class="sub" id="hSub"></div>
   <span class="badge" id="hBadgeWrap" style="display:none"><span class="live-dot" id="hDot"></span><span id="hBadge"></span></span>
 </div></header>
+
+<div class="subnav" id="subnav" style="display:none"><div class="wrap subnav-inner">
+  <a class="back" id="allResults" href="#">← All results</a>
+  <div class="right">
+    <button class="navbtn" id="prevSurvey" title="Previous survey">‹</button>
+    <select id="surveySwitch" aria-label="Jump to another survey"></select>
+    <button class="navbtn" id="nextSurvey" title="Next survey">›</button>
+  </div>
+</div></div>
 
 <div class="tabs" id="tabsWrap" style="display:none"><div class="tabs-inner" id="tabBar"></div></div>
 <main id="main"><div id="state"></div></main>
@@ -289,10 +324,61 @@
     if(window.__lastRender)window.__lastRender();
   });
 
+  /* ===== navigation: hub, switcher, prev/next, breadcrumb ===== */
+  const TPL_ICON={'conjoint-design-options':'⚖️','priority-ranking':'🎯','annual-satisfaction':'📊','star-rating':'⭐','quick-poll':'✅','likert-agreement':'📋','open-feedback':'💬','ranked-choice':'🔢','budget-allocation':'💰','importance-performance':'📈','demographic':'👥','respondent-profile':'👥','multi-section':'🗂️'};
+  function effStatus(s){const st=(s.status||'').toLowerCase();if(st==='draft')return'draft';if(st==='paused')return'paused';if(st==='closed')return'closed';if(st==='scheduled')return'scheduled';const now=new Date();const open=st==='live'?true:!!s.active;if(!open)return'closed';if(s.openDate&&new Date(s.openDate)>now)return'scheduled';if(s.closeDate&&new Date(s.closeDate)<now)return'closed';return'live'}
+  function publicViewable(s){const vis=(s.resultsVisibility||'public').toLowerCase();const st=effStatus(s);if(st==='draft')return false;if(vis==='public')return true;if(vis==='after-close')return st==='closed';return false}
+  async function fetchVillageSurveys(village){try{const r=await fetch(`${API_BASE}/survey-list?village=${encodeURIComponent(village||'Smiths Lake')}`);const d=await r.json();return (d.surveys||[]).filter(s=>s.slug)}catch(e){return[]}}
+
+  function buildSurveyNav(survey,slug){
+    const village=survey.village||'Smiths Lake';
+    const cr=document.getElementById('hCrumb');
+    let html=`<a href="/results/?village=${encodeURIComponent(village)}">${esc(village)}</a><span class="cs">›</span>`;
+    if(survey.projectName)html+=`<a href="/projects/">${esc(survey.projectName)}</a><span class="cs">›</span>`;
+    html+=`<span>${esc(survey.surveyName||'Survey')}</span>`;
+    cr.innerHTML=html;cr.style.display='';
+    const sub=document.getElementById('subnav');sub.style.display='';
+    document.getElementById('allResults').href=`/results/?village=${encodeURIComponent(village)}`;
+    fetchVillageSurveys(village).then(list=>{
+      const items=list.filter(publicViewable);
+      const sel=document.getElementById('surveySwitch');sel.innerHTML='';
+      items.forEach(s=>{const o=document.createElement('option');o.value=s.slug;o.textContent=s.surveyName;if(s.slug===slug)o.selected=true;sel.appendChild(o)});
+      if(!items.some(s=>s.slug===slug)){const o=document.createElement('option');o.value=slug;o.textContent=survey.surveyName||slug;o.selected=true;sel.insertBefore(o,sel.firstChild)}
+      sel.onchange=()=>{location.href=`/results/?slug=${encodeURIComponent(sel.value)}`};
+      const idx=items.findIndex(s=>s.slug===slug);
+      const prev=document.getElementById('prevSurvey'),next=document.getElementById('nextSurvey');
+      const pv=idx>0?items[idx-1]:null,nx=(idx>-1&&idx<items.length-1)?items[idx+1]:null;
+      prev.disabled=!pv;next.disabled=!nx;
+      if(pv)prev.onclick=()=>location.href=`/results/?slug=${encodeURIComponent(pv.slug)}`;
+      if(nx)next.onclick=()=>location.href=`/results/?slug=${encodeURIComponent(nx.slug)}`;
+    });
+  }
+
+  async function renderHub(village){
+    document.getElementById('survey-link').href='/survey/';
+    document.getElementById('hEye').textContent=village+' · VillageFirst Community Surveys';
+    document.getElementById('hTitle').textContent='Community Survey Results';
+    document.getElementById('hSub').textContent='Browse results from across the village';
+    baseTheme=themeForVillage(village);if(document.documentElement.dataset.grey!=='1')setTheme(baseTheme);
+    document.getElementById('tabsWrap').style.display='none';
+    const main=document.getElementById('main');main.innerHTML='<div class="vf-state"><div class="vf-spinner"></div><p>Loading surveys…</p></div>';
+    const list=(await fetchVillageSurveys(village)).filter(publicViewable);
+    if(!list.length){main.innerHTML='<div class="vf-state"><h2>No public results yet</h2><p>Survey results will appear here once published.</p></div>';return}
+    const grid=el('div','hub-grid');
+    list.forEach(s=>{
+      const st=effStatus(s);const a=el('a','scard');a.href=`/results/?slug=${encodeURIComponent(s.slug)}`;
+      const cnt=s.responseCount!=null?s.responseCount:'—';
+      const close=s.closeDate?('closes '+new Date(s.closeDate).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})):'';
+      a.innerHTML=`<div class="top"><span class="ico">${TPL_ICON[s.template]||'📋'}</span><div style="flex:1"><div class="nm">${esc(s.surveyName)}</div><div class="tpl">${esc((s.template||'').replace(/-/g,' '))}</div></div><span class="pill ${st}">${st[0].toUpperCase()+st.slice(1)}</span></div><div class="meta"><span><b>${cnt}</b> responses</span>${close?`<span>${esc(close)}</span>`:''}<span class="view">View results →</span></div>`;
+      grid.appendChild(a);
+    });
+    main.innerHTML='';main.appendChild(grid);
+  }
+
   async function init(){
     const params=new URLSearchParams(window.location.search);
     const slug=params.get('slug')||'';
-    if(!slug){errState('No survey specified.');return}
+    if(!slug){renderHub(params.get('village')||'Smiths Lake');return}
     document.getElementById('survey-link').href='/survey/?slug='+encodeURIComponent(slug);
     loading();
     try{
@@ -313,6 +399,7 @@
       if(document.documentElement.dataset.grey!=='1')setTheme(baseTheme);
       window.__lastRender=()=>{clearCharts();renderResults(survey,resultsData,configData.status)};
       window.__lastRender();
+      buildSurveyNav(survey,slug);
     }catch(err){console.error(err);errState('Could not load results. Please try again.');}
   }
 

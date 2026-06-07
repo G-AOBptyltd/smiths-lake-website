@@ -58,17 +58,29 @@ export const handler = async (event) => {
 
 function parsePage(page) {
   const p = page.properties;
+  const slugProp = p['Slug']?.rich_text?.[0]?.plain_text || '';
+  const resultsUrl = p['Results URL']?.url || '';
+  const surveyUrl = p['Survey URL']?.url || '';
+  // Prefer the Slug property; fall back to the slug embedded in the Results/Survey URL.
+  const slugFromUrl = (resultsUrl || surveyUrl).match(/[?&]slug=([^&]+)/);
+  const slug = slugProp || (slugFromUrl ? decodeURIComponent(slugFromUrl[1]) : '');
   return {
     id: page.id,
+    slug,
     surveyName: p['Survey Name']?.title?.[0]?.plain_text || 'Untitled',
     village: p['Village']?.select?.name || '',
     template: p['Template']?.select?.name || '',
     active: p['Active']?.checkbox || false,
     status: p['Status']?.select?.name || '',
+    resultsVisibility: p['Results Visibility']?.select?.name || 'public',
+    responseCount: p['Response Count']?.number ?? null,
+    purpose: p['Purpose']?.rich_text?.[0]?.plain_text || '',
+    projectName: p['Project Name']?.rich_text?.[0]?.plain_text || '',
+    projectNotionId: p['Project Notion ID']?.rich_text?.[0]?.plain_text || '',
     openDate: p['Open Date']?.date?.start || null,
     closeDate: p['Close Date']?.date?.start || null,
-    surveyUrl: p['Survey URL']?.url || '',
-    resultsUrl: p['Results URL']?.url || '',
+    surveyUrl,
+    resultsUrl,
     sheetId: p['Sheet ID']?.rich_text?.[0]?.plain_text || '',
     snapshotLabel: p['Snapshot Label']?.rich_text?.[0]?.plain_text || '',
   };
