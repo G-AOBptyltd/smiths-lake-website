@@ -685,6 +685,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           .pb-faq summary::before{content:"+ ";color:#0f8f80;font-weight:900}
           .pb-faq details[open] summary::before{content:"– "}
           .pb-faq p{padding:0 0 13px;color:#3b4a44;font-size:13px}
+          .pb-ty-lbl{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0c7568;background:#d7f5ee;border-radius:5px;padding:2px 8px;margin:12px 0 5px}
+          .pb-ty-lbl.m{color:#1d4ed8;background:#dbeafe}
+          .pb-ty-lbl.e{color:#92500e;background:#fdebc8}
+          .pb-faq .pb-ty p{padding:0;margin:0 0 4px;color:#3b4a44}
+          .pb-qa{margin:4px 0 6px;border-left:3px solid #d7f5ee;padding-left:13px}
+          .pb-qa .q{font-weight:700;color:#16261f;margin-top:9px;font-size:13px}
+          .pb-qa .a{color:#475569;font-size:12.5px}
+          .pb-qa .w{color:#0c7568;font-size:12.5px;font-style:italic;margin-top:1px}
           .pb-tag{display:inline-block;background:#eef4f1;border-radius:6px;padding:1px 7px;font-weight:700;font-size:12px;color:#0f4c3a}
           @media(max-width:880px){.pb-layout{grid-template-columns:1fr}.pb-toc{display:none}.pb-tpl{grid-template-columns:1fr}}
         </style>
@@ -707,15 +715,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <a href="#pb-overview">1 · How it works</a>
               <a href="#pb-create">2 · Create a survey</a>
               <a href="#pb-templates">3 · Choose a template</a>
-              <a href="#pb-manage">4 · Manage surveys</a>
-              <a href="#pb-lifecycle">5 · Lifecycle &amp; dates</a>
-              <a href="#pb-visibility">6 · Visibility &amp; privacy</a>
-              <a href="#pb-results">7 · Results &amp; sharing</a>
-              <a href="#pb-comments">8 · Comments &amp; moderation</a>
-              <a href="#pb-villages">9 · Multiple villages</a>
-              <a href="#pb-access">10 · Access &amp; roles</a>
-              <a href="#pb-tips">11 · Best practice</a>
-              <a href="#pb-faq">12 · Troubleshooting</a>
+              <a href="#pb-types">4 · Survey types in depth</a>
+              <a href="#pb-manage">5 · Manage surveys</a>
+              <a href="#pb-lifecycle">6 · Lifecycle &amp; dates</a>
+              <a href="#pb-visibility">7 · Visibility &amp; privacy</a>
+              <a href="#pb-results">8 · Results &amp; sharing</a>
+              <a href="#pb-comments">9 · Comments &amp; moderation</a>
+              <a href="#pb-villages">10 · Multiple villages</a>
+              <a href="#pb-access">11 · Access &amp; roles</a>
+              <a href="#pb-tips">12 · Best practice</a>
+              <a href="#pb-faq">13 · Troubleshooting</a>
             </nav>
 
             <div class="pb-content">
@@ -758,8 +767,138 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <div class="pb-call"><b>Not sure?</b> Use <b>Quick Poll</b> for a single decision, <b>Likert</b> to gauge sentiment, <b>Priority Ranking</b> or <b>Budget Allocation</b> to prioritise spending, and <b>Open Feedback</b> when you just want ideas.</div>
               </section>
 
+              <section class="pb-mod" id="pb-types">
+                <div class="pb-mh"><div class="pb-num">4</div><div><h2>Survey types in depth</h2><div class="mt">Purpose · plain-English method · a worked example for each</div></div><div class="pb-badges"><span class="pb-badge">Reference</span></div></div>
+                <p class="pb-intro">Tap any type for what it's for, how it works in everyday terms, and a ready-to-copy example — the exact questions, the answer format, and <b>why</b> each question earns its place.</p>
+                <div class="pb-faq">
+
+                  <details><summary>✅ Quick Poll — one fast decision</summary><div class="pb-ty">
+                    <span class="pb-ty-lbl">Purpose</span><p>Settle a single question quickly and get a clear majority. Best for go / no-go decisions where you don't need detail.</p>
+                    <span class="pb-ty-lbl m">Methodology (plain English)</span><p>Ask one closed question with a few options. Everyone picks one; you read off the percentages and the most-chosen option wins. Keeping it to one question means almost everyone finishes.</p>
+                    <span class="pb-ty-lbl e">Example — "Foreshore kiosk hours"</span>
+                    <div class="pb-qa">
+                      <div class="q">Q1. Should the foreshore kiosk open year-round?</div><div class="a">◯ Yes, year-round · ◯ No, summer only · ◯ Unsure</div><div class="w">Why: one clear decision, mutually-exclusive options, and an "Unsure" option so nobody is forced to guess.</div>
+                    </div>
+                  </div></details>
+
+                  <details><summary>📋 Likert Agreement — measure attitudes</summary><div class="pb-ty">
+                    <span class="pb-ty-lbl">Purpose</span><p>Gauge how strongly people agree or disagree with a set of statements — and see where the community is united or divided.</p>
+                    <span class="pb-ty-lbl m">Methodology (plain English)</span><p>List a few short statements. For each, people choose from Strongly disagree → Strongly agree (a 5-point scale). You report the share who agree and how opinions spread. Each statement should cover just one idea.</p>
+                    <span class="pb-ty-lbl e">Example — "Village plan sentiment"</span>
+                    <div class="pb-qa">
+                      <div class="q">Q1. "The village needs more shade and seating."</div><div class="a">Strongly disagree · Disagree · Neutral · Agree · Strongly agree</div><div class="w">Why: a single, concrete statement so the score is unambiguous.</div>
+                      <div class="q">Q2. "Short-stay holiday rentals should be limited."</div><div class="a">(same 5-point scale)</div><div class="w">Why: a deliberately divisive item — the spread of answers shows exactly where the community splits.</div>
+                    </div>
+                  </div></details>
+
+                  <details><summary>⭐ Star / Rating Review — satisfaction with things</summary><div class="pb-ty">
+                    <span class="pb-ty-lbl">Purpose</span><p>Measure satisfaction with specific items — an event, a service, facilities — and pinpoint what worked and what didn't.</p>
+                    <span class="pb-ty-lbl m">Methodology (plain English)</span><p>List the items; people rate each 1–5 stars, with an optional comment. You compare the average rating per item to see highs and lows.</p>
+                    <span class="pb-ty-lbl e">Example — "Australia Day event"</span>
+                    <div class="pb-qa">
+                      <div class="q">Q1. Live music</div><div class="a">★ 1–5</div><div class="w">Why: a per-item rating pinpoints the highlight.</div>
+                      <div class="q">Q2. Parking &amp; access</div><div class="a">★ 1–5</div><div class="w">Why: separating logistics from content shows where to put next year's effort.</div>
+                      <div class="q">Q3. Any comments?</div><div class="a">(open text)</div><div class="w">Why: explains the "why" behind a low score.</div>
+                    </div>
+                  </div></details>
+
+                  <details><summary>💬 Open Feedback / Ideas — in their own words</summary><div class="pb-ty">
+                    <span class="pb-ty-lbl">Purpose</span><p>Gather ideas, concerns and suggestions freely — and discover things you didn't think to ask about.</p>
+                    <span class="pb-ty-lbl m">Methodology (plain English)</span><p>Ask one or two open questions. Answers are read and grouped into themes, then counted, so common threads rise to the top. The platform auto-tags themes to help.</p>
+                    <span class="pb-ty-lbl e">Example — "Have your say"</span>
+                    <div class="pb-qa">
+                      <div class="q">Q1. What one thing would most improve the village?</div><div class="a">(open text)</div><div class="w">Why: open-ended surfaces priorities you'd never have listed yourself.</div>
+                      <div class="q">Q2. Anything else you'd like the committee to know?</div><div class="a">(open text)</div><div class="w">Why: a catch-all that often holds the most useful comment.</div>
+                    </div>
+                  </div></details>
+
+                  <details><summary>🎯 Priority Ranking (MaxDiff) — true priorities from a long list</summary><div class="pb-ty">
+                    <span class="pb-ty-lbl">Purpose</span><p>Find the community's genuine top priorities from a long list — without everything ending up "very important".</p>
+                    <span class="pb-ty-lbl m">Methodology (plain English)</span><p>People see small groups of items and pick the <b>best</b> and <b>worst</b> in each. Repeat a few times with different groups. A score is built from how often each item is chosen best versus worst. The forced best/worst choice is what makes the priorities real.</p>
+                    <span class="pb-ty-lbl e">Example — "Recreation reserve priorities"</span>
+                    <div class="pb-qa">
+                      <div class="q">Q. Of these four, which is MOST and which is LEAST important?</div><div class="a">Event space · Pump track · Sculpture garden · Off-leash dog area  → pick one Most, one Least (repeats with new sets)</div><div class="w">Why: forcing a most/least choice stops everyone rating all items "important" and produces an honest ranking.</div>
+                    </div>
+                  </div></details>
+
+                  <details><summary>🔢 Ranked Choice — full order of a short list</summary><div class="pb-ty">
+                    <span class="pb-ty-lbl">Purpose</span><p>Get each person's complete order of preference for a short list (up to ~7 items).</p>
+                    <span class="pb-ty-lbl m">Methodology (plain English)</span><p>People drag the items into order, 1st to last. You average everyone's positions to get the overall ranking. Best when the list is short enough to order in one go.</p>
+                    <span class="pb-ty-lbl e">Example — "Foreshore upgrade options"</span>
+                    <div class="pb-qa">
+                      <div class="q">Q. Drag these into your order of preference:</div><div class="a">Boat ramp &amp; pontoon · Shaded picnic lawn · Accessible pathway · Extra parking · BBQ block</div><div class="w">Why: a full per-person ranking is more precise than "pick your top 3" when the list is short.</div>
+                    </div>
+                  </div></details>
+
+                  <details><summary>💰 Budget Allocation — priorities under a fixed budget</summary><div class="pb-ty">
+                    <span class="pb-ty-lbl">Purpose</span><p>Reveal real spending priorities when money is limited — strong, defensible evidence for grant applications.</p>
+                    <span class="pb-ty-lbl m">Methodology (plain English)</span><p>Give everyone a fixed pot (say 100 points, or $100k) to split across the options. It must add up to the total, so people make genuine trade-offs. You report the average split.</p>
+                    <span class="pb-ty-lbl e">Example — "$100k community grant"</span>
+                    <div class="pb-qa">
+                      <div class="q">Q. Distribute 100 points across these (must total 100):</div><div class="a">Walking tracks ___ · Playground ___ · Events fund ___ · Tree planting ___ · Signage ___</div><div class="w">Why: the fixed total forces trade-offs — "a bit of everything" isn't possible, so the real priorities show.</div>
+                    </div>
+                  </div></details>
+
+                  <details><summary>📈 Importance vs Performance — what to fix first</summary><div class="pb-ty">
+                    <span class="pb-ty-lbl">Purpose</span><p>Decide where to act first by comparing how important something is against how well it's currently done.</p>
+                    <span class="pb-ty-lbl m">Methodology (plain English)</span><p>For each service, ask two ratings: how <b>important</b> is it, and how well is it <b>performing</b> now (1–5 each). Items that are high-importance but low-performance are your priorities — the results plot onto a simple four-box "focus here" quadrant.</p>
+                    <span class="pb-ty-lbl e">Example — "Village services"</span>
+                    <div class="pb-qa">
+                      <div class="q">Q1a. Roads &amp; verges — how important to you?</div><div class="a">1–5</div>
+                      <div class="q">Q1b. Roads &amp; verges — how well done right now?</div><div class="a">1–5</div><div class="w">Why: the gap between importance and performance is the action signal — a big gap means fix it first.</div>
+                    </div>
+                  </div></details>
+
+                  <details><summary>⚖️ Design Option Preference (Conjoint) — choose between concepts</summary><div class="pb-ty">
+                    <span class="pb-ty-lbl">Purpose</span><p>Choose between design concepts <b>and</b> understand what actually drives the choice — not just what people say matters.</p>
+                    <span class="pb-ty-lbl m">Methodology (plain English)</span><p>People rate the features both designs share, rate how important the few key differences are, then make a series of package choices where those features are varied. Comparing the choices reveals which feature truly swings the decision. A final question captures the overall favourite.</p>
+                    <span class="pb-ty-lbl e">Example — "Village centre design"</span>
+                    <div class="pb-qa">
+                      <div class="q">Part A. Rate the shared features (parking, seating, planting…)</div><div class="a">1–5 each</div><div class="w">Why: confirms the common ground both designs get right.</div>
+                      <div class="q">Part C. "Which package do you prefer?" — across several pairs where features change</div><div class="a">pick A or B each time</div><div class="w">Why: the revealed trade-offs expose the real driver — e.g. people keep the extra parking unless a pedestrian crossing is added.</div>
+                      <div class="q">Part E. Overall, which design do you prefer?</div><div class="a">Option 1 · Option 2 · Hybrid</div><div class="w">Why: a single headline preference for the council submission.</div>
+                    </div>
+                  </div></details>
+
+                  <details><summary>📊 Annual Satisfaction — yearly community pulse</summary><div class="pb-ty">
+                    <span class="pb-ty-lbl">Purpose</span><p>A yearly health check of community sentiment you can track over time.</p>
+                    <span class="pb-ty-lbl m">Methodology (plain English)</span><p>Rate a set of services 1–5, ask the "recommend" question (0–10) to produce an NPS advocacy score, and leave room for open comments. Run it the same way each year to see the trend.</p>
+                    <span class="pb-ty-lbl e">Example — "Annual community pulse"</span>
+                    <div class="pb-qa">
+                      <div class="q">Q1. Rate each: environment, events, tracks, roads, parking…</div><div class="a">1–5</div><div class="w">Why: service-level detail on what's working.</div>
+                      <div class="q">Q2. How likely are you to recommend living here to a friend?</div><div class="a">0–10</div><div class="w">Why: the standard NPS question — one number that summarises overall advocacy and is easy to track year on year.</div>
+                      <div class="q">Q3. What should we focus on next year?</div><div class="a">(open text)</div><div class="w">Why: turns the score into direction.</div>
+                    </div>
+                  </div></details>
+
+                  <details><summary>👥 Demographic / Registration — who responded</summary><div class="pb-ty">
+                    <span class="pb-ty-lbl">Purpose</span><p>Understand who responded (to check the sample is representative) or capture member/registration details.</p>
+                    <span class="pb-ty-lbl m">Methodology (plain English)</span><p>Ask a few structured profile questions — pick-lists for things you'll group by, open fields for details. You report counts per group and can split your other results by them.</p>
+                    <span class="pb-ty-lbl e">Example — "Membership snapshot"</span>
+                    <div class="pb-qa">
+                      <div class="q">Q1. Age group</div><div class="a">Under 35 · 35–54 · 55–69 · 70+</div><div class="w">Why: lets you check all ages are represented and segment the findings.</div>
+                      <div class="q">Q2. Years in the village</div><div class="a">&lt;2 · 2–5 · 6–15 · 15+</div><div class="w">Why: newcomers and long-timers often want different things.</div>
+                      <div class="q">Q3. Household type</div><div class="a">Permanent · Holiday home · Renting</div><div class="w">Why: a key VillageFirst segment for interpreting results.</div>
+                    </div>
+                  </div></details>
+
+                  <details><summary>🗂️ Multi-section — combine several types</summary><div class="pb-ty">
+                    <span class="pb-ty-lbl">Purpose</span><p>When one survey needs more than one style — for example some ratings, a priority exercise, and an open comment.</p>
+                    <span class="pb-ty-lbl m">Methodology (plain English)</span><p>Build several of the simple types above as sections within one flow; each section keeps its own analysis. Use sparingly — longer surveys lose responses.</p>
+                    <span class="pb-ty-lbl e">Example — "Village plan consultation"</span>
+                    <div class="pb-qa">
+                      <div class="q">Section 1 — Likert</div><div class="a">attitudes to the draft plan</div>
+                      <div class="q">Section 2 — Budget allocation</div><div class="a">split the funding</div>
+                      <div class="q">Section 3 — Open feedback</div><div class="a">final ideas</div><div class="w">Why: captures attitude, priorities and ideas in one sitting, while each section is still analysed cleanly.</div>
+                    </div>
+                  </div></details>
+
+                </div>
+                <div class="pb-call"><b>Rule of thumb:</b> match the <b>method to the decision</b> — a single decision → Quick Poll; sentiment → Likert; many priorities → MaxDiff or Budget Allocation; what-to-fix → Importance vs Performance; choosing a concept → Conjoint; ideas → Open Feedback.</div>
+              </section>
+
               <section class="pb-mod" id="pb-manage">
-                <div class="pb-mh"><div class="pb-num">4</div><div><h2>Manage your surveys</h2><div class="mt">The Dashboard is mission control</div></div></div>
+                <div class="pb-mh"><div class="pb-num">5</div><div><h2>Manage your surveys</h2><div class="mt">The Dashboard is mission control</div></div></div>
                 <p class="pb-intro">Every survey appears on the <b>Dashboard</b> with quick actions on its row.</p>
                 <div class="pb-tips">
                   <div class="pb-tip"><h4>Edit</h4>Change safe fields any time (title, purpose, dates, visibility). Question changes after responses arrive prompt a safe duplicate-and-relaunch.</div>
@@ -771,7 +910,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </section>
 
               <section class="pb-mod" id="pb-lifecycle">
-                <div class="pb-mh"><div class="pb-num">5</div><div><h2>Lifecycle &amp; scheduling</h2><div class="mt">Open dates, close dates, pause &amp; reopen</div></div></div>
+                <div class="pb-mh"><div class="pb-num">6</div><div><h2>Lifecycle &amp; scheduling</h2><div class="mt">Open dates, close dates, pause &amp; reopen</div></div></div>
                 <div class="pb-step"><div class="pb-sn">1</div><div class="sb"><b>Opens / Closes dates</b> — set in the builder. A survey scheduled for the future won't accept responses until its open date; it auto-closes after the close date.</div></div>
                 <div class="pb-step"><div class="pb-sn">2</div><div class="sb"><b>Pause</b> any time to temporarily stop responses without closing — handy mid-campaign.</div></div>
                 <div class="pb-step"><div class="pb-sn">3</div><div class="sb"><b>Reopen</b> a paused survey by setting it back to live.</div></div>
@@ -779,7 +918,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </section>
 
               <section class="pb-mod" id="pb-visibility">
-                <div class="pb-mh"><div class="pb-num">6</div><div><h2>Visibility &amp; privacy</h2><div class="mt">Who can see the results</div></div><div class="pb-badges"><span class="pb-badge">Important</span></div></div>
+                <div class="pb-mh"><div class="pb-num">7</div><div><h2>Visibility &amp; privacy</h2><div class="mt">Who can see the results</div></div><div class="pb-badges"><span class="pb-badge">Important</span></div></div>
                 <p class="pb-intro">Each survey has a <b>Results visibility</b> setting. Choose it in the builder, or flip it instantly with the <b>Results public</b> toggle on each card in <b>Results</b>.</p>
                 <div class="pb-tips">
                   <div class="pb-tip"><h4>Public</h4>Live results visible to anyone with the link, and listed on the public hub.</div>
@@ -791,7 +930,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </section>
 
               <section class="pb-mod" id="pb-results">
-                <div class="pb-mh"><div class="pb-num">7</div><div><h2>Results &amp; sharing</h2><div class="mt">From live charts to a council-ready page</div></div></div>
+                <div class="pb-mh"><div class="pb-num">8</div><div><h2>Results &amp; sharing</h2><div class="mt">From live charts to a council-ready page</div></div></div>
                 <p class="pb-intro">Open <b>Results</b> to see every survey as a card with its live response count. Click one for the full charted page — the <b>same page the public sees</b>.</p>
                 <div class="pb-step"><div class="pb-sn">1</div><div class="sb"><b>Rich visuals</b> — headline takeaway, KPI cards, donuts, ranked bars, 1–5 distributions, NPS gauge, importance×performance quadrant — auto-matched to the template.</div></div>
                 <div class="pb-step"><div class="pb-sn">2</div><div class="sb"><b>Tabs &amp; navigation</b> — bigger surveys split into tabs; a breadcrumb, survey switcher and prev/next let you move between surveys.</div></div>
@@ -801,7 +940,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </section>
 
               <section class="pb-mod" id="pb-comments">
-                <div class="pb-mh"><div class="pb-num">8</div><div><h2>Comments &amp; moderation</h2><div class="mt">Open feedback, safely</div></div></div>
+                <div class="pb-mh"><div class="pb-num">9</div><div><h2>Comments &amp; moderation</h2><div class="mt">Open feedback, safely</div></div></div>
                 <div class="pb-step"><div class="pb-sn">1</div><div class="sb"><b>Enable comments</b> on a survey to collect open-text feedback alongside the structured questions.</div></div>
                 <div class="pb-step"><div class="pb-sn">2</div><div class="sb"><b>Turn on moderation</b> (per survey) if you want to review before the public sees comments.</div></div>
                 <div class="pb-step"><div class="pb-sn">3</div><div class="sb"><b>Hide / show</b> individual comments from the admin results view — a "🛡 Moderate comments" panel appears under the charts. Hidden comments never show publicly.</div></div>
@@ -809,14 +948,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </section>
 
               <section class="pb-mod" id="pb-villages">
-                <div class="pb-mh"><div class="pb-num">9</div><div><h2>Working across villages</h2><div class="mt">One platform, many communities</div></div></div>
+                <div class="pb-mh"><div class="pb-num">10</div><div><h2>Working across villages</h2><div class="mt">One platform, many communities</div></div></div>
                 <div class="pb-step"><div class="pb-sn">1</div><div class="sb"><b>Switch village</b> with the picker in the top bar — everything (dashboard, results, surveys) scopes to that village.</div></div>
                 <div class="pb-step"><div class="pb-sn">2</div><div class="sb"><b>All Villages</b> (super-admin) shows a rollup: per-village active surveys, totals, responses and participation, plus lifecycle controls.</div></div>
                 <div class="pb-step"><div class="pb-sn">3</div><div class="sb"><b>Add a village</b> with <b>+ Village</b>. Lifecycle: <b>Live → Suspend</b> (pauses all its surveys) <b>→ Archive</b> (also removes public access) <b>→ Delete</b> (archived &amp; empty only, with typed confirmation).</div></div>
               </section>
 
               <section class="pb-mod" id="pb-access">
-                <div class="pb-mh"><div class="pb-num">10</div><div><h2>Access &amp; roles</h2><div class="mt">Who can do what</div></div></div>
+                <div class="pb-mh"><div class="pb-num">11</div><div><h2>Access &amp; roles</h2><div class="mt">Who can do what</div></div></div>
                 <div class="pb-roles">
                   <div class="pb-role"><div class="re">👑</div><div><div class="rn">Super Admin (AOB)</div><div class="rd">Everything, across all villages — templates, platform settings, user management.</div></div></div>
                   <div class="pb-role"><div class="re">🛠️</div><div><div class="rn">Village Admin</div><div class="rd">Full control within their village — create/edit/activate/close surveys, set visibility, invite users, export.</div></div></div>
@@ -828,7 +967,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </section>
 
               <section class="pb-mod" id="pb-tips">
-                <div class="pb-mh"><div class="pb-num">11</div><div><h2>Best practice</h2><div class="mt">Get more, better responses</div></div></div>
+                <div class="pb-mh"><div class="pb-num">12</div><div><h2>Best practice</h2><div class="mt">Get more, better responses</div></div></div>
                 <div class="pb-tips">
                   <div class="pb-tip"><h4>Keep it short</h4>5 focused questions beat 20 vague ones. Respect people's time and completion rates climb.</div>
                   <div class="pb-tip"><h4>Lead with purpose</h4>A one-line "why this matters" at the top lifts both starts and quality.</div>
@@ -840,7 +979,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </section>
 
               <section class="pb-mod" id="pb-faq">
-                <div class="pb-mh"><div class="pb-num">12</div><div><h2>Troubleshooting</h2><div class="mt">Quick answers to common questions</div></div></div>
+                <div class="pb-mh"><div class="pb-num">13</div><div><h2>Troubleshooting</h2><div class="mt">Quick answers to common questions</div></div></div>
                 <div class="pb-faq">
                   <details><summary>My survey isn't showing on the public results hub</summary><p>Check its <b>Results visibility</b>. Only <b>Public</b> surveys appear on the hub; committee-only and draft surveys are hidden. Flip the <b>Results public</b> toggle on the survey's card in Results.</p></details>
                   <details><summary>The results say "No responses yet"</summary><p>That's the empty state — results appear as soon as the first response lands. Confirm the survey is <b>live</b> and within its open/close dates, and that you've shared the survey link.</p></details>
