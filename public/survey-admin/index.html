@@ -212,6 +212,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="s-item" id="nav-villages" style="display:none;" onclick="showPanel('villages',this);renderAllVillages()">🏘️ All Villages</div>
       <div class="s-item" onclick="showPanel('settings',this);loadSettings()">⚙️ Settings</div>
       <div class="s-item" onclick="showPanel('access',this);loadAccess()">👥 Access</div>
+      <hr class="s-divider">
+      <div class="s-sec">Help</div>
+      <div class="s-item" onclick="showPanel('playbook',this)">📖 Playbook</div>
     </div>
 
     <!-- Main -->
@@ -626,6 +629,230 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           </div>
           <div id="access-content"><div style="padding:16px;color:#9ca3af;font-size:12px;">Loading users…</div></div>
           <div class="info-box" style="margin-top:12px;">Invites are emailed via Netlify Identity. New users appear here once they accept. Roles take effect on their next sign-in.</div>
+        </div>
+      </div>
+
+      <!-- PLAYBOOK -->
+      <div class="panel" id="panel-playbook">
+        <div class="ph"><div><div class="ph-title">Playbook</div><div class="ph-sub">Your complete guide to running community surveys with VillageFirst</div></div></div>
+        <style>
+          .pb-doc{max-width:1100px;margin:0 auto;padding:18px;color:#27332e;font-size:14px;line-height:1.6}
+          .pb-doc h2,.pb-doc h3{letter-spacing:-.01em}
+          .pb-hero{background:linear-gradient(135deg,#0f4c3a 0%,#15795f 60%,#0f8f80 100%);color:#fff;border-radius:18px;padding:30px 30px 26px;position:relative;overflow:hidden;box-shadow:0 12px 34px rgba(15,76,58,.18)}
+          .pb-hero::after{content:"";position:absolute;right:-50px;top:-50px;width:280px;height:280px;background:radial-gradient(circle,rgba(255,255,255,.12),transparent 70%)}
+          .pb-hero .eye{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.8;font-weight:800}
+          .pb-hero h1{font-size:27px;font-weight:800;margin:6px 0 8px}
+          .pb-hero p{opacity:.9;font-size:14.5px;max-width:680px}
+          .pb-stats{display:flex;gap:26px;margin-top:18px;flex-wrap:wrap}
+          .pb-stat .v{font-size:24px;font-weight:900;line-height:1}
+          .pb-stat .l{font-size:11.5px;opacity:.85;margin-top:3px}
+          .pb-layout{display:grid;grid-template-columns:210px 1fr;gap:26px;align-items:start;margin-top:22px}
+          .pb-toc{position:sticky;top:10px;background:#fff;border:1px solid #e3ece8;border-radius:14px;padding:14px}
+          .pb-toc .t{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0f8f80;margin-bottom:8px}
+          .pb-toc a{display:block;color:#475569;text-decoration:none;font-size:12.5px;font-weight:600;padding:6px 8px;border-radius:8px;border-left:2px solid transparent}
+          .pb-toc a:hover{background:#f0fdf9;color:#0f4c3a;border-left-color:#0f8f80}
+          .pb-content{min-width:0;display:flex;flex-direction:column;gap:16px}
+          .pb-mod{background:#fff;border:1px solid #e3ece8;border-radius:16px;padding:22px 24px;box-shadow:0 1px 2px rgba(16,40,30,.04),0 10px 26px rgba(16,40,30,.05);scroll-margin-top:14px}
+          .pb-mh{display:flex;align-items:center;gap:13px;margin-bottom:4px}
+          .pb-num{width:38px;height:38px;flex-shrink:0;border-radius:11px;background:linear-gradient(135deg,#0f4c3a,#0f8f80);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px}
+          .pb-mh h2{font-size:18px;font-weight:800;color:#16261f}
+          .pb-mh .mt{font-size:12px;color:#6b7c75;margin-top:1px}
+          .pb-intro{color:#3b4a44;margin:6px 0 14px}
+          .pb-step{display:flex;gap:12px;margin-bottom:11px}
+          .pb-sn{width:24px;height:24px;flex-shrink:0;border-radius:50%;background:#ecfdf5;color:#0f8f80;border:1px solid #a7f3d0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px}
+          .pb-step .sb{flex:1}.pb-step .sb b{color:#16261f}
+          .pb-tips{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:6px}
+          .pb-tip{background:#f8fbf9;border:1px solid #e3ece8;border-left:4px solid #0f8f80;border-radius:11px;padding:12px 14px;font-size:13px}
+          .pb-tip h4{font-size:13px;font-weight:800;color:#16261f;margin-bottom:3px}
+          .pb-tip.blue{border-left-color:#2563eb;background:#eff6ff}
+          .pb-tip.amber{border-left-color:#e08a1e;background:#fffbeb}
+          .pb-call{border-radius:12px;padding:13px 16px;font-size:13.5px;line-height:1.6;border-left:5px solid #0f8f80;background:#ecfdf5;color:#22302b;margin-top:6px}
+          .pb-call.amber{border-left-color:#e08a1e;background:#fffbeb;color:#92500e}
+          .pb-call b{font-weight:800}
+          .pb-badges{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+          .pb-badge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#0c7568;background:#d7f5ee;border-radius:30px;padding:3px 9px}
+          .pb-tpl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+          .pb-tpl .row{display:flex;gap:10px;background:#f8fbf9;border:1px solid #e3ece8;border-radius:10px;padding:10px 12px}
+          .pb-tpl .ico{font-size:18px}.pb-tpl .nm{font-weight:800;font-size:13px;color:#16261f}
+          .pb-tpl .ds{font-size:12px;color:#475569}
+          .pb-roles{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+          .pb-role{display:flex;gap:12px;align-items:flex-start;background:#f8fbf9;border:1px solid #e3ece8;border-radius:11px;padding:11px 13px}
+          .pb-role .re{font-size:20px}.pb-role .rn{font-weight:800;color:#16261f;font-size:13.5px}.pb-role .rd{font-size:12.5px;color:#475569}
+          .pb-faq{margin-top:4px}
+          .pb-faq details{background:#f8fbf9;border:1px solid #e3ece8;border-radius:10px;padding:0 14px;margin-bottom:8px}
+          .pb-faq summary{cursor:pointer;font-weight:700;color:#16261f;padding:12px 0;font-size:13.5px;list-style:none}
+          .pb-faq summary::-webkit-details-marker{display:none}
+          .pb-faq summary::before{content:"+ ";color:#0f8f80;font-weight:900}
+          .pb-faq details[open] summary::before{content:"– "}
+          .pb-faq p{padding:0 0 13px;color:#3b4a44;font-size:13px}
+          .pb-tag{display:inline-block;background:#eef4f1;border-radius:6px;padding:1px 7px;font-weight:700;font-size:12px;color:#0f4c3a}
+          @media(max-width:880px){.pb-layout{grid-template-columns:1fr}.pb-toc{display:none}.pb-tpl{grid-template-columns:1fr}}
+        </style>
+        <div class="pb-doc">
+          <div class="pb-hero">
+            <div class="eye">VillageFirst · Surveys</div>
+            <h1>The Survey Playbook</h1>
+            <p>Everything you need to plan, build, run and share a community survey — from your first question to a council-ready results page. Skim a section, or read it end to end.</p>
+            <div class="pb-stats">
+              <div class="pb-stat"><div class="v">11</div><div class="l">Question templates</div></div>
+              <div class="pb-stat"><div class="v">4</div><div class="l">Visibility modes</div></div>
+              <div class="pb-stat"><div class="v">∞</div><div class="l">Villages &amp; surveys</div></div>
+              <div class="pb-stat"><div class="v">Live</div><div class="l">Results &amp; sharing</div></div>
+            </div>
+          </div>
+
+          <div class="pb-layout">
+            <nav class="pb-toc">
+              <div class="t">On this page</div>
+              <a href="#pb-overview">1 · How it works</a>
+              <a href="#pb-create">2 · Create a survey</a>
+              <a href="#pb-templates">3 · Choose a template</a>
+              <a href="#pb-manage">4 · Manage surveys</a>
+              <a href="#pb-lifecycle">5 · Lifecycle &amp; dates</a>
+              <a href="#pb-visibility">6 · Visibility &amp; privacy</a>
+              <a href="#pb-results">7 · Results &amp; sharing</a>
+              <a href="#pb-comments">8 · Comments &amp; moderation</a>
+              <a href="#pb-villages">9 · Multiple villages</a>
+              <a href="#pb-access">10 · Access &amp; roles</a>
+              <a href="#pb-tips">11 · Best practice</a>
+              <a href="#pb-faq">12 · Troubleshooting</a>
+            </nav>
+
+            <div class="pb-content">
+
+              <section class="pb-mod" id="pb-overview">
+                <div class="pb-mh"><div class="pb-num">1</div><div><h2>How VillageFirst Surveys works</h2><div class="mt">The big picture in one minute</div></div></div>
+                <p class="pb-intro">VillageFirst Surveys has three faces that share one design. You <b>build &amp; manage</b> here in the admin; residents <b>respond</b> on a public survey link; anyone can <b>view results</b> on a public results page.</p>
+                <div class="pb-step"><div class="pb-sn">1</div><div class="sb"><b>Admin (this app)</b> — create surveys, set who can respond, open/close them, watch results, manage villages. Sign-in required.</div></div>
+                <div class="pb-step"><div class="pb-sn">2</div><div class="sb"><b>The survey link</b> — a public page residents fill in (no login). Each survey has its own shareable link.</div></div>
+                <div class="pb-step"><div class="pb-sn">3</div><div class="sb"><b>The results page</b> — a public, charted results page (and a per-village "All results" hub). You control whether each survey's results are public.</div></div>
+                <div class="pb-call"><b>Behind the scenes:</b> survey settings live in Notion, responses land in a Google Sheet, and results are charted live — but you never touch any of that. It's all driven from this admin.</div>
+              </section>
+
+              <section class="pb-mod" id="pb-create">
+                <div class="pb-mh"><div class="pb-num">2</div><div><h2>Create your first survey</h2><div class="mt">New Survey → four quick steps</div></div><div class="pb-badges"><span class="pb-badge">Start here</span></div></div>
+                <p class="pb-intro">Click <span class="pb-tag">+ New Survey</span> in the sidebar. The builder walks you through four steps.</p>
+                <div class="pb-step"><div class="pb-sn">1</div><div class="sb"><b>Pick a template</b> — choose the question style that fits your goal (see section 3). This shapes the whole survey.</div></div>
+                <div class="pb-step"><div class="pb-sn">2</div><div class="sb"><b>Details</b> — name it, write a short purpose, set <b>Opens / Closes</b> dates, choose <b>who can respond</b> (the pills), and set <b>Results visibility</b> and a snapshot label for exports.</div></div>
+                <div class="pb-step"><div class="pb-sn">3</div><div class="sb"><b>Questions</b> — add your items/options. Each template gives you the right fields (rating items, choices, ranking lists, etc.).</div></div>
+                <div class="pb-step"><div class="pb-sn">4</div><div class="sb"><b>Activate</b> — review and publish. The system creates the response sheet and your shareable survey link automatically.</div></div>
+                <div class="pb-call amber"><b>Tip:</b> you can save and come back. A survey stays a <b>draft</b> until you activate it — drafts are never visible to the public.</div>
+              </section>
+
+              <section class="pb-mod" id="pb-templates">
+                <div class="pb-mh"><div class="pb-num">3</div><div><h2>Choose the right template</h2><div class="mt">11 question styles — pick by what you need to learn</div></div></div>
+                <div class="pb-tpl">
+                  <div class="row"><div class="ico">✅</div><div><div class="nm">Quick Poll</div><div class="ds">One question, instant answer. Best for a fast yes/no or single choice.</div></div></div>
+                  <div class="row"><div class="ico">📋</div><div><div class="nm">Likert Agreement</div><div class="ds">A set of "agree↔disagree" statements. The attitude workhorse.</div></div></div>
+                  <div class="row"><div class="ico">⭐</div><div><div class="nm">Star / Rating Review</div><div class="ds">Rate items or an event 1–5, plus a comment. Great post-event.</div></div></div>
+                  <div class="row"><div class="ico">💬</div><div><div class="nm">Open Feedback / Ideas</div><div class="ds">Open-text "have your say". Collect ideas and themes.</div></div></div>
+                  <div class="row"><div class="ico">🎯</div><div><div class="nm">Priority Ranking (MaxDiff)</div><div class="ds">Best/worst trade-offs over a long list. Find true priorities.</div></div></div>
+                  <div class="row"><div class="ico">🔢</div><div><div class="nm">Ranked Choice</div><div class="ds">Drag a short list into full order. Clear 1st–last ranking.</div></div></div>
+                  <div class="row"><div class="ico">💰</div><div><div class="nm">Budget Allocation</div><div class="ds">Spread 100 points across options. Forced trade-offs for grants.</div></div></div>
+                  <div class="row"><div class="ico">📈</div><div><div class="nm">Importance vs Performance</div><div class="ds">Rate importance AND performance — surfaces what to fix first.</div></div></div>
+                  <div class="row"><div class="ico">⚖️</div><div><div class="nm">Design Option Preference</div><div class="ds">Compare two designs across features + trade-offs (the Blueys model).</div></div></div>
+                  <div class="row"><div class="ico">📊</div><div><div class="nm">Annual Satisfaction</div><div class="ds">Service ratings + NPS + open text. A yearly community pulse.</div></div></div>
+                  <div class="row"><div class="ico">👥</div><div><div class="nm">Demographic / Registration</div><div class="ds">Capture who's responding — standalone or as a profiling section.</div></div></div>
+                  <div class="row"><div class="ico">🗂️</div><div><div class="nm">Multi-section</div><div class="ds">Combine several of the simple types into one flow.</div></div></div>
+                </div>
+                <div class="pb-call"><b>Not sure?</b> Use <b>Quick Poll</b> for a single decision, <b>Likert</b> to gauge sentiment, <b>Priority Ranking</b> or <b>Budget Allocation</b> to prioritise spending, and <b>Open Feedback</b> when you just want ideas.</div>
+              </section>
+
+              <section class="pb-mod" id="pb-manage">
+                <div class="pb-mh"><div class="pb-num">4</div><div><h2>Manage your surveys</h2><div class="mt">The Dashboard is mission control</div></div></div>
+                <p class="pb-intro">Every survey appears on the <b>Dashboard</b> with quick actions on its row.</p>
+                <div class="pb-tips">
+                  <div class="pb-tip"><h4>Edit</h4>Change safe fields any time (title, purpose, dates, visibility). Question changes after responses arrive prompt a safe duplicate-and-relaunch.</div>
+                  <div class="pb-tip"><h4>Duplicate</h4>Clone a survey to reuse its structure for a new round or another village.</div>
+                  <div class="pb-tip"><h4>Survey link / Open</h4>Copy the shareable link or open the live survey to preview it.</div>
+                  <div class="pb-tip"><h4>Results →</h4>Jump straight to that survey's charted results.</div>
+                  <div class="pb-tip"><h4>Status</h4>Set <b>draft → live → paused → closed</b> from the row's dropdown. Paused stops new responses; closed locks it.</div>
+                </div>
+              </section>
+
+              <section class="pb-mod" id="pb-lifecycle">
+                <div class="pb-mh"><div class="pb-num">5</div><div><h2>Lifecycle &amp; scheduling</h2><div class="mt">Open dates, close dates, pause &amp; reopen</div></div></div>
+                <div class="pb-step"><div class="pb-sn">1</div><div class="sb"><b>Opens / Closes dates</b> — set in the builder. A survey scheduled for the future won't accept responses until its open date; it auto-closes after the close date.</div></div>
+                <div class="pb-step"><div class="pb-sn">2</div><div class="sb"><b>Pause</b> any time to temporarily stop responses without closing — handy mid-campaign.</div></div>
+                <div class="pb-step"><div class="pb-sn">3</div><div class="sb"><b>Reopen</b> a paused survey by setting it back to live.</div></div>
+                <div class="pb-call"><b>Statuses at a glance:</b> <b>draft</b> (hidden, editable) · <b>scheduled</b> (waiting for open date) · <b>live</b> (accepting responses) · <b>paused</b> (temporarily stopped) · <b>closed</b> (finished).</div>
+              </section>
+
+              <section class="pb-mod" id="pb-visibility">
+                <div class="pb-mh"><div class="pb-num">6</div><div><h2>Visibility &amp; privacy</h2><div class="mt">Who can see the results</div></div><div class="pb-badges"><span class="pb-badge">Important</span></div></div>
+                <p class="pb-intro">Each survey has a <b>Results visibility</b> setting. Choose it in the builder, or flip it instantly with the <b>Results public</b> toggle on each card in <b>Results</b>.</p>
+                <div class="pb-tips">
+                  <div class="pb-tip"><h4>Public</h4>Live results visible to anyone with the link, and listed on the public hub.</div>
+                  <div class="pb-tip blue"><h4>Committee only</h4>Hidden from the public hub and public page — visible to you in the admin. Use this for test or internal surveys.</div>
+                  <div class="pb-tip amber"><h4>Public after close</h4>Results stay private until the survey closes, then publish automatically.</div>
+                  <div class="pb-tip"><h4>Respondent after completion</h4>Each person sees results right after they submit — nice for engagement.</div>
+                </div>
+                <div class="pb-call amber"><b>Hide a test survey fast:</b> go to <b>Results</b>, find its card, and switch <b>Results public</b> to <b>Off</b>. It disappears from the public hub immediately but stays in your admin.</div>
+              </section>
+
+              <section class="pb-mod" id="pb-results">
+                <div class="pb-mh"><div class="pb-num">7</div><div><h2>Results &amp; sharing</h2><div class="mt">From live charts to a council-ready page</div></div></div>
+                <p class="pb-intro">Open <b>Results</b> to see every survey as a card with its live response count. Click one for the full charted page — the <b>same page the public sees</b>.</p>
+                <div class="pb-step"><div class="pb-sn">1</div><div class="sb"><b>Rich visuals</b> — headline takeaway, KPI cards, donuts, ranked bars, 1–5 distributions, NPS gauge, importance×performance quadrant — auto-matched to the template.</div></div>
+                <div class="pb-step"><div class="pb-sn">2</div><div class="sb"><b>Tabs &amp; navigation</b> — bigger surveys split into tabs; a breadcrumb, survey switcher and prev/next let you move between surveys.</div></div>
+                <div class="pb-step"><div class="pb-sn">3</div><div class="sb"><b>Share it</b> — <b>View Public →</b> opens the resident-facing copy; the public <b>All results</b> hub lists every public survey in the village.</div></div>
+                <div class="pb-step"><div class="pb-sn">4</div><div class="sb"><b>Export</b> — <b>Export CSV</b> for the raw data, or <b>Print / Save PDF</b> for a clean snapshot (use the snapshot label for council submissions). A greyscale toggle helps printing.</div></div>
+                <div class="pb-call"><b>Theming:</b> results automatically use each village's colours, so a Smiths Lake page and a Blueys Beach page feel like their own place while sharing one design.</div>
+              </section>
+
+              <section class="pb-mod" id="pb-comments">
+                <div class="pb-mh"><div class="pb-num">8</div><div><h2>Comments &amp; moderation</h2><div class="mt">Open feedback, safely</div></div></div>
+                <div class="pb-step"><div class="pb-sn">1</div><div class="sb"><b>Enable comments</b> on a survey to collect open-text feedback alongside the structured questions.</div></div>
+                <div class="pb-step"><div class="pb-sn">2</div><div class="sb"><b>Turn on moderation</b> (per survey) if you want to review before the public sees comments.</div></div>
+                <div class="pb-step"><div class="pb-sn">3</div><div class="sb"><b>Hide / show</b> individual comments from the admin results view — a "🛡 Moderate comments" panel appears under the charts. Hidden comments never show publicly.</div></div>
+                <div class="pb-call"><b>Always anonymous:</b> public comments are shown without names or identifying details.</div>
+              </section>
+
+              <section class="pb-mod" id="pb-villages">
+                <div class="pb-mh"><div class="pb-num">9</div><div><h2>Working across villages</h2><div class="mt">One platform, many communities</div></div></div>
+                <div class="pb-step"><div class="pb-sn">1</div><div class="sb"><b>Switch village</b> with the picker in the top bar — everything (dashboard, results, surveys) scopes to that village.</div></div>
+                <div class="pb-step"><div class="pb-sn">2</div><div class="sb"><b>All Villages</b> (super-admin) shows a rollup: per-village active surveys, totals, responses and participation, plus lifecycle controls.</div></div>
+                <div class="pb-step"><div class="pb-sn">3</div><div class="sb"><b>Add a village</b> with <b>+ Village</b>. Lifecycle: <b>Live → Suspend</b> (pauses all its surveys) <b>→ Archive</b> (also removes public access) <b>→ Delete</b> (archived &amp; empty only, with typed confirmation).</div></div>
+              </section>
+
+              <section class="pb-mod" id="pb-access">
+                <div class="pb-mh"><div class="pb-num">10</div><div><h2>Access &amp; roles</h2><div class="mt">Who can do what</div></div></div>
+                <div class="pb-roles">
+                  <div class="pb-role"><div class="re">👑</div><div><div class="rn">Super Admin (AOB)</div><div class="rd">Everything, across all villages — templates, platform settings, user management.</div></div></div>
+                  <div class="pb-role"><div class="re">🛠️</div><div><div class="rn">Village Admin</div><div class="rd">Full control within their village — create/edit/activate/close surveys, set visibility, invite users, export.</div></div></div>
+                  <div class="pb-role"><div class="re">✍️</div><div><div class="rn">Survey Steward</div><div class="rd">Prepare and edit surveys and view results, but publishing goes to a Village Admin for approval.</div></div></div>
+                  <div class="pb-role"><div class="re">👀</div><div><div class="rn">Committee Viewer</div><div class="rd">Read-only results, including committee-only surveys.</div></div></div>
+                  <div class="pb-role"><div class="re">🙋</div><div><div class="rn">Respondent (public)</div><div class="rd">Completes surveys via the link — no login, self-declared respondent type.</div></div></div>
+                </div>
+                <div class="pb-call"><b>Invites:</b> add people by email in <b>Access</b>; roles take effect on their next sign-in. New accounts are approved by AOB.</div>
+              </section>
+
+              <section class="pb-mod" id="pb-tips">
+                <div class="pb-mh"><div class="pb-num">11</div><div><h2>Best practice</h2><div class="mt">Get more, better responses</div></div></div>
+                <div class="pb-tips">
+                  <div class="pb-tip"><h4>Keep it short</h4>5 focused questions beat 20 vague ones. Respect people's time and completion rates climb.</div>
+                  <div class="pb-tip"><h4>Lead with purpose</h4>A one-line "why this matters" at the top lifts both starts and quality.</div>
+                  <div class="pb-tip blue"><h4>Pick the right respondents</h4>Only offer the respondent pills that apply — it segments your results cleanly.</div>
+                  <div class="pb-tip"><h4>Share widely</h4>Post the survey link in the newsletter, socials and noticeboards. Add the QR code for in-person events.</div>
+                  <div class="pb-tip amber"><h4>Snapshot before you submit</h4>Set a snapshot label and Print/Save PDF for a dated record to attach to council submissions.</div>
+                  <div class="pb-tip"><h4>Close the loop</h4>Share results back with the community — it builds trust and boosts the next survey.</div>
+                </div>
+              </section>
+
+              <section class="pb-mod" id="pb-faq">
+                <div class="pb-mh"><div class="pb-num">12</div><div><h2>Troubleshooting</h2><div class="mt">Quick answers to common questions</div></div></div>
+                <div class="pb-faq">
+                  <details><summary>My survey isn't showing on the public results hub</summary><p>Check its <b>Results visibility</b>. Only <b>Public</b> surveys appear on the hub; committee-only and draft surveys are hidden. Flip the <b>Results public</b> toggle on the survey's card in Results.</p></details>
+                  <details><summary>The results say "No responses yet"</summary><p>That's the empty state — results appear as soon as the first response lands. Confirm the survey is <b>live</b> and within its open/close dates, and that you've shared the survey link.</p></details>
+                  <details><summary>I can't change the questions after responses came in</summary><p>To keep the data valid, structural changes after responses use <b>duplicate-and-relaunch</b> (a new version). Safe fields — title, purpose, dates, visibility — stay editable any time.</p></details>
+                  <details><summary>Counts look different between the hub and a survey's page</summary><p>The hub shows live counts; an individual page reads the full sheet. They reconcile within moments. If a number looks stuck, reload the page.</p></details>
+                  <details><summary>How do I make results private again?</summary><p>Set <b>Results public</b> to <b>Off</b> (committee-only) on the survey's card, or change visibility in the builder. It hides immediately from the public.</p></details>
+                  <details><summary>Who do I contact for help?</summary><p>Reach AOB at <b>support@agilityops.com.au</b> for account access, new villages, or anything this playbook doesn't cover.</p></details>
+                </div>
+              </section>
+
+            </div>
+          </div>
         </div>
       </div>
 
