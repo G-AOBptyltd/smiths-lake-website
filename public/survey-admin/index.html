@@ -6,6 +6,9 @@
 <title>Survey Admin — VillageFirst</title>
 <meta name="robots" content="noindex, nofollow">
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="/css/vf-results.css">
+<script src="/js/results-engine.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;color:#1e293b;font-size:13px;min-height:100vh;display:flex;flex-direction:column;}
@@ -20,8 +23,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 #app{display:none;flex-direction:column;min-height:100vh;}
 
 /* Topbar */
-.topbar{background:#0f4c3a;display:flex;align-items:center;padding:0 16px;height:44px;gap:10px;flex-shrink:0;}
-.topbar-brand{color:#34d399;font-weight:800;font-size:13px;}
+.topbar{background:linear-gradient(135deg,#0f4c3a 0%,#15795f 60%,#0f8f80 100%);display:flex;align-items:center;padding:0 16px;height:46px;gap:10px;flex-shrink:0;}
+.topbar-brand{color:#fff;font-weight:800;font-size:13px;letter-spacing:-.01em;}
 .village-chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:11px;padding:3px 10px;border-radius:20px;}
 .topbar-sp{flex:1;}
 .topbar-user{font-size:11px;color:rgba(255,255,255,.5);}
@@ -33,7 +36,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .s-sec{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;padding:8px 12px 3px;}
 .s-item{display:flex;align-items:center;gap:7px;padding:7px 12px;font-size:11px;font-weight:500;color:#4b5563;cursor:pointer;transition:all .15s;}
 .s-item:hover{background:#f9fafb;}
-.s-item.on{background:#f0fdf4;color:#059669;font-weight:700;border-right:2px solid #059669;}
+.s-item.on{background:#ecfdf5;color:#0f8f80;font-weight:700;border-right:2px solid #0f8f80;}
 .s-divider{border:none;border-top:1px solid #f3f4f6;margin:4px 8px;}
 
 .main{flex:1;overflow-y:auto;background:#f8fafc;}
@@ -46,8 +49,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ph-sub{font-size:11px;color:#9ca3af;margin-top:1px;}
 .ph-acts{margin-left:auto;display:flex;gap:7px;}
 .btn{padding:6px 13px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:all .15s;}
-.btn-g{background:#059669;color:#fff;}
-.btn-g:hover{background:#047857;}
+.btn-g{background:#0f8f80;color:#fff;}
+.btn-g:hover{background:#0c7568;}
 .btn-s{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;}
 .btn-s:hover{background:#e2e8f0;}
 .btn-danger{background:#fee2e2;color:#dc2626;}
@@ -985,38 +988,26 @@ async function ensureResultsSelector() {
   ).join('');
 }
 
-// Overview: one card per survey (active or not) with status + live response count.
-function renderResultsOverview() {
+// Overview: shared results-engine hub cards (admin sees ALL surveys) with live counts.
+async function renderResultsOverview() {
   const el = document.getElementById('results-content');
   const list = resultsSurveys || [];
   if (!list.length) {
+    el.classList.remove('vfr-root');
     el.innerHTML = '<div class="empty-state"><div class="es-icon">📈</div><div class="es-title">No surveys yet</div><div class="es-sub">Create a survey to see results here.</div></div>';
     return;
   }
-  el.innerHTML = '<div class="s-cards">' + list.map(s => {
-    const slug = slugOf(s);
-    const icon = s.template === 'priority-ranking' ? '🎯' : s.template === 'conjoint-design-options' ? '⚖️' : '📋';
-    return `<div class="s-card" style="cursor:pointer;" onclick="loadResults('${slug}')">
-      <div class="sc-icon">${icon}</div>
-      <div class="sc-info">
-        <div class="sc-title">${escHtml(s.surveyName)}</div>
-        <div class="sc-meta">${s.active?'<span class="ldot"></span>':''} ${s.template} · <span id="ov-count-${s.id}" style="color:#64748b;">… responses</span></div>
-      </div>
-      <span class="tag ${s.active?'t-live':'t-draft'}">${s.active?'Live':'Paused'}</span>
-      <button class="btn btn-s" style="font-size:10px;padding:3px 8px;" onclick="event.stopPropagation();loadResults('${slug}')">View results →</button>
-    </div>`;
-  }).join('') + '</div>';
-  loadOverviewCounts(list);
-}
-async function loadOverviewCounts(list) {
+  list.forEach(s => { if (!s.slug) s.slug = slugOf(s); });
+  el.innerHTML = '<div class="vfr-root"><div class="vf-state"><div class="vf-spinner"></div><p>Loading surveys…</p></div></div>';
+  // Live response counts (admin can afford per-survey reads).
   await Promise.all(list.map(async s => {
     try {
-      const res = await fetch(`/api/survey-health?slug=${encodeURIComponent(slugOf(s))}`, { headers: await authHeaders() });
+      const res = await fetch(`/api/survey-health?slug=${encodeURIComponent(s.slug)}`, { headers: await authHeaders() });
       const h = await res.json();
-      const c = document.getElementById('ov-count-' + s.id);
-      if (c) c.textContent = (h.responseCount ?? 0) + ' response' + (h.responseCount===1?'':'s');
-    } catch(_) {}
+      if (h && h.responseCount != null) s.responseCount = h.responseCount;
+    } catch (_) {}
   }));
+  VFResults.renderHub(el, list, { includeAll: true, village: activeVillage, onSelect: (slug) => loadResults(slug) });
 }
 
 async function loadResults(slug) {
@@ -1035,53 +1026,45 @@ async function loadResults(slug) {
   document.getElementById('results-link-btn').style.display='inline-flex';
   document.getElementById('results-export-btn').style.display='inline-flex';
   const el = document.getElementById('results-content');
+  el.classList.remove('vfr-root');
   el.innerHTML = '<div style="padding:20px;color:#9ca3af;">Loading…</div>';
-  const backLink = '<div style="margin-bottom:10px;"><a onclick="loadResults()" style="cursor:pointer;color:#2563eb;font-size:12px;">← All results</a></div>';
   try {
     const res = await fetch(`/api/survey-results?slug=${encodeURIComponent(s)}`, { headers: await authHeaders() });
     const data = await res.json();
-    if(data.restricted) { el.innerHTML=backLink+'<div style="padding:20px;color:#9ca3af;">'+(data.message||'Results are restricted.')+'</div>'; return; }
-    if(!data.count) { el.innerHTML=backLink+'<div style="padding:20px;color:#9ca3af;">No responses yet.</div>'; return; }
-    let html = backLink + `<div class="kpis">
-      <div class="kpi"><div class="kpi-n" style="color:#059669;">${data.count}</div><div class="kpi-l">Total Responses</div></div>
-      ${Object.entries(data.respondentBreakdown||{}).slice(0,2).map(([k,v])=>`<div class="kpi"><div class="kpi-n" style="color:#2563eb;">${v}</div><div class="kpi-l">${k}</div></div>`).join('')}
-    </div>`;
-    if(data.sections){
-      data.sections.forEach(sec=>{
-        html += `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:13px;margin-bottom:10px;"><div style="font-size:11px;font-weight:700;margin-bottom:8px;">${escHtml(sec.title||sec.template)}</div>`;
-        const its=sec.serviceRatings||[];
-        if(its.length){ const fills=['#0f4c3a','#059669','#34d399','#6ee7b7','#a7f3d0']; its.forEach((item,i)=>{ const pct=item.bestPct||Math.round((item.avg/5)*100)||0; html+=`<div class="bar-r"><div class="bar-lbl">${escHtml(item.label)}</div><div class="bar-trk"><div class="bar-fill" style="width:${pct}%;background:${fills[i%5]}">${pct}%</div></div></div>`; }); }
-        if(sec.openText&&sec.openText.length){ html+='<div style="margin-top:8px;">'+sec.openText.slice(0,5).map(r=>`<div style="background:#f8fafc;border-radius:5px;padding:7px 9px;margin-bottom:5px;font-size:10px;color:#374151;">${escHtml(r.text||'')}</div>`).join('')+'</div>'; }
-        if(!its.length && !(sec.openText&&sec.openText.length)) html+='<div style="font-size:10px;color:#9ca3af;">No responses in this section yet.</div>';
-        html+='</div>';
-      });
-      el.innerHTML=html; return;
+    el.innerHTML = '';
+    const back = document.createElement('div');
+    back.style.margin = '0 0 12px';
+    back.innerHTML = '<a style="cursor:pointer;color:#0f8f80;font-weight:700;font-size:12px;">← All results</a>';
+    back.querySelector('a').onclick = () => loadResults();
+    el.appendChild(back);
+    if (data.restricted) {
+      const d = document.createElement('div'); d.style.cssText = 'padding:20px;color:#9ca3af;';
+      d.textContent = data.message || 'Results are restricted.'; el.appendChild(d); return;
     }
-    const items = data.utilityScores||data.partA||data.serviceRatings||[];
-    if(items.length) {
-      html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:13px;margin-bottom:10px;"><div style="font-size:11px;font-weight:700;margin-bottom:8px;">Community Priority Score</div>';
-      const fills=['#0f4c3a','#059669','#34d399','#6ee7b7','#a7f3d0'];
-      items.forEach((item,i)=>{
-        const pct=item.bestPct||Math.round((item.avg/5)*100)||0;
-        html+=`<div class="bar-r"><div class="bar-lbl">${item.label}</div><div class="bar-trk"><div class="bar-fill" style="width:${pct}%;background:${fills[i]||fills[4]}">${pct}%</div></div></div>`;
-      });
-      html+='</div>';
+    // Render with the shared engine — identical to the public results page.
+    const engineBox = document.createElement('div');
+    el.appendChild(engineBox);
+    VFResults.render(engineBox, data, (data.survey && data.survey.active) ? 'active' : 'closed');
+    // Admin-only: comment moderation tools (not shown on the public page).
+    if (data.survey && data.survey.commentsModerated && data.openText && data.openText.length) {
+      engineBox.appendChild(buildModerationPanel(data));
     }
-    if(data.openText?.length) {
-      const moderated = !!data.survey?.commentsModerated;
-      const hiddenSet = new Set(data.survey?.hiddenComments || []);
-      const sid = data.survey?.id || '';
-      html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:13px;"><div style="font-size:11px;font-weight:700;margin-bottom:6px;">Open Responses'+(moderated?' <span style="font-weight:400;color:#9ca3af;">— moderated</span>':'')+'</div>';
-      data.openText.slice(0,30).forEach(r=>{
-        const txt = r.text||r.comments||'';
-        const isHidden = hiddenSet.has(txt);
-        const btn = moderated ? `<button class="btn btn-s" style="font-size:9px;padding:2px 6px;margin-left:6px;${isHidden?'color:#059669;':'color:#dc2626;'}" onclick='moderateComment(${JSON.stringify(sid)}, ${JSON.stringify(txt)}, ${!isHidden})'>${isHidden?'Show':'Hide'}</button>` : '';
-        html+=`<div style="background:${isHidden?'#fef2f2':'#f8fafc'};border-radius:5px;padding:7px 9px;margin-bottom:5px;font-size:10px;color:#374151;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>${escHtml(txt)}${isHidden?' <em style="color:#dc2626;">(hidden from public)</em>':''}</span>${btn}</div>`;
-      });
-      html+='</div>';
-    }
-    el.innerHTML=html;
   } catch(e){ el.innerHTML='<div style="padding:20px;color:#dc2626;">Failed to load results.</div>'; }
+}
+
+// Admin comment moderation panel (hide/show per comment). Styled via vf-results.css.
+function buildModerationPanel(data){
+  const hiddenSet = new Set((data.survey && data.survey.hiddenComments) || []);
+  const sid = (data.survey && data.survey.id) || '';
+  const box = document.createElement('div');
+  box.className = 'card mt';
+  let html = '<div class="ctitle" style="color:#92500e;">🛡 Moderate comments (admin only)</div>';
+  data.openText.slice(0,80).forEach(r=>{
+    const txt = r.text||r.comments||''; const isHidden = hiddenSet.has(txt);
+    html += `<div style="background:${isHidden?'#fef2f2':'#f8fbf9'};border:1px solid #eef2f0;border-radius:8px;padding:8px 10px;margin-bottom:6px;font-size:12px;color:#374151;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>${escHtml(txt)}${isHidden?' <em style="color:#dc2626;">(hidden from public)</em>':''}</span><button class="btn btn-s" style="font-size:10px;padding:3px 8px;${isHidden?'color:#0f8f80;':'color:#dc2626;'}" onclick='moderateComment(${JSON.stringify(sid)}, ${JSON.stringify(txt)}, ${!isHidden})'>${isHidden?'Show':'Hide'}</button></div>`;
+  });
+  box.innerHTML = html;
+  return box;
 }
 
 async function exportCsv() {
