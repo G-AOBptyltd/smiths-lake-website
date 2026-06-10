@@ -123,39 +123,34 @@ const sections = [
   
   <QuickInfo items={quickInfoItems} />
 
-  <!-- Latest from the Village (auto-feeds from the news system) -->
+  <!-- Latest from the Village — rolling news ticker (auto-feeds from the news system) -->
   {latestNews.length > 0 && (
-    <section class="home-news-section" aria-labelledby="home-news-heading">
-      <div class="container">
-        <div class="home-news-header">
-          <h2 id="home-news-heading">Latest from the Village</h2>
-          <a href="/news/" class="home-news-all">All news →</a>
-        </div>
-        <div class="home-news-grid">
-          {latestNews.map((item) => (
-            <a href={item._url} class="home-news-card">
-              <div
-                class="home-news-photo"
-                style={item._img
-                  ? `background-image: url('${item._img}');`
-                  : 'background: linear-gradient(135deg, #5B9BD5 0%, #1B365D 100%);'}
-                aria-hidden="true"
-              >
-                {!item._img && <span class="home-news-emoji">📰</span>}
-                <span class="home-news-chip" style={`background: ${getSectionColour(item.section)};`}>
-                  {getSectionDisplayName(item.section)}
-                </span>
-              </div>
-              <div class="home-news-body">
-                <span class="home-news-date">
-                  {new Date(item.publishDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}
-                </span>
-                <h3 class="home-news-hed">{item.title}</h3>
-              </div>
-            </a>
+    <section class="news-ticker" aria-label="Latest village news">
+      <div class="ticker-label">
+        <span class="ticker-dot" aria-hidden="true"></span>
+        Village News
+      </div>
+      <div class="ticker-viewport">
+        <div class="ticker-track">
+          {[0, 1].map((copy) => (
+            <div class="ticker-group" aria-hidden={copy === 1 ? 'true' : undefined}>
+              {latestNews.map((item) => (
+                <a href={item._url} class="ticker-item" tabindex={copy === 1 ? -1 : undefined}>
+                  <span class="ticker-cat" style={`color: ${getSectionColour(item.section)};`}>
+                    {getSectionDisplayName(item.section)}
+                  </span>
+                  <span class="ticker-hed">{item.title}</span>
+                  <span class="ticker-date">
+                    {new Date(item.publishDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+                  </span>
+                  <span class="ticker-sep" aria-hidden="true">◆</span>
+                </a>
+              ))}
+            </div>
           ))}
         </div>
       </div>
+      <a href="/news/" class="ticker-all">All news →</a>
     </section>
   )}
 
@@ -232,105 +227,124 @@ const sections = [
   }
   
   /* News & Services Banner */
-  /* Latest from the Village */
-  .home-news-section {
-    padding: var(--space-12) 0;
-    background: var(--color-white);
-  }
-
-  .home-news-header {
+  /* Latest from the Village — rolling ticker */
+  .news-ticker {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    border-bottom: 3px solid var(--color-navy);
-    padding-bottom: 0.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .home-news-header h2 {
-    font-size: var(--text-2xl);
-    color: var(--color-navy);
-    margin: 0;
-  }
-
-  .home-news-all {
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: var(--color-golden-dark);
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  .home-news-all:hover { color: var(--color-golden); }
-
-  .home-news-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1.25rem;
-  }
-
-  .home-news-card {
-    display: flex;
-    flex-direction: column;
-    background: var(--color-white);
-    border-radius: 8px;
+    align-items: stretch;
+    background: var(--color-navy);
+    border-top: 1px solid rgba(255,255,255,0.12);
+    border-bottom: 1px solid rgba(255,255,255,0.12);
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    text-decoration: none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .home-news-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-  }
-
-  .home-news-photo {
-    position: relative;
-    height: 170px;
-    background-size: cover;
-    background-position: center;
+  .ticker-label {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 0.5rem;
+    background: #4db8b8;
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.8rem 1.1rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    z-index: 2;
   }
 
-  .home-news-emoji { font-size: 2.5rem; opacity: 0.4; }
+  .ticker-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+    animation: ticker-pulse 1.6s ease-in-out infinite;
+  }
 
-  .home-news-chip {
-    position: absolute;
-    top: 0.75rem;
-    left: 0.75rem;
-    padding: 0.22rem 0.65rem;
-    border-radius: 3px;
-    font-size: 0.62rem;
+  @keyframes ticker-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .ticker-viewport {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 2rem, black calc(100% - 2rem), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, black 2rem, black calc(100% - 2rem), transparent 100%);
+  }
+
+  .ticker-track {
+    display: inline-flex;
+    white-space: nowrap;
+    animation: ticker-scroll 36s linear infinite;
+    will-change: transform;
+  }
+
+  .news-ticker:hover .ticker-track,
+  .ticker-track:focus-within {
+    animation-play-state: paused;
+  }
+
+  @keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-track { animation: none; }
+  }
+
+  .ticker-group { display: inline-flex; }
+
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.8rem 0;
+    text-decoration: none;
+  }
+
+  .ticker-cat {
+    font-size: 0.66rem;
     font-weight: 800;
     letter-spacing: 0.1em;
     text-transform: uppercase;
+  }
+
+  .ticker-hed {
     color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
   }
 
-  .home-news-body { padding: 1rem 1.1rem 1.2rem; }
+  .ticker-item:hover .ticker-hed { color: #4db8b8; text-decoration: underline; }
 
-  .home-news-date {
-    font-size: 0.72rem;
-    color: var(--color-gray-500, #9ca3af);
-    display: block;
-    margin-bottom: 0.3rem;
-  }
+  .ticker-date { color: rgba(255,255,255,0.55); font-size: 0.75rem; }
 
-  .home-news-hed {
-    font-size: 1.02rem;
+  .ticker-sep { color: rgba(255,255,255,0.3); font-size: 0.6rem; margin: 0 1.4rem; }
+
+  .ticker-all {
+    display: flex;
+    align-items: center;
+    padding: 0 1.1rem;
+    background: rgba(255,255,255,0.08);
+    color: white;
+    font-size: 0.78rem;
     font-weight: 700;
-    color: var(--color-navy);
-    line-height: 1.35;
-    margin: 0;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.2s;
   }
 
-  .home-news-card:hover .home-news-hed { color: #2d8b8b; }
+  .ticker-all:hover { background: rgba(255,255,255,0.18); }
 
-  @media (max-width: 768px) {
-    .home-news-grid { grid-template-columns: 1fr; }
+  @media (max-width: 640px) {
+    .ticker-label { padding: 0.7rem 0.8rem; }
+    .ticker-all { padding: 0 0.8rem; }
   }
 
   .news-banner-section {
