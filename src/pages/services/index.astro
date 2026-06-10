@@ -1,40 +1,10 @@
 ---
-// News & Local Services Page
-// Redesigned May 2026 — BBC-inspired news layout + local services directory.
-// News feed: News section items first, then recently-updated items from all sections.
-// Services section remains Notion-connected.
-
+// Local Services Directory (June 2026 — news feed moved to /news/)
 import Layout from '../../layouts/BaseLayout.astro';
 import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
-import { generateSlug, getSectionPath, getSectionColour, getSectionDisplayName } from '../../lib/notion-detail-pages.js';
-
-// Section → hero gradient + icon (for news card colour blocks)
-const SECTION_HERO_STYLES: Record<string, { gradient: string; icon: string }> = {
-  'News':                         { gradient: 'linear-gradient(160deg, #0c2d5a 0%, #1B365D 50%, #4db8b8 100%)', icon: '📰' },
-  'Groups & Activities':          { gradient: 'linear-gradient(160deg, #1e3a5f 0%, #5B9BD5 70%, #93c5fd 100%)', icon: '🎉' },
-  'Services':                     { gradient: 'linear-gradient(160deg, #0c1a2e 0%, #1B365D 70%, #2d5a9e 100%)', icon: '🏘️' },
-  'Services & Amenities':         { gradient: 'linear-gradient(160deg, #0c1a2e 0%, #1B365D 70%, #2d5a9e 100%)', icon: '🏘️' },
-  'Environment & Sustainability': { gradient: 'linear-gradient(160deg, #064e3b 0%, #16A34A 70%, #4ade80 100%)', icon: '🌿' },
-  'Emergency & Safety':           { gradient: 'linear-gradient(160deg, #7f1d1d 0%, #DC2626 70%, #ef4444 100%)', icon: '🔥' },
-  'History & Culture':            { gradient: 'linear-gradient(160deg, #451a03 0%, #92400E 70%, #b45309 100%)', icon: '🏛️' },
-};
-
-function getHeroStyle(section: string) {
-  return SECTION_HERO_STYLES[section] || { gradient: 'linear-gradient(160deg, #0c1a2e 0%, #1B365D 100%)', icon: '📋' };
-}
-
-function buildItemUrl(item: any) {
-  const slug = item.slug || generateSlug(item.title);
-  const section = item.section || '';
-  if (section === 'News') return `/news/${slug}/`;
-  return `/${getSectionPath(section)}/${slug}/`;
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
-}
+import { generateSlug } from '../../lib/notion-detail-pages.js';
 
 // Fetch section settings (hero image, colours)
 const sectionSettings = await fetchSectionSettingsBySlug('services');
@@ -51,160 +21,29 @@ try {
 } catch (e) { /* manifest not yet generated */ }
 const heroImage = sectionHeroManifest['services'] || null;
 
-// Load card image manifest (for BBC hero centre block)
-let cardImageManifest: Record<string, string> = {};
-try {
-  const fs = await import('fs');
-  const path = await import('path');
-  const manifestPath = path.resolve(process.cwd(), 'public/images/cards/manifest.json');
-  if (fs.existsSync(manifestPath)) {
-    cardImageManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-  }
-} catch (e) { /* manifest not yet generated */ }
-
-// ── Dynamic news feed ─────────────────────────────────────────────────────────
-// News section items are prioritised. Other published items fill remaining slots.
-const allPublished = await fetchNotionContent({ requireShowOnWebsite: true });
-
-const eligibleItems = allPublished
-  .filter(item => item.section && item.section !== 'Project Hub' && item.notionLastEditedTime)
-  .sort((a: any, b: any) => {
-    // News section items always float to the top
-    if (a.section === 'News' && b.section !== 'News') return -1;
-    if (b.section === 'News' && a.section !== 'News') return 1;
-    return new Date(b.notionLastEditedTime).getTime() - new Date(a.notionLastEditedTime).getTime();
-  });
-
-const featuredItem  = eligibleItems[0] || null;
-const heroItem      = eligibleItems[1] || null;   // centre block — distinct from lead
-const digestItems   = eligibleItems.slice(2, 5);
-const thumbItems    = eligibleItems.slice(5, 8);
-
 // ── Local Services directory ──────────────────────────────────────────────────
+const allPublished = await fetchNotionContent({ requireShowOnWebsite: true });
 const serviceItems = allPublished.filter((item: any) =>
   item.section === 'Services' || item.section === 'Services & Amenities'
 );
 ---
 
 <Layout
-  title="News & Local Services"
-  description="Community news, updates, and local services directory for Smiths Lake Village."
+  title="Local Services"
+  description="Facilities, amenities, and local services directory for Smiths Lake Village residents and visitors."
 >
 <style>
-  /* ── Shell ──────────────────────────────────────────────────────── */
   .page-wrap { background: #f7f9fc; }
   .content-wrap { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
   .section-block { padding: 3rem 0; }
-  .section-block + .section-block { border-top: 2px solid #e5e9f0; }
 
-  .section-label {
-    display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;
-  }
+  .section-label { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
   .section-label-text {
     font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
     text-transform: uppercase; color: #4db8b8; white-space: nowrap;
   }
   .section-label-line { flex: 1; height: 1px; background: #d1d5db; }
 
-  /* ── News masthead ──────────────────────────────────────────────── */
-  .news-masthead {
-    display: flex; align-items: baseline; justify-content: space-between;
-    border-bottom: 2px solid #1B365D; padding-bottom: 0.5rem; margin-bottom: 1.25rem;
-  }
-  .news-masthead-title {
-    font-size: 1.5rem; font-weight: 800; color: #1B365D; letter-spacing: -0.02em;
-  }
-  .news-masthead-date { font-size: 0.75rem; color: #9ca3af; }
-
-  /* ── Top row ────────────────────────────────────────────────────── */
-  .news-top-row {
-    display: grid;
-    grid-template-columns: minmax(0,1fr) minmax(0,1.5fr) minmax(0,1fr);
-    border: 0.5px solid #e5e7eb; border-radius: 12px; overflow: hidden;
-    background: white; margin-bottom: 1px;
-  }
-
-  /* Lead text (left) */
-  .news-lead {
-    padding: 1.25rem 1.25rem 1.25rem;
-    border-right: 0.5px solid #e5e7eb;
-    display: flex; flex-direction: column;
-  }
-  .news-cat-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
-  .news-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .news-cat { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-  .news-date-sm { font-size: 0.7rem; color: #9ca3af; }
-  .news-lead-hed {
-    font-size: 1.1rem; font-weight: 700; color: #1B365D; line-height: 1.3;
-    margin-bottom: 0.75rem; flex: 1;
-  }
-  .news-lead-dek { font-size: 0.8rem; color: #6b7280; line-height: 1.65; }
-
-  /* Hero (centre) */
-  .news-hero {
-    position: relative; overflow: hidden;
-    min-height: 240px; display: flex; flex-direction: column; justify-content: flex-end;
-    border-right: 0.5px solid #e5e7eb;
-    text-decoration: none;
-  }
-  .news-hero-icon {
-    position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%, -60%);
-    font-size: 100px; opacity: 0.1;
-    pointer-events: none; user-select: none;
-  }
-  .news-hero-overlay {
-    position: absolute; bottom: 0; left: 0; right: 0; height: 65%;
-    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
-  }
-  .news-hero-content { position: relative; z-index: 1; padding: 1.25rem; }
-  .news-hero-label {
-    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em;
-    text-transform: uppercase; color: rgba(255,255,255,0.7);
-    margin-bottom: 0.5rem; display: block;
-  }
-  .news-hero-hed {
-    font-size: 1rem; font-weight: 700; color: white;
-    line-height: 1.3; margin: 0;
-  }
-
-  /* Digest (right) */
-  .news-digest { display: flex; flex-direction: column; }
-  .digest-item {
-    flex: 1; padding: 0.875rem 1rem;
-    border-bottom: 0.5px solid #e5e7eb;
-    display: flex; flex-direction: column; justify-content: center;
-    text-decoration: none; transition: background 0.2s;
-  }
-  .digest-item:last-child { border-bottom: none; }
-  .digest-item:hover { background: #f8fafc; }
-  .digest-item .news-cat-row { margin-bottom: 0.4rem; }
-  .digest-hed { font-size: 0.8rem; font-weight: 600; color: #1B365D; line-height: 1.4; }
-
-  /* ── Thumbnail row ──────────────────────────────────────────────── */
-  .news-thumb-row {
-    display: grid; grid-template-columns: repeat(3, minmax(0,1fr));
-    border: 0.5px solid #e5e7eb; border-top: none;
-    border-radius: 0 0 12px 12px; overflow: hidden; background: white;
-  }
-  .thumb-card {
-    display: flex; align-items: flex-start; gap: 0.75rem;
-    padding: 0.875rem 1rem; text-decoration: none;
-    border-right: 0.5px solid #e5e7eb; transition: background 0.2s;
-  }
-  .thumb-card:last-child { border-right: none; }
-  .thumb-card:hover { background: #f8fafc; }
-  .thumb-icon {
-    width: 52px; height: 52px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; flex-shrink: 0;
-  }
-  .thumb-hed { font-size: 0.8rem; font-weight: 600; color: #1B365D; line-height: 1.4; margin-top: 0.3rem; }
-
-  /* Lead link wrapper */
-  .news-lead-link { display: contents; text-decoration: none; color: inherit; }
-
-  /* ── Local services ─────────────────────────────────────────────── */
   .services-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem;
   }
@@ -232,7 +71,6 @@ const serviceItems = allPublished.filter((item: any) =>
   .card-link-external { color: #9ca3af; font-weight: 500; }
   .card-link-external:hover { color: #1B365D; }
 
-  /* ── Empty / feedback strip ─────────────────────────────────────── */
   .empty-state { text-align: center; padding: 2.5rem 2rem; background: white; border-radius: 12px; border: 2px dashed #d1d5db; color: #6b7280; }
   .empty-state h3 { font-size: 1rem; color: #1B365D; margin: 0.5rem 0; }
   .feedback-strip { background: linear-gradient(135deg, #1B365D 0%, #2d5a9e 100%); border-radius: 12px; padding: 1.75rem 2rem; display: flex; align-items: center; gap: 2rem; margin-top: 1.5rem; flex-wrap: wrap; }
@@ -241,17 +79,6 @@ const serviceItems = allPublished.filter((item: any) =>
   .feedback-strip-btn { display: inline-block; background: #4db8b8; color: white; padding: 0.7rem 1.5rem; border-radius: 8px; font-weight: 700; font-size: 0.875rem; text-decoration: none; transition: background 0.2s, transform 0.2s; white-space: nowrap; }
   .feedback-strip-btn:hover { background: #2d8b8b; transform: translateY(-2px); }
 
-  /* ── Responsive ─────────────────────────────────────────────────── */
-  @media (max-width: 860px) {
-    .news-top-row { grid-template-columns: 1fr; }
-    .news-lead { border-right: none; border-bottom: 0.5px solid #e5e7eb; }
-    .news-hero { min-height: 200px; border-right: none; border-bottom: 0.5px solid #e5e7eb; }
-    .news-digest { border-right: none; }
-    .digest-item { border-bottom: 0.5px solid #e5e7eb; }
-    .news-thumb-row { grid-template-columns: 1fr; }
-    .thumb-card { border-right: none; border-bottom: 0.5px solid #e5e7eb; }
-    .thumb-card:last-child { border-bottom: none; }
-  }
   @media (max-width: 640px) {
     .services-grid { grid-template-columns: 1fr; }
     .feedback-strip { flex-direction: column; text-align: center; }
@@ -260,148 +87,24 @@ const serviceItems = allPublished.filter((item: any) =>
 
 <div class="page-wrap">
   <SectionHero
-    title="News & Local Services"
-    subtitle="Community updates, local services, and everything you need to know about life in Smiths Lake Village."
+    title="Local Services"
+    subtitle="Facilities, amenities, and local services available to residents and visitors."
     accentHex={sectionSettings?.accentHex || '#1B365D'}
     backgroundImage={heroImage}
     overlayOpacity={sectionSettings?.overlayOpacity ?? 50}
   />
 
   <div class="content-wrap">
-
-    <!-- ── News feed ──────────────────────────────────────────────── -->
-    <section class="section-block" aria-labelledby="news-heading">
-      <div class="section-label">
-        <span class="section-label-text">Latest Updates</span>
-        <span class="section-label-line" aria-hidden="true"></span>
-      </div>
-
-      {featuredItem ? (
-        <>
-          <!-- Masthead -->
-          <div class="news-masthead">
-            <span class="news-masthead-title" id="news-heading">What's happening</span>
-            <span class="news-masthead-date">
-              {new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </span>
-          </div>
-
-          <!-- Top row -->
-          <div class="news-top-row">
-
-            <!-- Lead text -->
-            <a href={buildItemUrl(featuredItem)} class="news-lead" style="text-decoration:none; color:inherit;">
-              <div class="news-cat-row">
-                <span class="news-dot" style={`background: ${getSectionColour(featuredItem.section)};`}></span>
-                <span class="news-cat" style={`color: ${getSectionColour(featuredItem.section)};`}>
-                  {getSectionDisplayName(featuredItem.section)}
-                </span>
-                {featuredItem.notionLastEditedTime && (
-                  <span class="news-date-sm">{formatDate(featuredItem.notionLastEditedTime)}</span>
-                )}
-              </div>
-              <h2 class="news-lead-hed">{featuredItem.title}</h2>
-              {featuredItem.description && (
-                <p class="news-lead-dek">{featuredItem.description.substring(0, 160)}{featuredItem.description.length > 160 ? '…' : ''}</p>
-              )}
-            </a>
-
-            <!-- Hero block (second item — distinct from lead) -->
-            {heroItem ? (() => {
-              const heroSlug = heroItem.slug || generateSlug(heroItem.title);
-              const heroCardImg = cardImageManifest[heroSlug] || null;
-              const heroStyle = getHeroStyle(heroItem.section);
-              const heroBg = heroCardImg
-                ? `background-image: url('${heroCardImg}'); background-size: cover; background-position: center;`
-                : `background: ${heroStyle.gradient};`;
-              return (
-                <a
-                  href={buildItemUrl(heroItem)}
-                  class="news-hero"
-                  style={heroBg}
-                  aria-label={heroItem.title}
-                >
-                  {!heroCardImg && <span class="news-hero-icon" aria-hidden="true">{heroStyle.icon}</span>}
-                  <div class="news-hero-overlay"></div>
-                  <div class="news-hero-content">
-                    <span class="news-hero-label">{getSectionDisplayName(heroItem.section)}</span>
-                    <p class="news-hero-hed">{heroItem.title}</p>
-                  </div>
-                </a>
-              );
-            })() : (
-              <div class="news-hero" style={`background: ${getHeroStyle(featuredItem.section).gradient};`}>
-                <span class="news-hero-icon" aria-hidden="true">{getHeroStyle(featuredItem.section).icon}</span>
-                <div class="news-hero-overlay"></div>
-              </div>
-            )}
-
-            <!-- Digest list -->
-            <div class="news-digest" role="list">
-              {digestItems.length > 0
-                ? digestItems.map((item: any) => (
-                    <a href={buildItemUrl(item)} class="digest-item" role="listitem">
-                      <div class="news-cat-row">
-                        <span class="news-dot" style={`background: ${getSectionColour(item.section)};`}></span>
-                        <span class="news-cat" style={`color: ${getSectionColour(item.section)};`}>
-                          {getSectionDisplayName(item.section)}
-                        </span>
-                        {item.notionLastEditedTime && (
-                          <span class="news-date-sm">{formatDate(item.notionLastEditedTime)}</span>
-                        )}
-                      </div>
-                      <p class="digest-hed">{item.title}</p>
-                    </a>
-                  ))
-                : <div class="digest-item"><p class="digest-hed" style="color:#9ca3af;">More stories coming soon</p></div>
-              }
-            </div>
-          </div>
-
-          <!-- Thumbnail row -->
-          {thumbItems.length > 0 && (
-            <div class="news-thumb-row">
-              {thumbItems.map((item: any) => {
-                const style = getHeroStyle(item.section);
-                return (
-                  <a href={buildItemUrl(item)} class="thumb-card">
-                    <div class="thumb-icon" style={`background: ${style.gradient};`} aria-hidden="true">
-                      {style.icon}
-                    </div>
-                    <div>
-                      <div class="news-cat-row" style="margin-bottom:0;">
-                        <span class="news-cat" style={`color: ${getSectionColour(item.section)};`}>
-                          {getSectionDisplayName(item.section)}
-                        </span>
-                        {item.notionLastEditedTime && (
-                          <span class="news-date-sm">{formatDate(item.notionLastEditedTime)}</span>
-                        )}
-                      </div>
-                      <p class="thumb-hed">{item.title}</p>
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          )}
-        </>
-      ) : (
-        <div class="empty-state" role="note">
-          <div style="font-size:2rem;" aria-hidden="true">📰</div>
-          <h3 id="news-heading">No updates yet</h3>
-          <p>Community news will appear here once content is added to Notion.</p>
-        </div>
-      )}
-    </section>
-
-    <!-- ── Local Services ────────────────────────────────────────── -->
     <section class="section-block" aria-labelledby="services-heading">
       <div class="section-label">
         <span class="section-label-text">Directory</span>
         <span class="section-label-line" aria-hidden="true"></span>
       </div>
       <h2 style="font-size:1.6rem; font-weight:800; color:#1B365D; margin-bottom:0.375rem;" id="services-heading">Local Services</h2>
-      <p style="color:#6b7280; font-size:0.95rem; margin-bottom:1.75rem;">Facilities, amenities, and local services available to residents and visitors.</p>
+      <p style="color:#6b7280; font-size:0.95rem; margin-bottom:1.75rem;">
+        Facilities, amenities, and local services available to residents and visitors.
+        Looking for community news? Visit <a href="/news/" style="color:#4db8b8; font-weight:600;">Village News</a>.
+      </p>
 
       {serviceItems.length > 0 ? (
         <div class="services-grid">
@@ -459,7 +162,6 @@ const serviceItems = allPublished.filter((item: any) =>
         <a href="/feedback/" class="feedback-strip-btn">Share a suggestion</a>
       </div>
     </section>
-
   </div>
 </div>
 

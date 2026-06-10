@@ -192,6 +192,10 @@ function parseNotionPage(page) {
     resultsSnapshotUrl: parseProperty(props['Results URL']),
     // ========== END PROJECT HUB FIELDS ==========
 
+    // News feed control (added Jun 2026 — deliberate publishing, replaces last-edited-time proxy)
+    publishDate: parseProperty(props['Publish Date']),
+    showInNewsFeed: parseProperty(props['Show in News Feed']) || false,
+
     // Timestamps (custom Notion properties, may be null if not in database)
     createdTime: parseProperty(props['Created Time']),
     lastEditedTime: parseProperty(props['Last Edited Time']),

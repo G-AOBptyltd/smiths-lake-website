@@ -1,263 +1,307 @@
 ---
-// News & Updates Index Page
+// Village News — image-forward feed (June 2026 redesign)
+// Only items deliberately flagged "Show in News Feed" with a "Publish Date" appear here.
+// Sorted by Publish Date descending. Editing old pages can no longer fake news.
 import Layout from '../../layouts/BaseLayout.astro';
+import SectionHero from '../../components/SectionHero.astro';
+import { fetchNotionContent } from '../../lib/notion-unified.js';
+import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
+import { generateSlug, getSectionPath, getSectionColour, getSectionDisplayName } from '../../lib/notion-detail-pages.js';
 
-// Hardcoded news items for now - can be moved to Notion later
-const newsItems = [
-  {
-    date: '2025-12-01',
-    title: 'Summer Fire Season Reminder',
-    excerpt: 'Review your bushfire survival plan and ensure your property is prepared. Check our emergency section for evacuation routes.',
-    link: '/emergency/',
-    category: 'Safety'
-  },
-  {
-    date: '2025-11-15',
-    title: 'Community Website Launch',
-    excerpt: 'Welcome to our new community website! Access community documents, services, and stay connected with local news.',
-    link: '/about/',
-    category: 'Community'
-  },
-  {
-    date: '2025-11-01',
-    title: 'Open Spaces & Recreation Strategy',
-    excerpt: 'The community\'s submission to MidCoast Council on open spaces and foreshore trails continues to progress.',
-    link: '/planning/',
-    category: 'Planning'
-  }
-];
+// Section → gradient + icon fallback (used only when a story has no photo)
+const SECTION_HERO_STYLES: Record<string, { gradient: string; icon: string }> = {
+  'News':                         { gradient: 'linear-gradient(160deg, #0c2d5a 0%, #1B365D 50%, #4db8b8 100%)', icon: '📰' },
+  'Groups & Activities':          { gradient: 'linear-gradient(160deg, #1e3a5f 0%, #5B9BD5 70%, #93c5fd 100%)', icon: '🎉' },
+  'Services':                     { gradient: 'linear-gradient(160deg, #0c1a2e 0%, #1B365D 70%, #2d5a9e 100%)', icon: '🏘️' },
+  'Services & Amenities':         { gradient: 'linear-gradient(160deg, #0c1a2e 0%, #1B365D 70%, #2d5a9e 100%)', icon: '🏘️' },
+  'Environment & Sustainability': { gradient: 'linear-gradient(160deg, #064e3b 0%, #16A34A 70%, #4ade80 100%)', icon: '🌿' },
+  'Emergency & Safety':           { gradient: 'linear-gradient(160deg, #7f1d1d 0%, #DC2626 70%, #ef4444 100%)', icon: '🔥' },
+  'History & Culture':            { gradient: 'linear-gradient(160deg, #451a03 0%, #92400E 70%, #b45309 100%)', icon: '🏛️' },
+};
 
-// Format date for display
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-AU', { 
-    day: 'numeric', 
-    month: 'long', 
-    year: 'numeric' 
-  });
+function getHeroStyle(section: string) {
+  return SECTION_HERO_STYLES[section] || { gradient: 'linear-gradient(160deg, #0c1a2e 0%, #1B365D 100%)', icon: '📋' };
 }
+
+function buildItemUrl(item: any) {
+  const slug = item.slug || generateSlug(item.title);
+  const section = item.section || '';
+  if (section === 'News') return `/news/${slug}/`;
+  return `/${getSectionPath(section)}/${slug}/`;
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+function formatDateShort(iso: string) {
+  return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+}
+
+// Hero banner settings (reuse 'services' section settings for now)
+const sectionSettings = await fetchSectionSettingsBySlug('services');
+
+let sectionHeroManifest: Record<string, string> = {};
+let cardImageManifest: Record<string, string> = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const heroPath = path.resolve(process.cwd(), 'public/images/heroes/manifest.json');
+  if (fs.existsSync(heroPath)) sectionHeroManifest = JSON.parse(fs.readFileSync(heroPath, 'utf-8'));
+  const cardPath = path.resolve(process.cwd(), 'public/images/cards/manifest.json');
+  if (fs.existsSync(cardPath)) cardImageManifest = JSON.parse(fs.readFileSync(cardPath, 'utf-8'));
+} catch (e) { /* manifests not yet generated */ }
+const heroImage = sectionHeroManifest['services'] || null;
+
+// ── The feed: deliberate news only ───────────────────────────────────────────
+const allPublished = await fetchNotionContent({ requireShowOnWebsite: true });
+
+const newsItems = allPublished
+  .filter((item: any) => item.showInNewsFeed === true && item.publishDate)
+  .sort((a: any, b: any) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
+  .map((item: any) => {
+    const slug = item.slug || generateSlug(item.title);
+    return { ...item, _url: buildItemUrl(item), _img: cardImageManifest[slug] || null };
+  });
+
+const leadStory  = newsItems[0] || null;
+const gridItems  = newsItems.slice(1, 7);
+const moreItems  = newsItems.slice(7, 15);
 ---
 
-<Layout 
-  title="News & Updates"
-  description="Latest news, announcements, and updates from Smiths Lake community"
+<Layout
+  title="Village News"
+  description="The latest news and updates from Smiths Lake Village — published by the community, for the community."
 >
-  <style>
-    .news-page {
-      background: #f7f9fc;
-    }
-    
-    /* Hero Section */
-    .news-hero {
-      background: linear-gradient(135deg, #1B365D, #2B4A7D);
-      color: white;
-      padding: 4rem 1rem;
-      text-align: center;
-    }
-    
-    .hero-content {
-      max-width: 900px;
-      margin: 0 auto;
-    }
-    
-    .news-hero h1 {
-      color: white;
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      font-weight: 700;
-    }
-    
-    .news-hero p {
-      font-size: 1.25rem;
-      opacity: 0.95;
-    }
-    
-    /* Content Section */
-    .content-section {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 3rem 1rem;
-    }
-    
-    /* News List */
-    .news-list {
-      display: flex;
-      flex-direction: column;
-      gap: 2rem;
-    }
-    
-    .news-item {
-      background: white;
-      border-radius: 12px;
-      padding: 2rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      border-left: 6px solid #F5A623;
-      transition: all 0.3s ease;
-    }
-    
-    .news-item:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    }
-    
-    .news-meta {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-    }
-    
-    .news-date {
-      color: #6b7280;
-      font-size: 0.9375rem;
-      font-weight: 500;
-    }
-    
-    .news-category {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      background: #e0e7ff;
-      color: #1B365D;
-      border-radius: 4px;
-      font-size: 0.875rem;
-      font-weight: 600;
-    }
-    
-    .news-title {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: #1B365D;
-      margin: 0 0 1rem 0;
-      line-height: 1.3;
-    }
-    
-    .news-excerpt {
-      color: #4b5563;
-      line-height: 1.6;
-      margin-bottom: 1.25rem;
-      font-size: 1.0625rem;
-    }
-    
-    .read-more {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: #5B9BD5;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 1rem;
-      transition: color 0.2s;
-    }
-    
-    .read-more:hover {
-      color: #1B365D;
-    }
-    
-    .read-more::after {
-      content: '→';
-      transition: transform 0.2s;
-    }
-    
-    .read-more:hover::after {
-      transform: translateX(4px);
-    }
-    
-    /* Newsletter CTA */
-    .newsletter-cta {
-      background: linear-gradient(135deg, #5B9BD5, #1B365D);
-      color: white;
-      padding: 3rem 2rem;
-      border-radius: 12px;
-      text-align: center;
-      margin-top: 4rem;
-      box-shadow: 0 8px 24px rgba(27, 54, 93, 0.2);
-    }
-    
-    .newsletter-cta h2 {
-      color: white;
-      font-size: 2rem;
-      margin-bottom: 1rem;
-    }
-    
-    .newsletter-cta p {
-      font-size: 1.125rem;
-      margin-bottom: 2rem;
-      opacity: 0.95;
-    }
-    
-    .cta-button {
-      display: inline-block;
-      background: white;
-      color: #1B365D;
-      padding: 1rem 2.5rem;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: bold;
-      font-size: 1.0625rem;
-      transition: all 0.2s;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-    
-    .cta-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-    }
-    
-    /* Mobile responsive */
-    @media (max-width: 768px) {
-      .news-hero h1 {
-        font-size: 2rem;
-      }
-      
-      .news-title {
-        font-size: 1.5rem;
-      }
-      
-      .newsletter-cta {
-        padding: 2rem 1.5rem;
-      }
-      
-      .newsletter-cta h2 {
-        font-size: 1.5rem;
-      }
-    }
-  </style>
+<style>
+  .page-wrap { background: #f7f9fc; }
+  .content-wrap { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+  .section-block { padding: 3rem 0; }
 
-  <div class="news-page">
-    <!-- Hero Section -->
-    <div class="news-hero">
-      <div class="hero-content">
-        <h1>News & Updates</h1>
-        <p>Stay informed with the latest news and announcements from Smiths Lake community</p>
+  .news-masthead {
+    display: flex; align-items: baseline; justify-content: space-between;
+    border-bottom: 2px solid #1B365D; padding-bottom: 0.5rem; margin-bottom: 1.5rem;
+  }
+  .news-masthead-title { font-size: 1.5rem; font-weight: 800; color: #1B365D; letter-spacing: -0.02em; }
+  .news-masthead-date { font-size: 0.75rem; color: #9ca3af; }
+
+  .news-cat-row { display: flex; align-items: center; gap: 0.5rem; }
+  .news-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .news-cat { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+  .news-date-sm { font-size: 0.7rem; color: #9ca3af; }
+
+  /* ── Lead story: big photo, headline overlay ───────────────────── */
+  .lead-story {
+    position: relative; display: block; border-radius: 14px; overflow: hidden;
+    min-height: 380px; text-decoration: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+    background-size: cover; background-position: center;
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+  }
+  .lead-story:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,0,0,0.18); }
+  .lead-icon {
+    position: absolute; top: 42%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 130px; opacity: 0.12; pointer-events: none; user-select: none;
+  }
+  .lead-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(8,18,36,0.88) 0%, rgba(8,18,36,0.35) 45%, transparent 70%);
+  }
+  .lead-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 1.75rem; z-index: 1; }
+  .lead-chip {
+    display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px;
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: white; margin-bottom: 0.75rem;
+  }
+  .lead-hed {
+    font-size: clamp(1.4rem, 3.2vw, 2.1rem); font-weight: 800; color: white;
+    line-height: 1.2; margin: 0 0 0.6rem; max-width: 760px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .lead-dek {
+    font-size: 0.95rem; color: rgba(255,255,255,0.85); line-height: 1.6;
+    max-width: 640px; margin: 0 0 0.6rem;
+  }
+  .lead-date { font-size: 0.78rem; color: rgba(255,255,255,0.65); }
+
+  /* ── Photo card grid ───────────────────────────────────────────── */
+  .news-grid {
+    display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1.25rem;
+    margin-top: 1.5rem;
+  }
+  .news-card {
+    display: flex; flex-direction: column; background: white; border-radius: 12px;
+    overflow: hidden; text-decoration: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .news-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.13); }
+  .card-photo {
+    position: relative; aspect-ratio: 16 / 9; background-size: cover; background-position: center;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card-photo-icon { font-size: 52px; opacity: 0.25; user-select: none; }
+  .card-body { padding: 1rem 1.1rem 1.2rem; display: flex; flex-direction: column; flex: 1; }
+  .card-body .news-cat-row { margin-bottom: 0.5rem; }
+  .card-hed { font-size: 1rem; font-weight: 700; color: #1B365D; line-height: 1.35; margin: 0 0 0.45rem; }
+  .card-dek { font-size: 0.82rem; color: #6b7280; line-height: 1.6; margin: 0; }
+
+  /* ── More stories list ─────────────────────────────────────────── */
+  .more-label {
+    display: flex; align-items: center; gap: 0.75rem; margin: 2.25rem 0 0.75rem;
+  }
+  .more-label-text {
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: #4db8b8; white-space: nowrap;
+  }
+  .more-label-line { flex: 1; height: 1px; background: #d1d5db; }
+  .more-list { background: white; border-radius: 12px; overflow: hidden; border: 0.5px solid #e5e7eb; }
+  .more-item {
+    display: flex; align-items: baseline; gap: 0.875rem; padding: 0.875rem 1.1rem;
+    border-bottom: 0.5px solid #e5e7eb; text-decoration: none; transition: background 0.2s;
+  }
+  .more-item:last-child { border-bottom: none; }
+  .more-item:hover { background: #f8fafc; }
+  .more-date { font-size: 0.72rem; color: #9ca3af; white-space: nowrap; min-width: 60px; }
+  .more-hed { font-size: 0.875rem; font-weight: 600; color: #1B365D; line-height: 1.4; }
+
+  .empty-state { text-align: center; padding: 2.5rem 2rem; background: white; border-radius: 12px; border: 2px dashed #d1d5db; color: #6b7280; }
+  .empty-state h3 { font-size: 1rem; color: #1B365D; margin: 0.5rem 0; }
+
+  /* ── Cross-link strip ──────────────────────────────────────────── */
+  .crosslink-strip {
+    background: linear-gradient(135deg, #1B365D 0%, #2d5a9e 100%);
+    border-radius: 12px; padding: 1.75rem 2rem;
+    display: flex; align-items: center; gap: 2rem; margin-top: 2.25rem; flex-wrap: wrap;
+  }
+  .crosslink-strip h3 { color: white; font-size: 1.1rem; margin-bottom: 0.2rem; }
+  .crosslink-strip p { color: #93c5fd; font-size: 0.875rem; }
+  .crosslink-btn {
+    display: inline-block; background: #4db8b8; color: white; padding: 0.7rem 1.5rem;
+    border-radius: 8px; font-weight: 700; font-size: 0.875rem; text-decoration: none;
+    transition: background 0.2s, transform 0.2s; white-space: nowrap;
+  }
+  .crosslink-btn:hover { background: #2d8b8b; transform: translateY(-2px); }
+
+  @media (max-width: 900px) { .news-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 600px) {
+    .news-grid { grid-template-columns: 1fr; }
+    .lead-story { min-height: 300px; }
+    .crosslink-strip { flex-direction: column; text-align: center; }
+  }
+</style>
+
+<div class="page-wrap">
+  <SectionHero
+    title="Village News"
+    subtitle="The latest from Smiths Lake Village — published by the community, for the community."
+    accentHex={sectionSettings?.accentHex || '#1B365D'}
+    backgroundImage={heroImage}
+    overlayOpacity={sectionSettings?.overlayOpacity ?? 50}
+  />
+
+  <div class="content-wrap">
+    <section class="section-block" aria-labelledby="news-heading">
+
+      <div class="news-masthead">
+        <span class="news-masthead-title" id="news-heading">What's happening</span>
+        <span class="news-masthead-date">
+          {new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        </span>
       </div>
-    </div>
-    
-    <div class="content-section">
-      <!-- News List -->
-      <div class="news-list">
-        {newsItems.map(item => (
-          <article class="news-item">
-            <div class="news-meta">
-              <time class="news-date" datetime={item.date}>
-                {formatDate(item.date)}
-              </time>
-              <span class="news-category">{item.category}</span>
+
+      {leadStory ? (
+        <>
+          <!-- Lead story: photo-first -->
+          {(() => {
+            const style = getHeroStyle(leadStory.section);
+            const bg = leadStory._img
+              ? `background-image: url('${leadStory._img}');`
+              : `background: ${style.gradient};`;
+            return (
+              <a href={leadStory._url} class="lead-story" style={bg} aria-label={leadStory.title}>
+                {!leadStory._img && <span class="lead-icon" aria-hidden="true">{style.icon}</span>}
+                <div class="lead-overlay"></div>
+                <div class="lead-content">
+                  <span class="lead-chip" style={`background: ${getSectionColour(leadStory.section)};`}>
+                    {getSectionDisplayName(leadStory.section)}
+                  </span>
+                  <h2 class="lead-hed">{leadStory.title}</h2>
+                  {leadStory.description && (
+                    <p class="lead-dek">{leadStory.description.substring(0, 180)}{leadStory.description.length > 180 ? '…' : ''}</p>
+                  )}
+                  <span class="lead-date">{formatDate(leadStory.publishDate)}</span>
+                </div>
+              </a>
+            );
+          })()}
+
+          <!-- Photo card grid -->
+          {gridItems.length > 0 && (
+            <div class="news-grid">
+              {gridItems.map((item: any) => {
+                const style = getHeroStyle(item.section);
+                const photoStyle = item._img
+                  ? `background-image: url('${item._img}');`
+                  : `background: ${style.gradient};`;
+                return (
+                  <a href={item._url} class="news-card">
+                    <div class="card-photo" style={photoStyle} aria-hidden="true">
+                      {!item._img && <span class="card-photo-icon">{style.icon}</span>}
+                    </div>
+                    <div class="card-body">
+                      <div class="news-cat-row">
+                        <span class="news-dot" style={`background: ${getSectionColour(item.section)};`}></span>
+                        <span class="news-cat" style={`color: ${getSectionColour(item.section)};`}>
+                          {getSectionDisplayName(item.section)}
+                        </span>
+                        <span class="news-date-sm">{formatDateShort(item.publishDate)}</span>
+                      </div>
+                      <h3 class="card-hed">{item.title}</h3>
+                      {item.description && (
+                        <p class="card-dek">{item.description.substring(0, 110)}{item.description.length > 110 ? '…' : ''}</p>
+                      )}
+                    </div>
+                  </a>
+                );
+              })}
             </div>
-            <h2 class="news-title">{item.title}</h2>
-            <p class="news-excerpt">{item.excerpt}</p>
-            <a href={item.link} class="read-more">Read more</a>
-          </article>
-        ))}
-      </div>
-      
-      <!-- Newsletter CTA -->
-      <div class="newsletter-cta">
-        <h2>Stay Connected</h2>
-        <p>Stay connected with community updates, events, and important announcements.</p>
-        <a href="/newsletter/" class="cta-button">Stay Connected</a>
-      </div>
-    </div>
-  </div>
-</Layout>
+          )}
 
+          <!-- More stories -->
+          {moreItems.length > 0 && (
+            <>
+              <div class="more-label">
+                <span class="more-label-text">More stories</span>
+                <span class="more-label-line" aria-hidden="true"></span>
+              </div>
+              <div class="more-list" role="list">
+                {moreItems.map((item: any) => (
+                  <a href={item._url} class="more-item" role="listitem">
+                    <span class="more-date">{formatDateShort(item.publishDate)}</span>
+                    <span class="more-hed">{item.title}</span>
+                  </a>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      ) : (
+        <div class="empty-state" role="note">
+          <div style="font-size:2rem;" aria-hidden="true">📰</div>
+          <h3>No news just yet</h3>
+          <p>Stories appear here when a news item is published in Notion (tick "Show in News Feed" and set a Publish Date).</p>
+        </div>
+      )}
+
+      <div class="crosslink-strip">
+        <div style="flex:1; min-width:200px;">
+          <h3>Looking for local services?</h3>
+          <p>Facilities, amenities, and services for residents and visitors now have their own page.</p>
+        </div>
+        <a href="/services/" class="crosslink-btn">Local Services →</a>
+      </div>
+
+    </section>
+  </div>
+</div>
+</Layout>

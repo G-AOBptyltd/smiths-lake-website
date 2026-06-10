@@ -39,19 +39,32 @@ export async function getStaticPaths() {
 const { item } = Astro.props;
 
 if (!item) {
-  return Astro.redirect('/services/');
+  return Astro.redirect('/news/');
 }
 
 const heroStyle = SECTION_HERO_STYLES[item.section] || SECTION_HERO_STYLES['News'];
 const accentHex = item.sectionColour?.hex || '#4db8b8';
 
+// Article photo (build-time downloaded card image, keyed by slug)
+let cardImageManifest: Record<string, string> = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const manifestPath = path.resolve(process.cwd(), 'public/images/cards/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    cardImageManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  }
+} catch (e) { /* manifest not yet generated */ }
+const articleImage = cardImageManifest[item.slug] || null;
+
 // Estimate read time from description length
 const wordCount = (item.description || '').split(/\s+/).filter(Boolean).length;
 const readTime = Math.max(1, Math.ceil(wordCount / 200));
 
-// Format date
-const pubDate = item.notionLastEditedTime
-  ? new Date(item.notionLastEditedTime).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+// Format date — prefer the deliberate Publish Date over last-edited time
+const dateSource = item.publishDate || item.notionLastEditedTime;
+const pubDate = dateSource
+  ? new Date(dateSource).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
   : null;
 
 const feedbackUrl = `/feedback/?project=${encodeURIComponent(item.title)}`;
@@ -308,9 +321,11 @@ const pageDescription = item.description ? item.description.substring(0, 160) : 
     }
   </style>
 
-  <!-- Hero -->
-  <div class="article-hero" style={`background: ${heroStyle.gradient};`}>
-    <span class="article-hero-icon" aria-hidden="true">{heroStyle.icon}</span>
+  <!-- Hero — real photo when available, gradient fallback otherwise -->
+  <div class="article-hero" style={articleImage
+    ? `background-image: url('${articleImage}'); background-size: cover; background-position: center;`
+    : `background: ${heroStyle.gradient};`}>
+    {!articleImage && <span class="article-hero-icon" aria-hidden="true">{heroStyle.icon}</span>}
     <div class="article-hero-overlay"></div>
     <div class="article-hero-content">
       <span class="article-section-label">{item.sectionDisplay || item.section}</span>
