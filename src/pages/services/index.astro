@@ -21,11 +21,25 @@ try {
 } catch (e) { /* manifest not yet generated */ }
 const heroImage = sectionHeroManifest['services'] || null;
 
+// Card photo manifest (build-time downloaded, keyed by slug)
+let cardImageManifest: Record<string, string> = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const cardPath = path.resolve(process.cwd(), 'public/images/cards/manifest.json');
+  if (fs.existsSync(cardPath)) {
+    cardImageManifest = JSON.parse(fs.readFileSync(cardPath, 'utf-8'));
+  }
+} catch (e) { /* manifest not yet generated */ }
+
 // ── Local Services directory ──────────────────────────────────────────────────
 const allPublished = await fetchNotionContent({ requireShowOnWebsite: true });
-const serviceItems = allPublished.filter((item: any) =>
-  item.section === 'Services' || item.section === 'Services & Amenities'
-);
+const serviceItems = allPublished
+  .filter((item: any) => item.section === 'Services' || item.section === 'Services & Amenities')
+  .map((item: any) => {
+    const slug = item.slug || generateSlug(item.title);
+    return { ...item, _slug: slug, _img: cardImageManifest[slug] || null };
+  });
 ---
 
 <Layout
@@ -48,19 +62,35 @@ const serviceItems = allPublished.filter((item: any) =>
     display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem;
   }
   .service-card {
-    background: white; border-radius: 12px; overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-    border-top: 4px solid #1B365D;
+    background: white; border-radius: 8px; overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     display: flex; flex-direction: column;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
   }
-  .service-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+  .service-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+  .service-card:hover .service-photo img { transform: scale(1.05); }
+
+  /* Photo header — global Project Hub card look */
+  .service-photo { width: 100%; height: 160px; position: relative; overflow: hidden; }
+  .service-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; display: block; }
+  .service-photo-placeholder {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #5B9BD5 0%, #1B365D 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 2.4rem;
+  }
+  .service-status-badge {
+    position: absolute; top: 0.875rem; right: 0.875rem;
+    padding: 0.3rem 0.7rem; border-radius: 20px;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    background: #16A34A; color: white;
+  }
+
   .service-inner { padding: 1.25rem; display: flex; flex-direction: column; flex: 1; }
-  .service-title { font-size: 1.05rem; font-weight: 700; color: #1B365D; margin-bottom: 0.5rem; }
-  .service-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
-  .badge { display: inline-block; padding: 0.2rem 0.65rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600; background: #DBEAFE; color: #1E40AF; }
-  .service-desc { font-size: 0.875rem; color: #4b5563; line-height: 1.65; flex: 1; margin-bottom: 0.875rem; }
+  .service-title { font-size: 1.1rem; font-weight: 700; color: #1B365D; margin-bottom: 0.4rem; }
+  .service-cat { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; color: #6b7280; margin-bottom: 0.7rem; }
+  .service-desc { font-size: 0.875rem; color: #4b5563; line-height: 1.65; flex: 1; margin-bottom: 0.875rem;
+    display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
   .service-meta { border-top: 1px solid #f3f4f6; padding-top: 0.75rem; margin-top: auto; font-size: 0.8rem; }
   .meta-row { display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.35rem; color: #6b7280; }
   .meta-label { font-weight: 600; color: #1B365D; }
@@ -111,20 +141,25 @@ const serviceItems = allPublished.filter((item: any) =>
           {serviceItems.map((item: any) => (
             <article
               class="service-card"
-              data-href={`/services/${item.slug || generateSlug(item.title)}/`}
+              data-href={`/services/${item._slug}/`}
               tabindex="0"
               role="link"
               aria-label={`View ${item.title}`}
             >
+              <div class="service-photo">
+                {item._img ? (
+                  <img src={item._img} alt="" loading="lazy" decoding="async" />
+                ) : (
+                  <div class="service-photo-placeholder" aria-hidden="true">🏘️</div>
+                )}
+                {Array.isArray(item.status) && item.status.length > 0 && (
+                  <span class="service-status-badge">{item.status[0]}</span>
+                )}
+              </div>
               <div class="service-inner">
                 <h3 class="service-title">{item.title}</h3>
-                {(item.category || (Array.isArray(item.status) && item.status.length > 0)) && (
-                  <div class="service-badges">
-                    {item.category && <span class="badge">{item.category}</span>}
-                    {Array.isArray(item.status) && item.status.length > 0 && (
-                      <span class="badge">{item.status[0]}</span>
-                    )}
-                  </div>
+                {item.category && (
+                  <div class="service-cat"><span aria-hidden="true">📁</span>{item.category}</div>
                 )}
                 {item.description && <p class="service-desc">{item.description}</p>}
                 {(item.operatingHours || item.address || item.accessibilityInfo) && (
@@ -135,7 +170,7 @@ const serviceItems = allPublished.filter((item: any) =>
                   </div>
                 )}
                 <div class="service-links">
-                  <a href={`/services/${item.slug || generateSlug(item.title)}/`} class="card-link card-link-detail">View Details →</a>
+                  <a href={`/services/${item._slug}/`} class="card-link card-link-detail">View Details →</a>
                   {(item.websiteUrl || item.documentUrl) && (
                     <a href={item.websiteUrl || item.documentUrl} class="card-link card-link-external" target="_blank" rel="noopener noreferrer">
                       {item.documentUrl ? 'View Document' : 'Visit Website'} ↗

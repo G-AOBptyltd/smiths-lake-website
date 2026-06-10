@@ -5,9 +5,10 @@ interface Props {
   href: string;
   icon: string;
   variant?: 'default' | 'emergency';
+  image?: string | null;
 }
 
-const { title, description, href, icon, variant = 'default' } = Astro.props;
+const { title, description, href, icon, variant = 'default', image = null } = Astro.props;
 
 // Icon mapping
 const icons: Record<string, string> = {
@@ -51,9 +52,18 @@ const icons: Record<string, string> = {
   role="link"
   aria-label={`View ${title}`}
 >
-  <div class="section-card__icon">
-    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true" set:html={icons[icon] || icons.about} />
-  </div>
+  {image ? (
+    <div class="section-card__photo">
+      <img src={image} alt="" loading="lazy" decoding="async" />
+      <span class={`section-card__icon-badge ${variant === 'emergency' ? 'is-emergency' : ''}`} aria-hidden="true">
+        <svg viewBox="0 0 48 48" fill="none" set:html={icons[icon] || icons.about} />
+      </span>
+    </div>
+  ) : (
+    <div class="section-card__icon">
+      <svg viewBox="0 0 48 48" fill="none" aria-hidden="true" set:html={icons[icon] || icons.about} />
+    </div>
+  )}
   <div class="section-card__content">
     <h3 class="section-card__title">{title}</h3>
     <p class="section-card__description">{description}</p>
@@ -104,6 +114,50 @@ const icons: Record<string, string> = {
     padding: var(--space-2);
     background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
     color: var(--color-white);
+  }
+
+  /* Photo header variant */
+  .section-card__photo {
+    position: relative;
+    width: 100%;
+    height: 150px;
+    overflow: hidden;
+  }
+
+  .section-card__photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+  }
+
+  .section-card:hover .section-card__photo img {
+    transform: scale(1.05);
+  }
+
+  .section-card__icon-badge {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
+    color: var(--color-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  .section-card__icon-badge.is-emergency {
+    background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  }
+
+  .section-card__icon-badge svg {
+    width: 22px;
+    height: 22px;
   }
   
   .section-card--emergency .section-card__icon {

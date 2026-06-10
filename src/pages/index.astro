@@ -6,6 +6,8 @@ import Hero from '../components/Hero.astro';
 import QuickInfo from '../components/QuickInfo.astro';
 import SectionCard from '../components/SectionCard.astro';
 import { fetchSectionSettingsBySlug } from '../lib/notion-section-settings.js';
+import { fetchNotionContent } from '../lib/notion-unified.js';
+import { generateSlug, getSectionPath, getSectionColour, getSectionDisplayName } from '../lib/notion-detail-pages.js';
 
 // Fetch home section settings (hero image, title, subtitle)
 const sectionSettings = await fetchSectionSettingsBySlug('home');
@@ -20,6 +22,32 @@ try {
     sectionHeroManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
   }
 } catch (e) { /* manifest not yet generated */ }
+
+// Card photo manifest (news thumbnails, keyed by slug)
+let cardImageManifest = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const cardPath = path.resolve(process.cwd(), 'public/images/cards/manifest.json');
+  if (fs.existsSync(cardPath)) {
+    cardImageManifest = JSON.parse(fs.readFileSync(cardPath, 'utf-8'));
+  }
+} catch (e) { /* manifest not yet generated */ }
+
+// Latest news strip — same rule as /news/: deliberate publishing only
+let latestNews = [];
+try {
+  const allPublished = await fetchNotionContent({ requireShowOnWebsite: true });
+  latestNews = allPublished
+    .filter((item) => item.showInNewsFeed === true && item.publishDate)
+    .sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
+    .slice(0, 3)
+    .map((item) => {
+      const slug = item.slug || generateSlug(item.title);
+      const url = item.section === 'News' ? `/news/${slug}/` : `/${getSectionPath(item.section)}/${slug}/`;
+      return { ...item, _url: url, _img: cardImageManifest[slug] || null };
+    });
+} catch (e) { /* news strip is optional — never break the homepage */ }
 
 // Use Notion hero image if available, otherwise fall back to existing local image
 const heroImage = sectionHeroManifest['home'] || '/images/hero-smiths-lake.jpg';
@@ -94,21 +122,61 @@ const sections = [
   />
   
   <QuickInfo items={quickInfoItems} />
-  
+
+  <!-- Latest from the Village (auto-feeds from the news system) -->
+  {latestNews.length > 0 && (
+    <section class="home-news-section" aria-labelledby="home-news-heading">
+      <div class="container">
+        <div class="home-news-header">
+          <h2 id="home-news-heading">Latest from the Village</h2>
+          <a href="/news/" class="home-news-all">All news →</a>
+        </div>
+        <div class="home-news-grid">
+          {latestNews.map((item) => (
+            <a href={item._url} class="home-news-card">
+              <div
+                class="home-news-photo"
+                style={item._img
+                  ? `background-image: url('${item._img}');`
+                  : 'background: linear-gradient(135deg, #5B9BD5 0%, #1B365D 100%);'}
+                aria-hidden="true"
+              >
+                {!item._img && <span class="home-news-emoji">📰</span>}
+                <span class="home-news-chip" style={`background: ${getSectionColour(item.section)};`}>
+                  {getSectionDisplayName(item.section)}
+                </span>
+              </div>
+              <div class="home-news-body">
+                <span class="home-news-date">
+                  {new Date(item.publishDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </span>
+                <h3 class="home-news-hed">{item.title}</h3>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
   <!-- Main Sections Grid -->
   <section class="section bg-off-white" aria-labelledby="explore-heading">
     <div class="container">
       <h2 id="explore-heading" class="text-center mb-8">Explore Our Community</h2>
       <div class="sections-grid">
-        {sections.map((section) => (
-          <SectionCard 
-            title={section.title}
-            description={section.description}
-            href={section.href}
-            icon={section.icon}
-            variant={section.variant}
-          />
-        ))}
+        {sections.map((section) => {
+          const heroKey = section.href.replace(/\//g, '');
+          return (
+            <SectionCard
+              title={section.title}
+              description={section.description}
+              href={section.href}
+              icon={section.icon}
+              variant={section.variant}
+              image={sectionHeroManifest[heroKey] || null}
+            />
+          );
+        })}
       </div>
     </div>
   </section>
@@ -164,6 +232,107 @@ const sections = [
   }
   
   /* News & Services Banner */
+  /* Latest from the Village */
+  .home-news-section {
+    padding: var(--space-12) 0;
+    background: var(--color-white);
+  }
+
+  .home-news-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--color-navy);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .home-news-header h2 {
+    font-size: var(--text-2xl);
+    color: var(--color-navy);
+    margin: 0;
+  }
+
+  .home-news-all {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--color-golden-dark);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .home-news-all:hover { color: var(--color-golden); }
+
+  .home-news-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+
+  .home-news-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-white);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .home-news-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  }
+
+  .home-news-photo {
+    position: relative;
+    height: 170px;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .home-news-emoji { font-size: 2.5rem; opacity: 0.4; }
+
+  .home-news-chip {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    padding: 0.22rem 0.65rem;
+    border-radius: 3px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: white;
+  }
+
+  .home-news-body { padding: 1rem 1.1rem 1.2rem; }
+
+  .home-news-date {
+    font-size: 0.72rem;
+    color: var(--color-gray-500, #9ca3af);
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+
+  .home-news-hed {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: var(--color-navy);
+    line-height: 1.35;
+    margin: 0;
+  }
+
+  .home-news-card:hover .home-news-hed { color: #2d8b8b; }
+
+  @media (max-width: 768px) {
+    .home-news-grid { grid-template-columns: 1fr; }
+  }
+
   .news-banner-section {
     padding: var(--space-10) 0;
     background: #f0f7ff;
