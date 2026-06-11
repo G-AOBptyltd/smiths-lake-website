@@ -9,8 +9,9 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: #f7f9fc; color: #1B365D; margin: 0;
-    display: flex; align-items: center; justify-content: center; min-height: 100vh;
+    display: flex; flex-direction: column; min-height: 100vh;
   }
+  .page-centre { flex: 1; display: flex; align-items: center; justify-content: center; padding: 1rem; }
   .card {
     background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     max-width: 460px; width: calc(100% - 2rem); padding: 2.5rem 2rem; text-align: center;
@@ -30,8 +31,10 @@
   .ok { color: #16A34A; } .err { color: #DC2626; }
   .note { font-size: 0.75rem; color: #9ca3af; margin-top: 1.5rem; }
 </style>
+<script src="/admin/admin-nav.js" defer></script>
 </head>
 <body>
+  <div class="page-centre">
   <div class="card">
     <div class="emoji">📰</div>
     <h1>Publish News to the Website</h1>
@@ -44,6 +47,7 @@
     <button id="go">Publish now</button>
     <div id="status"></div>
     <p class="note">This rebuilds villagefirst.org.au with the latest Notion content. It's safe to click — nothing is deleted.</p>
+  </div>
   </div>
   <script>
     const btn = document.getElementById('go');
