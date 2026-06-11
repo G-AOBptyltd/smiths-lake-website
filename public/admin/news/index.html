@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>News Desk — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; font-size: 14px; color: #1f2937; }
+  button { font-family: inherit; }
+
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-pill { font-size: 11px; color: #c7eedd; border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 10px; white-space: nowrap; }
+
+  .layout { display: flex; min-height: calc(100vh - 46px); }
+  .sidebar { width: 170px; background: #fff; border-right: 1px solid #e2e8f0; padding: 10px 0; flex-shrink: 0; }
+  .s-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font-size: 12.5px; color: #4b5563; cursor: pointer; border-left: 3px solid transparent; }
+  .s-item:hover { background: #f0fdf6; }
+  .s-item.on { color: #0f5c48; background: #e7f6ee; border-left-color: #15795f; font-weight: 700; }
+  .main { flex: 1; padding: 20px; max-width: 980px; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+  h1 { font-size: 1.05rem; color: #143d2e; margin-bottom: 2px; }
+  .sub { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+  .story-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+  .story-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+  .story-title { font-size: 13px; font-weight: 700; color: #1f2937; line-height: 1.35; }
+  .chip { font-size: 9.5px; font-weight: 700; border-radius: 9px; padding: 2px 8px; white-space: nowrap; }
+  .chip-live { background: #c9f0dd; color: #0f5c48; }
+  .chip-draft { background: #fde9c0; color: #92400e; }
+  .chip-shared { background: #dbeafe; color: #1e40af; }
+  .story-meta { font-size: 11px; color: #9ca3af; margin-bottom: 10px; }
+  .story-foot { display: flex; justify-content: space-between; align-items: center; }
+  .link-btn { background: none; border: none; color: #1d6fb8; font-size: 11.5px; cursor: pointer; padding: 0; }
+  .link-btn:hover { text-decoration: underline; }
+
+  .switch { position: relative; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #6b7280; cursor: pointer; }
+  .switch input { display: none; }
+  .knob { width: 30px; height: 17px; border-radius: 9px; background: #d1d5db; position: relative; transition: background .2s; }
+  .knob::after { content: ''; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: white; transition: left .2s; }
+  .switch input:checked + .knob { background: #15a06e; }
+  .switch input:checked + .knob::after { left: 15px; }
+
+  .publish-bar { position: sticky; bottom: 0; margin-top: 18px; background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 7px; padding: 8px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btn-green { background: #15795f; color: white; }
+  .btn-green:hover { background: #0f5c48; }
+  .btn-green:disabled { background: #9ca3af; cursor: wait; }
+  .btn-ghost { background: white; color: #4b5563; border: 1px solid #d1d5db; }
+  .btn-ghost:hover { border-color: #9ca3af; }
+  .bar-note { font-size: 11px; color: #9ca3af; }
+  .status-msg { font-size: 12px; font-weight: 600; min-height: 1.2em; }
+  .status-msg.ok { color: #15803d; } .status-msg.err { color: #b91c1c; }
+
+  .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 620px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin: 14px 0 4px; }
+  label:first-child { margin-top: 0; }
+  .hint { font-weight: 400; color: #9ca3af; }
+  input[type=text], input[type=date], textarea { width: 100%; border: 1px solid #d1d5db; border-radius: 7px; padding: 9px 11px; font-size: 13px; font-family: inherit; }
+  input:focus, textarea:focus { outline: 2px solid #15a06e; border-color: #15a06e; }
+  textarea { min-height: 150px; resize: vertical; line-height: 1.6; }
+  .photo-note { border: 1px dashed #d1d5db; border-radius: 7px; padding: 10px 12px; font-size: 11.5px; color: #6b7280; line-height: 1.55; }
+  .form-actions { display: flex; gap: 8px; margin-top: 18px; align-items: center; flex-wrap: wrap; }
+
+  .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .f-chip { font-size: 11px; border: 1px solid #d1d5db; background: white; color: #4b5563; border-radius: 12px; padding: 4px 12px; cursor: pointer; }
+  .f-chip.on { background: #0f5c48; border-color: #0f5c48; color: white; font-weight: 700; }
+  .pick-card { background: white; border: 1.5px solid #e2e8f0; border-radius: 9px; padding: 10px 12px; cursor: pointer; }
+  .pick-card:hover { border-color: #9ca3af; }
+  .pick-card.sel { border-color: #15a06e; background: #e7f6ee; }
+  .pick-title { font-size: 12.5px; font-weight: 700; color: #1f2937; }
+  .pick-meta { font-size: 10.5px; color: #9ca3af; margin-top: 2px; }
+  .pick-meta .infeed { color: #1e40af; font-weight: 700; }
+
+  .help-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 640px; font-size: 13px; line-height: 1.7; color: #374151; }
+  .help-card h2 { font-size: 13.5px; color: #143d2e; margin: 14px 0 4px; }
+  .help-card h2:first-child { margin-top: 0; }
+
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; padding: 1rem; text-align: center; }
+  .auth-screen h1 { font-size: 1.2rem; }
+  .auth-screen p { font-size: 0.85rem; color: #6b7280; max-width: 360px; }
+  .auth-btn { background: #15795f; color: white; border: none; border-radius: 8px; padding: 0.75rem 2rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+
+  .empty { color: #9ca3af; font-size: 12.5px; padding: 14px 2px; }
+  @media (max-width: 700px) { .sidebar { width: 110px; } .main { padding: 14px; } }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">📰</div>
+  <h1>VillageFirst News Desk</h1>
+  <p>Write village news and choose what appears on the website — no technical skills needed. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+  <p style="margin-top:1rem;"><a href="/admin/" style="color:#15795f; font-size:0.78rem;">← Admin home</a></p>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · News Desk</div>
+    <span class="village-pill">Smiths Lake</span>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <button class="s-item on" data-panel="stories" onclick="showPanel('stories')">📋 Stories</button>
+      <button class="s-item" data-panel="write" onclick="newStory()">✍️ Write a story</button>
+      <button class="s-item" data-panel="share" onclick="showPanel('share')">🔗 Share existing</button>
+      <button class="s-item" data-panel="help" onclick="showPanel('help')">💡 Help</button>
+    </div>
+
+    <div class="main">
+
+      <!-- ── Stories ─────────────────────────────────────────────── -->
+      <div class="panel on" id="panel-stories">
+        <h1>Stories</h1>
+        <p class="sub">Everything in (or available to) the village news feed. Toggle a story off to remove it from the feed — then press Publish.</p>
+        <div class="cards" id="story-cards"><div class="empty">Loading stories…</div></div>
+        <div class="publish-bar">
+          <button class="btn btn-green" id="publish-btn" onclick="publishSite()">Publish to website</button>
+          <span class="bar-note">the website updates about 3 minutes after you publish</span>
+          <span class="status-msg" id="publish-status"></span>
+        </div>
+      </div>
+
+      <!-- ── Write a story ───────────────────────────────────────── -->
+      <div class="panel" id="panel-write">
+        <h1 id="write-title">Write a story</h1>
+        <p class="sub">Plain words are perfect. Each blank line becomes a new paragraph on the website.</p>
+        <div class="form-card">
+          <label for="f-headline">Headline</label>
+          <input type="text" id="f-headline" maxlength="200" placeholder="e.g. Winter Markets Return to the Community Hall" />
+
+          <label for="f-body">Your story</label>
+          <textarea id="f-body" maxlength="2000" placeholder="What's happening, when, where, and who to contact…"></textarea>
+
+          <label for="f-date">Date it appears <span class="hint">(stories show newest first)</span></label>
+          <input type="date" id="f-date" style="max-width:200px;" />
+
+          <label>Photo</label>
+          <div class="photo-note">📷 Photos are added in Notion for now — open the story in Notion and drop an image into <b>Hero Image File</b>. Stories without a photo get a smart coloured panel instead.</div>
+
+          <div class="form-actions">
+            <button class="btn btn-green" onclick="saveStory(true)">Save &amp; put in feed</button>
+            <button class="btn btn-ghost" onclick="saveStory(false)">Save as draft</button>
+            <span class="status-msg" id="save-status"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Share existing ──────────────────────────────────────── -->
+      <div class="panel" id="panel-share">
+        <h1>Share something already on the website</h1>
+        <p class="sub">Click an item, then confirm — it joins the news feed and links to its existing page. No retyping.</p>
+        <div class="filter-row" id="section-filters"></div>
+        <div class="cards" id="pick-cards"><div class="empty">Loading website content…</div></div>
+        <div class="publish-bar">
+          <button class="btn btn-green" id="share-btn" onclick="shareSelected()" disabled>Add to news feed</button>
+          <span class="bar-note" id="share-note">select an item above</span>
+          <span class="status-msg" id="share-status"></span>
+        </div>
+      </div>
+
+      <!-- ── Help ────────────────────────────────────────────────── -->
+      <div class="panel" id="panel-help">
+        <h1>Help</h1>
+        <p class="sub">The 60-second guide.</p>
+        <div class="help-card">
+          <h2>To publish a news story</h2>
+          1. Click <b>Write a story</b> — headline, story, date. 2. <b>Save &amp; put in feed</b>. 3. Back on <b>Stories</b>, press <b>Publish to website</b>. Done — live in ~3 minutes.
+          <h2>To share something already on the website</h2>
+          Use <b>Share existing</b>, click the item (a project, a group, a history page…), confirm, publish. It appears in the feed with today's date and links to its page.
+          <h2>To take a story down</h2>
+          On <b>Stories</b>, switch its toggle off, then press Publish.
+          <h2>Photos</h2>
+          Add photos in Notion (Hero Image File on the story). Ask Greg if you'd like this set up for you.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const VILLAGE = 'Smiths Lake';
+  const SECTIONS = ['All', 'History & Culture', 'Services & Amenities', 'Groups & Activities', 'Environment & Sustainability', 'Project Hub', 'Emergency & Safety'];
+  let currentUser = null;
+  let stories = [];
+  let pickItems = [];
+  let pickFilter = 'All';
+  let selectedPick = null;
+  let editingId = null;
+
+  // ── Auth ───────────────────────────────────────────────────────
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try {
+      const u = netlifyIdentity.currentUser();
+      if (u) token = await u.jwt();
+    } catch (e) { /* signed out */ }
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+    loadStories();
+    renderFilters();
+    loadPicker();
+  }
+
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+    document.getElementById('panel-' + name).classList.add('on');
+    document.querySelectorAll('.s-item').forEach(b => b.classList.toggle('on', b.dataset.panel === name));
+  }
+
+  // ── Stories ────────────────────────────────────────────────────
+  async function loadStories() {
+    try {
+      const r = await fetch('/api/news-list?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not load');
+      stories = data.items || [];
+      renderStories();
+    } catch (e) {
+      document.getElementById('story-cards').innerHTML = '<div class="empty">⚠️ ' + e.message + '</div>';
+    }
+  }
+
+  function fmtDate(d) {
+    if (!d) return 'no date';
+    return new Date(d + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function renderStories() {
+    const el = document.getElementById('story-cards');
+    if (!stories.length) { el.innerHTML = '<div class="empty">No stories yet — write your first one!</div>'; return; }
+    el.innerHTML = '';
+    stories.forEach((s, i) => {
+      const isStory = s.section === 'News';
+      const chip = s.showInNewsFeed
+        ? (isStory ? '<span class="chip chip-live">Live</span>' : '<span class="chip chip-shared">Shared</span>')
+        : '<span class="chip chip-draft">' + (isStory ? 'Draft' : 'Off') + '</span>';
+      const card = document.createElement('div');
+      card.className = 'story-card';
+      card.innerHTML =
+        '<div class="story-top"><span class="story-title"></span>' + chip + '</div>' +
+        '<div class="story-meta">' + (s.section || '—') + ' · ' + fmtDate(s.publishDate) + ' · ' + (s.hasPhoto ? 'photo ✓' : 'no photo') + '</div>' +
+        '<div class="story-foot">' +
+          (isStory ? '<button class="link-btn" onclick="editStory(' + i + ')">Edit →</button>' : '<span></span>') +
+          '<label class="switch">In news feed <input type="checkbox" ' + (s.showInNewsFeed ? 'checked' : '') + ' onchange="toggleStory(' + i + ', this)" /><span class="knob"></span></label>' +
+        '</div>';
+      card.querySelector('.story-title').textContent = s.title;
+      el.appendChild(card);
+    });
+  }
+
+  async function toggleStory(i, input) {
+    const s = stories[i];
+    const enable = input.checked;
+    input.disabled = true;
+    try {
+      const r = await fetch('/api/news-toggle', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, pageId: s.id, showInNewsFeed: enable }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not update');
+      s.showInNewsFeed = enable;
+      if (enable && !s.publishDate) s.publishDate = new Date().toISOString().slice(0, 10);
+      renderStories();
+    } catch (e) {
+      input.checked = !enable;
+      alert('⚠️ ' + e.message);
+    } finally { input.disabled = false; }
+  }
+
+  // ── Write / edit ───────────────────────────────────────────────
+  function newStory() {
+    editingId = null;
+    document.getElementById('write-title').textContent = 'Write a story';
+    document.getElementById('f-headline').value = '';
+    document.getElementById('f-body').value = '';
+    document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('save-status').textContent = '';
+    showPanel('write');
+  }
+
+  function editStory(i) {
+    const s = stories[i];
+    editingId = s.id;
+    document.getElementById('write-title').textContent = 'Edit story';
+    document.getElementById('f-headline').value = s.title;
+    document.getElementById('f-body').value = s.description || '';
+    document.getElementById('f-date').value = s.publishDate || new Date().toISOString().slice(0, 10);
+    document.getElementById('save-status').textContent = '';
+    showPanel('write');
+  }
+
+  async function saveStory(live) {
+    const status = document.getElementById('save-status');
+    const title = document.getElementById('f-headline').value.trim();
+    if (!title) { status.textContent = 'A headline is needed first'; status.className = 'status-msg err'; return; }
+    status.textContent = 'Saving…'; status.className = 'status-msg';
+    try {
+      const r = await fetch('/api/news-save', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({
+          village: VILLAGE,
+          pageId: editingId || undefined,
+          title,
+          description: document.getElementById('f-body').value,
+          publishDate: document.getElementById('f-date').value,
+          live,
+        }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not save');
+      status.textContent = live ? '✅ Saved — press Publish on the Stories page to put it live' : '✅ Draft saved';
+      status.className = 'status-msg ok';
+      editingId = data.pageId;
+      loadStories();
+    } catch (e) {
+      status.textContent = '⚠️ ' + e.message; status.className = 'status-msg err';
+    }
+  }
+
+  // ── Share existing ─────────────────────────────────────────────
+  function renderFilters() {
+    const el = document.getElementById('section-filters');
+    el.innerHTML = '';
+    SECTIONS.forEach(s => {
+      const b = document.createElement('button');
+      b.className = 'f-chip' + (s === pickFilter ? ' on' : '');
+      b.textContent = s.replace(' & Culture', '').replace(' & Amenities', '').replace(' & Sustainability', '').replace(' & Safety', '').replace(' & Activities', '');
+      b.onclick = () => { pickFilter = s; renderFilters(); renderPicker(); };
+      el.appendChild(b);
+    });
+  }
+
+  async function loadPicker() {
+    try {
+      const r = await fetch('/api/news-content-search?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not load');
+      pickItems = data.items || [];
+      renderPicker();
+    } catch (e) {
+      document.getElementById('pick-cards').innerHTML = '<div class="empty">⚠️ ' + e.message + '</div>';
+    }
+  }
+
+  function renderPicker() {
+    const el = document.getElementById('pick-cards');
+    const items = pickItems.filter(it => pickFilter === 'All' || it.section === pickFilter);
+    if (!items.length) { el.innerHTML = '<div class="empty">Nothing published in this section yet.</div>'; return; }
+    el.innerHTML = '';
+    items.forEach(it => {
+      const card = document.createElement('div');
+      card.className = 'pick-card' + (selectedPick === it.id ? ' sel' : '');
+      card.innerHTML = '<div class="pick-title"></div>' +
+        '<div class="pick-meta">' + it.section + (it.hasPhoto ? ' · photo ✓' : '') + (it.showInNewsFeed ? ' · <span class="infeed">already in feed</span>' : '') + '</div>';
+      card.querySelector('.pick-title').textContent = it.title;
+      card.onclick = () => {
+        selectedPick = (selectedPick === it.id) ? null : it.id;
+        renderPicker();
+        const sel = pickItems.find(p => p.id === selectedPick);
+        document.getElementById('share-btn').disabled = !sel;
+        document.getElementById('share-btn').textContent = sel && sel.showInNewsFeed ? 'Remove from news feed' : 'Add to news feed';
+        document.getElementById('share-note').textContent = sel ? ('selected: ' + sel.title) : 'select an item above';
+        document.getElementById('share-status').textContent = '';
+      };
+      el.appendChild(card);
+    });
+  }
+
+  async function shareSelected() {
+    const sel = pickItems.find(p => p.id === selectedPick);
+    if (!sel) return;
+    const enable = !sel.showInNewsFeed;
+    const btn = document.getElementById('share-btn');
+    const status = document.getElementById('share-status');
+    btn.disabled = true; status.textContent = 'Updating…'; status.className = 'status-msg';
+    try {
+      const r = await fetch('/api/news-toggle', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, pageId: sel.id, showInNewsFeed: enable }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not update');
+      sel.showInNewsFeed = enable;
+      selectedPick = null;
+      renderPicker();
+      document.getElementById('share-note').textContent = 'select an item above';
+      btn.textContent = 'Add to news feed';
+      status.textContent = enable ? '✅ Added — press Publish on the Stories page to put it live' : '✅ Removed from feed — press Publish to update the site';
+      status.className = 'status-msg ok';
+      loadStories();
+    } catch (e) {
+      status.textContent = '⚠️ ' + e.message; status.className = 'status-msg err';
+      btn.disabled = false;
+    }
+  }
+
+  // ── Publish ────────────────────────────────────────────────────
+  async function publishSite() {
+    const btn = document.getElementById('publish-btn');
+    const status = document.getElementById('publish-status');
+    btn.disabled = true; status.textContent = 'Starting rebuild…'; status.className = 'status-msg';
+    try {
+      const r = await fetch('/api/news-publish', { method: 'POST', headers: await authHeaders() });
+      const data = await r.json();
+      if (!r.ok || !data.ok) throw new Error(data.error || 'Could not publish');
+      status.textContent = '✅ Publishing — the website updates in about 3 minutes';
+      status.className = 'status-msg ok';
+    } catch (e) {
+      status.textContent = '⚠️ ' + e.message; status.className = 'status-msg err';
+    }
+    setTimeout(() => { btn.disabled = false; }, 60000);
+  }
+</script>
+</body>
+</html>

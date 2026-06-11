@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; }
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .topbar-logout:hover { color: white; border-color: rgba(255,255,255,.5); }
+  .village-pill { font-size: 11px; color: #c7eedd; border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 10px; }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 2.25rem 1rem 3rem; }
+  .greeting { font-size: 1.15rem; font-weight: 700; color: #143d2e; margin-bottom: 0.3rem; }
+  .greeting-sub { font-size: 0.85rem; color: #6b7280; margin-bottom: 1.5rem; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 1rem; }
+  .tile {
+    background: white; border-radius: 12px; padding: 1.25rem;
+    border: 1px solid #e2e8f0; text-decoration: none; display: block;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .tile:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+  .tile-icon { font-size: 1.6rem; }
+  .tile-name { font-size: 0.95rem; font-weight: 700; color: #143d2e; margin: 0.5rem 0 0.2rem; }
+  .tile-desc { font-size: 0.78rem; color: #6b7280; line-height: 1.5; }
+  .tile.is-soon { opacity: 0.6; border-style: dashed; pointer-events: none; }
+  .tile.is-soon .tile-name { color: #6b7280; }
+  .soon-chip { display: inline-block; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #92400E; background: #FEF3C7; border-radius: 8px; padding: 2px 8px; margin-top: 0.4rem; }
+
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; padding: 1rem; text-align: center; }
+  .auth-screen h1 { font-size: 1.2rem; color: #143d2e; }
+  .auth-screen p { font-size: 0.85rem; color: #6b7280; max-width: 360px; }
+  .auth-btn { background: #15795f; color: white; border: none; border-radius: 8px; padding: 0.75rem 2rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .auth-btn:hover { background: #0f5c48; }
+  .site-link { margin-top: 2rem; }
+  .site-link a { font-size: 0.78rem; color: #15795f; }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">🏘️</div>
+  <h1>VillageFirst Admin</h1>
+  <p>One place for everything village admins do — surveys, news, publishing, and more. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+  <div class="site-link"><a href="/">← back to villagefirst.org.au</a></div>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand">🏘️ VillageFirst · Admin</div>
+    <span class="village-pill" id="village-pill">Smiths Lake</span>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+  <div class="wrap">
+    <div class="greeting" id="greeting">G'day</div>
+    <div class="greeting-sub">What are you working on today?</div>
+    <div class="tiles" id="tiles"></div>
+  </div>
+</div>
+
+<script>
+  // ── Tool registry ────────────────────────────────────────────────
+  // To add a tool: add a row here (or move this to the Villages/Tools
+  // Notion registry when the network grows). `roles` = who sees the tile;
+  // village-scoped roles ("smithslake:steward") and super-admin both match.
+  const TOOLS = [
+    { id: 'surveys',  icon: '📊', name: 'Surveys',          desc: 'Create surveys, watch results live', href: '/survey-admin/', roles: ['admin', 'steward', 'viewer'] },
+    { id: 'news',     icon: '📰', name: 'News desk',         desc: 'Write stories and publish village news', href: '/admin/news/', roles: ['admin', 'steward'] },
+    { id: 'publish',  icon: '🌐', name: 'Publish website',   desc: 'Push the latest Notion content live', href: '/admin/publish-news.html', roles: ['admin', 'steward'] },
+    { id: 'playbook', icon: '📖', name: 'Playbook & help',   desc: 'Guides for volunteers and admins', href: '/survey-admin/#playbook', roles: ['admin', 'steward', 'viewer'] },
+    { id: 'events',   icon: '🎟️', name: 'Events & ticketing', desc: 'One-off event sales', soon: true, roles: ['admin'] },
+    { id: 'ads',      icon: '📣', name: 'Advertising',        desc: 'Local business placements', soon: true, roles: ['admin'] },
+  ];
+
+  let currentUser = null;
+
+  function userRoles() {
+    return (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || [];
+  }
+
+  function canSee(tool) {
+    const roles = userRoles();
+    if (roles.includes('super-admin')) return true;
+    if (roles.length === 0) return true; // email-allowlist bridge users: server still enforces
+    return tool.roles.some(function(r) {
+      return roles.includes(r) || roles.some(function(role) { return role.endsWith(':' + r); });
+    });
+  }
+
+  function renderTiles() {
+    const el = document.getElementById('tiles');
+    el.innerHTML = '';
+    TOOLS.filter(canSee).forEach(function(tool) {
+      const a = document.createElement(tool.soon ? 'div' : 'a');
+      a.className = 'tile' + (tool.soon ? ' is-soon' : '');
+      if (!tool.soon) a.href = tool.href;
+      a.innerHTML = '<div class="tile-icon">' + tool.icon + '</div>' +
+        '<div class="tile-name">' + tool.name + '</div>' +
+        '<div class="tile-desc">' + tool.desc + '</div>' +
+        (tool.soon ? '<span class="soon-chip">Coming soon</span>' : '');
+      el.appendChild(a);
+    });
+  }
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser && currentUser.email || '';
+    const name = (currentUser && (currentUser.user_metadata && currentUser.user_metadata.full_name)) || '';
+    document.getElementById('greeting').textContent = name ? ('G\'day ' + name.split(' ')[0]) : 'G\'day';
+    renderTiles();
+  }
+
+  netlifyIdentity.on('init', function(u) { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', function(u) { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', function() {
+    currentUser = null;
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  });
+</script>
+</body>
+</html>
