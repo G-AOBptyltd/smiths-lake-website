@@ -18,12 +18,13 @@
     { id: 'surveys',  href: '/survey-admin/',            label: '📊 Surveys' },
     { id: 'news',     href: '/admin/news/',              label: '📰 News desk' },
     { id: 'publish',  href: '/admin/publish-news.html',  label: '🌐 Publish' },
-    { id: 'playbook', href: '/survey-admin/#playbook',   label: '📖 Playbook' },
+    { id: 'playbook', href: '/admin/playbook/',          label: '📖 Playbooks' },
   ];
 
   function currentId() {
     var p = location.pathname, h = location.hash;
-    if (p.indexOf('/survey-admin') === 0) return h === '#playbook' ? 'playbook' : 'surveys';
+    if (p.indexOf('/survey-admin') === 0) return 'surveys';
+    if (p.indexOf('/admin/playbook') === 0) return 'playbook';
     if (p.indexOf('/admin/news') === 0) return 'news';
     if (p.indexOf('publish-news') > -1) return 'publish';
     if (p.indexOf('/admin') === 0) return 'home';
