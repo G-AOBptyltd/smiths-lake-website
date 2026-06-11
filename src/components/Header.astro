@@ -3,16 +3,31 @@
 const currentPath = Astro.url.pathname;
 
 const navItems = [
-  { href: '/', label: 'Home' },
-  { href: '/about/', label: 'About Us' },
-  { href: '/projects/', label: 'Project Hub' },
-  { href: '/environment/', label: 'Environment' },
-  { href: '/news/', label: 'News' },
-  { href: '/services/', label: 'Services' },
-  { href: '/groups/', label: 'Groups & Activities' },
-  { href: '/history/', label: 'History' },
-  { href: '/emergency/', label: 'Emergency & Safety' },
+  { href: '/', label: 'Home', icon: 'home' },
+  { href: '/about/', label: 'About Us', icon: 'about' },
+  { href: '/projects/', label: 'Project Hub', icon: 'projects' },
+  { href: '/environment/', label: 'Environment', icon: 'environment' },
+  { href: '/news/', label: 'News', icon: 'news' },
+  { href: '/services/', label: 'Services', icon: 'services' },
+  { href: '/groups/', label: 'Groups & Activities', icon: 'groups' },
+  { href: '/history/', label: 'History', icon: 'history' },
+  { href: '/emergency/', label: 'Emergency & Safety', icon: 'emergency' },
 ];
+
+// Compact stroke icons for the mobile drawer (24x24 viewBox)
+const drawerIcons: Record<string, string> = {
+  home: '<path d="M3 11l9-8 9 8M5 9v11h5v-6h4v6h5V9" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  about: '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M12 11v5M12 8v.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  projects: '<rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M4 10h16M9 5V3M15 5V3M8 14h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  environment: '<path d="M12 21V11M12 11c-3.5-3.5-3.5-7 0-9 3.5 2 3.5 5.5 0 9z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 17c-2.5 0-4-2-4-4 0-3 4-4 9-4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/>',
+  news: '<rect x="4" y="5" width="13" height="15" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M17 9h2a1 1 0 011 1v8a2 2 0 01-2 2H6M8 9h5M8 13h5M8 17h3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/>',
+  services: '<path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5M10 10h.01M14 10h.01" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
+  groups: '<circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.8" fill="none"/><circle cx="16.5" cy="9.5" r="2.5" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M14.5 14.6c2.5.3 4.5 2 4.5 4.4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/>',
+  history: '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/>',
+  emergency: '<path d="M12 3L2.5 20h19L12 3z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/><path d="M12 10v4M12 17v.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+};
+
+const drawerItems = navItems.filter((item) => item.icon !== 'emergency');
 
 function isActive(href: string): boolean {
   if (href === '/') {
@@ -56,8 +71,8 @@ function isActive(href: string): boolean {
       <ul id="main-menu" class="nav-menu">
         {navItems.map((item) => (
           <li>
-            <a 
-              href={item.href} 
+            <a
+              href={item.href}
               class:list={['nav-link', { 'is-active': isActive(item.href) }]}
               aria-current={isActive(item.href) ? 'page' : undefined}
             >
@@ -66,6 +81,35 @@ function isActive(href: string): boolean {
           </li>
         ))}
       </ul>
+
+      <!-- Mobile slide-in drawer -->
+      <div class="nav-backdrop" aria-hidden="true"></div>
+      <aside id="nav-drawer" class="nav-drawer" aria-label="Mobile navigation" aria-hidden="true">
+        <div class="drawer-header">
+          <span class="drawer-title">Smiths Lake Village</span>
+          <button class="drawer-close" aria-label="Close menu">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        <nav class="drawer-nav" aria-label="Mobile site sections">
+          {drawerItems.map((item) => (
+            <a
+              href={item.href}
+              class:list={['drawer-link', { 'is-active': isActive(item.href) }]}
+              aria-current={isActive(item.href) ? 'page' : undefined}
+            >
+              <svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true" set:html={drawerIcons[item.icon]} />
+              <span>{item.label}</span>
+            </a>
+          ))}
+        </nav>
+        <a href="/emergency/" class="drawer-emergency">
+          <svg class="drawer-icon" viewBox="0 0 24 24" aria-hidden="true" set:html={drawerIcons.emergency} />
+          <span>Emergency &amp; Safety</span>
+        </a>
+      </aside>
     </nav>
   </div>
 </header>
@@ -233,33 +277,152 @@ function isActive(href: string): boolean {
     transform: translateY(-6px) rotate(-45deg);
   }
   
+  /* ── Mobile drawer ─────────────────────────────────────────────── */
+  .nav-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 13, 26, 0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 998;
+  }
+
+  .nav-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .nav-drawer {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(320px, 86vw);
+    background: var(--color-navy);
+    z-index: 999;
+    flex-direction: column;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1), visibility 0s 0.3s;
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.35);
+  }
+
+  .nav-drawer.is-open {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1), visibility 0s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-drawer, .nav-backdrop { transition: none; }
+  }
+
+  .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .drawer-title {
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: var(--color-white);
+  }
+
+  .drawer-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    border-radius: 50%;
+    color: var(--color-white);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .drawer-close:hover { background: rgba(255, 255, 255, 0.18); }
+  .drawer-close:focus-visible { outline: 3px solid var(--color-golden); outline-offset: 2px; }
+
+  .drawer-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-3) var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .drawer-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: 0.85rem var(--space-4);
+    border-radius: var(--radius-md, 8px);
+    color: var(--color-white);
+    text-decoration: none;
+    font-size: 1.02rem;
+    font-weight: 500;
+    transition: background 0.15s;
+  }
+
+  .drawer-link:hover { background: rgba(255, 255, 255, 0.08); }
+
+  .drawer-link.is-active {
+    background: var(--color-golden);
+    color: var(--color-navy);
+    font-weight: 700;
+  }
+
+  .drawer-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    opacity: 0.85;
+  }
+
+  .drawer-link.is-active .drawer-icon { opacity: 1; }
+
+  .drawer-emergency {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    margin: var(--space-3);
+    padding: 0.9rem var(--space-4);
+    background: #DC2626;
+    border-radius: var(--radius-md, 8px);
+    color: var(--color-white);
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 700;
+    transition: background 0.15s;
+  }
+
+  .drawer-emergency:hover { background: #B91C1C; }
+
   /* Responsive */
   @media (max-width: 1024px) {
     .nav-toggle {
       display: flex;
     }
-    
+
     .nav-menu {
       display: none;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      flex-direction: column;
-      background-color: var(--color-navy);
-      padding: var(--space-4);
-      box-shadow: var(--shadow-lg);
-      gap: var(--space-1);
     }
-    
-    .nav-menu.is-open {
+
+    .nav-backdrop,
+    .nav-drawer {
       display: flex;
     }
-    
-    .nav-link {
-      padding: var(--space-4);
-      font-size: var(--text-base);
-    }
+
+    .nav-backdrop { display: block; }
   }
   
   @media (max-width: 480px) {
@@ -275,31 +438,35 @@ function isActive(href: string): boolean {
 </style>
 
 <script>
-  // Mobile navigation toggle
+  // Mobile drawer navigation
   const navToggle = document.querySelector('.nav-toggle');
-  const navMenu = document.querySelector('.nav-menu');
-  
-  if (navToggle && navMenu) {
+  const drawer = document.querySelector('.nav-drawer');
+  const backdrop = document.querySelector('.nav-backdrop');
+  const drawerClose = document.querySelector('.drawer-close');
+
+  function setDrawer(open: boolean) {
+    if (!navToggle || !drawer || !backdrop) return;
+    navToggle.setAttribute('aria-expanded', open.toString());
+    drawer.setAttribute('aria-hidden', (!open).toString());
+    drawer.classList.toggle('is-open', open);
+    backdrop.classList.toggle('is-open', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+    if (open) (drawerClose as HTMLElement | null)?.focus();
+    else (navToggle as HTMLElement).focus();
+  }
+
+  if (navToggle && drawer && backdrop) {
     navToggle.addEventListener('click', () => {
       const isExpanded = navToggle.getAttribute('aria-expanded') === 'true';
-      navToggle.setAttribute('aria-expanded', (!isExpanded).toString());
-      navMenu.classList.toggle('is-open');
+      setDrawer(!isExpanded);
     });
-    
-    // Close menu when clicking outside
-    document.addEventListener('click', (event) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.main-nav')) {
-        navToggle.setAttribute('aria-expanded', 'false');
-        navMenu.classList.remove('is-open');
-      }
-    });
-    
-    // Close menu on escape key
+
+    drawerClose?.addEventListener('click', () => setDrawer(false));
+    backdrop.addEventListener('click', () => setDrawer(false));
+
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        navToggle.setAttribute('aria-expanded', 'false');
-        navMenu.classList.remove('is-open');
+      if (event.key === 'Escape' && drawer.classList.contains('is-open')) {
+        setDrawer(false);
       }
     });
   }

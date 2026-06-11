@@ -34,6 +34,14 @@ const sizeClasses = {
   default: '',
   large: 'hero--large'
 };
+
+// Responsive image variants via Netlify Image CDN (local images only).
+// Phones download ~480px wide files instead of the full-size original.
+const isLocalImage = backgroundImage && backgroundImage.startsWith('/') && !backgroundImage.startsWith('//');
+const cdnSrc = (w: number) => `/.netlify/images?url=${encodeURIComponent(backgroundImage)}&w=${w}&q=70`;
+const heroSrcset = isLocalImage
+  ? [480, 768, 1280, 1920].map((w) => `${cdnSrc(w)} ${w}w`).join(', ')
+  : undefined;
 ---
 <section class={`hero ${sizeClasses[size]}`}>
   <div class="hero-background">
@@ -49,11 +57,14 @@ const sizeClasses = {
         <source src={videoSrc} type="video/mp4" />
       </video>
     ) : (
-      <img 
-        src={backgroundImage} 
-        alt="" 
+      <img
+        src={backgroundImage}
+        srcset={heroSrcset}
+        sizes="100vw"
+        alt=""
         class="hero-image"
         loading="eager"
+        fetchpriority="high"
       />
     )}
   </div>
@@ -82,19 +93,19 @@ const sizeClasses = {
 <style>
   .hero {
     position: relative;
-    min-height: 500px;
+    min-height: 400px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
   }
-  
+
   .hero--large {
-    min-height: 600px;
+    min-height: 460px;
   }
-  
+
   .hero--small {
-    min-height: 300px;
+    min-height: 260px;
   }
   
   @media (min-width: 768px) {

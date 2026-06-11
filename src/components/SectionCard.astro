@@ -54,7 +54,14 @@ const icons: Record<string, string> = {
 >
   {image ? (
     <div class="section-card__photo">
-      <img src={image} alt="" loading="lazy" decoding="async" />
+      <img
+        src={image}
+        srcset={image.startsWith('/') ? `/.netlify/images?url=${encodeURIComponent(image)}&w=480&q=70 480w, /.netlify/images?url=${encodeURIComponent(image)}&w=800&q=70 800w` : undefined}
+        sizes="(max-width: 768px) 100vw, 33vw"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
       <span class={`section-card__icon-badge ${variant === 'emergency' ? 'is-emergency' : ''}`} aria-hidden="true">
         <svg viewBox="0 0 48 48" fill="none" set:html={icons[icon] || icons.about} />
       </span>

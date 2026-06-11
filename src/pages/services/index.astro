@@ -148,7 +148,14 @@ const serviceItems = allPublished
             >
               <div class="service-photo">
                 {item._img ? (
-                  <img src={item._img} alt="" loading="lazy" decoding="async" />
+                  <img
+                    src={item._img}
+                    srcset={`/.netlify/images?url=${encodeURIComponent(item._img)}&w=480&q=70 480w, /.netlify/images?url=${encodeURIComponent(item._img)}&w=800&q=70 800w`}
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                  />
                 ) : (
                   <div class="service-photo-placeholder" aria-hidden="true">🏘️</div>
                 )}

@@ -70,6 +70,12 @@ const sizeClasses: Record<string, string> = {
 };
 
 const hasImage = !!backgroundImage;
+
+// Responsive variants via Netlify Image CDN (local images only)
+const isLocalImage = hasImage && backgroundImage.startsWith('/') && !backgroundImage.startsWith('//');
+const heroSrcset = isLocalImage
+  ? [480, 768, 1280, 1920].map((w) => `/.netlify/images?url=${encodeURIComponent(backgroundImage)}&w=${w}&q=70 ${w}w`).join(', ')
+  : undefined;
 ---
 
 <section class={`section-hero ${sizeClasses[size] || ''}`} data-has-image={hasImage ? 'true' : 'false'}>
@@ -77,9 +83,12 @@ const hasImage = !!backgroundImage;
     <div class="section-hero__background">
       <img
         src={backgroundImage}
+        srcset={heroSrcset}
+        sizes="100vw"
         alt=""
         class="section-hero__image"
         loading="eager"
+        fetchpriority="high"
       />
     </div>
     <div
