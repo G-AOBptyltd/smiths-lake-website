@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Playbooks — VillageFirst Admin</title>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; color: #1f2937; }
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+
+  .wrap { max-width: 820px; margin: 0 auto; padding: 1.75rem 1rem 3rem; }
+  .intro h1 { font-size: 1.15rem; color: #143d2e; margin-bottom: 0.25rem; }
+  .intro p { font-size: 0.85rem; color: #6b7280; margin-bottom: 1.5rem; }
+
+  .pb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem; margin-bottom: 2.25rem; }
+  .pb-card {
+    background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.1rem 1.2rem;
+    text-decoration: none; display: block; color: inherit;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .pb-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+  .pb-icon { font-size: 1.5rem; }
+  .pb-name { font-size: 0.95rem; font-weight: 700; color: #143d2e; margin: 0.45rem 0 0.2rem; }
+  .pb-desc { font-size: 0.78rem; color: #6b7280; line-height: 1.5; }
+  .pb-ext { font-size: 0.7rem; color: #15795f; font-weight: 600; margin-top: 0.4rem; display: inline-block; }
+
+  .guide { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem 1.6rem; margin-bottom: 1.5rem; font-size: 0.875rem; line-height: 1.75; color: #374151; scroll-margin-top: 90px; }
+  .guide h2 { font-size: 1.02rem; color: #143d2e; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem; }
+  .guide .g-sub { font-size: 0.78rem; color: #9ca3af; margin-bottom: 1rem; }
+  .guide h3 { font-size: 0.88rem; color: #0f5c48; margin: 1.1rem 0 0.3rem; }
+  .guide ol, .guide ul { padding-left: 1.3rem; }
+  .guide li { margin-bottom: 0.3rem; }
+  .guide code { background: #f3f4f6; border-radius: 4px; padding: 0.1rem 0.4rem; font-size: 0.8rem; }
+  .guide a { color: #15795f; }
+  .tip { background: #f0fdf6; border-left: 3px solid #15a06e; padding: 0.6rem 0.9rem; border-radius: 0 8px 8px 0; font-size: 0.82rem; margin: 0.75rem 0; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · Playbooks</div>
+</div>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>Playbooks</h1>
+    <p>A guide for every admin job. Skim the one you need — they're written for volunteers, not technicians.</p>
+  </div>
+
+  <div class="pb-grid">
+    <a class="pb-card" href="/survey-admin/#playbook">
+      <div class="pb-icon">📊</div>
+      <div class="pb-name">Survey Playbook</div>
+      <div class="pb-desc">Plan, build, run and share community surveys — the complete guide.</div>
+      <span class="pb-ext">Opens in Surveys console →</span>
+    </a>
+    <a class="pb-card" href="#news">
+      <div class="pb-icon">📰</div>
+      <div class="pb-name">News Desk Playbook</div>
+      <div class="pb-desc">Write stories, share website items into the feed, and publish.</div>
+    </a>
+    <a class="pb-card" href="#publishing">
+      <div class="pb-icon">🌐</div>
+      <div class="pb-name">Publishing Playbook</div>
+      <div class="pb-desc">How the website updates, and when to press the button.</div>
+    </a>
+    <a class="pb-card" href="#access">
+      <div class="pb-icon">👥</div>
+      <div class="pb-name">Roles &amp; Access</div>
+      <div class="pb-desc">Invite a new volunteer or admin and choose what they can do.</div>
+    </a>
+  </div>
+
+  <div class="guide" id="news">
+    <h2>📰 News Desk Playbook</h2>
+    <div class="g-sub">For anyone who keeps the Village News page alive. Console: <a href="/admin/news/">Admin → News desk</a></div>
+
+    <h3>Publish a news story (the everyday job)</h3>
+    <ol>
+      <li>Open <b>Write a story</b>. Give it a headline, type your story (blank line = new paragraph), check the date.</li>
+      <li>Press <b>Save &amp; put in feed</b>.</li>
+      <li>Go to <b>Stories</b> and press <b>Publish to website</b>. The site updates in about 3 minutes.</li>
+    </ol>
+
+    <h3>Share something already on the website</h3>
+    <ol>
+      <li>Open <b>Share existing</b>. Filter by section if it helps (History, Services, Groups, Environment, Projects, Emergency).</li>
+      <li>Click the item, press <b>Add to news feed</b>, then Publish. It joins the feed with today's date and links to its existing page — nothing is retyped or duplicated.</li>
+    </ol>
+
+    <h3>Take a story down</h3>
+    <ul>
+      <li>On <b>Stories</b>, switch the story's <b>In news feed</b> toggle off, then Publish. The story page stays online; it just leaves the feed.</li>
+    </ul>
+
+    <h3>Drafts</h3>
+    <ul>
+      <li><b>Save as draft</b> keeps a story completely off the website until you're ready. Drafts show an amber chip on the Stories page.</li>
+    </ul>
+
+    <h3>Photos</h3>
+    <ul>
+      <li>Photos are added in Notion for now: open the story page and drop an image into <b>Hero Image File</b>, then Publish. Stories with photos get the big picture cards; stories without get a smart coloured panel.</li>
+    </ul>
+
+    <div class="tip">💡 The feed shows newest <b>Publish Date</b> first. Editing an old page never bumps it into the news — only the date and the "In news feed" toggle decide what appears.</div>
+  </div>
+
+  <div class="guide" id="publishing">
+    <h2>🌐 Publishing Playbook</h2>
+    <div class="g-sub">How villagefirst.org.au actually updates. Console: <a href="/admin/publish-news.html">Admin → Publish</a></div>
+
+    <h3>The one idea to understand</h3>
+    <p>The website is rebuilt from Notion content each time someone presses <b>Publish</b>. Changing things in Notion or the News Desk does <i>not</i> change the live site by itself — pressing Publish does.</p>
+
+    <h3>When to press it</h3>
+    <ul>
+      <li>After saving or toggling news stories in the News Desk.</li>
+      <li>After editing website content in Notion (services, groups, history, projects…).</li>
+    </ul>
+
+    <h3>Good to know</h3>
+    <ul>
+      <li>It's safe — nothing is ever deleted by publishing. It just refreshes the site with the latest content.</li>
+      <li>Updates take about 3 minutes to appear. There's no need to press it twice.</li>
+      <li>The Publish buttons in the News Desk and on the Publish page do the same thing.</li>
+    </ul>
+  </div>
+
+  <div class="guide" id="access">
+    <h2>👥 Roles &amp; Access Playbook</h2>
+    <div class="g-sub">Who can do what, and how to invite someone. Console: <a href="/survey-admin/">Surveys → Access</a></div>
+
+    <h3>The roles</h3>
+    <ul>
+      <li><b>Super Admin</b> — everything, every village (Greg / AOB).</li>
+      <li><b>Village Admin</b> — full control of their village: surveys, news desk, publishing, settings, access.</li>
+      <li><b>Survey Steward</b> — runs surveys <i>and</i> the News Desk for their village. The right role for most volunteers.</li>
+      <li><b>Committee Viewer</b> — read-only: can see results, can't change anything.</li>
+    </ul>
+
+    <h3>To give someone news publishing (e.g. Rob)</h3>
+    <ol>
+      <li>If they're already a Village Admin or Survey Steward — <b>they already have it</b>. Just send them the bookmark: <code>villagefirst.org.au/admin/</code></li>
+      <li>For someone new: open <a href="/survey-admin/">Surveys</a> → <b>Access</b>, enter their email, choose <b>Survey Steward</b> (or Village Admin), press <b>Send invite</b>.</li>
+      <li>They accept the emailed invite, set a password, and sign in at <code>/admin/</code>. Roles take effect on their next sign-in.</li>
+    </ol>
+
+    <div class="tip">💡 One login works across every console — Surveys, News Desk, Publish — and the village picker follows them between consoles.</div>
+  </div>
+
+</div>
+</body>
+</html>
