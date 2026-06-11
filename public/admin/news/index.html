@@ -18,7 +18,8 @@
   .topbar-sp { flex: 1; }
   .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
   .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
-  .village-pill { font-size: 11px; color: #c7eedd; border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 10px; white-space: nowrap; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; white-space: nowrap; font-family: inherit; }
+  .village-select option { color: #1f2937; }
 
   .layout { display: flex; min-height: calc(100vh - 46px); }
   .sidebar { width: 170px; background: #fff; border-right: 1px solid #e2e8f0; padding: 10px 0; flex-shrink: 0; }
@@ -108,7 +109,7 @@
 <div id="app" style="display:none;">
   <div class="topbar">
     <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · News Desk</div>
-    <span class="village-pill">Smiths Lake</span>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
     <div class="topbar-sp"></div>
     <span class="topbar-user" id="user-email"></span>
     <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
@@ -195,7 +196,7 @@
 </div>
 
 <script>
-  const VILLAGE = 'Smiths Lake';
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
   const SECTIONS = ['All', 'History & Culture', 'Services & Amenities', 'Groups & Activities', 'Environment & Sustainability', 'Project Hub', 'Emergency & Safety'];
   let currentUser = null;
   let stories = [];
@@ -222,9 +223,36 @@
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('user-email').textContent = currentUser?.email || '';
+    loadVillages();
     loadStories();
     renderFilters();
     loadPicker();
+  }
+
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const data = await r.json();
+      const villages = (data.villages || []).filter(v => v.status === 'live');
+      if (!villages.length) return;
+      sel.innerHTML = '';
+      villages.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v.name; o.textContent = v.name;
+        if (v.name === VILLAGE) o.selected = true;
+        sel.appendChild(o);
+      });
+      if (![...sel.options].some(o => o.selected)) { sel.options[0].selected = true; VILLAGE = sel.value; }
+    } catch (e) { /* keep default option */ }
+    sel.onchange = () => {
+      VILLAGE = sel.value;
+      localStorage.setItem('vf_active_village', VILLAGE);
+      selectedPick = null;
+      document.getElementById('share-btn').disabled = true;
+      loadStories();
+      loadPicker();
+    };
   }
 
   function showPanel(name) {
@@ -427,7 +455,7 @@
     const status = document.getElementById('publish-status');
     btn.disabled = true; status.textContent = 'Starting rebuild…'; status.className = 'status-msg';
     try {
-      const r = await fetch('/api/news-publish', { method: 'POST', headers: await authHeaders() });
+      const r = await fetch('/api/news-publish', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE }) });
       const data = await r.json();
       if (!r.ok || !data.ok) throw new Error(data.error || 'Could not publish');
       status.textContent = '✅ Publishing — the website updates in about 3 minutes';

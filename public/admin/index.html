@@ -16,7 +16,8 @@
   .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
   .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
   .topbar-logout:hover { color: white; border-color: rgba(255,255,255,.5); }
-  .village-pill { font-size: 11px; color: #c7eedd; border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 10px; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; font-family: inherit; }
+  .village-select option { color: #1f2937; }
 
   .wrap { max-width: 760px; margin: 0 auto; padding: 2.25rem 1rem 3rem; }
   .greeting { font-size: 1.15rem; font-weight: 700; color: #143d2e; margin-bottom: 0.3rem; }
@@ -58,7 +59,7 @@
 <div id="app" style="display:none;">
   <div class="topbar">
     <div class="topbar-brand">🏘️ VillageFirst · Admin</div>
-    <span class="village-pill" id="village-pill">Smiths Lake</span>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
     <div class="topbar-sp"></div>
     <span class="topbar-user" id="user-email"></span>
     <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
@@ -114,9 +115,31 @@
     });
   }
 
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    let active = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+    try {
+      let token = null;
+      try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+      const r = await fetch('/api/village-list', { headers: token ? { 'Authorization': 'Bearer ' + token } : {} });
+      const data = await r.json();
+      const villages = (data.villages || []).filter(function(v) { return v.status === 'live'; });
+      if (!villages.length) return;
+      sel.innerHTML = '';
+      villages.forEach(function(v) {
+        const o = document.createElement('option');
+        o.value = v.name; o.textContent = v.name;
+        if (v.name === active) o.selected = true;
+        sel.appendChild(o);
+      });
+    } catch (e) { /* keep default */ }
+    sel.onchange = function() { localStorage.setItem('vf_active_village', sel.value); };
+  }
+
   function showApp() {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
+    loadVillages();
     document.getElementById('user-email').textContent = currentUser && currentUser.email || '';
     const name = (currentUser && (currentUser.user_metadata && currentUser.user_metadata.full_name)) || '';
     document.getElementById('greeting').textContent = name ? ('G\'day ' + name.split(' ')[0]) : 'G\'day';

@@ -1,22 +1,41 @@
 /**
- * publish-news.js — POST /.netlify/functions/publish-news
+ * publish-news.js — POST /.netlify/functions/publish-news  (alias /api/news-publish)
  *
- * Triggers a production rebuild via Netlify build hook so freshly published
- * Notion news appears on the site. The hook URL lives in the
- * NEWS_BUILD_HOOK_URL env var (Netlify dashboard) — never exposed client-side.
+ * Triggers a production rebuild via the village's Netlify build hook so
+ * freshly published Notion news appears on the site.
+ *
+ * Multi-village: the hook is resolved from the VF Villages registry
+ * ("News Build Hook" property). Smiths Lake falls back to the
+ * NEWS_BUILD_HOOK_URL env var, so the original setup keeps working.
+ *
+ * Body (optional): { village: "Smiths Lake" }
  */
+
+import { getVillageRecord } from './_villages.js';
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'POST only' }) };
   }
 
-  const hookUrl = process.env.NEWS_BUILD_HOOK_URL;
+  let village = 'Smiths Lake';
+  try {
+    const body = JSON.parse(event.body || '{}');
+    if (body.village) village = body.village;
+  } catch (_) { /* empty body is fine */ }
+
+  let hookUrl = null;
+  try {
+    const rec = await getVillageRecord(village);
+    hookUrl = rec.newsBuildHook;
+  } catch (_) { /* fall through to env */ }
+  if (!hookUrl && village === 'Smiths Lake') hookUrl = process.env.NEWS_BUILD_HOOK_URL;
+
   if (!hookUrl) {
     return {
-      statusCode: 500,
+      statusCode: 400,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Build hook not configured. Set NEWS_BUILD_HOOK_URL in Netlify env vars.' }),
+      body: JSON.stringify({ error: `Publishing isn't set up for ${village} yet (no build hook in the Villages registry).` }),
     };
   }
 

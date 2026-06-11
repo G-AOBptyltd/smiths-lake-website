@@ -11,9 +11,10 @@
  */
 
 import { requireRole } from './_auth.js';
+import { getVillageRecord } from './_villages.js';
 
 const NOTION_VERSION = '2022-06-28';
-const CONTENT_DB_ID = process.env.NOTION_CONTENT_DB_ID || '2cad508adfc1809d8438c8f3a5dd8d42';
+
 
 function corsHeaders() {
   return { 'Content-Type': 'application/json' };
@@ -46,11 +47,17 @@ export const handler = async (event, context) => {
     return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };
   }
 
+  const rec = await getVillageRecord(village);
+  if (!rec.contentDbId) {
+    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: "Website tools aren't enabled for " + village + ' yet' }) };
+  }
+  const contentDbId = rec.contentDbId;
+
   try {
     const results = [];
     let cursor = undefined;
     do {
-      const res = await fetch(`https://api.notion.com/v1/databases/${CONTENT_DB_ID}/query`, {
+      const res = await fetch(`https://api.notion.com/v1/databases/${contentDbId}/query`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${process.env.NOTION_API_KEY}`,

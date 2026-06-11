@@ -18,3 +18,45 @@ export async function getVillageStatus(village) {
     return p ? (p.properties['Status']?.select?.name || 'live') : 'live';
   } catch (_) { return 'live'; }
 }
+
+/**
+ * getVillageRecord(village) — full registry row for a village.
+ * Returns { status, contentDbId, newsBuildHook } with safe fallbacks so
+ * Smiths Lake keeps working even if the registry is unreadable.
+ */
+export async function getVillageRecord(village) {
+  const fallback = {
+    status: 'live',
+    contentDbId: process.env.NOTION_CONTENT_DB_ID || '2cad508adfc1809d8438c8f3a5dd8d42',
+    newsBuildHook: process.env.NEWS_BUILD_HOOK_URL || null,
+  };
+  if (!village || village === 'Smiths Lake') {
+    // Try the registry but never fail the default village
+    try {
+      const rec = await queryVillage(village || 'Smiths Lake');
+      if (rec) return { ...fallback, ...rec, contentDbId: rec.contentDbId || fallback.contentDbId, newsBuildHook: rec.newsBuildHook || fallback.newsBuildHook };
+    } catch (_) {}
+    return fallback;
+  }
+  try {
+    const rec = await queryVillage(village);
+    if (rec) return { status: rec.status || 'live', contentDbId: rec.contentDbId || null, newsBuildHook: rec.newsBuildHook || null };
+  } catch (_) {}
+  return { status: 'live', contentDbId: null, newsBuildHook: null };
+}
+
+async function queryVillage(village) {
+  const res = await fetch(`https://api.notion.com/v1/databases/${VILLAGES_DB_ID}/query`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${process.env.NOTION_API_KEY}`, 'Notion-Version': NOTION_VERSION, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filter: { property: 'Village Name', title: { equals: village } }, page_size: 1 }),
+  });
+  if (!res.ok) return null;
+  const p = ((await res.json()).results || [])[0];
+  if (!p) return null;
+  return {
+    status: p.properties['Status']?.select?.name || 'live',
+    contentDbId: (p.properties['Content DB ID']?.rich_text || []).map(t => t.plain_text).join('').replace(/[^a-f0-9]/gi, '') || null,
+    newsBuildHook: p.properties['News Build Hook']?.url || null,
+  };
+}
