@@ -10,9 +10,11 @@
 import { Client } from '@notionhq/client';
 import fs from 'fs';
 import path from 'path';
+import { resilientFetch } from './notion-fetch.js';
 
 const notion = new Client({
   auth: process.env.NOTION_API_KEY,
+  fetch: resilientFetch,
 });
 
 // Section Settings database ID

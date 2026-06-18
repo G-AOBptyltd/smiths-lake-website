@@ -2,6 +2,13 @@
   command = "npm run build"
   publish = "dist"
 
+# Pin the Node version so Netlify can't silently move us to a newer build image.
+# (An unpinned image upgrade to Node 22 is what first exposed the node-fetch v2
+# gzip "Premature close" bug in @notionhq/client. We now use native fetch, but
+# pinning keeps builds reproducible.)
+[build.environment]
+  NODE_VERSION = "22"
+
 # Netlify Functions — Survey Platform
 [functions]
   directory = "netlify/functions"

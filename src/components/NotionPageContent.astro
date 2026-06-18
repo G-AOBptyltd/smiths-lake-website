@@ -20,6 +20,7 @@
  */
 
 import { Client } from '@notionhq/client';
+import { resilientFetch } from '../lib/notion-fetch.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -40,7 +41,7 @@ interface Props {
 
 const { pageId, fallbackHtml = '' } = Astro.props;
 
-const notion = new Client({ auth: import.meta.env.NOTION_API_KEY || process.env.NOTION_API_KEY });
+const notion = new Client({ auth: import.meta.env.NOTION_API_KEY || process.env.NOTION_API_KEY, fetch: resilientFetch });
 
 /**
  * Convert Notion rich text array to HTML string

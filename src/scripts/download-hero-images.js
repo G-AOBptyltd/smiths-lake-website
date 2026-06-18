@@ -16,12 +16,14 @@ import { Client } from '@notionhq/client';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { resilientFetch } from '../lib/notion-fetch.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const notion = new Client({
   auth: process.env.NOTION_API_KEY,
+  fetch: resilientFetch,
 });
 
 const MAIN_DATABASE_ID = process.env.NOTION_DATABASE_ID;

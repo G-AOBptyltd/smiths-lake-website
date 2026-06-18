@@ -1,7 +1,10 @@
 import { Client } from "@notionhq/client";
+// @ts-ignore — plain JS helper, no type declarations needed
+import { resilientFetch } from "./notion-fetch.js";
 
 const notion = new Client({
   auth: import.meta.env.NOTION_API_KEY,
+  fetch: resilientFetch,
 });
 
 const DATABASE_ID = import.meta.env.NOTION_DATABASE_ID;
@@ -88,18 +91,30 @@ export async function getDocuments(
   displayLocation: string,
   audience: "Public" | "Members" = "Public"
 ) {
-  const response = await notion.databases.query({
-    database_id: DATABASE_ID,
-    filter: {
-      and: [
-        { property: "Record Type", select: { equals: "Document" } },
-        { property: "Show on Website", select: { equals: "TRUE" } },
-        { property: "Display Locations", multi_select: { contains: displayLocation } },
-        { property: "Document Audience", select: { equals: audience } },
-      ],
-    },
-    sorts: [{ property: "Document Sort Order", direction: "ascending" }],
-  });
+  let response;
+  try {
+    response = await notion.databases.query({
+      database_id: DATABASE_ID,
+      filter: {
+        and: [
+          { property: "Record Type", select: { equals: "Document" } },
+          { property: "Show on Website", select: { equals: "TRUE" } },
+          { property: "Display Locations", multi_select: { contains: displayLocation } },
+          { property: "Document Audience", select: { equals: audience } },
+        ],
+      },
+      sorts: [{ property: "Document Sort Order", direction: "ascending" }],
+    });
+  } catch (err) {
+    // Fail-open: a Notion outage or transient fetch error must never fail the
+    // production build. Page/component call sites that don't wrap this are
+    // protected here — the document library just renders empty this build.
+    console.warn(
+      `Notion documents fetch failed for "${displayLocation}" (${audience}) — returning empty list:`,
+      (err as any)?.message ?? err
+    );
+    return [];
+  }
 
   return response.results.map((page: any) => ({
     id: page.id,
