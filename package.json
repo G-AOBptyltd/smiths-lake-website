@@ -14,7 +14,7 @@
     "@astrojs/sitemap": "^3.0.0",
     "@netlify/blobs": "^10.7.9",
     "@notionhq/client": "^2.2.15",
-    "astro": "^4.16.19",
+    "astro": "^7.0.0",
     "googleapis": "^144.0.0",
     "typescript": "^5.6.0"
   },
