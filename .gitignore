@@ -1,0 +1,17 @@
+# Dependencies / build output
+node_modules/
+dist/
+.astro/
+
+# Netlify local
+.netlify/
+
+# OS noise
+.DS_Store
+
+# Local deploy archives
+deploy-*.zip
+
+# RDTI logs — LOCAL ONLY. Never commit: contains ABN, cost rates, R&D financials.
+# RDTI evidence lives locally + Notion + the Activity Register xlsx, not in this repo.
+.rdti/

@@ -77,6 +77,13 @@ export const handler = async (event, context) => {
     'Publish Date': { date: { start: publishDate } },
   };
 
+  // Stable, non-expiring image URL from the Blobs uploader (news-image.js).
+  // Only written when provided, so we never clobber an existing photo with a blank.
+  const imageUrl = (body.imageUrl || '').trim();
+  if (imageUrl) {
+    properties['Image URL'] = { url: imageUrl };
+  }
+
   try {
     let res;
     if (body.pageId) {

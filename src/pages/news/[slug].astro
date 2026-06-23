@@ -55,7 +55,9 @@ try {
     cardImageManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
   }
 } catch (e) { /* manifest not yet generated */ }
-const articleImage = cardImageManifest[item.slug] || null;
+// Prefer the stable Blobs image URL (News Desk uploader); fall back to the
+// build-time Hero Image File manifest for legacy stories.
+const articleImage = (item as any).imageUrl || cardImageManifest[item.slug] || null;
 
 // Estimate read time from description length
 const wordCount = (item.description || '').split(/\s+/).filter(Boolean).length;

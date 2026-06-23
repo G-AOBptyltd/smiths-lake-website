@@ -60,7 +60,9 @@ const newsItems = allPublished
   .sort((a: any, b: any) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
   .map((item: any) => {
     const slug = item.slug || generateSlug(item.title);
-    return { ...item, _url: buildItemUrl(item), _img: cardImageManifest[slug] || null };
+    // Prefer the stable Blobs image URL (News Desk uploader); fall back to the
+    // build-time Hero Image File manifest for legacy stories.
+    return { ...item, _url: buildItemUrl(item), _img: item.imageUrl || cardImageManifest[slug] || null };
   });
 
 const leadStory   = newsItems[0] || null;

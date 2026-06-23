@@ -197,6 +197,9 @@ function parseNotionPage(page) {
     // News feed control (added Jun 2026 — deliberate publishing, replaces last-edited-time proxy)
     publishDate: parseProperty(props['Publish Date']),
     showInNewsFeed: parseProperty(props['Show in News Feed']) || false,
+    // Stable image URL from the News Desk Blobs uploader (news-image.js).
+    // Preferred over the build-time Hero Image File manifest; never expires.
+    imageUrl: parseProperty(props['Image URL']),
 
     // Timestamps (custom Notion properties, may be null if not in database)
     createdTime: parseProperty(props['Created Time']),

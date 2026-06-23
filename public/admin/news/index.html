@@ -151,8 +151,13 @@
           <label for="f-date">Date it appears <span class="hint">(stories show newest first)</span></label>
           <input type="date" id="f-date" style="max-width:200px;" />
 
-          <label>Photo</label>
-          <div class="photo-note">📷 Photos are added in Notion for now — open the story in Notion and drop an image into <b>Hero Image File</b>. Stories without a photo get a smart coloured panel instead.</div>
+          <label for="f-photo">Photo <span class="hint">(optional — JPG or PNG)</span></label>
+          <input type="file" id="f-photo" accept="image/jpeg,image/png,image/webp" onchange="onPhotoPick(event)" />
+          <div class="photo-note" id="photo-note">📷 Add a photo and it appears as the story's picture card. No photo? The story gets a smart coloured panel instead. Large photos are automatically shrunk before upload.</div>
+          <div id="photo-preview-wrap" style="display:none; margin-top:8px;">
+            <img id="photo-preview" alt="Selected photo preview" style="max-width:220px; max-height:150px; border-radius:8px; border:1px solid #d1d5db;" />
+            <button type="button" class="btn btn-ghost" style="margin-left:8px; vertical-align:top;" onclick="clearPhoto()">Remove photo</button>
+          </div>
 
           <div class="form-actions">
             <button class="btn btn-green" onclick="saveStory(true)">Save &amp; put in feed</button>
@@ -204,6 +209,7 @@
   let pickFilter = 'All';
   let selectedPick = null;
   let editingId = null;
+  let pendingPhoto = null; // { dataBase64, contentType, filename } when a new photo is picked
 
   // ── Auth ───────────────────────────────────────────────────────
   netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
@@ -330,6 +336,7 @@
     document.getElementById('f-body').value = '';
     document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
     document.getElementById('save-status').textContent = '';
+    clearPhoto();
     showPanel('write');
   }
 
@@ -341,7 +348,59 @@
     document.getElementById('f-body').value = s.description || '';
     document.getElementById('f-date').value = s.publishDate || new Date().toISOString().slice(0, 10);
     document.getElementById('save-status').textContent = '';
+    clearPhoto();
+    // Show the current photo (if any) so the editor knows one is already set.
+    if (s.imageUrl) {
+      const prev = document.getElementById('photo-preview');
+      prev.src = s.imageUrl;
+      document.getElementById('photo-preview-wrap').style.display = 'block';
+      document.getElementById('photo-note').textContent = 'Current photo shown. Choose a new file to replace it.';
+    }
     showPanel('write');
+  }
+
+  // ── Photo: pick, downscale client-side, preview ────────────────
+  function clearPhoto() {
+    pendingPhoto = null;
+    const input = document.getElementById('f-photo');
+    if (input) input.value = '';
+    document.getElementById('photo-preview-wrap').style.display = 'none';
+    document.getElementById('photo-preview').src = '';
+    document.getElementById('photo-note').textContent = '📷 Add a photo and it appears as the story’s picture card. No photo? The story gets a smart coloured panel instead. Large photos are automatically shrunk before upload.';
+  }
+
+  function onPhotoPick(ev) {
+    const file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+    const note = document.getElementById('photo-note');
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1600;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          const scale = Math.min(MAX / width, MAX / height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        pendingPhoto = {
+          dataBase64: dataUrl.split(',')[1],
+          contentType: 'image/jpeg',
+          filename: (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg',
+        };
+        const prev = document.getElementById('photo-preview');
+        prev.src = dataUrl;
+        document.getElementById('photo-preview-wrap').style.display = 'block';
+        note.textContent = 'Photo ready — it uploads when you save.';
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
   }
 
   async function saveStory(live) {
@@ -350,6 +409,7 @@
     if (!title) { status.textContent = 'A headline is needed first'; status.className = 'status-msg err'; return; }
     status.textContent = 'Saving…'; status.className = 'status-msg';
     try {
+      // 1) Save the text fields (creates the page if new, so we get a pageId).
       const r = await fetch('/api/news-save', {
         method: 'POST', headers: await authHeaders(),
         body: JSON.stringify({
@@ -363,9 +423,42 @@
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'Could not save');
+      editingId = data.pageId;
+
+      // 2) If a new photo was picked, upload it to Blobs, then write its URL back.
+      if (pendingPhoto) {
+        status.textContent = 'Uploading photo…';
+        const up = await fetch('/api/news-image', {
+          method: 'POST', headers: await authHeaders(),
+          body: JSON.stringify({
+            village: VILLAGE,
+            storyKey: editingId,
+            dataBase64: pendingPhoto.dataBase64,
+            contentType: pendingPhoto.contentType,
+            filename: pendingPhoto.filename,
+          }),
+        });
+        const upData = await up.json();
+        if (!up.ok) throw new Error(upData.error || 'Photo upload failed');
+        const r2 = await fetch('/api/news-save', {
+          method: 'POST', headers: await authHeaders(),
+          body: JSON.stringify({
+            village: VILLAGE,
+            pageId: editingId,
+            title,
+            description: document.getElementById('f-body').value,
+            publishDate: document.getElementById('f-date').value,
+            live,
+            imageUrl: upData.url,
+          }),
+        });
+        const d2 = await r2.json();
+        if (!r2.ok) throw new Error(d2.error || 'Could not attach photo');
+        pendingPhoto = null;
+      }
+
       status.textContent = live ? '✅ Saved — press Publish on the Stories page to put it live' : '✅ Draft saved';
       status.className = 'status-msg ok';
-      editingId = data.pageId;
       loadStories();
     } catch (e) {
       status.textContent = '⚠️ ' + e.message; status.className = 'status-msg err';

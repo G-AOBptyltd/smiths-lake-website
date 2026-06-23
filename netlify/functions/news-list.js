@@ -31,7 +31,8 @@ function parseItem(page) {
     showOnWebsite: p['Show on Website']?.select?.name === 'TRUE',
     showInNewsFeed: !!p['Show in News Feed']?.checkbox,
     publishDate: p['Publish Date']?.date?.start || null,
-    hasPhoto: (p['Hero Image File']?.files || []).length > 0,
+    imageUrl: p['Image URL']?.url || null,
+    hasPhoto: (p['Hero Image File']?.files || []).length > 0 || !!p['Image URL']?.url,
     lastEdited: page.last_edited_time,
   };
 }
