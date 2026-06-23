@@ -33,6 +33,8 @@ function parseItem(page) {
     publishDate: p['Publish Date']?.date?.start || null,
     imageUrl: p['Image URL']?.url || null,
     hasPhoto: (p['Hero Image File']?.files || []).length > 0 || !!p['Image URL']?.url,
+    archived: p['Status on Web']?.select?.name === 'UnPublished',
+    deleteRequest: (p['Delete Request']?.rich_text || []).map(t => t.plain_text).join('') || '',
     lastEdited: page.last_edited_time,
   };
 }

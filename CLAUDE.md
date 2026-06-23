@@ -134,6 +134,14 @@ Editors upload story photos straight from `/admin/news/` — no Notion, no expir
 - **SETUP REQUIRED:** (1) `npm install @netlify/blobs`; (2) add `Image URL` (URL type) property to the content DB in Notion; (3) Netlify Blobs needs no config on deploy.
 - **v1 limitations:** "Remove photo" in the form only clears the *pending* selection — it does not blank an already-saved `Image URL` (no Notion removal yet). Old blobs from replaced photos are orphaned (harmless; add a cleanup later). MAX 8 MB server guard.
 
+## News Desk — Archive & Delete (added Session 16, Jun 23)
+Role-based story removal on the `/admin/news/` Stories dashboard. Function `netlify/functions/news-lifecycle.js` (redirect `/api/news-lifecycle`), POST `{ village, pageId, action }`.
+
+- **Archive** (admin/steward+): Status on Web → UnPublished, Show on Website → FALSE, Show in News Feed → off. Story leaves the site + feed on next Publish but stays in Notion. **Restore** flips it back to Published/TRUE. (Render `getStaticPaths` uses `requireShowOnWebsite: true`, so UnPublished items lose both feed entry and article page.)
+- **Request delete** (admin/steward): writes "Requested by <email> on <date>" into the new **`Delete Request`** text property. The super-admin sees a "🗑 delete requested" badge on that story (in-app notification — email is a later enhancement).
+- **Delete** (SUPER-ADMIN ONLY — server-enforced via `getRoles(user).includes('super-admin')`, UI also hides the button): archives the Notion page (`PATCH {archived:true}` → Notion trash, recoverable). Normal admins never see Delete; they use Request delete.
+- Frontend role gate: `isSuper = currentUser.app_metadata.roles.includes('super-admin')` (UX only; the server is the real gate). **SETUP:** assign the `super-admin` role (Access tab) to whoever should delete — until then Delete is hidden and only Request delete is available. Notion: added `Delete Request` (text) property to the content DB.
+
 ## News & Services Architecture (added Session 13)
 - **`/services/`** — combined "News & Local Services" page. Fetches all published items via `fetchNotionContent()`, sorts News-section items first then by `notionLastEditedTime` descending. BBC 3-col layout: lead text + hero colour block + digest list, then 3 thumbnail cards below. Local services directory below the feed.
 - **`/news/[slug]/`** — clean article template for Section = News items. Gradient hero + large emoji + headline, meta bar (date/category/read time), body paragraphs split on `\n`, documents block, share footer. No sidebar.

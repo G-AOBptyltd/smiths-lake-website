@@ -44,6 +44,11 @@
   .story-foot { display: flex; justify-content: space-between; align-items: center; }
   .link-btn { background: none; border: none; color: #1d6fb8; font-size: 11.5px; cursor: pointer; padding: 0; }
   .link-btn:hover { text-decoration: underline; }
+  .link-btn.danger { color: #b91c1c; }
+  .story-actions { display: flex; gap: 14px; align-items: center; margin-top: 9px; padding-top: 9px; border-top: 1px solid #f1f5f9; }
+  .req-tag { font-size: 11px; color: #92400e; background: #fde9c0; border-radius: 5px; padding: 1px 7px; }
+  .del-req { font-size: 11.5px; color: #92400e; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 7px; padding: 6px 9px; margin-bottom: 9px; }
+  .story-card.is-archived { opacity: 0.72; background: #f8fafc; }
 
   .switch { position: relative; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: #6b7280; cursor: pointer; }
   .switch input { display: none; }
@@ -204,6 +209,7 @@
   let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
   const SECTIONS = ['All', 'History & Culture', 'Services & Amenities', 'Groups & Activities', 'Environment & Sustainability', 'Project Hub', 'Emergency & Safety'];
   let currentUser = null;
+  let isSuper = false; // Super Village Admin — only role that may delete
   let stories = [];
   let pickItems = [];
   let pickFilter = 'All';
@@ -229,6 +235,7 @@
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('user-email').textContent = currentUser?.email || '';
+    isSuper = ((currentUser?.app_metadata?.roles) || []).includes('super-admin');
     loadVillages();
     loadStories();
     renderFilters();
@@ -291,21 +298,50 @@
     el.innerHTML = '';
     stories.forEach((s, i) => {
       const isStory = s.section === 'News';
-      const chip = s.showInNewsFeed
-        ? (isStory ? '<span class="chip chip-live">Live</span>' : '<span class="chip chip-shared">Shared</span>')
-        : '<span class="chip chip-draft">' + (isStory ? 'Draft' : 'Off') + '</span>';
+      const chip = s.archived
+        ? '<span class="chip chip-draft">Archived</span>'
+        : (s.showInNewsFeed
+            ? (isStory ? '<span class="chip chip-live">Live</span>' : '<span class="chip chip-shared">Shared</span>')
+            : '<span class="chip chip-draft">' + (isStory ? 'Draft' : 'Off') + '</span>');
+
+      // Lifecycle controls (archive / restore / request-delete / delete) — role-aware.
+      let lifecycle = '';
+      if (s.archived) {
+        lifecycle += '<button class="link-btn" onclick="lifeAction(' + i + ', \'restore\')">Restore</button>';
+      } else {
+        lifecycle += '<button class="link-btn" onclick="lifeAction(' + i + ', \'archive\')">Archive</button>';
+      }
+      if (isSuper) {
+        lifecycle += '<button class="link-btn danger" onclick="deleteStory(' + i + ')">Delete</button>';
+      } else if (s.deleteRequest) {
+        lifecycle += '<span class="req-tag">delete requested ✓</span>';
+      } else {
+        lifecycle += '<button class="link-btn" onclick="lifeAction(' + i + ', \'request-delete\')">Request delete</button>';
+      }
+
+      const reqBanner = (isSuper && s.deleteRequest)
+        ? '<div class="del-req">🗑 ' + escapeHtml(s.deleteRequest) +
+          ' &nbsp;<button class="link-btn" onclick="lifeAction(' + i + ', \'cancel-request\')">dismiss</button></div>'
+        : '';
+
       const card = document.createElement('div');
-      card.className = 'story-card';
+      card.className = 'story-card' + (s.archived ? ' is-archived' : '');
       card.innerHTML =
         '<div class="story-top"><span class="story-title"></span>' + chip + '</div>' +
         '<div class="story-meta">' + (s.section || '—') + ' · ' + fmtDate(s.publishDate) + ' · ' + (s.hasPhoto ? 'photo ✓' : 'no photo') + '</div>' +
+        reqBanner +
         '<div class="story-foot">' +
           (isStory ? '<button class="link-btn" onclick="editStory(' + i + ')">Edit →</button>' : '<span></span>') +
-          '<label class="switch">In news feed <input type="checkbox" ' + (s.showInNewsFeed ? 'checked' : '') + ' onchange="toggleStory(' + i + ', this)" /><span class="knob"></span></label>' +
-        '</div>';
+          (s.archived ? '<span></span>' : '<label class="switch">In news feed <input type="checkbox" ' + (s.showInNewsFeed ? 'checked' : '') + ' onchange="toggleStory(' + i + ', this)" /><span class="knob"></span></label>') +
+        '</div>' +
+        '<div class="story-actions">' + lifecycle + '</div>';
       card.querySelector('.story-title').textContent = s.title;
       el.appendChild(card);
     });
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
 
   async function toggleStory(i, input) {
@@ -326,6 +362,46 @@
       input.checked = !enable;
       alert('⚠️ ' + e.message);
     } finally { input.disabled = false; }
+  }
+
+  // ── Lifecycle: archive / restore / request-delete / cancel ─────
+  const LIFE_CONFIRM = {
+    archive: t => `Take "${t}" down? It leaves the website and feed but stays in Notion — you can Restore it anytime.`,
+    restore: null,
+    'request-delete': t => `Ask the Super Village Admin to delete "${t}"? They'll see the request in this list.`,
+    'cancel-request': null,
+  };
+  async function lifeAction(i, action) {
+    const s = stories[i];
+    const msg = LIFE_CONFIRM[action];
+    if (msg && !confirm(msg(s.title))) return;
+    try {
+      const r = await fetch('/api/news-lifecycle', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, pageId: s.id, action }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Action failed');
+      if (action === 'archive' || action === 'restore') {
+        alert('Done — press Publish on the Stories page to update the website.');
+      }
+      loadStories();
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
+
+  async function deleteStory(i) {
+    const s = stories[i];
+    if (!confirm(`Permanently remove "${s.title}"?\n\nIt will be archived in Notion (recoverable from Notion's trash) and removed from the website on the next Publish.`)) return;
+    try {
+      const r = await fetch('/api/news-lifecycle', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, pageId: s.id, action: 'delete' }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Delete failed');
+      alert('Deleted — press Publish on the Stories page to update the website.');
+      loadStories();
+    } catch (e) { alert('⚠️ ' + e.message); }
   }
 
   // ── Write / edit ───────────────────────────────────────────────
