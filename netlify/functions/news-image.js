@@ -35,14 +35,33 @@ function extFor(contentType) {
   return { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }[contentType] || 'jpg';
 }
 
-export const handler = async (event, context) => {
-  const store = getStore(STORE_NAME);
+// getStore auto-configures inside the Netlify Functions runtime, but if the
+// Blobs context isn't injected it throws — fall back to explicit siteID so the
+// error is never a silent platform 500.
+const SITE_ID_FALLBACK = '55e6fbf8-d466-4209-aebd-e1cd1c27fdbb'; // public site id (not a secret)
 
+function openStore() {
+  const siteID = process.env.SITE_ID || process.env.NETLIFY_SITE_ID || SITE_ID_FALLBACK;
+  const token = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_API_TOKEN;
+  try {
+    // Explicit credentials when a token is configured (Netlify doesn't auto-inject
+    // the Blobs context for these functions); otherwise try auto-config.
+    if (token) return getStore({ name: STORE_NAME, siteID, token });
+    return getStore(STORE_NAME);
+  } catch (e) {
+    const err = new Error(`Blobs unavailable: ${e.name}: ${e.message}`);
+    err._blobs = true;
+    throw err;
+  }
+}
+
+export const handler = async (event, context) => {
   // ---------- GET: serve a stored image (public) ----------
   if (event.httpMethod === 'GET') {
     const key = event.queryStringParameters?.key;
     if (!key) return json(400, { error: 'Missing key' });
     try {
+      const store = openStore();
       const res = await store.getWithMetadata(key, { type: 'arrayBuffer' });
       if (!res || !res.data) return json(404, { error: 'Not found' });
       const contentType = (res.metadata && res.metadata.contentType) || 'image/jpeg';
@@ -75,17 +94,23 @@ export const handler = async (event, context) => {
 
     const buffer = Buffer.from(body.dataBase64, 'base64');
     if (!buffer.length) return json(400, { error: 'Empty image' });
-    if (buffer.length > MAX_BYTES) return json(413, { error: 'Image too large (max 8 MB) — it should be downscaled before upload' });
+    if (buffer.length > MAX_BYTES) return json(413, { error: 'Image too large (max 8 MB)' });
+
+    // Blobs accepts string | ArrayBuffer | Blob — convert the Node Buffer to a
+    // clean ArrayBuffer slice (passing a Buffer directly can be rejected).
+    const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 
     const villageSlug = slugify(village) || 'village';
     const storyKey = slugify(body.storyKey) || 'story';
     const key = `${villageSlug}/${storyKey}/${Date.now()}.${extFor(contentType)}`;
 
     try {
-      await store.set(key, buffer, { metadata: { contentType, filename: body.filename || '', uploadedAt: new Date().toISOString() } });
+      const store = openStore();
+      await store.set(key, arrayBuffer, { metadata: { contentType, filename: body.filename || '', uploadedAt: new Date().toISOString() } });
       return json(200, { ok: true, key, url: `/api/news-image?key=${encodeURIComponent(key)}` });
     } catch (err) {
-      return json(502, { error: err.message });
+      // Surface the real cause (Blobs config, auth, etc.) instead of a silent 500.
+      return json(502, { error: err.message, type: err.name });
     }
   }
 
