@@ -124,13 +124,23 @@ export const handler = async (event) => {
     try {
       res = await fetch(SOURCE_URL, {
         headers: {
-          // Browser-style UA: the MHL API answers browsers but returns an empty
-          // body to bare server requests, so identify as a normal client.
+          // Full browser-style header set. The MHL API 403s bare server
+          // requests; this defeats header-based bot checks (it will NOT defeat
+          // IP- or TLS-fingerprint blocking — that needs MHL to allowlist us).
           'User-Agent':
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
             '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
           Accept: 'application/json, text/plain, */*',
           'Accept-Language': 'en-AU,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          Referer: 'https://mhl.nsw.gov.au/',
+          Origin: 'https://mhl.nsw.gov.au',
+          'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+          'sec-ch-ua-mobile': '?0',
+          'sec-ch-ua-platform': '"macOS"',
+          'Sec-Fetch-Dest': 'empty',
+          'Sec-Fetch-Mode': 'cors',
+          'Sec-Fetch-Site': 'cross-site',
         },
         redirect: 'follow',
         signal: controller.signal,
