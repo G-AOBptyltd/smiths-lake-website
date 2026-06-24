@@ -58,6 +58,30 @@ const STATUS_LABELS = {
   open: 'Open',
 };
 
+// Request headers, env-configurable so MHL's chosen access method can be wired
+// in via Netlify env vars with NO code change / redeploy-from-edit:
+//   MHL_USER_AGENT      — a distinctive UA string MHL agrees to allowlist
+//   MHL_API_KEY         — token/key value, if MHL issues one
+//   MHL_API_KEY_HEADER  — header name for the key (default: Authorization Bearer)
+function buildRequestHeaders() {
+  const headers = {
+    'User-Agent':
+      process.env.MHL_USER_AGENT ||
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
+        '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    Accept: 'application/json, text/plain, */*',
+    'Accept-Language': 'en-AU,en;q=0.9',
+  };
+  if (process.env.MHL_API_KEY) {
+    if (process.env.MHL_API_KEY_HEADER) {
+      headers[process.env.MHL_API_KEY_HEADER] = process.env.MHL_API_KEY;
+    } else {
+      headers.Authorization = `Bearer ${process.env.MHL_API_KEY}`;
+    }
+  }
+  return headers;
+}
+
 function round2(n) {
   return Math.round(n * 100) / 100;
 }
@@ -123,25 +147,7 @@ export const handler = async (event) => {
     let res;
     try {
       res = await fetch(SOURCE_URL, {
-        headers: {
-          // Full browser-style header set. The MHL API 403s bare server
-          // requests; this defeats header-based bot checks (it will NOT defeat
-          // IP- or TLS-fingerprint blocking — that needs MHL to allowlist us).
-          'User-Agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
-            '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          Accept: 'application/json, text/plain, */*',
-          'Accept-Language': 'en-AU,en;q=0.9',
-          'Accept-Encoding': 'gzip, deflate, br',
-          Referer: 'https://mhl.nsw.gov.au/',
-          Origin: 'https://mhl.nsw.gov.au',
-          'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-          'sec-ch-ua-mobile': '?0',
-          'sec-ch-ua-platform': '"macOS"',
-          'Sec-Fetch-Dest': 'empty',
-          'Sec-Fetch-Mode': 'cors',
-          'Sec-Fetch-Site': 'cross-site',
-        },
+        headers: buildRequestHeaders(),
         redirect: 'follow',
         signal: controller.signal,
       });
