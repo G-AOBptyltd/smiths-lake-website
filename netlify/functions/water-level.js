@@ -124,9 +124,15 @@ export const handler = async (event) => {
     try {
       res = await fetch(SOURCE_URL, {
         headers: {
-          'User-Agent': 'villagefirst.org.au water-level widget (PPCA community site)',
-          Accept: 'application/json',
+          // Browser-style UA: the MHL API answers browsers but returns an empty
+          // body to bare server requests, so identify as a normal client.
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
+            '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          Accept: 'application/json, text/plain, */*',
+          'Accept-Language': 'en-AU,en;q=0.9',
         },
+        redirect: 'follow',
         signal: controller.signal,
       });
     } finally {
@@ -135,7 +141,14 @@ export const handler = async (event) => {
 
     if (!res.ok) return fallback(`Upstream returned ${res.status}`);
 
-    const data = await res.json();
+    const text = await res.text();
+    if (!text || !text.trim()) return fallback('Upstream returned an empty response');
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      return fallback('Upstream returned a non-JSON response');
+    }
     const entries = data && typeof data === 'object' ? Object.values(data) : [];
 
     // Match on unit_type — never on the sensor-id keys, which are not stable.
@@ -157,6 +170,9 @@ export const handler = async (event) => {
     const open = isLakeOpen(event);
     const status = statusFor(level, open);
     const margin = round2(TRIGGER - level);
+    // Plain-language gauge: how far the level has risen toward the opening
+    // trigger (100% = the lake opens). Clamped 0–100 for display safety.
+    const percent = Math.max(0, Math.min(100, Math.round((level / TRIGGER) * 100)));
     const marginText =
       margin > 0
         ? `${margin.toFixed(2)} m below trigger`
@@ -172,6 +188,8 @@ export const handler = async (event) => {
       trigger: TRIGGER,
       margin,
       marginText,
+      percent,
+      percentText: `${percent}% to opening`,
       status,
       statusLabel: STATUS_LABELS[status],
       rain: rainEntry ? normaliseRain(rainEntry.value) : null,

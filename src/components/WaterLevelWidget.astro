@@ -36,6 +36,9 @@ const chartUrl = 'https://mhl.nsw.gov.au/Site-209465';
       <span>0 m</span>
       <span class="wl-trigger-label">Trigger <span data-wl-trigger>2.1</span> m</span>
     </div>
+    <p class="wl-bar-caption">
+      <strong data-wl-percent>—</strong>% of the way to the <span data-wl-trigger>2.1</span> m opening trigger
+    </p>
 
     <div class="wl-stats">
       <div class="wl-stat">
@@ -175,9 +178,15 @@ const chartUrl = 'https://mhl.nsw.gov.au/Site-209465';
     justify-content: space-between;
     font-size: var(--text-xs);
     color: var(--color-gray-500);
-    margin-bottom: var(--space-5);
+    margin-bottom: var(--space-2);
   }
   .wl-trigger-label { color: var(--color-error); }
+  .wl-bar-caption {
+    font-size: var(--text-xs);
+    color: var(--color-gray-600);
+    margin: 0 0 var(--space-5);
+  }
+  .wl-bar-caption strong { color: var(--color-navy); font-weight: 700; }
 
   .wl-stats {
     display: grid;
@@ -270,6 +279,7 @@ const chartUrl = 'https://mhl.nsw.gov.au/Site-209465';
     set('[data-wl-status]', d.statusLabel || '');
     set('[data-wl-margin]', d.marginText || '');
     set('[data-wl-trigger]', String(d.trigger));
+    set('[data-wl-percent]', d.percent != null ? String(d.percent) : '—');
 
     const trigger = Number(d.trigger) || 2.1;
     const pct = Math.max(0, Math.min(100, (Number(d.level) / trigger) * 100));
