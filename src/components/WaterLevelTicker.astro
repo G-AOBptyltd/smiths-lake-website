@@ -1,0 +1,134 @@
+---
+/**
+ * WaterLevelTicker.astro — slim, always-visible Smiths Lake level strip.
+ *
+ * Compact companion to WaterLevelWidget. Reads the same /api/water-level proxy
+ * on the client and links through to the full widget on the Environment page.
+ * Fails open: if data is unavailable it links to the MHL chart page.
+ *
+ * Usage:  <WaterLevelTicker />
+ *         <WaterLevelTicker refreshMinutes={60} href="/environment/#lake-level" />
+ */
+interface Props {
+  refreshMinutes?: number;
+  href?: string;
+}
+const { refreshMinutes = 90, href = '/environment/#lake-level' } = Astro.props;
+---
+
+<a
+  class="wlt"
+  data-water-ticker
+  data-refresh={refreshMinutes}
+  data-status="loading"
+  href={href}
+  aria-label="Smiths Lake live water level — view full status"
+>
+  <span class="wlt-ico" aria-hidden="true">🌊</span>
+  <span class="wlt-name">Smiths Lake</span>
+  <span class="wlt-level"><span data-wlt-level>—</span> <span class="wlt-unit">m AHD</span></span>
+  <span class="wlt-badge" data-wlt-status>Live</span>
+  <span class="wlt-margin" data-wlt-margin></span>
+  <span class="wlt-cta">View status →</span>
+</a>
+
+<style>
+  .wlt {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-left: 4px solid var(--color-success);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    text-decoration: none;
+    transition: box-shadow var(--transition-fast);
+  }
+  .wlt:hover { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
+  .wlt[data-status='watch'] { border-left-color: var(--color-warning); }
+  .wlt[data-status='near-trigger'] { border-left-color: var(--color-error); }
+  .wlt[data-status='open'] { border-left-color: var(--color-sky); }
+
+  .wlt-ico { font-size: 1.25rem; line-height: 1; }
+  .wlt-name {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    color: var(--color-navy);
+    font-size: var(--text-sm);
+  }
+  .wlt-level {
+    font-weight: 700;
+    color: var(--color-navy);
+    font-size: var(--text-base);
+  }
+  .wlt-unit { font-size: var(--text-xs); color: var(--color-gray-500); font-weight: 400; }
+  .wlt-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: var(--radius-md);
+    background: var(--color-gray-100);
+    color: var(--color-gray-600);
+  }
+  .wlt[data-status='normal'] .wlt-badge { background: #D1FAE5; color: #065F46; }
+  .wlt[data-status='watch'] .wlt-badge { background: #FEF3C7; color: #92400E; }
+  .wlt[data-status='near-trigger'] .wlt-badge { background: #FEE2E2; color: #991B1B; }
+  .wlt[data-status='open'] .wlt-badge { background: #DBEAFE; color: #1E40AF; }
+  .wlt-margin { font-size: var(--text-xs); color: var(--color-gray-500); }
+  .wlt-cta {
+    margin-left: auto;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--color-sky);
+    white-space: nowrap;
+  }
+  @media (max-width: 560px) {
+    .wlt-margin { display: none; }
+    .wlt-cta { margin-left: 0; }
+  }
+</style>
+
+<script>
+  async function loadTicker(el) {
+    try {
+      const res = await fetch('/api/water-level', { headers: { Accept: 'application/json' } });
+      const d = await res.json();
+      const lvl = el.querySelector('[data-wlt-level]');
+      const st = el.querySelector('[data-wlt-status]');
+      const mg = el.querySelector('[data-wlt-margin]');
+
+      if (!d || d.ok === false) {
+        el.setAttribute('data-status', 'normal');
+        if (st) st.textContent = 'Check MHL';
+        if (lvl) lvl.textContent = '—';
+        return;
+      }
+      el.setAttribute('data-status', d.status || 'normal');
+      if (lvl) lvl.textContent = Number(d.level).toFixed(2);
+      if (st) st.textContent = d.statusLabel || 'Live';
+      if (mg) mg.textContent = d.marginText || '';
+    } catch (e) {
+      el.setAttribute('data-status', 'normal');
+      const st = el.querySelector('[data-wlt-status]');
+      if (st) st.textContent = 'Check MHL';
+    }
+  }
+
+  function initTickers() {
+    document.querySelectorAll('[data-water-ticker]').forEach((el) => {
+      loadTicker(el);
+      const mins = Number(el.getAttribute('data-refresh')) || 90;
+      setInterval(() => loadTicker(el), Math.max(15, mins) * 60 * 1000);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTickers);
+  } else {
+    initTickers();
+  }
+</script>

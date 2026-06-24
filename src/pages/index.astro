@@ -5,6 +5,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 import QuickInfo from '../components/QuickInfo.astro';
 import SectionCard from '../components/SectionCard.astro';
+import WaterLevelTicker from '../components/WaterLevelTicker.astro';
 import { fetchSectionSettingsBySlug } from '../lib/notion-section-settings.js';
 import { fetchNotionContent } from '../lib/notion-unified.js';
 import { generateSlug, getSectionPath, getSectionColour, getSectionDisplayName } from '../lib/notion-detail-pages.js';
@@ -122,6 +123,13 @@ const sections = [
   />
   
   <QuickInfo items={quickInfoItems} />
+
+  <!-- Live Smiths Lake water level — slim ticker linking to the Environment page -->
+  <section class="lake-ticker-section" aria-label="Smiths Lake live water level" style="padding: 1.5rem 0;">
+    <div class="container">
+      <WaterLevelTicker refreshMinutes={90} />
+    </div>
+  </section>
 
   <!-- Latest from the Village — rolling news ticker (auto-feeds from the news system) -->
   {latestNews.length > 0 && (
