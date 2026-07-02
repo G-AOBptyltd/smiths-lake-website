@@ -193,6 +193,21 @@ const sections = [
     </div>
   </section>
   
+  <!-- Who's supporting us this month — live supporters card -->
+  <section class="supporters-banner-section">
+    <div class="container">
+      <a href="/supporters/" class="supporters-banner" id="supporters-banner" aria-label="See our community supporters">
+        <div class="sb-icon" aria-hidden="true">🏆</div>
+        <div class="sb-body">
+          <p class="sb-label">Community heroes</p>
+          <h2 class="sb-heading">Who's supporting us this month</h2>
+          <p class="sb-text" id="sb-names">Cheers to the locals and businesses backing Smiths Lake.</p>
+        </div>
+        <div class="sb-action"><span class="sb-btn">See the board →</span></div>
+      </a>
+    </div>
+  </section>
+
   <!-- Call to Action -->
   <section class="cta-section">
     <div class="container">
@@ -428,6 +443,38 @@ const sections = [
     .news-banner-icon { font-size: 2.5rem; }
   }
 
+  /* Who's supporting us this month */
+  .supporters-banner-section {
+    padding: var(--space-10) 0;
+    background: #fffdf5;
+  }
+
+  .supporters-banner {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    background: linear-gradient(135deg, #b45309 0%, #d97706 45%, #f59e0b 100%);
+    border-radius: 14px;
+    padding: 2.25rem 2.5rem;
+    text-decoration: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .supporters-banner:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(180,83,9,0.28); }
+
+  .sb-icon { font-size: 3.2rem; flex-shrink: 0; line-height: 1; }
+  .sb-body { flex: 1; min-width: 0; }
+  .sb-label { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #fff7ed; margin-bottom: 0.35rem; }
+  .sb-heading { font-size: clamp(1.2rem, 3vw, 1.65rem); font-weight: 800; color: #fff; margin-bottom: 0.4rem; line-height: 1.2; }
+  .sb-text { font-size: 0.92rem; color: rgba(255,255,255,0.92); line-height: 1.5; margin: 0; }
+  .sb-action { flex-shrink: 0; }
+  .sb-btn { display: inline-block; padding: 0.75rem 1.5rem; background: #fff; color: #b45309; font-size: 0.9rem; font-weight: 800; border-radius: 8px; white-space: nowrap; }
+
+  @media (max-width: 640px) {
+    .supporters-banner { flex-direction: column; text-align: center; padding: 2rem 1.5rem; }
+    .sb-icon { font-size: 2.6rem; }
+  }
+
   .cta-section {
     background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-light) 100%);
     padding: var(--space-16) 0;
@@ -450,4 +497,46 @@ const sections = [
     margin-bottom: var(--space-8);
   }
 </style>
+
+<script>
+  // Live supporters — fill the "who's supporting us" card and sprinkle
+  // shout-outs into the news ticker. Opt-in names only (server-enforced).
+  fetch('/api/contrib-supporters?village=Smiths%20Lake')
+    .then((r) => r.json())
+    .then((data) => {
+      const supporters = (data && data.thisMonth) || [];
+
+      // 1) Card text
+      const names = document.getElementById('sb-names');
+      if (names) {
+        if (supporters.length) {
+          const shown = supporters.slice(0, 3).map((s: any) => s.name);
+          const extra = supporters.length - shown.length;
+          let txt = shown.join(', ');
+          if (extra > 0) txt += ` and ${extra} more`;
+          names.textContent = `🎉 ${txt} — thank you!`;
+        } else {
+          names.textContent = 'Be the first to support Smiths Lake this month — tap to find out how.';
+        }
+      }
+
+      // 2) Ticker shout-outs — prepend to each ticker group if the ticker exists
+      if (supporters.length) {
+        const groups = document.querySelectorAll('.ticker-group');
+        groups.forEach((group) => {
+          supporters.slice(0, 5).reverse().forEach((s: any) => {
+            const a = document.createElement('a');
+            a.href = '/supporters/';
+            a.className = 'ticker-item';
+            a.innerHTML =
+              '<span class="ticker-cat" style="color:#f5a623;">SUPPORTER</span>' +
+              '<span class="ticker-hed">🎉 Thanks ' + String(s.name).replace(/[<>&]/g, '') + '!</span>' +
+              '<span class="ticker-sep" aria-hidden="true">◆</span>';
+            group.insertBefore(a, group.firstChild);
+          });
+        });
+      }
+    })
+    .catch(() => { /* card keeps its default copy; ticker unchanged */ });
+</script>
 

@@ -1,0 +1,173 @@
+---
+/**
+ * Supporters board — public, fun "league leaderboard" of people supporting
+ * Smiths Lake. Data is fetched live (client-side) from /api/contrib-supporters
+ * so it stays current without a rebuild.
+ *
+ * PRIVACY: the endpoint only ever returns opt-in names + playful tiers + a safe
+ * "Display Name". No amounts, no contact details. See contrib-supporters.js.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+---
+
+<BaseLayout
+  title="Our Supporters"
+  description="Cheers to the people and businesses backing Smiths Lake Village — our community supporters leaderboard."
+>
+  <Hero
+    title="🏆 Our Supporters"
+    subtitle="The legends keeping Smiths Lake moving. Every donation, hour and helping hand counts."
+    size="small"
+  />
+
+  <section class="section">
+    <div class="container container--narrow">
+
+      <!-- Stats -->
+      <div class="stats" id="stats">
+        <div class="stat is-loading"><div class="stat-num">…</div><div class="stat-label">Loading the board</div></div>
+      </div>
+
+      <!-- This month's board -->
+      <div class="board-head">
+        <h2 id="month-title">This month's supporters</h2>
+        <p class="sub">Ordered for a bit of friendly fun — no dollar figures, just love. 💙</p>
+      </div>
+      <div id="board" class="board">
+        <div class="board-loading">Loading supporters…</div>
+      </div>
+
+      <!-- Hall of fame -->
+      <div id="hof-wrap" style="display:none;">
+        <div class="board-head"><h2>🌟 Hall of fame</h2><p class="sub">Everyone who's backed us and asked to be thanked.</p></div>
+        <div id="hof" class="chips"></div>
+      </div>
+
+      <!-- CTA -->
+      <div class="cta">
+        <h2>Want to see your name up here?</h2>
+        <p>Chip in — a donation, some time, or a service — and tick "thank me publicly" when you do.</p>
+        <a href="/contribute/" class="btn-cta">Support Smiths Lake →</a>
+      </div>
+
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .container--narrow { max-width: 860px; margin: 0 auto; padding: 0 1rem; }
+  .section { padding: 3rem 0; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2.5rem; }
+  .stat { background: linear-gradient(135deg, #1B365D 0%, #0c2d5a 55%, #4db8b8 100%); color: #fff; border-radius: 14px; padding: 1.25rem; text-align: center; }
+  .stat-num { font-size: 2rem; font-weight: 800; line-height: 1; }
+  .stat-label { font-size: 0.78rem; opacity: 0.85; margin-top: 0.4rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat.is-loading { opacity: 0.6; }
+
+  .board-head { margin: 0 0 1rem; }
+  .board-head h2 { color: #1B365D; font-size: 1.4rem; margin-bottom: 0.15rem; }
+  .sub { color: #6b7280; font-size: 0.92rem; }
+
+  .board { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 2.5rem; }
+  .board-loading, .board-empty { text-align: center; color: #9ca3af; padding: 2rem 1rem; background: #f8fafc; border: 1px dashed #e2e8f0; border-radius: 12px; }
+  .board-empty strong { color: #1B365D; display: block; font-size: 1.05rem; margin-bottom: 0.35rem; }
+
+  .row {
+    display: flex; align-items: center; gap: 0.9rem; padding: 0.9rem 1.1rem;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .row:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(27,54,93,0.08); }
+  .row.rank-1 { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-color: #fcd34d; }
+  .row.rank-2 { background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%); border-color: #cbd5e1; }
+  .row.rank-3 { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-color: #fdba74; }
+  .rank { font-size: 1.5rem; width: 2rem; text-align: center; flex-shrink: 0; }
+  .rank-num { font-size: 0.95rem; font-weight: 800; color: #94a3b8; }
+  .who { flex: 1; min-width: 0; }
+  .who-name { font-size: 1.05rem; font-weight: 700; color: #1B365D; }
+  .who-type { font-size: 0.78rem; color: #6b7280; }
+  .tier { font-size: 0.72rem; font-weight: 800; padding: 0.3rem 0.7rem; border-radius: 999px; white-space: nowrap; letter-spacing: 0.03em; }
+  .tier-legend { background: #fef3c7; color: #92400e; }
+  .tier-champion { background: #dbeafe; color: #1e40af; }
+  .tier-mate { background: #ccfbf1; color: #0f766e; }
+  .tier-supporter { background: #dcfce7; color: #166534; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2.5rem; }
+  .chip { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 999px; padding: 0.45rem 0.9rem; font-size: 0.88rem; font-weight: 600; color: #334155; }
+  .chip .c-emoji { margin-right: 0.35rem; }
+
+  .cta { text-align: center; background: linear-gradient(135deg, #4db8b8 0%, #1B365D 100%); color: #fff; border-radius: 16px; padding: 2.5rem 1.5rem; }
+  .cta h2 { color: #fff; font-size: 1.4rem; margin-bottom: 0.5rem; }
+  .cta p { color: rgba(255,255,255,0.9); margin-bottom: 1.5rem; max-width: 460px; margin-left: auto; margin-right: auto; line-height: 1.6; }
+  .btn-cta { display: inline-block; background: #fff; color: #1B365D; font-weight: 800; padding: 0.9rem 2rem; border-radius: 10px; text-decoration: none; transition: transform 0.12s; }
+  .btn-cta:hover { transform: translateY(-2px); }
+</style>
+
+<script>
+  const TIER = {
+    'Lake Legend': { cls: 'tier-legend', emoji: '🌊' },
+    'Champion':    { cls: 'tier-champion', emoji: '⭐' },
+    'Mate':        { cls: 'tier-mate', emoji: '🤝' },
+    'Supporter':   { cls: 'tier-supporter', emoji: '💚' },
+  };
+  const MEDAL = ['🥇', '🥈', '🥉'];
+
+  function esc(s: string) {
+    return String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+  }
+
+  function statCard(num: string | number, label: string) {
+    return `<div class="stat"><div class="stat-num">${num}</div><div class="stat-label">${label}</div></div>`;
+  }
+
+  function render(data: any) {
+    const t = data.totals || { monthSupporters: 0, monthHours: 0, monthRaised: 0, allSupporters: 0 };
+    const stats = document.getElementById('stats')!;
+    const cards = [statCard(t.monthSupporters || 0, `Supporters this month`)];
+    if (t.monthHours > 0) cards.push(statCard(t.monthHours + ' hrs', 'Time given this month'));
+    if (t.monthRaised > 0) cards.push(statCard('$' + Number(t.monthRaised).toLocaleString('en-AU'), 'Raised this month'));
+    if (t.allSupporters > 0) cards.push(statCard(t.allSupporters, 'Supporters all-time'));
+    stats.innerHTML = cards.join('');
+
+    const monthTitle = document.getElementById('month-title')!;
+    if (data.month) monthTitle.textContent = `${data.month} supporters`;
+
+    const board = document.getElementById('board')!;
+    const list = data.thisMonth || [];
+    if (!list.length) {
+      board.innerHTML = `<div class="board-empty"><strong>Be the first this month!</strong>Support Smiths Lake and you could be topping the board.</div>`;
+    } else {
+      board.innerHTML = list.map((s: any, i: number) => {
+        const tier = TIER[s.tier] || TIER['Supporter'];
+        const rankCell = i < 3 ? `<div class="rank">${MEDAL[i]}</div>` : `<div class="rank rank-num">${i + 1}</div>`;
+        return `<div class="row rank-${i + 1 <= 3 ? i + 1 : 'n'}">
+          ${rankCell}
+          <div class="who"><div class="who-name">${tier.emoji} ${esc(s.name)}</div><div class="who-type">${esc(s.type || 'Supporter')}</div></div>
+          <span class="tier ${tier.cls}">${esc(s.tier)}</span>
+        </div>`;
+      }).join('');
+    }
+
+    // Hall of fame — all-time opted-in supporters beyond this month
+    const hof = data.allTime || [];
+    if (hof.length) {
+      const wrap = document.getElementById('hof-wrap')!;
+      const el = document.getElementById('hof')!;
+      el.innerHTML = hof.map((s: any) => {
+        const tier = TIER[s.tier] || TIER['Supporter'];
+        return `<span class="chip"><span class="c-emoji">${tier.emoji}</span>${esc(s.name)}</span>`;
+      }).join('');
+      wrap.style.display = 'block';
+    }
+  }
+
+  fetch('/api/contrib-supporters?village=Smiths%20Lake')
+    .then((r) => r.json())
+    .then(render)
+    .catch(() => {
+      document.getElementById('board')!.innerHTML =
+        '<div class="board-empty"><strong>The board is taking a breather.</strong>Please check back soon.</div>';
+      document.getElementById('stats')!.innerHTML = '';
+    });
+</script>
