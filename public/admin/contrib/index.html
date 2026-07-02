@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Contributions Portal — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; font-size: 14px; color: #1f2937; }
+  button { font-family: inherit; }
+
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; white-space: nowrap; font-family: inherit; }
+  .village-select option { color: #1f2937; }
+
+  .layout { display: flex; min-height: calc(100vh - 46px); }
+  .sidebar { width: 180px; background: #fff; border-right: 1px solid #e2e8f0; padding: 10px 0; flex-shrink: 0; }
+  .s-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font-size: 12.5px; color: #4b5563; cursor: pointer; border-left: 3px solid transparent; }
+  .s-item:hover { background: #f0fdf6; }
+  .s-item.on { color: #0f5c48; background: #e7f6ee; border-left-color: #15795f; font-weight: 700; }
+  .main { flex: 1; padding: 20px; max-width: 900px; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+  h1 { font-size: 1.05rem; color: #143d2e; margin-bottom: 2px; }
+  .sub { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
+
+  /* Totals strip */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+  .stat-num { font-size: 1.35rem; font-weight: 800; color: #0f5c48; }
+  .stat-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+  /* Ledger */
+  .ledger { background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-top: 1px solid #f1f5f9; cursor: pointer; }
+  .row:first-child { border-top: none; }
+  .row:hover { background: #f8fafc; }
+  .row-main { flex: 1; min-width: 0; }
+  .row-name { font-size: 13px; font-weight: 700; color: #1f2937; }
+  .row-note { font-size: 11.5px; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-val { font-size: 13px; font-weight: 700; color: #0f5c48; white-space: nowrap; }
+  .row-date { font-size: 11px; color: #9ca3af; width: 66px; text-align: right; white-space: nowrap; }
+  .chip { font-size: 9.5px; font-weight: 700; border-radius: 9px; padding: 2px 8px; white-space: nowrap; }
+  .chip-money { background: #c9f0dd; color: #0f5c48; }
+  .chip-payment { background: #e5e7eb; color: #374151; }
+  .chip-gift { background: #fde9c0; color: #92400e; }
+  .chip-time { background: #dbeafe; color: #1e40af; }
+  .chip-service { background: #ede9fe; color: #6d28d9; }
+  .chip-pledged { background: #fef3c7; color: #92400e; }
+
+  .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 560px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin: 14px 0 4px; }
+  label:first-child { margin-top: 0; }
+  .hint { font-weight: 400; color: #9ca3af; }
+  input[type=text], input[type=number], input[type=date], textarea, select { width: 100%; border: 1px solid #d1d5db; border-radius: 7px; padding: 9px 11px; font-size: 13px; font-family: inherit; background: white; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid #15a06e; border-color: #15a06e; }
+  textarea { min-height: 80px; resize: vertical; line-height: 1.6; }
+  .type-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+  .type-opt { border: 1.5px solid #e2e8f0; border-radius: 8px; padding: 9px 10px; font-size: 12.5px; font-weight: 600; color: #4b5563; cursor: pointer; text-align: center; }
+  .type-opt:hover { border-color: #9ca3af; }
+  .type-opt.sel { border-color: #15a06e; background: #e7f6ee; color: #0f5c48; }
+  .two-col { display: flex; gap: 12px; flex-wrap: wrap; }
+  .two-col > div { flex: 1; min-width: 150px; }
+  .form-actions { display: flex; gap: 8px; margin-top: 18px; align-items: center; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 7px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btn-green { background: #15795f; color: white; }
+  .btn-green:hover { background: #0f5c48; }
+  .btn-green:disabled { background: #9ca3af; cursor: wait; }
+  .btn-ghost { background: white; color: #4b5563; border: 1px solid #d1d5db; }
+  .btn-ghost:hover { border-color: #9ca3af; }
+  .status-msg { font-size: 12px; font-weight: 600; min-height: 1.2em; }
+  .status-msg.ok { color: #15803d; } .status-msg.err { color: #b91c1c; }
+  .editing-note { font-size: 11.5px; color: #92400e; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 7px; padding: 7px 10px; margin-bottom: 14px; display: none; }
+
+  .help-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 640px; font-size: 13px; line-height: 1.7; color: #374151; }
+  .help-card h2 { font-size: 13.5px; color: #143d2e; margin: 14px 0 4px; }
+  .help-card h2:first-child { margin-top: 0; }
+
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; padding: 1rem; text-align: center; }
+  .auth-screen h1 { font-size: 1.2rem; }
+  .auth-screen p { font-size: 0.85rem; color: #6b7280; max-width: 360px; }
+  .auth-btn { background: #15795f; color: white; border: none; border-radius: 8px; padding: 0.75rem 2rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+
+  .empty { color: #9ca3af; font-size: 12.5px; padding: 16px; text-align: center; }
+  @media (max-width: 700px) { .sidebar { width: 120px; } .main { padding: 14px; } }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">🤝</div>
+  <h1>VillageFirst Contributions</h1>
+  <p>Record every donation, payment, gift, hour and donated service the village receives — one simple ledger. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+  <p style="margin-top:1rem;"><a href="/admin/" style="color:#15795f; font-size:0.78rem;">← Admin home</a></p>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · Contributions</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <button class="s-item on" data-panel="log" onclick="newContrib()">➕ Log a contribution</button>
+      <button class="s-item" data-panel="ledger" onclick="showPanel('ledger')">📒 Ledger</button>
+      <button class="s-item" data-panel="help" onclick="showPanel('help')">💡 Help</button>
+    </div>
+
+    <div class="main">
+
+      <!-- ── Log a contribution ──────────────────────────────────── -->
+      <div class="panel on" id="panel-log">
+        <h1 id="log-title">Log a contribution</h1>
+        <p class="sub">Money, a gift, volunteer hours, a donated service — capture it here in seconds.</p>
+        <div class="editing-note" id="editing-note"></div>
+        <div class="form-card">
+          <label>What kind of contribution?</label>
+          <div class="type-grid" id="type-grid">
+            <div class="type-opt sel" data-type="Money" onclick="pickType('Money')">💵 Money</div>
+            <div class="type-opt" data-type="Payment" onclick="pickType('Payment')">🧾 Payment</div>
+            <div class="type-opt" data-type="Gift" onclick="pickType('Gift')">🎁 Gift</div>
+            <div class="type-opt" data-type="Time in kind" onclick="pickType('Time in kind')">⏱️ Time in kind</div>
+            <div class="type-opt" data-type="Donated service" onclick="pickType('Donated service')">🛠️ Donated service</div>
+          </div>
+
+          <label for="f-contributor">Who gave it?</label>
+          <input type="text" id="f-contributor" maxlength="200" placeholder="e.g. Jane Smith, or Smiths Lake Bakery" />
+
+          <div class="two-col">
+            <div id="amount-wrap">
+              <label for="f-amount">Amount <span class="hint" id="amount-hint">(dollars)</span></label>
+              <input type="number" id="f-amount" min="0" step="0.01" placeholder="e.g. 250" />
+            </div>
+            <div id="hours-wrap" style="display:none;">
+              <label for="f-hours">Hours <span class="hint">(volunteer time)</span></label>
+              <input type="number" id="f-hours" min="0" step="0.5" placeholder="e.g. 6" />
+            </div>
+            <div>
+              <label for="f-date">Date</label>
+              <input type="date" id="f-date" />
+            </div>
+          </div>
+
+          <label for="f-note">What was it for? <span class="hint">(optional)</span></label>
+          <textarea id="f-note" maxlength="2000" placeholder="e.g. Raffle prize for the winter markets"></textarea>
+
+          <div class="two-col">
+            <div>
+              <label for="f-status">Status</label>
+              <select id="f-status">
+                <option value="Received">Received</option>
+                <option value="Pledged">Pledged (promised, not yet in)</option>
+                <option value="Thanked">Thanked</option>
+              </select>
+            </div>
+            <div>
+              <label for="f-contact">Contact <span class="hint">(optional)</span></label>
+              <input type="text" id="f-contact" maxlength="200" placeholder="email or phone" />
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-green" id="save-btn" onclick="saveContrib()">Save contribution</button>
+            <button class="btn btn-ghost" onclick="newContrib()">Clear</button>
+            <span class="status-msg" id="save-status"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Ledger ──────────────────────────────────────────────── -->
+      <div class="panel" id="panel-ledger">
+        <h1>Ledger</h1>
+        <p class="sub">Everything logged for this village, newest first. Click a row to edit it.</p>
+        <div class="stats" id="stats"></div>
+        <div class="ledger" id="ledger"><div class="empty">Loading contributions…</div></div>
+      </div>
+
+      <!-- ── Help ────────────────────────────────────────────────── -->
+      <div class="panel" id="panel-help">
+        <h1>Help</h1>
+        <p class="sub">The 60-second guide.</p>
+        <div class="help-card">
+          <h2>Logging a contribution</h2>
+          Pick the kind (money, payment, gift, time in kind, or a donated service), type who gave it, add the amount or hours, and press <b>Save contribution</b>. It's stored instantly — no publishing step.
+          <h2>Amount vs Hours</h2>
+          For money, payments, gifts and donated services, use <b>Amount</b> (a dollar value — for gifts/services put your best estimate, or leave blank). For <b>Time in kind</b>, use <b>Hours</b> instead.
+          <h2>Received vs Pledged</h2>
+          Set <b>Pledged</b> when someone has promised a contribution that hasn't arrived yet — pledged money is totalled separately in the Ledger. Change it to <b>Received</b> once it's in.
+          <h2>Fixing a mistake</h2>
+          Open the <b>Ledger</b>, click the row, change what you need and Save.
+          <h2>Taking real card payments</h2>
+          This portal records contributions. Accepting card donations online (via Stripe) is the next step — ask your VillageFirst admin to switch it on.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+  let items = [];
+  let editingId = null;
+  let selType = 'Money';
+
+  // ── Auth ───────────────────────────────────────────────────────
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+    loadVillages();
+    newContrib();
+    loadList();
+  }
+
+  // ── Village picker ─────────────────────────────────────────────
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const data = await r.json();
+      const villages = (data.villages || []).filter(v => v.status === 'live');
+      if (!villages.length) return;
+      sel.innerHTML = '';
+      villages.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v.name; o.textContent = v.name;
+        if (v.name === VILLAGE) o.selected = true;
+        sel.appendChild(o);
+      });
+    } catch (e) { /* keep default */ }
+    sel.onchange = () => { VILLAGE = sel.value; localStorage.setItem('vf_active_village', VILLAGE); loadList(); };
+  }
+
+  // ── Panels ─────────────────────────────────────────────────────
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+    document.getElementById('panel-' + name).classList.add('on');
+    document.querySelectorAll('.s-item').forEach(b => b.classList.toggle('on', b.dataset.panel === name));
+    if (name === 'ledger') loadList();
+  }
+
+  // ── Type picker ────────────────────────────────────────────────
+  function pickType(t) {
+    selType = t;
+    document.querySelectorAll('.type-opt').forEach(el => el.classList.toggle('sel', el.dataset.type === t));
+    const isTime = t === 'Time in kind';
+    document.getElementById('hours-wrap').style.display = isTime ? '' : 'none';
+    document.getElementById('amount-wrap').style.display = isTime ? 'none' : '';
+    const hint = document.getElementById('amount-hint');
+    hint.textContent = (t === 'Gift' || t === 'Donated service') ? '(estimated value, optional)' : '(dollars)';
+  }
+
+  // ── Form ───────────────────────────────────────────────────────
+  function newContrib() {
+    editingId = null;
+    document.getElementById('log-title').textContent = 'Log a contribution';
+    document.getElementById('editing-note').style.display = 'none';
+    document.getElementById('save-btn').textContent = 'Save contribution';
+    ['f-contributor', 'f-amount', 'f-hours', 'f-note', 'f-contact'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-status').value = 'Received';
+    document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+    pickType('Money');
+    setStatus('', '');
+    showPanel('log');
+  }
+
+  function editContrib(id) {
+    const it = items.find(x => x.id === id);
+    if (!it) return;
+    editingId = id;
+    document.getElementById('log-title').textContent = 'Edit contribution';
+    const note = document.getElementById('editing-note');
+    note.textContent = 'Editing an existing entry. Save to update it, or Clear to start a new one.';
+    note.style.display = 'block';
+    document.getElementById('save-btn').textContent = 'Update contribution';
+    document.getElementById('f-contributor').value = it.contributor === '(no name)' ? '' : it.contributor;
+    document.getElementById('f-amount').value = it.amount ?? '';
+    document.getElementById('f-hours').value = it.hours ?? '';
+    document.getElementById('f-note').value = it.note || '';
+    document.getElementById('f-contact').value = it.contact || '';
+    document.getElementById('f-status').value = it.status || 'Received';
+    document.getElementById('f-date').value = it.date || new Date().toISOString().slice(0, 10);
+    pickType(it.type || 'Money');
+    setStatus('', '');
+    showPanel('log');
+  }
+
+  function setStatus(msg, kind) {
+    const el = document.getElementById('save-status');
+    el.textContent = msg; el.className = 'status-msg' + (kind ? ' ' + kind : '');
+  }
+
+  async function saveContrib() {
+    const contributor = document.getElementById('f-contributor').value.trim();
+    if (!contributor) { setStatus('Please enter who gave the contribution.', 'err'); return; }
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true; setStatus('Saving…', '');
+    const payload = {
+      village: VILLAGE,
+      pageId: editingId || undefined,
+      contributor,
+      type: selType,
+      amount: document.getElementById('f-amount').value,
+      hours: document.getElementById('f-hours').value,
+      note: document.getElementById('f-note').value.trim(),
+      contact: document.getElementById('f-contact').value.trim(),
+      status: document.getElementById('f-status').value,
+      date: document.getElementById('f-date').value || undefined,
+    };
+    try {
+      const r = await fetch('/api/contrib-save', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(payload) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Save failed');
+      setStatus(editingId ? 'Updated ✓' : 'Saved ✓', 'ok');
+      await loadList();
+      setTimeout(newContrib, 900);
+    } catch (e) {
+      setStatus(e.message, 'err');
+    } finally { btn.disabled = false; }
+  }
+
+  // ── Ledger ─────────────────────────────────────────────────────
+  const CHIP = {
+    'Money': 'chip-money', 'Payment': 'chip-payment', 'Gift': 'chip-gift',
+    'Time in kind': 'chip-time', 'Donated service': 'chip-service',
+  };
+  function fmtMoney(n) { return '$' + (Math.round(n * 100) / 100).toLocaleString('en-AU'); }
+  function fmtDate(d) {
+    if (!d) return '';
+    const parts = d.split('-');
+    const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return parts.length === 3 ? (parseInt(parts[2], 10) + ' ' + mon[parseInt(parts[1], 10) - 1]) : d;
+  }
+
+  async function loadList() {
+    try {
+      const r = await fetch('/api/contrib-list?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not load');
+      items = data.items || [];
+      renderStats(data.totals || {});
+      renderLedger();
+    } catch (e) {
+      document.getElementById('ledger').innerHTML = '<div class="empty">' + e.message + '</div>';
+    }
+  }
+
+  function renderStats(t) {
+    const el = document.getElementById('stats');
+    el.innerHTML =
+      stat(fmtMoney(t.moneyReceived || 0), 'Money received') +
+      stat(fmtMoney(t.moneyPledged || 0), 'Pledged (not yet in)') +
+      stat((t.hours || 0) + ' hrs', 'Time in kind') +
+      stat(t.count || 0, 'Contributions logged');
+  }
+  function stat(num, label) {
+    return '<div class="stat"><div class="stat-num">' + num + '</div><div class="stat-label">' + label + '</div></div>';
+  }
+
+  function renderLedger() {
+    const el = document.getElementById('ledger');
+    if (!items.length) { el.innerHTML = '<div class="empty">No contributions logged yet. Add your first one from “Log a contribution”.</div>'; return; }
+    el.innerHTML = items.map(it => {
+      const val = it.type === 'Time in kind'
+        ? (it.hours != null ? it.hours + ' hrs' : '—')
+        : (it.amount != null ? fmtMoney(it.amount) : '—');
+      const pledged = it.status === 'Pledged' ? '<span class="chip chip-pledged">Pledged</span> ' : '';
+      const note = [it.note, it.loggedBy ? 'by ' + it.loggedBy : ''].filter(Boolean).join(' · ');
+      return '<div class="row" onclick="editContrib(\'' + it.id + '\')">' +
+        '<span class="chip ' + (CHIP[it.type] || 'chip-payment') + '">' + (it.type || '—') + '</span>' +
+        '<div class="row-main"><div class="row-name">' + esc(it.contributor) + '</div>' +
+        (note ? '<div class="row-note">' + esc(note) + '</div>' : '') + '</div>' +
+        '<span class="row-val">' + pledged + val + '</span>' +
+        '<span class="row-date">' + fmtDate(it.date) + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+</script>
+</body>
+</html>
