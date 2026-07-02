@@ -147,6 +147,17 @@
   to = "/.netlify/functions/news-lifecycle"
   status = 200
 
+# Contributions Portal API
+[[redirects]]
+  from = "/api/contrib-list"
+  to = "/.netlify/functions/contrib-list"
+  status = 200
+
+[[redirects]]
+  from = "/api/contrib-save"
+  to = "/.netlify/functions/contrib-save"
+  status = 200
+
 # Redirect old Blueys Beach project slug to current slug
 [[redirects]]
   from = "/projects/bluey-s-beach-village-centre/"
