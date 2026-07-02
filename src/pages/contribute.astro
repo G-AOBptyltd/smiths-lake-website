@@ -1,0 +1,309 @@
+---
+/**
+ * Contribute / Support Us page
+ *
+ * Public front door to the Contributions portal. Two paths, both feeding the
+ * VF Contributions Notion DB (admin ledger at /admin/contrib):
+ *   1. "Donate money now"  → Stripe Payment Link buttons (URLs in STRIPE_LINKS below)
+ *   2. "Pledge or offer"    → public form → /api/contrib-pledge (logged as Pledged)
+ *
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │  STRIPE SETUP — paste your Stripe Payment Link URLs here.              │
+ * │  Create them in the Stripe Dashboard → Payment Links (one per amount). │
+ * │  These are PUBLIC buy.stripe.com URLs — never a secret key.            │
+ * │  While a url is '#', that button renders disabled with a note.         │
+ * └──────────────────────────────────────────────────────────────────────┘
+ */
+const STRIPE_LINKS = [
+  { label: '$25',  amount: 25,  url: '#' },
+  { label: '$50',  amount: 50,  url: '#' },
+  { label: '$100', amount: 100, url: '#' },
+  { label: 'Any amount', amount: null, url: '#' },
+];
+
+const stripeLive = STRIPE_LINKS.some((l) => l.url && l.url !== '#');
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+---
+
+<BaseLayout
+  title="Support Smiths Lake"
+  description="Donate, pledge or offer your time and skills to help Pacific Palms Community Association improve Smiths Lake Village."
+>
+  <Hero
+    title="Support Smiths Lake"
+    subtitle="Every donation, hour and helping hand keeps our community projects moving."
+    size="small"
+  />
+
+  <section class="section">
+    <div class="container container--narrow">
+
+      <div class="intro">
+        <p>
+          Pacific Palms Community Association (PPCA) is run by volunteers for the people of
+          Smiths Lake. Your support — whether a donation, a pledge, some volunteer hours or a
+          donated service — goes directly into local projects, events and advocacy.
+        </p>
+      </div>
+
+      <!-- ── Donate money now ─────────────────────────────────────── -->
+      <div class="card card--donate">
+        <h2>💳 Donate now</h2>
+        <p>Make a secure card donation through Stripe. Choose an amount to get started.</p>
+
+        <div class="amount-grid">
+          {STRIPE_LINKS.map((link) => (
+            (link.url && link.url !== '#') ? (
+              <a class="amount-btn" href={link.url} target="_blank" rel="noopener noreferrer">
+                {link.label}
+              </a>
+            ) : (
+              <span class="amount-btn is-disabled" aria-disabled="true">{link.label}</span>
+            )
+          ))}
+        </div>
+
+        {!stripeLive && (
+          <p class="donate-note">
+            🔧 Online card donations are being switched on and will be available here shortly.
+            In the meantime, you can <a href="#pledge">pledge a donation</a> below and we'll be in touch.
+          </p>
+        )}
+      </div>
+
+      <!-- ── Pledge or offer ──────────────────────────────────────── -->
+      <div class="card" id="pledge">
+        <h2>🤝 Pledge or offer your help</h2>
+        <p>
+          Not ready to pay online, or want to give in another way? Tell us what you'd like to
+          contribute and a PPCA volunteer will follow up. There's no obligation.
+        </p>
+
+        <form id="pledge-form" class="pledge-form" novalidate>
+          <fieldset class="type-fieldset">
+            <legend class="form-label">What would you like to give?</legend>
+            <div class="type-grid">
+              <label class="type-opt is-sel"><input type="radio" name="ptype" value="Money" checked /> <span>💵 A donation</span></label>
+              <label class="type-opt"><input type="radio" name="ptype" value="Time in kind" /> <span>⏱️ My time</span></label>
+              <label class="type-opt"><input type="radio" name="ptype" value="Donated service" /> <span>🛠️ A service</span></label>
+              <label class="type-opt"><input type="radio" name="ptype" value="Gift" /> <span>🎁 A gift</span></label>
+            </div>
+          </fieldset>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label form-label--required" for="p-name">Your name</label>
+              <input type="text" id="p-name" name="contributor" class="form-input" maxlength="200" autocomplete="name" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label form-label--required" for="p-contact">Email or phone</label>
+              <input type="text" id="p-contact" name="contact" class="form-input" maxlength="200" autocomplete="email" required />
+              <p class="form-help">So we can thank you and follow up.</p>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group" id="amount-wrap">
+              <label class="form-label" for="p-amount">Amount <span class="hint">(AUD, optional)</span></label>
+              <input type="number" id="p-amount" name="amount" class="form-input" min="0" step="1" placeholder="e.g. 50" />
+            </div>
+            <div class="form-group" id="hours-wrap" style="display:none;">
+              <label class="form-label" for="p-hours">Hours <span class="hint">(roughly, optional)</span></label>
+              <input type="number" id="p-hours" name="hours" class="form-input" min="0" step="0.5" placeholder="e.g. 4" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="p-note">Anything you'd like to add? <span class="hint">(optional)</span></label>
+            <textarea id="p-note" name="note" class="form-textarea" rows="4" maxlength="2000" placeholder="e.g. Happy to help at working bees, or I can donate signage printing."></textarea>
+          </div>
+
+          <!-- Honeypot: hidden from people, catches bots -->
+          <p class="hp" aria-hidden="true"><label>Leave this empty<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></p>
+
+          <div class="form-group">
+            <button type="submit" class="btn btn--primary btn--lg btn--full" id="p-submit">Send my pledge</button>
+          </div>
+          <p class="form-status" id="p-status" role="status" aria-live="polite"></p>
+        </form>
+
+        <div class="pledge-success" id="pledge-success" style="display:none;">
+          <div class="success-tick">✓</div>
+          <h3>Thank you!</h3>
+          <p>Your pledge has reached the PPCA team and a volunteer will be in touch. We appreciate your support of Smiths Lake.</p>
+        </div>
+      </div>
+
+      <aside class="privacy-note">
+        <h2>🔒 Your details are safe</h2>
+        <p>
+          We use your contact details only to follow up on your contribution. We never sell or
+          share your information. Card payments are handled securely by Stripe — this website
+          never sees your card details.
+        </p>
+        <p><a href="/privacy/">Read our full Privacy Policy</a></p>
+      </aside>
+
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .container--narrow { max-width: 800px; margin: 0 auto; padding: 0 1rem; }
+  .section { padding: 3rem 0; }
+
+  .intro { max-width: 700px; margin: 0 auto 2rem; }
+  .intro p { font-size: 1.1rem; color: #374151; line-height: 1.7; }
+
+  .card {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 2rem; margin-bottom: 2rem;
+  }
+  .card h2 { color: #1B365D; font-size: 1.35rem; margin-bottom: 0.5rem; }
+  .card > p { color: #374151; line-height: 1.6; margin-bottom: 1.25rem; }
+  .card--donate { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-color: #7dd3fc; }
+
+  .amount-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
+  .amount-btn {
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem; font-size: 1.15rem; font-weight: 700; text-decoration: none;
+    background: #1B365D; color: #fff; border-radius: 8px; border: 2px solid #1B365D;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .amount-btn:hover { background: #142847; transform: translateY(-2px); }
+  .amount-btn.is-disabled { background: #cbd5e1; border-color: #cbd5e1; color: #64748b; cursor: not-allowed; pointer-events: none; }
+  .donate-note { margin-top: 1rem; font-size: 0.95rem; color: #0369a1; background: #fff; border: 1px dashed #7dd3fc; border-radius: 8px; padding: 0.85rem 1rem; }
+  .donate-note a { color: #0369a1; font-weight: 600; }
+
+  .type-fieldset { border: none; padding: 0; margin: 0 0 1.5rem; }
+  .type-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.6rem; margin-top: 0.5rem; }
+  .type-opt {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 0.9rem;
+    border: 2px solid #e2e8f0; border-radius: 8px; background: #fff; cursor: pointer;
+    font-weight: 600; color: #475569; font-size: 0.95rem;
+  }
+  .type-opt:hover { border-color: #94a3b8; }
+  .type-opt.is-sel { border-color: #4db8b8; background: #ecfeff; color: #0f766e; }
+  .type-opt input { accent-color: #0f766e; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+  .form-group { margin-bottom: 1.5rem; }
+  .form-label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: #1f2937; }
+  .form-label--required::after { content: ' *'; color: #dc2626; }
+  .hint { font-weight: 400; color: #6b7280; }
+  .form-input, .form-textarea {
+    width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 6px;
+    font-size: 1rem; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-input:focus, .form-textarea:focus {
+    outline: none; border-color: #4db8b8; box-shadow: 0 0 0 3px rgba(77, 184, 184, 0.15);
+  }
+  .form-textarea { resize: vertical; min-height: 100px; }
+  .form-help { font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem; }
+
+  .hp { position: absolute; left: -5000px; width: 1px; height: 1px; overflow: hidden; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; font-family: inherit;
+    text-decoration: none; border-radius: 6px; border: 2px solid transparent; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn--primary { background: #1B365D; color: #fff; border-color: #1B365D; }
+  .btn--primary:hover { background: #142847; border-color: #142847; }
+  .btn--primary:disabled { background: #94a3b8; border-color: #94a3b8; cursor: wait; }
+  .btn--lg { padding: 1rem 2rem; font-size: 1.1rem; }
+  .btn--full { width: 100%; }
+
+  .form-status { text-align: center; font-weight: 600; min-height: 1.4em; margin-top: 0.5rem; }
+  .form-status.is-err { color: #b91c1c; }
+
+  .pledge-success { text-align: center; padding: 1rem 0 0.5rem; }
+  .success-tick {
+    width: 56px; height: 56px; margin: 0 auto 0.75rem; border-radius: 50%;
+    background: #10b981; color: #fff; font-size: 2rem; line-height: 56px; font-weight: 700;
+  }
+  .pledge-success h3 { color: #1B365D; font-size: 1.25rem; margin-bottom: 0.5rem; }
+  .pledge-success p { color: #374151; line-height: 1.6; max-width: 460px; margin: 0 auto; }
+
+  .privacy-note { background: #1B365D; color: #fff; padding: 1.5rem; border-radius: 12px; }
+  .privacy-note h2 { color: #fff; font-size: 1.1rem; margin-bottom: 0.75rem; }
+  .privacy-note p { color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.6; }
+  .privacy-note p:last-child { margin-bottom: 0; }
+  .privacy-note a { color: #7dd3fc; }
+  .privacy-note a:hover { color: #fff; }
+</style>
+
+<script>
+  // Highlight the selected contribution type + swap Amount ⇄ Hours.
+  const typeOpts = Array.from(document.querySelectorAll('.type-opt'));
+  const amountWrap = document.getElementById('amount-wrap');
+  const hoursWrap = document.getElementById('hours-wrap');
+
+  function syncType() {
+    const checked = document.querySelector('input[name="ptype"]:checked');
+    const val = checked ? (checked as HTMLInputElement).value : 'Money';
+    typeOpts.forEach((opt) => {
+      const input = opt.querySelector('input') as HTMLInputElement;
+      opt.classList.toggle('is-sel', input.checked);
+    });
+    const isTime = val === 'Time in kind';
+    if (amountWrap) amountWrap.style.display = isTime ? 'none' : '';
+    if (hoursWrap) hoursWrap.style.display = isTime ? '' : 'none';
+  }
+  typeOpts.forEach((opt) => opt.querySelector('input')?.addEventListener('change', syncType));
+  syncType();
+
+  // Async submit → /api/contrib-pledge
+  const form = document.getElementById('pledge-form') as HTMLFormElement | null;
+  const statusEl = document.getElementById('p-status');
+  const submitBtn = document.getElementById('p-submit') as HTMLButtonElement | null;
+
+  function setStatus(msg: string, isErr: boolean) {
+    if (!statusEl) return;
+    statusEl.textContent = msg;
+    statusEl.className = 'form-status' + (isErr ? ' is-err' : '');
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    const contributor = String(data.get('contributor') || '').trim();
+    const contact = String(data.get('contact') || '').trim();
+    if (!contributor) { setStatus('Please enter your name.', true); return; }
+    if (!contact) { setStatus('Please add an email or phone so we can follow up.', true); return; }
+
+    if (submitBtn) submitBtn.disabled = true;
+    setStatus('Sending…', false);
+
+    const payload = {
+      village: 'Smiths Lake',
+      contributor,
+      contact,
+      type: String(data.get('ptype') || 'Money'),
+      amount: String(data.get('amount') || ''),
+      hours: String(data.get('hours') || ''),
+      note: String(data.get('note') || '').trim(),
+      website: String(data.get('website') || ''), // honeypot
+    };
+
+    try {
+      const r = await fetch('/api/contrib-pledge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const out = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(out.error || 'Something went wrong. Please try again.');
+      form.style.display = 'none';
+      const success = document.getElementById('pledge-success');
+      if (success) success.style.display = 'block';
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : 'Something went wrong. Please try again.', true);
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  });
+</script>
