@@ -294,7 +294,7 @@ const sections = [
   .ticker-track {
     display: inline-flex;
     white-space: nowrap;
-    animation: ticker-scroll 36s linear infinite;
+    animation: ticker-scroll var(--ticker-duration, 36s) linear infinite;
     will-change: transform;
   }
 
@@ -501,6 +501,28 @@ const sections = [
 <script>
   // Live supporters — fill the "who's supporting us" card and sprinkle
   // shout-outs into the news ticker. Opt-in names only (server-enforced).
+
+  // The ticker used a fixed 36s loop no matter how many items it held, so
+  // once supporter shout-outs were appended each item's on-screen dwell time
+  // shrank — SUPPORTER names scrolled past too fast to read and were only
+  // catchable by hovering (hover pauses the scroll). Fix: hold a constant
+  // px/sec speed by measuring the track and setting the duration explicitly,
+  // recalculated once more after the supporter items are inserted.
+  const TICKER_PX_PER_SEC = 45;
+  const TICKER_MIN_DURATION = 14;
+
+  function setTickerSpeed() {
+    const track = document.querySelector('.ticker-track');
+    const group = document.querySelector('.ticker-group');
+    if (!track || !group) return;
+    const groupWidth = group.getBoundingClientRect().width;
+    if (!groupWidth) return;
+    const duration = Math.max(groupWidth / TICKER_PX_PER_SEC, TICKER_MIN_DURATION);
+    track.style.setProperty('--ticker-duration', duration + 's');
+  }
+
+  setTickerSpeed();
+
   fetch('/api/contrib-supporters?village=Smiths%20Lake')
     .then((r) => r.json())
     .then((data) => {
@@ -535,6 +557,9 @@ const sections = [
             group.insertBefore(a, group.firstChild);
           });
         });
+        // Re-measure now that supporter items have been added so the ticker
+        // doesn't speed up as more items are inserted.
+        setTickerSpeed();
       }
     })
     .catch(() => { /* card keeps its default copy; ticker unchanged */ });
