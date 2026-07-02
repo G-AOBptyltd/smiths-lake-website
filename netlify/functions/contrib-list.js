@@ -29,6 +29,7 @@ function parseItem(page) {
     note: (p.Note?.rich_text || []).map(t => t.plain_text).join(''),
     contact: (p.Contact?.rich_text || []).map(t => t.plain_text).join(''),
     status: p.Status?.select?.name || '',
+    archived: p.Status?.select?.name === 'Archived',
     date: p.Date?.date?.start || null,
     loggedBy: (p['Logged by']?.rich_text || []).map(t => t.plain_text).join(''),
     village: (p.Village?.rich_text || []).map(t => t.plain_text).join(''),
@@ -75,8 +76,12 @@ export const handler = async (event, context) => {
     const items = results.map(parseItem);
 
     // Headline totals — received money vs pledged, plus hours in kind.
-    const totals = { count: items.length, moneyReceived: 0, moneyPledged: 0, hours: 0 };
+    // Archived entries stay in `items` (so the Ledger can still show/restore
+    // them) but are excluded from every headline total.
+    const totals = { count: 0, moneyReceived: 0, moneyPledged: 0, hours: 0 };
     for (const it of items) {
+      if (it.archived) continue;
+      totals.count += 1;
       if (Number.isFinite(it.hours)) totals.hours += it.hours;
       if (Number.isFinite(it.amount)) {
         if (it.status === 'Pledged') totals.moneyPledged += it.amount;

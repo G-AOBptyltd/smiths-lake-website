@@ -56,6 +56,12 @@
   .chip-service { background: #ede9fe; color: #6d28d9; }
   .chip-pledged { background: #fef3c7; color: #92400e; }
   .chip-public { background: #fde68a; color: #92400e; }
+  .chip-archived { background: #e2e8f0; color: #475569; }
+  .row.is-archived { opacity: 0.65; background: #f8fafc; cursor: default; }
+  .row-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; margin-left: 4px; }
+  .link-btn { background: none; border: none; color: #1d6fb8; font-size: 11px; cursor: pointer; padding: 0; font-family: inherit; }
+  .link-btn:hover { text-decoration: underline; }
+  .link-btn.danger { color: #b91c1c; }
 
   .optin { background: #f0fdf6; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.85rem 1rem; margin: 0.5rem 0 0.25rem; }
   .optin-check { display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer; font-size: 12.5px; color: #374151; line-height: 1.45; }
@@ -410,24 +416,77 @@
     return '<div class="stat"><div class="stat-num">' + num + '</div><div class="stat-label">' + label + '</div></div>';
   }
 
+  // ── Roles — mirrors _auth.js's "<village>:admin" / "super-admin" model.
+  // UI hint only; the real gate is server-side in contrib-lifecycle.js.
+  function canDeleteEntries() {
+    const roles = (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || [];
+    if (roles.includes('super-admin')) return true;
+    const vKey = VILLAGE.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    return roles.includes(vKey + ':admin');
+  }
+
   function renderLedger() {
     const el = document.getElementById('ledger');
     if (!items.length) { el.innerHTML = '<div class="empty">No contributions logged yet. Add your first one from “Log a contribution”.</div>'; return; }
+    const canDelete = canDeleteEntries();
     el.innerHTML = items.map(it => {
       const val = it.type === 'Time in kind'
         ? (it.hours != null ? it.hours + ' hrs' : '—')
         : (it.amount != null ? fmtMoney(it.amount) : '—');
       const pledged = it.status === 'Pledged' ? '<span class="chip chip-pledged">Pledged</span> ' : '';
       const pub = it.showPublicly ? '<span class="chip chip-public" title="Shown on the public Supporters board">🎉 public</span> ' : '';
+      const archivedBadge = it.archived ? '<span class="chip chip-archived">Archived</span> ' : '';
       const note = [it.note, it.loggedBy ? 'by ' + it.loggedBy : ''].filter(Boolean).join(' · ');
-      return '<div class="row" onclick="editContrib(\'' + it.id + '\')">' +
+
+      let actions = it.archived
+        ? '<button class="link-btn" onclick="event.stopPropagation(); lifeAction(\'' + it.id + '\', \'restore\')">Restore</button>'
+        : '<button class="link-btn" onclick="event.stopPropagation(); lifeAction(\'' + it.id + '\', \'archive\')">Archive</button>';
+      if (canDelete) {
+        actions += '<button class="link-btn danger" onclick="event.stopPropagation(); deleteContrib(\'' + it.id + '\')">Delete</button>';
+      }
+
+      const rowClass = 'row' + (it.archived ? ' is-archived' : '');
+      const rowClick = it.archived ? '' : ' onclick="editContrib(\'' + it.id + '\')"';
+      return '<div class="' + rowClass + '"' + rowClick + '>' +
         '<span class="chip ' + (CHIP[it.type] || 'chip-payment') + '">' + (it.type || '—') + '</span>' +
-        '<div class="row-main"><div class="row-name">' + esc(it.contributor) + ' ' + pub + '</div>' +
+        '<div class="row-main"><div class="row-name">' + archivedBadge + esc(it.contributor) + ' ' + pub + '</div>' +
         (note ? '<div class="row-note">' + esc(note) + '</div>' : '') + '</div>' +
         '<span class="row-val">' + pledged + val + '</span>' +
         '<span class="row-date">' + fmtDate(it.date) + '</span>' +
+        '<span class="row-actions">' + actions + '</span>' +
         '</div>';
     }).join('');
+  }
+
+  // ── Lifecycle: archive / restore / delete ───────────────────────
+  async function lifeAction(id, action) {
+    const it = items.find(x => x.id === id);
+    if (!it) return;
+    if (action === 'archive' && !confirm('Archive this entry for ' + (it.contributor || 'this contributor') + '? It stays in Notion and in the Ledger (greyed out), excluded from the totals — Restore it anytime.')) return;
+    try {
+      const r = await fetch('/api/contrib-lifecycle', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, pageId: id, action }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Action failed');
+      loadList();
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
+
+  async function deleteContrib(id) {
+    const it = items.find(x => x.id === id);
+    if (!it) return;
+    if (!confirm('Permanently remove this contribution from ' + (it.contributor || 'this contributor') + '?\n\nIt will be moved to Notion\'s trash (recoverable there) and disappear from the Ledger immediately.')) return;
+    try {
+      const r = await fetch('/api/contrib-lifecycle', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, pageId: id, action: 'delete' }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Delete failed');
+      loadList();
+    } catch (e) { alert('⚠️ ' + e.message); }
   }
 
   function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
