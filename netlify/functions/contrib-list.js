@@ -32,6 +32,8 @@ function parseItem(page) {
     date: p.Date?.date?.start || null,
     loggedBy: (p['Logged by']?.rich_text || []).map(t => t.plain_text).join(''),
     village: (p.Village?.rich_text || []).map(t => t.plain_text).join(''),
+    showPublicly: p['Show Publicly']?.checkbox === true,
+    displayName: (p['Display Name']?.rich_text || []).map(t => t.plain_text).join(''),
   };
 }
 

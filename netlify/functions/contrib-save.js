@@ -67,6 +67,8 @@ export const handler = async (event, context) => {
   const date = body.date || new Date().toISOString().slice(0, 10);
   const amount = Number(body.amount);
   const hours = Number(body.hours);
+  const showPublicly = body.showPublicly === true || body.showPublicly === 'true';
+  const displayName = (body.displayName || '').trim().slice(0, 60);
 
   const properties = {
     'Contributor': { title: [{ text: { content: contributor.slice(0, 200) } }] },
@@ -79,6 +81,9 @@ export const handler = async (event, context) => {
     'Village': { rich_text: [{ text: { content: village.slice(0, 100) } }] },
     'Amount': { number: Number.isFinite(amount) && amount > 0 ? amount : null },
     'Hours': { number: Number.isFinite(hours) && hours > 0 ? hours : null },
+    // Public supporters board opt-in — only with the contributor's permission.
+    'Show Publicly': { checkbox: showPublicly },
+    'Display Name': { rich_text: displayName ? [{ text: { content: displayName } }] : [] },
   };
 
   try {

@@ -120,6 +120,18 @@ import Hero from '../components/Hero.astro';
             <textarea id="p-note" name="note" class="form-textarea" rows="4" maxlength="2000" placeholder="e.g. Happy to help at working bees, or I can donate signage printing."></textarea>
           </div>
 
+          <!-- Public supporters board opt-in (off by default) -->
+          <div class="optin">
+            <label class="optin-check">
+              <input type="checkbox" id="p-public" name="showPublicly" />
+              <span>🎉 Happy to be thanked publicly on our <a href="/supporters/" target="_blank" rel="noopener">Supporters board</a>. <span class="hint">(Otherwise your support stays private — you'll only ever be counted anonymously in our totals.)</span></span>
+            </label>
+            <div class="form-group" id="display-name-wrap" style="display:none; margin-top:0.75rem;">
+              <label class="form-label" for="p-display">How would you like to appear? <span class="hint">(optional)</span></label>
+              <input type="text" id="p-display" name="displayName" class="form-input" maxlength="60" placeholder="e.g. Jane S., or Smiths Lake Bakery" />
+            </div>
+          </div>
+
           <!-- Honeypot: hidden from people, catches bots -->
           <p class="hp" aria-hidden="true"><label>Leave this empty<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></p>
 
@@ -140,8 +152,10 @@ import Hero from '../components/Hero.astro';
         <h2>🔒 Your details are safe</h2>
         <p>
           We use your contact details only to follow up on your contribution. We never sell or
-          share your information. Card payments are handled securely by Stripe — this website
-          never sees your card details.
+          share your information. Your name only appears on our public
+          <a href="/supporters/">Supporters board</a> if you tick the box to allow it — otherwise
+          you're only ever counted anonymously in our totals. Card payments are handled securely
+          by Stripe — this website never sees your card details.
         </p>
         <p><a href="/privacy/">Read our full Privacy Policy</a></p>
       </aside>
@@ -204,6 +218,11 @@ import Hero from '../components/Hero.astro';
   .form-textarea { resize: vertical; min-height: 100px; }
   .form-help { font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem; }
 
+  .optin { background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 8px; padding: 1rem 1.1rem; margin-bottom: 1.5rem; }
+  .optin-check { display: flex; align-items: flex-start; gap: 0.6rem; cursor: pointer; color: #374151; line-height: 1.5; }
+  .optin-check input { width: 1.15rem; height: 1.15rem; margin-top: 0.15rem; flex-shrink: 0; accent-color: #0f766e; }
+  .optin-check a { color: #0f766e; font-weight: 600; }
+
   .hp { position: absolute; left: -5000px; width: 1px; height: 1px; overflow: hidden; }
 
   .btn {
@@ -257,6 +276,13 @@ import Hero from '../components/Hero.astro';
   typeOpts.forEach((opt) => opt.querySelector('input')?.addEventListener('change', syncType));
   syncType();
 
+  // Reveal the "how would you like to appear" field only when opting in publicly.
+  const publicCheck = document.getElementById('p-public') as HTMLInputElement | null;
+  const displayWrap = document.getElementById('display-name-wrap');
+  publicCheck?.addEventListener('change', () => {
+    if (displayWrap) displayWrap.style.display = publicCheck.checked ? '' : 'none';
+  });
+
   // Async submit → /api/contrib-pledge
   const form = document.getElementById('pledge-form') as HTMLFormElement | null;
   const statusEl = document.getElementById('p-status');
@@ -287,6 +313,8 @@ import Hero from '../components/Hero.astro';
       amount: String(data.get('amount') || ''),
       hours: String(data.get('hours') || ''),
       note: String(data.get('note') || '').trim(),
+      showPublicly: data.get('showPublicly') === 'on',
+      displayName: String(data.get('displayName') || '').trim(),
       website: String(data.get('website') || ''), // honeypot
     };
 

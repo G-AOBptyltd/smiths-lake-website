@@ -55,6 +55,11 @@
   .chip-time { background: #dbeafe; color: #1e40af; }
   .chip-service { background: #ede9fe; color: #6d28d9; }
   .chip-pledged { background: #fef3c7; color: #92400e; }
+  .chip-public { background: #fde68a; color: #92400e; }
+
+  .optin { background: #f0fdf6; border: 1px solid #bbf7d0; border-radius: 8px; padding: 0.85rem 1rem; margin: 0.5rem 0 0.25rem; }
+  .optin-check { display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer; font-size: 12.5px; color: #374151; line-height: 1.45; }
+  .optin-check input { width: 1rem; height: 1rem; margin-top: 0.15rem; flex-shrink: 0; accent-color: #0f766e; }
 
   .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 560px; }
   label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin: 14px 0 4px; }
@@ -172,6 +177,17 @@
             </div>
           </div>
 
+          <div class="optin">
+            <label class="optin-check">
+              <input type="checkbox" id="f-public" onchange="togglePublic()" />
+              <span>🎉 Thank publicly on the <b>Supporters board</b> <span class="hint">— only tick if the contributor has agreed. Off = counted anonymously in totals.</span></span>
+            </label>
+            <div id="display-wrap" style="display:none; margin-top:0.6rem;">
+              <label for="f-display">Display name <span class="hint">(how they appear publicly; optional)</span></label>
+              <input type="text" id="f-display" maxlength="60" placeholder="e.g. Jane S., or Smiths Lake Bakery" />
+            </div>
+          </div>
+
           <div class="form-actions">
             <button class="btn btn-green" id="save-btn" onclick="saveContrib()">Save contribution</button>
             <button class="btn btn-ghost" onclick="newContrib()">Clear</button>
@@ -276,14 +292,21 @@
   }
 
   // ── Form ───────────────────────────────────────────────────────
+  function togglePublic() {
+    const on = document.getElementById('f-public').checked;
+    document.getElementById('display-wrap').style.display = on ? '' : 'none';
+  }
+
   function newContrib() {
     editingId = null;
     document.getElementById('log-title').textContent = 'Log a contribution';
     document.getElementById('editing-note').style.display = 'none';
     document.getElementById('save-btn').textContent = 'Save contribution';
-    ['f-contributor', 'f-amount', 'f-hours', 'f-note', 'f-contact'].forEach(id => document.getElementById(id).value = '');
+    ['f-contributor', 'f-amount', 'f-hours', 'f-note', 'f-contact', 'f-display'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('f-status').value = 'Received';
     document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('f-public').checked = false;
+    togglePublic();
     pickType('Money');
     setStatus('', '');
     showPanel('log');
@@ -305,6 +328,9 @@
     document.getElementById('f-contact').value = it.contact || '';
     document.getElementById('f-status').value = it.status || 'Received';
     document.getElementById('f-date').value = it.date || new Date().toISOString().slice(0, 10);
+    document.getElementById('f-public').checked = !!it.showPublicly;
+    document.getElementById('f-display').value = it.displayName || '';
+    togglePublic();
     pickType(it.type || 'Money');
     setStatus('', '');
     showPanel('log');
@@ -331,6 +357,8 @@
       contact: document.getElementById('f-contact').value.trim(),
       status: document.getElementById('f-status').value,
       date: document.getElementById('f-date').value || undefined,
+      showPublicly: document.getElementById('f-public').checked,
+      displayName: document.getElementById('f-display').value.trim(),
     };
     try {
       const r = await fetch('/api/contrib-save', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(payload) });
@@ -390,10 +418,11 @@
         ? (it.hours != null ? it.hours + ' hrs' : '—')
         : (it.amount != null ? fmtMoney(it.amount) : '—');
       const pledged = it.status === 'Pledged' ? '<span class="chip chip-pledged">Pledged</span> ' : '';
+      const pub = it.showPublicly ? '<span class="chip chip-public" title="Shown on the public Supporters board">🎉 public</span> ' : '';
       const note = [it.note, it.loggedBy ? 'by ' + it.loggedBy : ''].filter(Boolean).join(' · ');
       return '<div class="row" onclick="editContrib(\'' + it.id + '\')">' +
         '<span class="chip ' + (CHIP[it.type] || 'chip-payment') + '">' + (it.type || '—') + '</span>' +
-        '<div class="row-main"><div class="row-name">' + esc(it.contributor) + '</div>' +
+        '<div class="row-main"><div class="row-name">' + esc(it.contributor) + ' ' + pub + '</div>' +
         (note ? '<div class="row-note">' + esc(note) + '</div>' : '') + '</div>' +
         '<span class="row-val">' + pledged + val + '</span>' +
         '<span class="row-date">' + fmtDate(it.date) + '</span>' +

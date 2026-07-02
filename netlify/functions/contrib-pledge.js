@@ -56,6 +56,8 @@ export const handler = async (event) => {
   const hours = Number(body.hours);
 
   const loggedBy = contact ? `public form (${contact})` : 'public form';
+  const showPublicly = body.showPublicly === true || body.showPublicly === 'true';
+  const displayName = (body.displayName || '').trim().slice(0, 60);
 
   const properties = {
     'Contributor': { title: [{ text: { content: contributor } }] },
@@ -68,6 +70,9 @@ export const handler = async (event) => {
     'Village': { rich_text: [{ text: { content: village } }] },
     'Amount': { number: Number.isFinite(amount) && amount > 0 ? amount : null },
     'Hours': { number: Number.isFinite(hours) && hours > 0 ? hours : null },
+    // Opt-in to the public supporters board. Default false — silence is not consent.
+    'Show Publicly': { checkbox: showPublicly },
+    'Display Name': { rich_text: displayName ? [{ text: { content: displayName } }] : [] },
   };
 
   try {
