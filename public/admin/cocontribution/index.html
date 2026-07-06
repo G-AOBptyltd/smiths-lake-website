@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Co-Contribution & Budget — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; font-size: 14px; color: #1f2937; }
+  button { font-family: inherit; }
+
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select, .project-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; white-space: nowrap; font-family: inherit; max-width: 230px; }
+  .village-select option, .project-select option { color: #1f2937; }
+
+  .layout { display: flex; min-height: calc(100vh - 46px); }
+  .sidebar { width: 180px; background: #fff; border-right: 1px solid #e2e8f0; padding: 10px 0; flex-shrink: 0; }
+  .s-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font-size: 12.5px; color: #4b5563; cursor: pointer; border-left: 3px solid transparent; }
+  .s-item:hover { background: #f0fdf6; }
+  .s-item.on { color: #0f5c48; background: #e7f6ee; border-left-color: #15795f; font-weight: 700; }
+  .main { flex: 1; padding: 20px; max-width: 960px; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+  h1 { font-size: 1.05rem; color: #143d2e; margin-bottom: 2px; }
+  .sub { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+  .stat-num { font-size: 1.2rem; font-weight: 800; color: #0f5c48; }
+  .stat-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+  .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 620px; margin-bottom: 16px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin: 14px 0 4px; }
+  label:first-child { margin-top: 0; }
+  .hint { font-weight: 400; color: #9ca3af; }
+  input[type=text], input[type=number], textarea, select { width: 100%; border: 1px solid #d1d5db; border-radius: 7px; padding: 9px 11px; font-size: 13px; font-family: inherit; background: white; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid #15a06e; border-color: #15a06e; }
+  textarea { min-height: 70px; resize: vertical; line-height: 1.6; }
+  .two-col { display: flex; gap: 12px; flex-wrap: wrap; }
+  .two-col > div { flex: 1; min-width: 150px; }
+  .three-col { display: flex; gap: 12px; flex-wrap: wrap; }
+  .three-col > div { flex: 1; min-width: 120px; }
+  .form-actions { display: flex; gap: 8px; margin-top: 18px; align-items: center; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 7px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btn-green { background: #15795f; color: white; } .btn-green:hover { background: #0f5c48; } .btn-green:disabled { background: #9ca3af; cursor: wait; }
+  .btn-ghost { background: white; color: #4b5563; border: 1px solid #d1d5db; } .btn-ghost:hover { border-color: #9ca3af; }
+  .status-msg { font-size: 12px; font-weight: 600; min-height: 1.2em; }
+  .status-msg.ok { color: #15803d; } .status-msg.err { color: #b91c1c; }
+  .editing-note { font-size: 11.5px; color: #92400e; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 7px; padding: 7px 10px; margin-bottom: 14px; display: none; }
+  .lock-note { font-size: 11.5px; color: #6b7280; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px; padding: 7px 10px; margin-top: 6px; }
+
+  /* Line-item tables */
+  .tbl { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; font-size: 12.5px; }
+  .tbl th { background: #eef2f7; text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: #6b7280; }
+  .tbl td { padding: 8px 10px; border-top: 1px solid #f1f5f9; vertical-align: top; }
+  .tbl tr.item:hover { background: #f8fafc; }
+  .tbl tr.is-archived { opacity: .6; }
+  .tbl .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .chip { font-size: 9.5px; font-weight: 700; border-radius: 9px; padding: 2px 7px; white-space: nowrap; }
+  .chip-cash { background: #c9f0dd; color: #0f5c48; } .chip-wik { background: #dbeafe; color: #1e40af; }
+  .chip-ext { background: #fde68a; color: #92400e; } .chip-paid { background: #dcfce7; color: #166534; }
+  .chip-pending { background: #fef3c7; color: #92400e; }
+  .mini { background: none; border: none; color: #1d6fb8; font-size: 11px; cursor: pointer; padding: 0 3px; font-family: inherit; }
+  .mini:hover { text-decoration: underline; } .mini.danger { color: #b91c1c; }
+  .row-actions { white-space: nowrap; }
+
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; padding: 1rem; text-align: center; }
+  .auth-screen h1 { font-size: 1.2rem; } .auth-screen p { font-size: 0.85rem; color: #6b7280; max-width: 380px; }
+  .auth-btn { background: #15795f; color: white; border: none; border-radius: 8px; padding: 0.75rem 2rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .empty { color: #9ca3af; font-size: 12.5px; padding: 16px; text-align: center; }
+  .no-project { background: #fff7ed; border: 1px solid #fed7aa; color: #92400e; border-radius: 10px; padding: 14px 16px; font-size: 12.5px; }
+
+  /* ── Preview / print document ─────────────────────────────────── */
+  .doc { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 26px 30px; }
+  .doc h2 { font-size: 15px; color: #143d2e; margin: 22px 0 8px; }
+  .doc h2:first-child { margin-top: 0; }
+  .doc .doc-title { font-size: 18px; font-weight: 800; color: #0f4c3a; }
+  .doc .doc-sub { font-size: 12.5px; color: #4b5563; margin-top: 2px; }
+  .doc .doc-meta { font-size: 11px; color: #6b7280; margin-top: 4px; }
+  .doc table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+  .doc th, .doc td { border: 1px solid #d7dee6; padding: 6px 8px; text-align: left; vertical-align: top; }
+  .doc th { background: #eef2f7; font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: #475569; }
+  .doc td.num, .doc th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .doc tr.subtotal td { background: #f6faf8; font-weight: 700; }
+  .doc tr.grand td { background: #e7f6ee; font-weight: 800; color: #0f4c3a; }
+  .doc .notes { font-size: 11px; color: #4b5563; line-height: 1.6; margin-top: 8px; white-space: pre-wrap; }
+  .doc-toolbar { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+
+  @media print {
+    @page { margin: 14mm; }
+    body { background: #fff; font-size: 11px; }
+    .topbar, .sidebar, #vf-console-nav, .doc-toolbar, .s-item { display: none !important; }
+    .layout { display: block; } .main { max-width: none; padding: 0; }
+    .panel { display: none !important; } .panel.on { display: block !important; }
+    .doc { border: none; border-radius: 0; padding: 0; }
+    .doc tr { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">📑</div>
+  <h1>Co-Contribution & Project Budget</h1>
+  <p>Capture the grant co-contribution schedule and project budget, see a live dashboard, and export a council-ready report. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+  <p style="margin-top:1rem;"><a href="/admin/" style="color:#15795f; font-size:0.78rem;">← Admin home</a></p>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · Co-contribution</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <select id="project-select" class="project-select" aria-label="Project"></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <button class="s-item on" data-panel="preview" onclick="showPanel('preview')">📊 Dashboard</button>
+      <button class="s-item" data-panel="schedule" onclick="showPanel('schedule')">🧾 Schedule</button>
+      <button class="s-item" data-panel="budget" onclick="showPanel('budget')">🏗️ Project budget</button>
+      <button class="s-item" data-panel="project" onclick="showPanel('project')">⚙️ Project & funding</button>
+    </div>
+
+    <div class="main">
+
+      <!-- ── Dashboard / Preview ─────────────────────────────────── -->
+      <div class="panel on" id="panel-preview">
+        <h1>Funding dashboard</h1>
+        <p class="sub">Live co-contribution position — the council-ready view. Print to PDF or export CSV.</p>
+        <div id="preview-body"><div class="no-project">Pick or create a project to begin (Project & funding).</div></div>
+      </div>
+
+      <!-- ── Schedule (Table A) ──────────────────────────────────── -->
+      <div class="panel" id="panel-schedule">
+        <h1>Co-contribution schedule</h1>
+        <p class="sub">Every cash and works-in-kind contribution toward this project. Council row = set Party to “External”.</p>
+        <div id="sched-stats" class="stats"></div>
+        <table class="tbl" id="sched-table"><tbody><tr><td class="empty">No project selected.</td></tr></tbody></table>
+        <div class="form-card" style="margin-top:16px;">
+          <div class="editing-note" id="sched-editing"></div>
+          <label for="sc-name">Contribution item</label>
+          <input type="text" id="sc-name" maxlength="200" placeholder="e.g. Site survey — Cookson Land Surveyors" />
+          <label for="sc-desc">Description / calculation basis</label>
+          <textarea id="sc-desc" maxlength="2000" placeholder="e.g. 32 participants × 1 day × $50/head (community labour rate)."></textarea>
+          <div class="three-col">
+            <div>
+              <label for="sc-party">Party</label>
+              <select id="sc-party"><option>Community</option><option>External</option></select>
+            </div>
+            <div>
+              <label for="sc-type">Type</label>
+              <select id="sc-type">
+                <option>Cash — Prior Investment</option><option>Cash — Fundraising</option>
+                <option>WIK — Community Labour</option><option>WIK — Volunteer Labour</option>
+                <option>WIK — Equipment</option><option>WIK — Materials</option>
+              </select>
+            </div>
+            <div>
+              <label for="sc-confirmed">Confirmed?</label>
+              <select id="sc-confirmed">
+                <option>Yes — actual cost PAID</option><option>Yes — completed</option>
+                <option>Estimated</option><option>Committed</option><option>To confirm</option>
+              </select>
+            </div>
+          </div>
+          <label for="sc-value">Value (ex GST)</label>
+          <input type="number" id="sc-value" min="0" step="0.01" placeholder="e.g. 6500" />
+          <div class="form-actions">
+            <button class="btn btn-green" id="sc-save" onclick="saveSchedule()">Add line item</button>
+            <button class="btn btn-ghost" onclick="clearScheduleForm()">Clear</button>
+            <span class="status-msg" id="sc-status"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Budget (Table B) ────────────────────────────────────── -->
+      <div class="panel" id="panel-budget">
+        <h1>Project budget</h1>
+        <p class="sub">The full project cost by item and phase — reconciles to the total project value.</p>
+        <table class="tbl" id="budget-table"><tbody><tr><td class="empty">No project selected.</td></tr></tbody></table>
+        <div class="form-card" style="margin-top:16px;">
+          <div class="editing-note" id="bud-editing"></div>
+          <label for="bd-name">Budget item</label>
+          <input type="text" id="bd-name" maxlength="200" placeholder="e.g. Pump track — asphalt 200m², drainage, walls" />
+          <div class="two-col">
+            <div>
+              <label for="bd-phase">Phase</label>
+              <input type="text" id="bd-phase" maxlength="60" placeholder="e.g. 2, 3, or All" />
+            </div>
+            <div>
+              <label for="bd-amount">Amount (ex GST)</label>
+              <input type="number" id="bd-amount" min="0" step="0.01" placeholder="e.g. 268130" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-green" id="bd-save" onclick="saveBudget()">Add budget item</button>
+            <button class="btn btn-ghost" onclick="clearBudgetForm()">Clear</button>
+            <span class="status-msg" id="bd-status"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Project & funding ───────────────────────────────────── -->
+      <div class="panel" id="panel-project">
+        <h1>Project & funding</h1>
+        <p class="sub">Create or edit a project and its top-line grant figures.</p>
+        <div class="form-card">
+          <div class="editing-note" id="pr-editing"></div>
+          <label for="pr-name">Project name</label>
+          <input type="text" id="pr-name" maxlength="200" placeholder="e.g. Smiths Lake Recreation Reserve Masterplan" oninput="autoSlug()" />
+          <label for="pr-slug">Slug <span class="hint">(url-safe key — set once, don't change)</span></label>
+          <input type="text" id="pr-slug" maxlength="100" placeholder="e.g. smiths-lake-rec-reserve-masterplan" />
+          <div class="two-col">
+            <div>
+              <label for="pr-program">Grant program</label>
+              <input type="text" id="pr-program" maxlength="200" placeholder="e.g. NSW Community Participation Stream" />
+            </div>
+            <div>
+              <label for="pr-status">Status</label>
+              <select id="pr-status"><option>Draft</option><option>Active</option><option>Submitted</option><option>Archived</option></select>
+            </div>
+          </div>
+          <label for="pr-grant">Grant request amount (ex GST) <span class="hint">(sensitive — Village Admin only)</span></label>
+          <input type="number" id="pr-grant" min="0" step="1" placeholder="e.g. 1000000" />
+          <div class="lock-note" id="pr-lock" style="display:none;">Only a Village Admin can set the grant request amount. Ask your admin to enter it.</div>
+          <label for="pr-notes">Notes / rate card</label>
+          <textarea id="pr-notes" maxlength="2000" placeholder="Volunteer labour rates, treasurer confirmation, methodology notes…"></textarea>
+          <div class="form-actions">
+            <button class="btn btn-green" id="pr-save" onclick="saveProject()">Save project</button>
+            <button class="btn btn-ghost" onclick="newProject()">New project</button>
+            <button class="btn" id="pr-delete" style="background:#b91c1c;color:#fff;display:none;" onclick="deleteProject()">Delete project</button>
+            <span class="status-msg" id="pr-status-msg"></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+  let currentSlug = localStorage.getItem('vf_cocon_project') || '';
+  let data = null;                 // { project, schedule, budget, rollups }
+  let editSchedId = null, editBudId = null, editProjId = null;
+
+  // ── Auth ───────────────────────────────────────────────────────
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+  function isVillageAdmin() {
+    const roles = (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || [];
+    if (roles.includes('super-admin')) return true;
+    const vKey = VILLAGE.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    return roles.includes(vKey + ':admin');
+  }
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+    if (!isVillageAdmin()) {
+      document.getElementById('pr-grant').disabled = true;
+      document.getElementById('pr-lock').style.display = 'block';
+    }
+    loadVillages();
+    loadProjects();
+  }
+
+  // ── Village + project pickers ──────────────────────────────────
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const d = await r.json();
+      const villages = (d.villages || []).filter(v => v.status === 'live');
+      if (villages.length) {
+        sel.innerHTML = '';
+        villages.forEach(v => { const o = document.createElement('option'); o.value = v.name; o.textContent = v.name; if (v.name === VILLAGE) o.selected = true; sel.appendChild(o); });
+      }
+    } catch (e) {}
+    sel.onchange = () => { VILLAGE = sel.value; localStorage.setItem('vf_active_village', VILLAGE); currentSlug = ''; loadProjects(); };
+  }
+
+  async function loadProjects() {
+    const sel = document.getElementById('project-select');
+    try {
+      const r = await fetch('/api/cocon-get?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Load failed');
+      const projects = d.projects || [];
+      sel.innerHTML = '';
+      if (!projects.length) {
+        const o = document.createElement('option'); o.value = ''; o.textContent = '— no projects yet —'; sel.appendChild(o);
+        currentSlug = ''; renderAll();
+        return;
+      }
+      projects.forEach(p => { const o = document.createElement('option'); o.value = p.slug; o.textContent = p.name; sel.appendChild(o); });
+      if (!currentSlug || !projects.some(p => p.slug === currentSlug)) currentSlug = projects[0].slug;
+      sel.value = currentSlug;
+      loadProject();
+    } catch (e) {
+      document.getElementById('preview-body').innerHTML = '<div class="no-project">' + esc(e.message) + '</div>';
+    }
+    sel.onchange = () => { currentSlug = sel.value; localStorage.setItem('vf_cocon_project', currentSlug); loadProject(); };
+  }
+
+  async function loadProject() {
+    if (!currentSlug) { data = null; renderAll(); return; }
+    localStorage.setItem('vf_cocon_project', currentSlug);
+    try {
+      const r = await fetch('/api/cocon-get?village=' + encodeURIComponent(VILLAGE) + '&project=' + encodeURIComponent(currentSlug), { headers: await authHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Load failed');
+      data = d;
+      renderAll();
+    } catch (e) {
+      document.getElementById('preview-body').innerHTML = '<div class="no-project">' + esc(e.message) + '</div>';
+    }
+  }
+
+  // ── Panels ─────────────────────────────────────────────────────
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+    document.getElementById('panel-' + name).classList.add('on');
+    document.querySelectorAll('.s-item').forEach(b => b.classList.toggle('on', b.dataset.panel === name));
+  }
+
+  // ── Formatting ─────────────────────────────────────────────────
+  function fmtMoney(n) { if (n == null || n === '') return '—'; return '$' + (Math.round(n * 100) / 100).toLocaleString('en-AU'); }
+  function typeChip(t) { if (!t) return ''; const c = t.startsWith('Cash') ? 'chip-cash' : 'chip-wik'; return '<span class="chip ' + c + '">' + esc(t) + '</span>'; }
+  function confirmChip(c) { const paid = c === 'Yes — actual cost PAID' || c === 'Yes — completed'; return '<span class="chip ' + (paid ? 'chip-paid' : 'chip-pending') + '">' + esc(c || '—') + '</span>'; }
+
+  function renderAll() { renderSchedule(); renderBudget(); renderProjectForm(); renderPreview(); }
+
+  // ── Schedule editor ────────────────────────────────────────────
+  function renderSchedule() {
+    const tbl = document.getElementById('sched-table');
+    const stats = document.getElementById('sched-stats');
+    if (!data) { tbl.innerHTML = '<tbody><tr><td class="empty">Pick or create a project first.</td></tr></tbody>'; stats.innerHTML = ''; return; }
+    const r = data.rollups || {};
+    stats.innerHTML =
+      stat(fmtMoney(r.paid), 'Cash PAID') + stat(fmtMoney(r.cashAnticipated), 'Cash anticipated') +
+      stat(fmtMoney(r.wikPledged), 'WIK pledged') + stat(fmtMoney(r.totalCommunity), 'Community total');
+    const rows = (data.schedule || []);
+    if (!rows.length) { tbl.innerHTML = '<tbody><tr><td class="empty">No line items yet — add one below.</td></tr></tbody>'; return; }
+    let html = '<thead><tr><th>#</th><th>Item</th><th>Type</th><th class="num">Value</th><th>Confirmed</th><th></th></tr></thead><tbody>';
+    rows.forEach((it, i) => {
+      const partyTag = it.party === 'External' ? '<span class="chip chip-ext">External</span> ' : '';
+      html += '<tr class="item' + (it.archived ? ' is-archived' : '') + '">' +
+        '<td class="num">' + (i + 1) + '</td>' +
+        '<td>' + partyTag + esc(it.name) + (it.description ? '<div style="color:#9ca3af;font-size:11px;margin-top:2px;">' + esc(it.description) + '</div>' : '') + '</td>' +
+        '<td>' + typeChip(it.type) + '</td>' +
+        '<td class="num">' + fmtMoney(it.value) + '</td>' +
+        '<td>' + confirmChip(it.confirmed) + '</td>' +
+        '<td class="row-actions">' + rowActions('sched', it, i, rows.length) + '</td></tr>';
+    });
+    tbl.innerHTML = html + '</tbody>';
+  }
+
+  function rowActions(kind, it, i, n) {
+    let a = '';
+    if (!it.archived) {
+      a += '<button class="mini" onclick="edit' + (kind === 'sched' ? 'Schedule' : 'Budget') + '(\'' + it.id + '\')">Edit</button>';
+      if (i > 0) a += '<button class="mini" onclick="moveRow(\'' + kind + '\',\'' + it.id + '\',-1)">↑</button>';
+      if (i < n - 1) a += '<button class="mini" onclick="moveRow(\'' + kind + '\',\'' + it.id + '\',1)">↓</button>';
+      a += '<button class="mini" onclick="lifeAction(\'' + it.id + '\',\'archive\')">Archive</button>';
+    } else {
+      a += '<button class="mini" onclick="lifeAction(\'' + it.id + '\',\'restore\')">Restore</button>';
+    }
+    if (isVillageAdmin()) a += '<button class="mini danger" onclick="del(\'' + it.id + '\')">✕</button>';
+    return a;
+  }
+
+  function clearScheduleForm() {
+    editSchedId = null;
+    document.getElementById('sched-editing').style.display = 'none';
+    document.getElementById('sc-save').textContent = 'Add line item';
+    ['sc-name', 'sc-desc', 'sc-value'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('sc-party').value = 'Community';
+    document.getElementById('sc-type').value = 'Cash — Prior Investment';
+    document.getElementById('sc-confirmed').value = 'To confirm';
+    setStatus('sc-status', '', '');
+  }
+  function editSchedule(id) {
+    const it = (data.schedule || []).find(x => x.id === id); if (!it) return;
+    editSchedId = id;
+    const note = document.getElementById('sched-editing');
+    note.textContent = 'Editing an existing line item. Save to update it.'; note.style.display = 'block';
+    document.getElementById('sc-save').textContent = 'Update line item';
+    document.getElementById('sc-name').value = it.name || '';
+    document.getElementById('sc-desc').value = it.description || '';
+    document.getElementById('sc-value').value = it.value ?? '';
+    document.getElementById('sc-party').value = it.party || 'Community';
+    if (it.type) document.getElementById('sc-type').value = it.type;
+    if (it.confirmed) document.getElementById('sc-confirmed').value = it.confirmed;
+    showPanel('schedule');
+    document.getElementById('sc-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  async function saveSchedule() {
+    const name = document.getElementById('sc-name').value.trim();
+    if (!name) { setStatus('sc-status', 'Enter a contribution item name.', 'err'); return; }
+    const btn = document.getElementById('sc-save'); btn.disabled = true; setStatus('sc-status', 'Saving…', '');
+    const order = editSchedId ? undefined : nextOrder(data.schedule);
+    const payload = {
+      village: VILLAGE, entity: 'schedule', pageId: editSchedId || undefined,
+      name, project: currentSlug, description: document.getElementById('sc-desc').value.trim(),
+      party: document.getElementById('sc-party').value, type: document.getElementById('sc-type').value,
+      value: document.getElementById('sc-value').value, confirmed: document.getElementById('sc-confirmed').value,
+      ...(order !== undefined ? { order } : {}),
+    };
+    await upsert(payload, 'sc-status', () => { clearScheduleForm(); });
+    btn.disabled = false;
+  }
+
+  // ── Budget editor ──────────────────────────────────────────────
+  function renderBudget() {
+    const tbl = document.getElementById('budget-table');
+    if (!data) { tbl.innerHTML = '<tbody><tr><td class="empty">Pick or create a project first.</td></tr></tbody>'; return; }
+    const rows = (data.budget || []);
+    if (!rows.length) { tbl.innerHTML = '<tbody><tr><td class="empty">No budget items yet — add one below.</td></tr></tbody>'; return; }
+    let html = '<thead><tr><th>Budget item</th><th>Phase</th><th class="num">Amount</th><th></th></tr></thead><tbody>';
+    rows.forEach((it, i) => {
+      html += '<tr class="item' + (it.archived ? ' is-archived' : '') + '">' +
+        '<td>' + esc(it.name) + '</td><td>' + esc(it.phase || '') + '</td>' +
+        '<td class="num">' + fmtMoney(it.amount) + '</td>' +
+        '<td class="row-actions">' + rowActions('budget', it, i, rows.length) + '</td></tr>';
+    });
+    html += '<tr class="subtotal"><td colspan="2">Estimated total project cost</td><td class="num">' + fmtMoney((data.rollups || {}).estimatedTotalProjectCost) + '</td><td></td></tr>';
+    tbl.innerHTML = html + '</tbody>';
+  }
+  function clearBudgetForm() {
+    editBudId = null;
+    document.getElementById('bud-editing').style.display = 'none';
+    document.getElementById('bd-save').textContent = 'Add budget item';
+    ['bd-name', 'bd-phase', 'bd-amount'].forEach(id => document.getElementById(id).value = '');
+    setStatus('bd-status', '', '');
+  }
+  function editBudget(id) {
+    const it = (data.budget || []).find(x => x.id === id); if (!it) return;
+    editBudId = id;
+    const note = document.getElementById('bud-editing');
+    note.textContent = 'Editing an existing budget item.'; note.style.display = 'block';
+    document.getElementById('bd-save').textContent = 'Update budget item';
+    document.getElementById('bd-name').value = it.name || '';
+    document.getElementById('bd-phase').value = it.phase || '';
+    document.getElementById('bd-amount').value = it.amount ?? '';
+    showPanel('budget');
+    document.getElementById('bd-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  async function saveBudget() {
+    const name = document.getElementById('bd-name').value.trim();
+    if (!name) { setStatus('bd-status', 'Enter a budget item name.', 'err'); return; }
+    const btn = document.getElementById('bd-save'); btn.disabled = true; setStatus('bd-status', 'Saving…', '');
+    const order = editBudId ? undefined : nextOrder(data.budget);
+    const payload = {
+      village: VILLAGE, entity: 'budget', pageId: editBudId || undefined,
+      name, project: currentSlug, phase: document.getElementById('bd-phase').value.trim(),
+      amount: document.getElementById('bd-amount').value, ...(order !== undefined ? { order } : {}),
+    };
+    await upsert(payload, 'bd-status', () => { clearBudgetForm(); });
+    btn.disabled = false;
+  }
+
+  // ── Project form ───────────────────────────────────────────────
+  function renderProjectForm() {
+    if (!data || !data.project || !data.project.id) return; // keep whatever the user is typing for a new project
+    const p = data.project;
+    editProjId = p.id || null;
+    const note = document.getElementById('pr-editing');
+    note.textContent = 'Editing ' + (p.name || 'this project') + '.'; note.style.display = 'block';
+    document.getElementById('pr-name').value = p.name || '';
+    document.getElementById('pr-slug').value = p.slug || '';
+    document.getElementById('pr-program').value = p.grantProgram || '';
+    document.getElementById('pr-status').value = p.status || 'Draft';
+    document.getElementById('pr-grant').value = p.grantRequestAmount ?? '';
+    document.getElementById('pr-notes').value = p.notes || '';
+    // Delete project — village admin only, and only for a saved project.
+    document.getElementById('pr-delete').style.display = (editProjId && isVillageAdmin()) ? '' : 'none';
+  }
+  function newProject() {
+    editProjId = null;
+    document.getElementById('pr-editing').style.display = 'none';
+    document.getElementById('pr-delete').style.display = 'none';
+    ['pr-name', 'pr-slug', 'pr-program', 'pr-grant', 'pr-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('pr-status').value = 'Draft';
+    setStatus('pr-status-msg', '', ''); showPanel('project');
+  }
+  async function deleteProject() {
+    if (!data || !data.project || !data.project.id) { alert('Select a saved project first.'); return; }
+    const name = data.project.name || 'this project';
+    const n = (data.schedule || []).length + (data.budget || []).length;
+    if (!confirm('Delete “' + name + '” and its ' + n + ' schedule + budget line item(s)?\n\nEverything moves to Notion’s trash (recoverable there) and disappears here immediately.')) return;
+    const btn = document.getElementById('pr-delete'); btn.disabled = true; setStatus('pr-status-msg', 'Deleting…', '');
+    try {
+      const ids = [...(data.schedule || []).map(x => x.id), ...(data.budget || []).map(x => x.id), data.project.id];
+      for (const id of ids) {
+        const r = await fetch('/api/cocon-lifecycle', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, pageId: id, action: 'delete' }) });
+        if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Delete failed'); }
+      }
+      currentSlug = ''; localStorage.removeItem('vf_cocon_project'); data = null;
+      setStatus('pr-status-msg', 'Deleted ✓', 'ok');
+      await loadProjects();
+      newProject();
+    } catch (e) { setStatus('pr-status-msg', e.message, 'err'); }
+    finally { btn.disabled = false; }
+  }
+  function autoSlug() {
+    if (editProjId) return; // don't rewrite an existing slug
+    const name = document.getElementById('pr-name').value;
+    document.getElementById('pr-slug').value = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100);
+  }
+  async function saveProject() {
+    const name = document.getElementById('pr-name').value.trim();
+    const slug = document.getElementById('pr-slug').value.trim();
+    if (!name) { setStatus('pr-status-msg', 'Enter a project name.', 'err'); return; }
+    if (!slug) { setStatus('pr-status-msg', 'A slug is required.', 'err'); return; }
+    const btn = document.getElementById('pr-save'); btn.disabled = true; setStatus('pr-status-msg', 'Saving…', '');
+    const payload = {
+      village: VILLAGE, entity: 'project', pageId: editProjId || undefined,
+      name, slug, grantProgram: document.getElementById('pr-program').value.trim(),
+      status: document.getElementById('pr-status').value, notes: document.getElementById('pr-notes').value.trim(),
+    };
+    if (isVillageAdmin()) payload.grantRequestAmount = document.getElementById('pr-grant').value;
+    try {
+      const r = await fetch('/api/cocon-save', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(payload) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Save failed');
+      setStatus('pr-status-msg', 'Saved ✓', 'ok');
+      currentSlug = slug; localStorage.setItem('vf_cocon_project', slug);
+      await loadProjects();
+    } catch (e) { setStatus('pr-status-msg', e.message, 'err'); }
+    finally { btn.disabled = false; }
+  }
+
+  // ── Shared upsert / lifecycle ──────────────────────────────────
+  async function upsert(payload, statusId, onOk) {
+    try {
+      const r = await fetch('/api/cocon-save', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(payload) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Save failed');
+      setStatus(statusId, 'Saved ✓', 'ok');
+      await loadProject();
+      if (onOk) onOk();
+    } catch (e) { setStatus(statusId, e.message, 'err'); }
+  }
+  async function lifeAction(id, action) {
+    try {
+      const r = await fetch('/api/cocon-lifecycle', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, pageId: id, action }) });
+      const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Action failed');
+      loadProject();
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
+  async function del(id) {
+    if (!confirm('Permanently remove this line item?\n\nIt moves to Notion\'s trash (recoverable there) and disappears here immediately.')) return;
+    lifeAction(id, 'delete');
+  }
+  async function moveRow(kind, id, dir) {
+    const list = (kind === 'sched' ? data.schedule : data.budget).filter(x => !x.archived);
+    const idx = list.findIndex(x => x.id === id);
+    const other = list[idx + dir];
+    if (!other) return;
+    const a = list[idx], b = other;
+    try {
+      await fetch('/api/cocon-lifecycle', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, pageId: a.id, action: 'reorder', order: b.order }) });
+      await fetch('/api/cocon-lifecycle', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, pageId: b.id, action: 'reorder', order: a.order }) });
+      loadProject();
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
+  function nextOrder(list) { const vals = (list || []).map(x => Number(x.order) || 0); return (vals.length ? Math.max(...vals) : 0) + 1; }
+
+  // ── Preview / dashboard document ───────────────────────────────
+  function renderPreview() {
+    const el = document.getElementById('preview-body');
+    if (!data || !data.project) { el.innerHTML = '<div class="no-project">Pick or create a project to begin (Project & funding).</div>'; return; }
+    const p = data.project, r = data.rollups || {};
+    const community = (data.schedule || []).filter(s => s.party !== 'External' && !s.archived);
+    const external = (data.schedule || []).filter(s => s.party === 'External' && !s.archived);
+    const budget = (data.budget || []).filter(b => !b.archived);
+    const pct = ((r.coContributionPct || 0) * 100).toFixed(1) + '%';
+
+    let schedRows = community.map((s, i) =>
+      '<tr><td class="num">' + (i + 1) + '</td><td>' + esc(s.name) + (s.description ? '<div style="color:#6b7280;font-size:10.5px;">' + esc(s.description) + '</div>' : '') + '</td><td>' + esc(s.type || '') + '</td><td class="num">' + fmtMoney(s.value) + '</td><td>' + esc(s.confirmed || '') + '</td></tr>'
+    ).join('');
+
+    let extRows = external.map(s =>
+      '<tr><td>' + esc(s.name) + '</td><td class="num">' + fmtMoney(s.value) + '</td><td>' + esc(s.confirmed || 'Confirmed') + '</td></tr>'
+    ).join('');
+
+    let budgetRows = budget.map(b =>
+      '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.phase || '') + '</td><td class="num">' + fmtMoney(b.amount) + '</td></tr>'
+    ).join('');
+
+    el.innerHTML =
+      '<div class="doc-toolbar">' +
+        '<button class="btn btn-green" onclick="window.print()">🖨 Print / Save as PDF</button>' +
+        '<button class="btn btn-ghost" onclick="downloadCsv(\'both\')">⬇ Export CSV</button>' +
+      '</div>' +
+      '<div class="doc">' +
+        '<div class="doc-title">' + esc(p.name || 'Project') + '</div>' +
+        '<div class="doc-sub">PPCA Co-Contribution Schedule — Cash and Works in Kind (WIK)</div>' +
+        (p.grantProgram ? '<div class="doc-meta">' + esc(p.grantProgram) + '</div>' : '') +
+
+        '<h2>Co-Contribution Schedule</h2>' +
+        '<table><thead><tr><th class="num">#</th><th>Contribution Item</th><th>Type</th><th class="num">Value (ex GST)</th><th>Confirmed?</th></tr></thead><tbody>' +
+          (schedRows || '<tr><td colspan="5" style="color:#9ca3af;">No community line items yet.</td></tr>') +
+          '<tr class="subtotal"><td colspan="3">Subtotal — Cash Contributions PAID</td><td class="num">' + fmtMoney(r.paid) + '</td><td></td></tr>' +
+          '<tr class="subtotal"><td colspan="3">Subtotal — Cash Contributions ANTICIPATED</td><td class="num">' + fmtMoney(r.cashAnticipated) + '</td><td></td></tr>' +
+          '<tr class="subtotal"><td colspan="3">Subtotal — Works-in-Kind (WIK) PLEDGED / COMMITTED</td><td class="num">' + fmtMoney(r.wikPledged) + '</td><td></td></tr>' +
+          '<tr class="grand"><td colspan="3">TOTAL PPCA / COMMUNITY CO-CONTRIBUTION (Cash + WIK)</td><td class="num">' + fmtMoney(r.totalCommunity) + '</td><td></td></tr>' +
+        '</tbody></table>' +
+
+        '<h2>Total Project Co-Contribution Summary</h2>' +
+        '<table><tbody>' +
+          extRows +
+          '<tr><td>PPCA / Community — Cash and Works in Kind (this schedule)</td><td class="num">' + fmtMoney(r.totalCommunity) + '</td><td>See schedule</td></tr>' +
+          '<tr class="grand"><td>TOTAL CO-CONTRIBUTION</td><td class="num">' + fmtMoney(r.totalCoContribution) + '</td><td>' + pct + '</td></tr>' +
+          '<tr><td>Grant request</td><td class="num">' + fmtMoney(r.grantRequest) + '</td><td></td></tr>' +
+          '<tr class="grand"><td>TOTAL PROJECT VALUE</td><td class="num">' + fmtMoney(r.totalProjectValue) + '</td><td></td></tr>' +
+        '</tbody></table>' +
+
+        (budgetRows ?
+          '<h2>Project Budget</h2>' +
+          '<table><thead><tr><th>Budget Item</th><th>Phase</th><th class="num">Amount (ex GST)</th></tr></thead><tbody>' +
+            budgetRows +
+            '<tr class="grand"><td colspan="2">ESTIMATED TOTAL PROJECT COST</td><td class="num">' + fmtMoney(r.estimatedTotalProjectCost) + '</td></tr>' +
+          '</tbody></table>' : '') +
+
+        (p.notes ? '<h2>Notes</h2><div class="notes">' + esc(p.notes) + '</div>' : '') +
+      '</div>';
+  }
+
+  async function downloadCsv(table) {
+    try {
+      const r = await fetch('/api/cocon-export?village=' + encodeURIComponent(VILLAGE) + '&project=' + encodeURIComponent(currentSlug) + '&table=' + table, { headers: await authHeaders() });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Export failed'); }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = currentSlug + '-cocontribution.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
+
+  // ── helpers ────────────────────────────────────────────────────
+  function stat(num, label) { return '<div class="stat"><div class="stat-num">' + num + '</div><div class="stat-label">' + label + '</div></div>'; }
+  function setStatus(id, msg, kind) { const el = document.getElementById(id); el.textContent = msg; el.className = 'status-msg' + (kind ? ' ' + kind : ''); }
+  function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+</script>
+</body>
+</html>
