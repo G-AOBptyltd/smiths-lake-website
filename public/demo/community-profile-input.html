@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Community Profile — Input | VillageFirst</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#1F4E79; --navy-deep:#173B5C; --gold:#D99B20; --gold-soft:#FBF3E2;
+  --paper:#FAFAF7; --card:#FFFFFF; --ink:#26282B; --muted:#5B6470;
+  --line:#D9DDE2; --panel:#F2F6FB; --ok:#4E8B2C; --warn:#B54708;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 "Public Sans",system-ui,sans-serif;text-align:left}
+.wrap{max-width:880px;margin:0 auto;padding:0 20px 80px}
+header.site{background:var(--navy);color:#fff;padding:26px 0 22px}
+header.site .wrap{padding-bottom:0}
+.brand{font:600 13px/1 "Archivo",sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#BCD2E8;margin:0 0 10px}
+h1{font:700 clamp(26px,4vw,36px)/1.15 "Archivo",sans-serif;margin:0 0 6px}
+.sub{color:#D7E3F0;margin:0;max-width:60ch}
+.demo-badge{display:inline-block;margin-top:14px;background:var(--gold);color:#3A2A05;font:600 12px/1 "Public Sans",sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:6px 10px;border-radius:3px}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--line);margin:0 0 6px;background:var(--paper);position:sticky;top:0;z-index:30;padding-top:10px}
+.tab{appearance:none;border:0;background:none;font:600 15px "Archivo",sans-serif;color:var(--muted);padding:12px 18px;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tab[aria-selected="true"]{color:var(--navy);border-bottom-color:var(--gold)}
+.tab:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:16px 0 6px}
+.btn{appearance:none;border:1px solid var(--navy);background:var(--navy);color:#fff;font:600 14px "Public Sans",sans-serif;padding:9px 14px;border-radius:4px;cursor:pointer}
+.btn.secondary{background:#fff;color:var(--navy)}
+.btn.gold{background:var(--gold-soft);border-color:var(--gold);color:#6B4A08}
+.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.progress{flex:1;min-width:180px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.bar{flex:1;height:8px;background:#E7EAEE;border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--navy),#3E77AC);transition:width .3s}
+section.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:6px;padding:22px 24px;margin:18px 0}
+section.card h2{font:600 19px "Archivo",sans-serif;color:var(--navy);margin:0 0 2px}
+.why{font-size:13.5px;color:var(--muted);margin:0 0 14px;font-style:italic}
+label{display:block;font:600 13.5px "Public Sans",sans-serif;color:var(--ink);margin:12px 0 4px}
+input[type=text],textarea,select{width:100%;border:1px solid var(--line);border-radius:4px;padding:9px 10px;font:15px "Public Sans",sans-serif;color:var(--ink);background:#fff}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--navy);outline-offset:1px;border-color:var(--navy)}
+textarea{min-height:64px;resize:vertical}
+.hint{font-size:12.5px;color:var(--muted);margin:3px 0 0}
+.aid{margin:14px 0 4px;border:1px solid #EAD9B0;background:var(--gold-soft);border-radius:5px}
+.aid summary{cursor:pointer;font:600 13.5px "Public Sans",sans-serif;color:#6B4A08;padding:9px 12px;list-style:none;display:flex;gap:8px;align-items:center}
+.aid summary::before{content:"◈";color:var(--gold)}
+.aid summary:focus-visible{outline:2px solid var(--gold)}
+.aid .aid-body{padding:2px 14px 12px;font-size:13.5px;color:#4A3A14}
+.aid a{color:var(--navy);font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.aid ul{margin:6px 0 4px;padding-left:18px}
+.aid li{margin:3px 0}
+.ex{color:#8A6A1E;font-style:italic}
+table.grid{width:100%;border-collapse:collapse;margin:8px 0 4px;font-size:14px}
+table.grid th{background:var(--navy);color:#fff;font:600 12.5px "Public Sans",sans-serif;text-align:left;padding:7px 9px}
+table.grid td{border:1px solid var(--line);padding:5px 7px;vertical-align:top;background:#fff}
+table.grid td input[type=text]{border:0;padding:4px 2px;background:transparent}
+table.grid td input[type=text]:focus{outline:2px solid var(--navy)}
+.rate{text-align:center!important}
+.rate input{transform:scale(1.15);accent-color:var(--navy)}
+.addrow{margin-top:8px;font-size:13px}
+.checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 16px;margin-top:8px}
+.checks label{display:flex;gap:8px;align-items:center;font-weight:400;font-size:14.5px;margin:4px 0}
+.checks input{accent-color:var(--navy);transform:scale(1.1)}
+.tierbox{border:1px solid #BFD2E4;background:var(--panel);border-radius:5px;padding:12px 14px;font-size:13.5px;margin:6px 0 12px}
+.tierbox b{color:var(--navy)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip{background:#EDF2F8;border:1px solid #C9D8E7;color:var(--navy);font:600 12px "Public Sans",sans-serif;padding:4px 9px;border-radius:12px}
+/* summary sheet */
+#summaryPane{display:none}
+.sheet{background:#fff;border:1px solid var(--line);border-radius:6px;padding:0 0 26px;margin:18px 0}
+.sheet-band{background:var(--navy);color:#fff;padding:18px 26px;border-radius:6px 6px 0 0}
+.sheet-band h2{font:700 22px "Archivo",sans-serif;margin:0}
+.sheet-band p{margin:4px 0 0;color:#CBDCEC;font-size:14px}
+.sheet-inner{padding:10px 26px 0}
+.sheet h3{font:600 15px "Archivo",sans-serif;color:var(--navy);margin:20px 0 6px}
+.kv{width:100%;border-collapse:collapse;font-size:14px}
+.kv td{border:1px solid var(--line);padding:6px 9px;vertical-align:top}
+.kv td:first-child{background:#F4F6F8;font-weight:600;width:32%}
+.dayone{border-left:4px solid var(--gold);background:var(--gold-soft);padding:10px 14px;font-style:italic;font-size:14.5px;margin:14px 0 4px}
+.sheet .foot{font-size:12px;color:var(--muted);padding:18px 26px 0;font-style:italic}
+.empty{color:var(--muted);font-style:italic}
+footer.site{border-top:1px solid var(--line);margin-top:40px;padding:18px 0;font-size:12.5px;color:var(--muted)}
+@media print{
+  body{background:#fff}
+  header.site,.tabs,.toolbar,#formPane,footer.site,.noprint{display:none!important}
+  #summaryPane{display:block!important}
+  .sheet{border:0;margin:0}
+  .wrap{max-width:none;padding:0}
+}
+</style>
+</head>
+<body>
+<header class="site">
+  <div class="wrap">
+    <p class="brand">VillageFirst · Community Resilience</p>
+    <h1>Community Profile — Input</h1>
+    <p class="sub">Work through each section with your community.  Aids under each heading point to the data sources.  The Summary Sheet builds itself as you go.</p>
+    <span class="demo-badge">Demonstration prototype — Smiths Lake pattern, generalised for any community</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" id="tabForm" onclick="showPane('form')">Input form</button>
+    <button class="tab" role="tab" aria-selected="false" id="tabSummary" onclick="showPane('summary')">Summary Sheet (generated)</button>
+  </div>
+
+  <div class="toolbar noprint">
+    <button class="btn gold" onclick="loadExample()">Load Smiths Lake worked example</button>
+    <button class="btn secondary" onclick="clearForm()">Clear form</button>
+    <button class="btn secondary" onclick="showPane('summary');window.print()">Print / save Summary as PDF</button>
+    <div class="progress"><span id="pct">0% complete</span><div class="bar"><i id="barfill"></i></div></div>
+  </div>
+
+  <div id="formPane">
+
+  <div class="tierbox"><b>Privacy — two-tier model.</b>  Tier 1 (this form): aggregate numbers, facilities, hazards and capability only — no names, addresses or personal details.  This tier may be shared and generates the Community Profile Summary Sheet.  Tier 2 (held locally): contact lists and support-network detail stay with the CRN Chair and are never entered here.</div>
+
+  <!-- 1 SNAPSHOT -->
+  <section class="card" id="s1">
+    <h2>1.  Community overview and snapshot</h2>
+    <p class="why">Who is here — the first thing any agency asks.</p>
+    <details class="aid"><summary>Where to find this</summary><div class="aid-body">
+      <ul>
+        <li><a href="https://www.abs.gov.au/census/find-census-data/quickstats" target="_blank" rel="noopener">ABS QuickStats</a> — search your suburb or locality name for population, age profile, dwellings and industries (Census 2021).</li>
+        <li><a href="https://dbr.abs.gov.au/" target="_blank" rel="noopener">ABS Data by Region</a> — population estimates between censuses.</li>
+        <li>Many councils publish a community profile via <a href="https://home.id.com.au/services/community-profiles/" target="_blank" rel="noopener">.id community profiles</a> — check your council's website.</li>
+        <li>Peak occupancy has no official source — estimate locally from holiday-let stock, caravan parks and peak-weekend observation.</li>
+      </ul>
+      <p class="ex">Smiths Lake example: 1,332 residents (ABS 2021); approx. 1,000 dwellings incl. holiday homes; peak population approx. 3,000–3,500.</p>
+    </div></details>
+    <label for="communityName">Community name</label>
+    <input type="text" id="communityName" data-k="name" placeholder="e.g. Smiths Lake (village)">
+    <label for="population">Population (ABS + local estimate)</label>
+    <input type="text" id="population" data-k="population" placeholder="e.g. 1,332 (ABS Census 2021).  Peak population approx. 3,000–3,500 — indicative.">
+    <label for="dwellings">Dwellings and households (incl. holiday stock)</label>
+    <input type="text" id="dwellings" data-k="dwellings" placeholder="e.g. Approx. 1,000 total incl. holiday homes; approx. 600 permanently occupied.">
+    <label for="industries">Key industries</label>
+    <input type="text" id="industries" data-k="industries" placeholder="From ABS QuickStats — top employing industries.">
+    <label for="description">Community description</label>
+    <textarea id="description" data-k="description" placeholder="Two or three sentences: what kind of place this is, where it sits, what changes seasonally."></textarea>
+  </section>
+
+  <!-- 2 MAP -->
+  <section class="card" id="s2">
+    <h2>2.  Community map</h2>
+    <p class="why">Annotate an existing map, or record key points — agencies think spatially.</p>
+    <details class="aid"><summary>Where to find this</summary><div class="aid-body">
+      <ul>
+        <li><a href="https://maps.six.nsw.gov.au/" target="_blank" rel="noopener">SIX Maps (NSW)</a> — official NSW base maps, printable.</li>
+        <li><a href="https://www.rfs.nsw.gov.au/plan-and-prepare/building-in-a-bush-fire-area/planning-for-bush-fire-protection/bush-fire-prone-land" target="_blank" rel="noopener">NSW RFS Bush Fire Prone Land tool</a> — check mapped bushfire-prone areas.</li>
+        <li><a href="https://www.google.com/maps/d/" target="_blank" rel="noopener">Google My Maps</a> — free shared annotation for working sessions.</li>
+        <li>Your council's flood studies and hazard maps — search "[council name] flood study".</li>
+      </ul>
+    </div></details>
+    <div class="checks" id="mapChecks"></div>
+  </section>
+
+  <!-- 3 ACCESS -->
+  <section class="card" id="s3">
+    <h2>3.  Access, egress and isolation</h2>
+    <p class="why">What cuts you off, at what threshold, and for how long.</p>
+    <details class="aid"><summary>Where to find this</summary><div class="aid-body">
+      <ul>
+        <li><a href="https://www.livetraffic.com/" target="_blank" rel="noopener">Live Traffic NSW</a> — current and historical road closures on your access routes.</li>
+        <li>Local knowledge is the primary source: which storms have closed which roads, and for how long.</li>
+      </ul>
+      <p class="ex">Smiths Lake example: single sealed access (Macwood Rd); powerlines down close the road until made safe by Essential Energy; two gated 4WD-only fire trails, contingency use only.</p>
+    </div></details>
+    <table class="grid" id="accessTable">
+      <thead><tr><th style="width:30%">Route</th><th style="width:24%">Type / status</th><th style="width:28%">What closes it</th><th>Typical closure</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button class="btn secondary addrow" onclick="addRow('accessTable',4)">+ Add route</button>
+    <label for="isolation">Isolation assessment</label>
+    <textarea id="isolation" data-k="isolation" placeholder="What isolates the community, at what threshold, and for how long should we plan to be self-sufficient?"></textarea>
+  </section>
+
+  <!-- 4 UTILITIES -->
+  <section class="card" id="s4">
+    <h2>4.  Utilities and infrastructure dependencies</h2>
+    <p class="why">What fails first, and what fails next because of it.</p>
+    <details class="aid"><summary>Where to find this</summary><div class="aid-body">
+      <ul>
+        <li><a href="https://www.essentialenergy.com.au/outages" target="_blank" rel="noopener">Essential Energy outage map</a> (or your distributor) — outage history hints at feeder reliability.</li>
+        <li><a href="https://www.telstra.com.au/coverage-networks/our-coverage" target="_blank" rel="noopener">Telstra coverage map</a> and equivalents — mobile blackspot confirmation.</li>
+        <li>Your council's water services pages — supply arrangement, and whether sewer pump stations are power-dependent.</li>
+      </ul>
+    </div></details>
+    <table class="grid" id="utilTable">
+      <thead><tr><th style="width:20%">Service</th><th style="width:28%">Supply arrangement</th><th style="width:26%">Single points of failure</th><th>Backup arrangements</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- 5 HAZARDS -->
+  <section class="card" id="s5">
+    <h2>5.  Hazards and risks</h2>
+    <p class="why">Rate each hazard for likely impact on this community — your rating, not a generic one.</p>
+    <details class="aid"><summary>Where to find this</summary><div class="aid-body">
+      <ul>
+        <li><a href="https://www.ses.nsw.gov.au/" target="_blank" rel="noopener">NSW SES</a> — local flood and storm plans.</li>
+        <li><a href="https://www.rfs.nsw.gov.au/" target="_blank" rel="noopener">NSW RFS</a> — bushfire risk and Fire Danger Ratings.</li>
+        <li><a href="https://www.climatechange.environment.nsw.gov.au/projections-map" target="_blank" rel="noopener">AdaptNSW projections</a> — how hazards trend for your region.</li>
+        <li>Your Local Emergency Management Plan (EMPLAN) — ask your council's LEMO.</li>
+      </ul>
+    </div></details>
+    <table class="grid" id="hazTable">
+      <thead><tr><th>Hazard / risk</th><th class="rate" style="width:12%">Low</th><th class="rate" style="width:12%">Medium</th><th class="rate" style="width:12%">High</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div class="chips" id="highChips"></div>
+    <label>What does each priority hazard mean for the community?</label>
+    <table class="grid" id="consTable">
+      <thead><tr><th style="width:18%">Hazard</th><th style="width:28%">What could happen?</th><th style="width:24%">Who could be affected?</th><th>What can we do now?  (→ action register)</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button class="btn secondary addrow" onclick="addRow('consTable',4)">+ Add hazard row</button>
+  </section>
+
+  <!-- 6 VULNERABILITIES -->
+  <section class="card" id="s6">
+    <h2>6.  People and vulnerabilities (aggregate only)</h2>
+    <p class="why">Approximate numbers and levels only — never personal details in this tier.</p>
+    <details class="aid"><summary>Where to find this</summary><div class="aid-body">
+      <ul>
+        <li>In <a href="https://www.abs.gov.au/census/find-census-data/quickstats" target="_blank" rel="noopener">ABS QuickStats</a>, look for: median age and age bands; lone-person households; "core activity need for assistance"; dwellings with no motor vehicle; languages used at home.</li>
+        <li>Power-dependent medical equipment has no public source — an anonymous community count is the standard approach.</li>
+      </ul>
+      <p class="ex">Keep every entry aggregate: "approx. 40 households", never a name or address.</p>
+    </div></details>
+    <table class="grid" id="vulTable">
+      <thead><tr><th style="width:34%">Category</th><th style="width:34%">Estimate / level</th><th>Notes</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- 7 FACILITIES -->
+  <section class="card" id="s7">
+    <h2>7.  Community facility capability</h2>
+    <p class="why">Where people can gather — and whether it works with the power off.</p>
+    <table class="grid" id="facTable">
+      <thead><tr><th style="width:24%">Facility</th><th style="width:12%">Capacity</th><th style="width:18%">Power / generator</th><th style="width:16%">Water / amenities</th><th style="width:12%">Comms</th><th>Notes</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button class="btn secondary addrow" onclick="addRow('facTable',6)">+ Add facility</button>
+  </section>
+
+  <!-- 8 ASSETS -->
+  <section class="card" id="s8">
+    <h2>8.  Assets and equipment</h2>
+    <p class="why">What the community already holds against its risks.</p>
+    <table class="grid" id="assetTable">
+      <thead><tr><th style="width:32%">Asset</th><th style="width:34%">Location / availability</th><th>Notes</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button class="btn secondary addrow" onclick="addRow('assetTable',3)">+ Add asset</button>
+  </section>
+
+  <!-- 9 SKILLS -->
+  <section class="card" id="s9">
+    <h2>9.  Community skills</h2>
+    <p class="why">People are the deepest asset register.</p>
+    <div class="checks" id="skillChecks"></div>
+  </section>
+
+  <!-- 10 GAPS -->
+  <section class="card" id="s10">
+    <h2>10.  Capability gap analysis</h2>
+    <p class="why">Connect the priority hazards to what you hold against them.  Every gap becomes an action.</p>
+    <table class="grid" id="gapTable">
+      <thead><tr><th style="width:24%">Priority hazard (rating)</th><th style="width:24%">What we need</th><th style="width:20%">What we have</th><th style="width:20%">Gap</th><th>Ref</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button class="btn secondary addrow" onclick="addRow('gapTable',5)">+ Add gap</button>
+  </section>
+
+  <!-- 11 CONTACTS -->
+  <section class="card" id="s11">
+    <h2>11.  Community contacts (Tier 2 reference)</h2>
+    <p class="why">Roles only here.  Names and numbers stay with the CRN Chair — never on this page.</p>
+    <table class="grid" id="contactTable">
+      <thead><tr><th style="width:40%">Role</th><th>Detail location</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- 12 ACTIONS -->
+  <section class="card" id="s12">
+    <h2>12.  Action register</h2>
+    <p class="why">Owned, dated, and reviewed annually — this is where the workbook becomes a plan.</p>
+    <table class="grid" id="actionTable">
+      <thead><tr><th style="width:8%">Ref</th><th style="width:38%">Action</th><th style="width:20%">Owner</th><th style="width:16%">Target</th><th>Status</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <button class="btn secondary addrow" onclick="addActionRow()">+ Add action</button>
+  </section>
+
+  <!-- 13 CUSTODIANSHIP -->
+  <section class="card" id="s13">
+    <h2>13.  Custodianship and review record</h2>
+    <p class="why">A profile with no review date quietly goes stale — put the date on it.</p>
+    <label for="heldBy">Profile held by</label>
+    <input type="text" id="heldBy" data-k="heldBy" placeholder="e.g. CRN Chair (community association subcommittee)">
+    <label for="publishedAt">Tier 1 published at</label>
+    <input type="text" id="publishedAt" data-k="publishedAt" placeholder="Community website, if any">
+    <label for="lodgedWith">Tier 1 lodged with</label>
+    <input type="text" id="lodgedWith" data-k="lodgedWith" placeholder="e.g. LEMC secretariat via the LEMO">
+    <label for="reviewCycle">Review cycle</label>
+    <input type="text" id="reviewCycle" data-k="reviewCycle" placeholder="e.g. Annually each October, with a pre-season occupancy pulse to the LEMO">
+    <label for="version">Version / date</label>
+    <input type="text" id="version" data-k="version" placeholder="e.g. v0.1 — July 2026">
+  </section>
+
+  </div><!-- /formPane -->
+
+  <!-- SUMMARY -->
+  <div id="summaryPane">
+    <div class="sheet" id="sheet"></div>
+  </div>
+
+  <footer class="site noprint">
+    Demonstration prototype for the VillageFirst Community Profile module — one data source rendering the input page, the public profile and the Summary Sheet.  Tier 1 aggregate data only.
+  </footer>
+</div>
+
+<script>
+/* ---------- schema-driven fixed rows ---------- */
+const MAP_ITEMS = ["Community boundary and roads","Alternate access routes","Flood-prone and bushfire-prone areas","Community facilities (capacity, power, water, comms)","Potential safer places (not formal evacuation centres)","Evacuation routes","Communications blackspots","Potential helicopter landing areas"];
+const HAZARDS = ["Flood","Bushfire","Storm","Heatwave","Coastal erosion","Power outage (extended)","Water disruption / contamination","No access for resupply"];
+const VUL_CATS = ["Older residents","People living alone","Power-dependent medical equipment","Households without transport","Isolated households","Young children","Language / cultural support needs","Animals — pets and livestock","Transient / holiday increase"];
+const UTILS = ["Electricity","Water","Sewer / septic","Telecommunications"];
+const SKILLS = ["Medical","Mental health","Welfare support","Trades","Heavy machinery and operators","Communications","Community leadership","Catering / food preparation","Logistics / transport","Agriculture / farming","Administration","Interpreting / cultural support"];
+const CONTACT_ROLES = ["CRN Chair","Deputy / alternate","Facility liaison","Brigade / agency liaison"];
+
+const state = { fields:{}, checks:{}, skills:{}, haz:{}, tables:{} };
+
+function el(html){const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstChild}
+
+function buildFixed(){
+  const mc=document.getElementById('mapChecks');
+  MAP_ITEMS.forEach((m,i)=>mc.appendChild(el(`<label><input type="checkbox" data-check="m${i}"> ${m}</label>`)));
+  const sk=document.getElementById('skillChecks');
+  SKILLS.forEach((s,i)=>sk.appendChild(el(`<label><input type="checkbox" data-skill="${s}"> ${s}</label>`)));
+  const hz=document.querySelector('#hazTable tbody');
+  HAZARDS.forEach((h,i)=>{
+    hz.appendChild(el(`<tr><td>${h}</td>
+      <td class="rate"><input type="radio" name="hz${i}" value="Low" aria-label="${h} low"></td>
+      <td class="rate"><input type="radio" name="hz${i}" value="Medium" aria-label="${h} medium"></td>
+      <td class="rate"><input type="radio" name="hz${i}" value="High" aria-label="${h} high"></td></tr>`));
+  });
+  const ut=document.querySelector('#utilTable tbody');
+  UTILS.forEach(u=>ut.appendChild(el(`<tr><td>${u}</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>`)));
+  const vt=document.querySelector('#vulTable tbody');
+  VUL_CATS.forEach(v=>vt.appendChild(el(`<tr><td>${v}</td><td><input type="text"></td><td><input type="text"></td></tr>`)));
+  const ct=document.querySelector('#contactTable tbody');
+  CONTACT_ROLES.forEach(r=>ct.appendChild(el(`<tr><td>${r}</td><td><input type="text" placeholder="Held locally by CRN Chair — not lodged"></td></tr>`)));
+  for(let i=0;i<3;i++){addRow('accessTable',4);addRow('facTable',6);addRow('consTable',4);addRow('gapTable',5);}
+  for(let i=0;i<3;i++){addRow('assetTable',3);}
+  for(let i=0;i<3;i++){addActionRow();}
+}
+function addRow(tableId,cols){
+  const tb=document.querySelector('#'+tableId+' tbody');
+  let cells='';for(let i=0;i<cols;i++)cells+='<td><input type="text"></td>';
+  tb.appendChild(el('<tr>'+cells+'</tr>'));
+}
+function addActionRow(){
+  const tb=document.querySelector('#actionTable tbody');
+  const n=tb.children.length+1;
+  tb.appendChild(el(`<tr><td>A${n}</td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text" placeholder="Proposed"></td></tr>`));
+}
+
+/* ---------- helpers to read/write tables ---------- */
+function tableData(id){
+  return [...document.querySelectorAll('#'+id+' tbody tr')].map(tr=>
+    [...tr.children].map(td=>{const inp=td.querySelector('input');return inp?inp.value.trim():td.textContent.trim()}));
+}
+function setTable(id,rows,fixedFirstCol){
+  const trs=[...document.querySelectorAll('#'+id+' tbody tr')];
+  rows.forEach((r,i)=>{
+    while(i>=document.querySelectorAll('#'+id+' tbody tr').length){
+      if(id==='actionTable')addActionRow();else addRow(id,r.length);
+    }
+    const tr=document.querySelectorAll('#'+id+' tbody tr')[i];
+    [...tr.children].forEach((td,j)=>{
+      const inp=td.querySelector('input');const v=r[j]||'';
+      if(inp)inp.value=v;
+    });
+  });
+}
+
+/* ---------- progress ---------- */
+function updateProgress(){
+  const inputs=[...document.querySelectorAll('#formPane input[type=text],#formPane textarea')];
+  const filled=inputs.filter(i=>i.value.trim()).length;
+  const pct=inputs.length?Math.round(filled/inputs.length*100):0;
+  document.getElementById('pct').textContent=pct+'% complete';
+  document.getElementById('barfill').style.width=pct+'%';
+  const chips=document.getElementById('highChips');chips.innerHTML='';
+  HAZARDS.forEach((h,i)=>{
+    const v=document.querySelector(`input[name=hz${i}]:checked`);
+    if(v&&v.value==='High')chips.appendChild(el(`<span class="chip">High: ${h} → needs a gap row</span>`));
+  });
+}
+document.addEventListener('input',updateProgress);
+document.addEventListener('change',updateProgress);
+
+/* ---------- tabs ---------- */
+function showPane(which){
+  const form=which==='form';
+  document.getElementById('formPane').style.display=form?'block':'none';
+  document.getElementById('summaryPane').style.display=form?'none':'block';
+  document.getElementById('tabForm').setAttribute('aria-selected',form);
+  document.getElementById('tabSummary').setAttribute('aria-selected',!form);
+  if(!form)renderSummary();
+  window.scrollTo({top:0});
+}
+
+/* ---------- summary generation ---------- */
+function g(id){const e=document.getElementById(id);return e?e.value.trim():''}
+function kvRows(pairs){return pairs.map(([k,v])=>`<tr><td>${k}</td><td>${v||'<span class="empty">—</span>'}</td></tr>`).join('')}
+function renderSummary(){
+  const name=g('communityName')||'[Community name]';
+  const haz=[];
+  HAZARDS.forEach((h,i)=>{const v=document.querySelector(`input[name=hz${i}]:checked`);if(v&&(v.value==='High'||v.value==='Medium'))haz.push([h,v.value]);});
+  haz.sort((a,b)=>(a[1]==='High'?-1:1)-(b[1]==='High'?-1:1));
+  const facs=tableData('facTable').filter(r=>r[0]);
+  const genFac=facs.find(r=>/generator/i.test(r[2]||''));
+  const access=tableData('accessTable').filter(r=>r[0]);
+  const vuls=tableData('vulTable').filter(r=>r[1]);
+  const assets=tableData('assetTable').filter(r=>r[0]);
+  const skills=SKILLS.filter(s=>document.querySelector(`input[data-skill="${s}"]`)?.checked);
+  const highList=haz.filter(h=>h[1]==='High').map(h=>h[0].toLowerCase()).slice(0,3).join(', ');
+  const dayone=[
+    g('population')?`${name}: ${g('population').split('.')[0]}.`:`${name}.`,
+    highList?`Primary risks: ${highList}.`:'',
+    g('isolation')?g('isolation').split('.')[0]+'.':'',
+    genFac?`${genFac[0]} is the gathering point with generator capability.`:(facs[0]?`${facs[0][0]} is the community gathering point.`:'')
+  ].filter(Boolean).join('  ');
+  const sheet=document.getElementById('sheet');
+  sheet.innerHTML=`
+    <div class="sheet-band"><h2>COMMUNITY PROFILE — SUMMARY SHEET</h2><p>${name}  |  Generated from the input form — Tier 1 aggregate data only</p></div>
+    <div class="sheet-inner">
+      <table class="kv">${kvRows([["Prepared by",g('heldBy')],["Published at (Tier 1)",g('publishedAt')],["Lodged with",g('lodgedWith')],["Review cycle",g('reviewCycle')],["Version / date",g('version')]])}</table>
+      <div class="dayone"><b>Day-one summary:</b>  ${dayone||'<span class="empty">Complete the snapshot, hazards and facilities to generate this line.</span>'}</div>
+      <h3>1.  Snapshot</h3>
+      <table class="kv">${kvRows([["Population / peak occupancy",g('population')],["Dwellings",g('dwellings')],["Key industries",g('industries')]])}</table>
+      <h3>2.  Access and isolation</h3>
+      <table class="kv">${kvRows([["Access",access.map(r=>r[0]+(r[1]?' — '+r[1]:'')).join('; ')],["Isolation triggers",access.map(r=>r[2]).filter(Boolean).join('; ')],["Planning assumption",g('isolation')]])}</table>
+      <h3>3.  Facilities</h3>
+      <table class="kv">${facs.length?facs.map(r=>`<tr><td>${r[0]}</td><td>${[r[1]&&('Capacity '+r[1]),r[2],r[5]].filter(Boolean).join('  ·  ')}</td></tr>`).join(''):kvRows([["",""]])}</table>
+      <h3>4.  Top rated hazards</h3>
+      <table class="kv">${haz.length?haz.map(h=>`<tr><td>${h[0]}</td><td>${h[1]}</td></tr>`).join(''):kvRows([["",""]])}</table>
+      <h3>5.  Vulnerability aggregates</h3>
+      <table class="kv">${vuls.length?vuls.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}${r[2]?' — '+r[2]:''}</td></tr>`).join(''):kvRows([["",""]])}</table>
+      <h3>6.  Key assets and skills</h3>
+      <table class="kv">${kvRows([["Assets",assets.map(r=>r[0]).join('; ')],["Skills",skills.join('; ')]])}</table>
+      <h3>7.  Contact</h3>
+      <table class="kv">${kvRows([["Primary contact","CRN Chair — contact details held by the LEMO (not printed in this tier)"],["Detail tier","Names, numbers and support-network detail are held locally by the CRN Chair (Tier 2) and are not included in this sheet."]])}</table>
+    </div>
+    <p class="foot">Generated by the VillageFirst Community Profile module.  Tier 1 aggregate data only — verify entries marked "confirm" before lodgement.</p>`;
+}
+
+/* ---------- example + clear ---------- */
+function clearForm(){
+  document.querySelectorAll('#formPane input[type=text],#formPane textarea').forEach(i=>i.value='');
+  document.querySelectorAll('#formPane input[type=checkbox]').forEach(i=>i.checked=false);
+  document.querySelectorAll('#formPane input[type=radio]').forEach(i=>i.checked=false);
+  updateProgress();
+}
+function loadExample(){
+  clearForm();
+  const F={communityName:"Smiths Lake (village)",
+    population:"1,332 (ABS Census 2021).  Peak population approx. 3,000–3,500 — indicative (Dec–Jan, Easter and school holidays).",
+    dwellings:"Approx. 1,000 total dwellings incl. holiday homes — indicative; approx. 600 permanently occupied.",
+    industries:"Construction trades; health care and social assistance; accommodation and food services; retail (ABS 2021).",
+    description:"Lakeside village on the northern shore of Smiths Lake, within the Pacific Palms locality of the MidCoast LGA, bounded by Myall Lakes National Park.  Popular holiday destination with a large seasonal visitor population.",
+    isolation:"Effectively single-access — any closure of Macwood Road or the adjoining Lakes Way isolates the village, including downed powerlines until made safe by Essential Energy.  Plan for isolation of 24–72 hours with extended power outage a likely companion.",
+    heldBy:"CRN Chair, Smiths Lake (PPCA – Smiths Lake Subcommittee)",
+    publishedAt:"Villagefirst.org.au (Tier 1 only)",
+    lodgedWith:"MidCoast LEMC secretariat, via the LEMO",
+    reviewCycle:"Annually each October (pre-season), with a pre-season occupancy pulse to the LEMO",
+    version:"Worked example — July 2026.  Indicative entries; not a lodged profile."};
+  for(const k in F){const e=document.getElementById(k);if(e)e.value=F[k];}
+  setTable('accessTable',[
+    ["Macwood Road from The Lakes Way","Sealed — primary (single sealed access)","Bushfire; storm treefall; powerlines down; MVA","Hours to days"],
+    ["Gated fire trail — west end, New Forster Rd","Unsealed — gated, 100 m steep pitch, 4WD only","Contingency use — not an evacuation route","—"],
+    ["Gated fire trail — north end, Paradise Dr to Sandbar Rd","Unsealed — gated, 100 m steep pitch, 4WD only","Contingency use — not an evacuation route","—"]]);
+  const ut=document.querySelectorAll('#utilTable tbody tr');
+  [["Essential Energy overhead feed via The Lakes Way corridor","Single feed; storm treefall on corridor","No community backup — private generators only (confirm)"],
+   ["Reticulated town water (MidCoast Council)","Pump and treatment dependencies in extended outage","Some private tanks (confirm)"],
+   ["Reticulated with pump stations","Pump stations power-dependent — overflow risk","Confirm arrangements with Council"],
+   ["Mobile coverage variable; blackspots toward Sandbar / Cellito","Tower battery life in extended outage","No community UHF network yet — see gaps"]].forEach((r,i)=>{
+    const tds=ut[i].querySelectorAll('input');tds[0].value=r[0];tds[1].value=r[1];tds[2].value=r[2];});
+  const marks={1:"High",2:"High",3:"Medium",5:"High",6:"Medium",7:"Medium"};
+  for(const i in marks){const r=document.querySelector(`input[name=hz${i}][value=${marks[i]}]`);if(r)r.checked=true;}
+  document.querySelector('input[name=hz0][value=Medium]').checked=true;
+  document.querySelector('input[name=hz4][value=Low]').checked=true;
+  setTable('consTable',[
+    ["Bushfire","NP interface fire; closure of only access; smoke","Whole village; peak-season visitors","Formalise Bowling Club gathering point (A1); visitor info via holiday lets"],
+    ["Storm / power outage","Multi-day outage; powerlines down; pump overflow","Older residents; medical-equipment households","Generator arrangement (A1); dependency count (A3); comms tree (A2)"],
+    ["Isolation / resupply","Small supermarket only; Forster approx. 30 min","Households without transport; visitors","Resupply plan beyond 48 hours (A4)"]]);
+  const vt=document.querySelectorAll('#vulTable tbody tr');
+  [["High — predominant age band 60–69 (ABS 2021)",""],["To be estimated","Street-contact mapping (Tier 2)"],
+   ["Unknown — survey required","Survey proposed (A3)"],["Low — to be estimated",""],
+   ["Rural fringe and Tarbuck Bay approaches",""],["Moderate — nearest school Pacific Palms PS",""],
+   ["Low (ABS 2021)",""],["High (approx. 50%) pet ownership; some hobby livestock","Include in welfare planning"],
+   ["Up to approx. +2,000 above residents at peak","Pre-season pulse to LEMO (see §13)"]].forEach((r,i)=>{
+    const tds=vt[i].querySelectorAll('input');tds[0].value=r[0];tds[1].value=r[1];});
+  setTable('facTable',[
+    ["Pacific Palms Bowling Club (cnr Macwood Rd & Paradise Dr)","500–600","Mains + generator capability","Kitchen; toilets; town water","Adequate (confirm)","Primary informal gathering point; helicopter landing site — confirmation pending (A5)"],
+    ["Smiths Lake RFS Station","—","Agency facility","—","Agency comms","Brigade liaison via CRN Chair"],
+    ["Recreation Reserve","Open space","—","Toilets; town water","—","Secondary open-space assembly area"]]);
+  setTable('assetTable',[
+    ["Private generators","Some distributed — unregistered","Informal register proposed (Tier 2)"],
+    ["RFS brigade and equipment","Smiths Lake RFS Station","Local response capability"],
+    ["Chainsaws and trades operators","High — construction a substantial local industry","Clearing capability after storm"]]);
+  ["Trades","Heavy machinery and operators","Catering / food preparation","Community leadership","Communications","Logistics / transport"].forEach(s=>{
+    const c=document.querySelector(`input[data-skill="${s}"]`);if(c)c.checked=true;});
+  setTable('gapTable',[
+    ["Extended power outage (High)","Gathering point with reliable backup power","Bowling Club — informal generator capability","No formal arrangement","A1"],
+    ["Bushfire / isolation (High)","Comms when mobile network degrades","Mobile phones; informal networks","No UHF / satellite tree","A2"],
+    ["Welfare in any event","Medical-equipment household count","Unknown","No aggregate figure","A3"]]);
+  setTable('actionTable',[
+    ["A1","Formalise Bowling Club arrangement incl. emergency use and generator operation","Subcommittee with Bowling Club","Oct 2026","Proposed"],
+    ["A2","Street-contact comms tree with UHF / satellite backbone","CRN Chair","Dec 2026","Proposed"],
+    ["A3","Anonymous survey — power-dependent medical equipment count","CRN with community groups","Oct 2026","Proposed"]]);
+  document.querySelectorAll('#mapChecks input').forEach(c=>c.checked=true);
+  updateProgress();
+}
+
+buildFixed();
+updateProgress();
+</script>
+</body>
+</html>
