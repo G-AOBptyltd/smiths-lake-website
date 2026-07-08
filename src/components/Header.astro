@@ -7,11 +7,11 @@ const navItems = [
   { href: '/about/', label: 'About Us', icon: 'about' },
   { href: '/projects/', label: 'Project Hub', icon: 'projects' },
   { href: '/environment/', label: 'Environment', icon: 'environment' },
-  { href: '/news/', label: 'News', icon: 'news' },
+  { href: '/news/', label: 'News', icon: 'news', hideOnDesktop: true },
   { href: '/services/', label: 'Services', icon: 'services' },
   { href: '/groups/', label: 'Groups & Activities', icon: 'groups' },
   { href: '/history/', label: 'History', icon: 'history' },
-  { href: '/contribute/', label: 'Support Us', icon: 'contribute' },
+  { href: '/contribute/', label: 'Support Us', icon: 'contribute', hideOnDesktop: true },
   { href: '/emergency/', label: 'Emergency & Safety', icon: 'emergency' },
 ];
 
@@ -30,6 +30,7 @@ const drawerIcons: Record<string, string> = {
 };
 
 const drawerItems = navItems.filter((item) => item.icon !== 'emergency');
+const desktopNavItems = navItems.filter((item) => !item.hideOnDesktop);
 
 function isActive(href: string): boolean {
   if (href === '/') {
@@ -71,14 +72,14 @@ function isActive(href: string): boolean {
       </button>
       
       <ul id="main-menu" class="nav-menu">
-        {navItems.map((item) => (
+        {desktopNavItems.map((item) => (
           <li>
             <a
               href={item.href}
               class:list={['nav-link', { 'is-active': isActive(item.href) }]}
               aria-current={isActive(item.href) ? 'page' : undefined}
             >
-              {item.label}
+              {item.icon === 'groups' ? (<>Groups &<br />Activities</>) : item.label}
             </a>
           </li>
         ))}
@@ -205,6 +206,8 @@ function isActive(href: string): boolean {
     border-radius: var(--radius-sm);
     transition: background-color var(--transition-fast);
     white-space: nowrap;
+    line-height: 1.3;
+    text-align: center;
   }
   
   .nav-link:hover {
