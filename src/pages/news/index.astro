@@ -1,28 +1,15 @@
 ---
-// Village News — local-masthead layout (June 2026 v2)
-// Inspired by community mastheads (In The Cove / About Regional): photo splash,
-// thumbnail strip, more-stories list, and a live sidebar.
+// Village News — hybrid layout (Option 2, July 2026)
+// Stories WITH a photo are promoted to a "Featured" band (up to 2, full-bleed
+// image tiles); every other story renders as a clean text row (date + section
+// chip + headline + excerpt), so the page looks intentional with zero photos
+// and grows richer as editors upload images. No empty photo slots, ever.
 // Feed rule: only items with "Show in News Feed" ✓ AND a "Publish Date", newest first.
 import Layout from '../../layouts/BaseLayout.astro';
 import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 import { generateSlug, getSectionPath, getSectionColour, getSectionDisplayName } from '../../lib/notion-detail-pages.js';
-
-// Section → gradient + icon fallback (used only when a story has no photo)
-const SECTION_HERO_STYLES: Record<string, { gradient: string; icon: string }> = {
-  'News':                         { gradient: 'linear-gradient(160deg, #0c2d5a 0%, #1B365D 50%, #4db8b8 100%)', icon: '📰' },
-  'Groups & Activities':          { gradient: 'linear-gradient(160deg, #1e3a5f 0%, #5B9BD5 70%, #93c5fd 100%)', icon: '🎉' },
-  'Services':                     { gradient: 'linear-gradient(160deg, #0c1a2e 0%, #1B365D 70%, #2d5a9e 100%)', icon: '🏘️' },
-  'Services & Amenities':         { gradient: 'linear-gradient(160deg, #0c1a2e 0%, #1B365D 70%, #2d5a9e 100%)', icon: '🏘️' },
-  'Environment & Sustainability': { gradient: 'linear-gradient(160deg, #064e3b 0%, #16A34A 70%, #4ade80 100%)', icon: '🌿' },
-  'Emergency & Safety':           { gradient: 'linear-gradient(160deg, #7f1d1d 0%, #DC2626 70%, #ef4444 100%)', icon: '🔥' },
-  'History & Culture':            { gradient: 'linear-gradient(160deg, #451a03 0%, #92400E 70%, #b45309 100%)', icon: '🏛️' },
-};
-
-function getHeroStyle(section: string) {
-  return SECTION_HERO_STYLES[section] || { gradient: 'linear-gradient(160deg, #0c1a2e 0%, #1B365D 100%)', icon: '📋' };
-}
 
 function buildItemUrl(item: any) {
   const slug = item.slug || generateSlug(item.title);
@@ -34,8 +21,19 @@ function buildItemUrl(item: any) {
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
 }
-function formatDateShort(iso: string) {
-  return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+function dateParts(iso: string) {
+  const d = new Date(iso);
+  return {
+    day: d.toLocaleDateString('en-AU', { day: '2-digit' }),
+    mon: d.toLocaleDateString('en-AU', { month: 'short' }),
+  };
+}
+function accentFor(section: string) {
+  return getSectionColour(section) || '#2d8b8b';
+}
+function trim(text: string, max: number) {
+  if (!text) return '';
+  return text.length > max ? text.substring(0, max) + '…' : text;
 }
 
 const sectionSettings = await fetchSectionSettingsBySlug('services');
@@ -65,10 +63,10 @@ const newsItems = allPublished
     return { ...item, _url: buildItemUrl(item), _img: item.imageUrl || cardImageManifest[slug] || null };
   });
 
-const leadStory   = newsItems[0] || null;
-const secondStory = newsItems[1] || null;
-const stripItems  = newsItems.slice(2, 6);
-const moreItems   = newsItems.slice(6, 16);
+// Hybrid split: photo stories → featured band (max 2); the rest → text list.
+const featured = newsItems.filter((i: any) => i._img).slice(0, 2);
+const featuredSet = new Set(featured);
+const listItems = newsItems.filter((i: any) => !featuredSet.has(i));
 ---
 
 <Layout
@@ -87,85 +85,75 @@ const moreItems   = newsItems.slice(6, 16);
   .news-masthead-title { font-size: 1.6rem; font-weight: 800; color: #1B365D; letter-spacing: -0.02em; }
   .news-masthead-date { font-size: 0.75rem; color: #9ca3af; }
 
-  /* ── Splash: lead + second story, photos edge-to-edge ──────────── */
-  .splash { display: grid; grid-template-columns: 2fr 1fr; gap: 6px; }
-  .splash.single { grid-template-columns: 1fr; }
+  /* shared section chip */
+  .chip {
+    display: inline-block; padding: 0.18rem 0.6rem; border-radius: 3px;
+    font-size: 0.62rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase;
+    color: white; margin-bottom: 0.5rem;
+  }
 
-  .splash-story {
+  /* ── Featured lane: stories that have a photo ──────────────────── */
+  .lane-label { display: flex; align-items: center; gap: 0.75rem; margin: 0 0 0.9rem; }
+  .lane-label span {
+    font-size: 0.7rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #2d8b8b; white-space: nowrap;
+  }
+  .lane-label::after { content: ''; flex: 1; height: 2px; background: #2d8b8b; opacity: 0.25; }
+
+  .featured { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+  .featured.single { grid-template-columns: 1fr; }
+  .feat {
     position: relative; display: flex; flex-direction: column; justify-content: flex-end;
-    min-height: 420px; overflow: hidden; border-radius: 4px;
+    min-height: 380px; border-radius: 6px; overflow: hidden;
     background-size: cover; background-position: center; text-decoration: none;
   }
-  .splash-story.secondary { min-height: 420px; }
-  .splash-story::after {
+  .feat::after {
     content: ''; position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(5,13,26,0.92) 0%, rgba(5,13,26,0.35) 45%, rgba(5,13,26,0.05) 70%);
+    background: linear-gradient(to top, rgba(8,15,30,0.92) 0%, rgba(8,15,30,0.35) 46%, rgba(8,15,30,0.02) 72%);
     transition: background 0.25s ease;
   }
-  .splash-story:hover::after {
-    background: linear-gradient(to top, rgba(5,13,26,0.96) 0%, rgba(5,13,26,0.45) 50%, rgba(5,13,26,0.1) 75%);
+  .feat:hover::after {
+    background: linear-gradient(to top, rgba(8,15,30,0.96) 0%, rgba(8,15,30,0.45) 50%, rgba(8,15,30,0.08) 76%);
   }
-  .splash-icon {
-    position: absolute; top: 38%; left: 50%; transform: translate(-50%, -50%);
-    font-size: 110px; opacity: 0.14; pointer-events: none; user-select: none;
+  .feat-body { position: relative; z-index: 1; padding: 1.4rem; }
+  .feat h2 {
+    color: white; font-family: Georgia, 'Times New Roman', serif; font-weight: 800;
+    line-height: 1.16; margin: 0.5rem 0 0.4rem; text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    font-size: clamp(1.35rem, 2.6vw, 1.95rem);
   }
-  .splash-content { position: relative; z-index: 1; padding: 1.5rem; }
-  .story-chip {
-    display: inline-block; padding: 0.22rem 0.7rem; border-radius: 3px;
-    font-size: 0.66rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
-    color: white; margin-bottom: 0.7rem;
-  }
-  .splash-hed {
-    font-size: clamp(1.35rem, 2.6vw, 1.9rem); font-weight: 800; color: white;
-    line-height: 1.18; margin: 0 0 0.5rem; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-  }
-  .splash-story.secondary .splash-hed { font-size: clamp(1.05rem, 1.8vw, 1.3rem); }
-  .splash-dek {
-    font-size: 0.9rem; color: rgba(255,255,255,0.85); line-height: 1.55;
-    margin: 0 0 0.5rem; max-width: 600px;
-  }
-  .story-date { font-size: 0.75rem; color: rgba(255,255,255,0.65); }
+  .feat.secondary h2 { font-size: clamp(1.05rem, 1.8vw, 1.3rem); }
+  .feat p { color: rgba(255,255,255,0.88); font-size: 0.9rem; margin: 0 0 0.5rem; max-width: 560px; }
+  .feat-date { color: rgba(255,255,255,0.7); font-size: 0.75rem; }
 
-  /* ── Thumbnail strip ───────────────────────────────────────────── */
-  .thumb-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
-  .thumb-tile {
-    position: relative; min-height: 170px; display: flex; flex-direction: column; justify-content: flex-end;
-    overflow: hidden; border-radius: 4px; background-size: cover; background-position: center;
-    text-decoration: none;
-  }
-  .thumb-tile::after {
-    content: ''; position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(5,13,26,0.92) 0%, rgba(5,13,26,0.25) 55%, transparent 75%);
-  }
-  .thumb-tile-icon {
-    position: absolute; top: 32%; left: 50%; transform: translate(-50%, -50%);
-    font-size: 44px; opacity: 0.2; pointer-events: none;
-  }
-  .thumb-tile-content { position: relative; z-index: 1; padding: 0.8rem; }
-  .thumb-tile-hed { font-size: 0.85rem; font-weight: 700; color: white; line-height: 1.3; margin: 0.3rem 0 0; }
-  .thumb-tile .story-chip { margin-bottom: 0; font-size: 0.58rem; padding: 0.16rem 0.5rem; }
+  /* ── Body: story list + sidebar ────────────────────────────────── */
+  .news-body { display: grid; grid-template-columns: 1fr 320px; gap: 2.25rem; margin-top: 2.5rem; }
 
-  /* ── Body: more stories + sidebar ──────────────────────────────── */
-  .news-body { display: grid; grid-template-columns: 1fr 320px; gap: 2rem; margin-top: 2.25rem; }
+  .more-label { display: flex; align-items: center; gap: 0.75rem; margin: 0 0 0.25rem; }
+  .more-label span { font-size: 0.95rem; font-weight: 800; color: #1B365D; white-space: nowrap; }
+  .more-label::after { content: ''; flex: 1; height: 2px; background: #1B365D; opacity: 0.85; }
 
-  .more-label { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
-  .more-label-text {
-    font-size: 0.95rem; font-weight: 800; color: #1B365D; white-space: nowrap;
+  /* ── Story rows (look finished with no photo) ──────────────────── */
+  .story {
+    display: grid; grid-template-columns: 96px 1fr; gap: 1.1rem; align-items: start;
+    padding: 1.15rem 0; border-bottom: 1px solid #e5e9f0; position: relative; text-decoration: none;
   }
-  .more-label-line { flex: 1; height: 2px; background: #1B365D; opacity: 0.85; }
-
-  .more-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem 1.5rem; }
-  .more-item { display: flex; gap: 0.875rem; text-decoration: none; align-items: flex-start; }
-  .more-thumb {
-    width: 84px; height: 64px; border-radius: 4px; flex-shrink: 0;
-    background-size: cover; background-position: center;
-    display: flex; align-items: center; justify-content: center; font-size: 24px;
+  .story::before {
+    content: ''; position: absolute; left: -14px; top: 1.15rem; bottom: 1.15rem; width: 3px;
+    border-radius: 2px; background: var(--acc, #2d8b8b);
   }
-  .more-meta { font-size: 0.68rem; color: #9ca3af; margin-bottom: 0.2rem; }
-  .more-meta b { font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-  .more-hed { font-size: 0.9rem; font-weight: 700; color: #1B365D; line-height: 1.35; margin: 0; }
-  .more-item:hover .more-hed { color: #2d8b8b; }
-
+  .story .when { padding-top: 0.15rem; }
+  .story .day { font-size: 1.5rem; font-weight: 800; color: #1B365D; line-height: 1; }
+  .story .mon { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #9ca3af; }
+  .story .thumb { width: 96px; height: 72px; border-radius: 5px; background-size: cover; background-position: center; }
+  .story h3 {
+    font-family: Georgia, 'Times New Roman', serif; font-size: 1.18rem; font-weight: 700; color: #1B365D;
+    line-height: 1.28; margin: 0 0 0.3rem;
+  }
+  .story:hover h3 { color: #2d8b8b; }
+  .story p { font-size: 0.9rem; color: #6b7280; margin: 0 0 0.45rem; max-width: 60ch; }
+  .story .chip { font-size: 0.6rem; }
+  .readmore { font-size: 0.78rem; font-weight: 700; color: #2d8b8b; }
+  .readmore::after { content: ' →'; }
   .feed-empty { padding: 1.5rem 0; color: #6b7280; font-size: 0.9rem; }
 
   /* ── Sidebar ───────────────────────────────────────────────────── */
@@ -202,13 +190,11 @@ const moreItems   = newsItems.slice(6, 16);
   /* ── Responsive ────────────────────────────────────────────────── */
   @media (max-width: 980px) {
     .news-body { grid-template-columns: 1fr; }
-    .thumb-strip { grid-template-columns: repeat(2, 1fr); }
+    .featured { grid-template-columns: 1fr; }
   }
-  @media (max-width: 700px) {
-    .splash { grid-template-columns: 1fr; }
-    .splash-story { min-height: 300px; }
-    .splash-story.secondary { min-height: 230px; }
-    .more-grid { grid-template-columns: 1fr; }
+  @media (max-width: 560px) {
+    .story { grid-template-columns: 56px 1fr; gap: 0.8rem; }
+    .story .day { font-size: 1.15rem; }
   }
 </style>
 
@@ -231,82 +217,56 @@ const moreItems   = newsItems.slice(6, 16);
         </span>
       </div>
 
-      {leadStory ? (
+      {newsItems.length > 0 ? (
         <>
-          <!-- Splash: lead + second story -->
-          <div class={`splash ${secondStory ? '' : 'single'}`}>
-            {[{ item: leadStory, cls: '' }, ...(secondStory ? [{ item: secondStory, cls: 'secondary' }] : [])].map(({ item, cls }) => {
-              const style = getHeroStyle(item.section);
-              const bg = item._img ? `background-image: url('${item._img}');` : `background: ${style.gradient};`;
-              return (
-                <a href={item._url} class={`splash-story ${cls}`} style={bg} aria-label={item.title}>
-                  {!item._img && <span class="splash-icon" aria-hidden="true">{style.icon}</span>}
-                  <div class="splash-content">
-                    <span class="story-chip" style={`background: ${getSectionColour(item.section)};`}>
-                      {getSectionDisplayName(item.section)}
-                    </span>
-                    <h2 class="splash-hed">{item.title}</h2>
-                    {!cls && item.description && (
-                      <p class="splash-dek">{item.description.substring(0, 170)}{item.description.length > 170 ? '…' : ''}</p>
-                    )}
-                    <span class="story-date">{formatDate(item.publishDate)}</span>
-                  </div>
-                </a>
-              );
-            })}
-          </div>
-
-          <!-- Thumbnail strip -->
-          {stripItems.length > 0 && (
-            <div class="thumb-strip">
-              {stripItems.map((item: any) => {
-                const style = getHeroStyle(item.section);
-                const bg = item._img ? `background-image: url('${item._img}');` : `background: ${style.gradient};`;
-                return (
-                  <a href={item._url} class="thumb-tile" style={bg} aria-label={item.title}>
-                    {!item._img && <span class="thumb-tile-icon" aria-hidden="true">{style.icon}</span>}
-                    <div class="thumb-tile-content">
-                      <span class="story-chip" style={`background: ${getSectionColour(item.section)};`}>
-                        {getSectionDisplayName(item.section)}
-                      </span>
-                      <p class="thumb-tile-hed">{item.title}</p>
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
+          {featured.length > 0 && (
+            <>
+              <div class="lane-label"><span>Featured</span></div>
+              <div class={`featured ${featured.length === 1 ? 'single' : ''}`}>
+                {featured.map((item: any, i: number) => {
+                  const acc = accentFor(item.section);
+                  return (
+                    <a href={item._url} class={`feat ${i === 1 ? 'secondary' : ''}`}
+                       style={`background-image: url('${item._img}');`} aria-label={item.title}>
+                      <div class="feat-body">
+                        <span class="chip" style={`background: ${acc};`}>{getSectionDisplayName(item.section)}</span>
+                        <h2>{item.title}</h2>
+                        {i === 0 && item.description && <p>{trim(item.description, 170)}</p>}
+                        <span class="feat-date">{formatDate(item.publishDate)}</span>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </>
           )}
 
-          <!-- Body: more stories + sidebar -->
           <div class="news-body">
             <div>
-              <div class="more-label">
-                <span class="more-label-text">More stories</span>
-                <span class="more-label-line" aria-hidden="true"></span>
-              </div>
-              {moreItems.length > 0 ? (
-                <div class="more-grid" role="list">
-                  {moreItems.map((item: any) => {
-                    const style = getHeroStyle(item.section);
-                    const thumbStyle = item._img
-                      ? `background-image: url('${item._img}');`
-                      : `background: ${style.gradient};`;
+              <div class="more-label"><span>{featured.length > 0 ? 'More stories' : 'Latest stories'}</span></div>
+              {listItems.length > 0 ? (
+                <div role="list">
+                  {listItems.map((item: any) => {
+                    const acc = accentFor(item.section);
+                    const dp = dateParts(item.publishDate);
+                    const hasThumb = !!item._img;
                     return (
-                      <a href={item._url} class="more-item" role="listitem">
-                        <div class="more-thumb" style={thumbStyle} aria-hidden="true">{!item._img && style.icon}</div>
+                      <a href={item._url} class="story" style={`--acc: ${acc};`} role="listitem">
+                        {hasThumb
+                          ? <div class="thumb" style={`background-image: url('${item._img}');`} aria-hidden="true"></div>
+                          : <div class="when"><div class="day">{dp.day}</div><div class="mon">{dp.mon}</div></div>}
                         <div>
-                          <div class="more-meta">
-                            <b style={`color: ${getSectionColour(item.section)};`}>{getSectionDisplayName(item.section)}</b>
-                            &nbsp;·&nbsp;{formatDateShort(item.publishDate)}
-                          </div>
-                          <p class="more-hed">{item.title}</p>
+                          <span class="chip" style={`background: ${acc};`}>{getSectionDisplayName(item.section)}</span>
+                          <h3>{item.title}</h3>
+                          {item.description && <p>{trim(item.description, 160)}</p>}
+                          <span class="readmore">Read more</span>
                         </div>
                       </a>
                     );
                   })}
                 </div>
               ) : (
-                <p class="feed-empty">That's everything for now — more stories as the village makes them. Have news to share? <a href="/feedback/" style="color:#2d8b8b; font-weight:600;">Let us know</a>.</p>
+                <p class="feed-empty">That's everything in the feed for now — more stories as the village makes them. Have news to share? <a href="/feedback/" style="color:#2d8b8b; font-weight:600;">Let us know</a>.</p>
               )}
             </div>
 
