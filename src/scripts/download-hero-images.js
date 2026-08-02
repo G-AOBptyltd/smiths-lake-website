@@ -182,7 +182,11 @@ async function downloadCardHeroImages() {
       const imageUrl = extractImageUrl(props['Hero Image File']?.files);
       if (!imageUrl) { skipped++; continue; }
 
-      const slug = generateSlug(title);
+      // Honour an explicit Slug property (matches section-hero behaviour above and
+      // the notion-projects.js manifest lookup) so a custom slug doesn't break the
+      // hero manifest key. Without this, a page with a custom Slug downloads its hero
+      // under generateSlug(title) but is looked up by its Slug — mismatch = no hero.
+      const slug = props['Slug']?.rich_text?.[0]?.plain_text || generateSlug(title);
       const isProject = section === 'Project Hub';
       const targetDir = isProject ? PROJECT_IMAGES_DIR : CARD_IMAGES_DIR;
 
