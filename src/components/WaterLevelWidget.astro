@@ -1,0 +1,330 @@
+---
+/**
+ * WaterLevelWidget.astro — full Smiths Lake water-level card.
+ *
+ * Reads the normalised reading from /api/water-level (Netlify proxy to MHL
+ * Site-209465) on the client, then auto-refreshes. Fails open: if the API is
+ * unavailable it shows a message directing visitors to the MHL chart page.
+ *
+ * Usage:  <WaterLevelWidget />            (defaults: refresh every 90 min)
+ *         <WaterLevelWidget refreshMinutes={60} />
+ */
+interface Props {
+  refreshMinutes?: number;
+}
+const { refreshMinutes = 90 } = Astro.props;
+const chartUrl = 'https://mhl.nsw.gov.au/Site-209465';
+---
+
+<div class="wl-widget" data-water-widget data-refresh={refreshMinutes} data-state="loading">
+  <div class="wl-head">
+    <h3 class="wl-title">Smiths Lake — current water level</h3>
+    <span class="wl-live" aria-hidden="true"><span class="wl-dot"></span>Live</span>
+  </div>
+
+  <div class="wl-body">
+    <div class="wl-reading">
+      <span class="wl-level" data-wl-level>—</span>
+      <span class="wl-unit">m AHD</span>
+      <span class="wl-status" data-wl-status>Loading…</span>
+    </div>
+
+    <div class="wl-bar" aria-hidden="true">
+      <div class="wl-bar-fill" data-wl-fill style="width:0%"></div>
+    </div>
+    <div class="wl-bar-labels" aria-hidden="true">
+      <span>0 m</span>
+      <span class="wl-trigger-label">Trigger <span data-wl-trigger>2.1</span> m</span>
+    </div>
+    <p class="wl-bar-caption">
+      <strong data-wl-percent>—</strong>% of the way to the <span data-wl-trigger>2.1</span> m opening trigger
+    </p>
+
+    <div class="wl-stats">
+      <div class="wl-stat">
+        <span class="wl-stat-label">Opening trigger</span>
+        <span class="wl-stat-value"><span data-wl-trigger>2.1</span> m</span>
+      </div>
+      <div class="wl-stat">
+        <span class="wl-stat-label">Margin to trigger</span>
+        <span class="wl-stat-value" data-wl-margin>—</span>
+      </div>
+      <div class="wl-stat" data-wl-rain-stat hidden>
+        <span class="wl-stat-label">Rain · last 24 h</span>
+        <span class="wl-stat-value"><span data-wl-rain>—</span> mm</span>
+      </div>
+    </div>
+
+    <p class="wl-fallback" data-wl-fallback hidden>
+      Live data is temporarily unavailable. View the current level directly at
+      <a href={chartUrl} target="_blank" rel="noopener noreferrer">mhl.nsw.gov.au/Site-209465</a>.
+    </p>
+  </div>
+
+  <div class="wl-foot">
+    <span class="wl-meta" data-wl-meta>
+      Source: Manly Hydraulics Laboratory · Tarbuck Bay (Site 209465)
+    </span>
+    <a class="wl-chart" href={chartUrl} target="_blank" rel="noopener noreferrer">
+      Full chart &amp; history ↗
+    </a>
+  </div>
+
+  <noscript>
+    <p class="wl-fallback" style="display:block">
+      View the live Smiths Lake water level at
+      <a href={chartUrl} target="_blank" rel="noopener noreferrer">mhl.nsw.gov.au/Site-209465</a>.
+    </p>
+  </noscript>
+</div>
+
+<style>
+  .wl-widget {
+    background: var(--color-white);
+    border: 1px solid var(--color-gray-200);
+    border-top: 4px solid var(--color-success);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: var(--space-6);
+    max-width: 640px;
+  }
+  .wl-widget[data-status='watch'] { border-top-color: var(--color-warning); }
+  .wl-widget[data-status='near-trigger'] { border-top-color: var(--color-error); }
+  .wl-widget[data-status='open'] { border-top-color: var(--color-sky); }
+
+  .wl-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+  .wl-title {
+    font-family: var(--font-heading);
+    color: var(--color-navy);
+    font-size: var(--text-lg);
+    margin: 0;
+  }
+  .wl-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--text-xs);
+    color: var(--color-success);
+    white-space: nowrap;
+  }
+  .wl-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-success);
+    display: inline-block;
+  }
+
+  .wl-reading {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-2);
+  }
+  .wl-level {
+    font-family: var(--font-heading);
+    font-size: 3rem;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--color-navy);
+  }
+  .wl-unit {
+    font-size: var(--text-base);
+    color: var(--color-gray-500);
+  }
+  .wl-status {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-gray-100);
+    color: var(--color-gray-600);
+    white-space: nowrap;
+  }
+  .wl-widget[data-status='normal'] .wl-status { background: #D1FAE5; color: #065F46; }
+  .wl-widget[data-status='watch'] .wl-status { background: #FEF3C7; color: #92400E; }
+  .wl-widget[data-status='near-trigger'] .wl-status { background: #FEE2E2; color: #991B1B; }
+  .wl-widget[data-status='open'] .wl-status { background: #DBEAFE; color: #1E40AF; }
+
+  .wl-bar {
+    height: 10px;
+    background: var(--color-gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin: var(--space-4) 0 var(--space-2);
+  }
+  .wl-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: var(--color-success);
+    transition: width var(--transition-normal);
+  }
+  .wl-widget[data-status='watch'] .wl-bar-fill { background: var(--color-warning); }
+  .wl-widget[data-status='near-trigger'] .wl-bar-fill { background: var(--color-error); }
+  .wl-widget[data-status='open'] .wl-bar-fill { background: var(--color-sky); }
+
+  .wl-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--text-xs);
+    color: var(--color-gray-500);
+    margin-bottom: var(--space-2);
+  }
+  .wl-trigger-label { color: var(--color-error); }
+  .wl-bar-caption {
+    font-size: var(--text-xs);
+    color: var(--color-gray-600);
+    margin: 0 0 var(--space-5);
+  }
+  .wl-bar-caption strong { color: var(--color-navy); font-weight: 700; }
+
+  .wl-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+  }
+  .wl-stat {
+    background: var(--color-off-white);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+  }
+  .wl-stat-label {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--color-gray-500);
+    margin-bottom: 2px;
+  }
+  .wl-stat-value {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--color-navy);
+  }
+
+  .wl-fallback {
+    background: #FEF3C7;
+    color: #92400E;
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-xs);
+    margin: 0 0 var(--space-4);
+  }
+  .wl-fallback a { color: #92400E; font-weight: 700; }
+
+  .wl-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    border-top: 1px solid var(--color-gray-100);
+    padding-top: var(--space-3);
+  }
+  .wl-meta { font-size: var(--text-xs); color: var(--color-gray-400); }
+  .wl-chart {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--color-sky);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .wl-chart:hover { color: var(--color-navy); }
+
+  .wl-widget[data-state='loading'] .wl-level,
+  .wl-widget[data-state='loading'] .wl-status { opacity: 0.5; }
+
+  @media (max-width: 480px) {
+    .wl-level { font-size: 2.5rem; }
+    .wl-status { margin-left: 0; }
+  }
+</style>
+
+<script>
+  function fmtTime(iso) {
+    if (!iso) return '';
+    try {
+      return new Intl.DateTimeFormat('en-AU', {
+        day: 'numeric', month: 'short', year: 'numeric',
+        hour: 'numeric', minute: '2-digit',
+        timeZone: 'Australia/Sydney',
+      }).format(new Date(iso)) + ' AEST';
+    } catch (e) { return ''; }
+  }
+
+  function renderWidget(el, d) {
+    const set = (sel, txt) => el.querySelectorAll(sel).forEach((n) => { n.textContent = txt; });
+
+    if (!d || d.ok === false) {
+      el.setAttribute('data-state', 'error');
+      const fb = el.querySelector('[data-wl-fallback]');
+      if (fb) fb.hidden = false;
+      set('[data-wl-status]', 'Unavailable');
+      return;
+    }
+
+    el.setAttribute('data-state', 'ready');
+    el.setAttribute('data-status', d.status || 'normal');
+
+    set('[data-wl-level]', Number(d.level).toFixed(2));
+    set('[data-wl-status]', d.statusLabel || '');
+    set('[data-wl-margin]', d.marginText || '');
+    set('[data-wl-trigger]', String(d.trigger));
+    set('[data-wl-percent]', d.percent != null ? String(d.percent) : '—');
+
+    const trigger = Number(d.trigger) || 2.1;
+    const pct = Math.max(0, Math.min(100, (Number(d.level) / trigger) * 100));
+    const fill = el.querySelector('[data-wl-fill]');
+    if (fill) fill.style.width = pct.toFixed(1) + '%';
+
+    const rainStat = el.querySelector('[data-wl-rain-stat]');
+    if (d.rain && d.rain['24h'] != null) {
+      set('[data-wl-rain]', Number(d.rain['24h']).toFixed(1));
+      if (rainStat) rainStat.hidden = false;
+    } else if (rainStat) {
+      rainStat.hidden = true;
+    }
+
+    const meta = el.querySelector('[data-wl-meta]');
+    if (meta) {
+      const t = fmtTime(d.obsdate);
+      meta.textContent =
+        (t ? 'Updated ' + t + ' · ' : '') +
+        'Source: ' + (d.attribution || 'Manly Hydraulics Laboratory') +
+        ' · ' + (d.station || 'Tarbuck Bay') + ' (Site ' + (d.siteNo || '209465') + ')';
+    }
+  }
+
+  async function loadWidget(el) {
+    try {
+      const res = await fetch('/api/water-level', { headers: { Accept: 'application/json' } });
+      const data = await res.json();
+      renderWidget(el, data);
+    } catch (e) {
+      renderWidget(el, { ok: false });
+    }
+  }
+
+  function init() {
+    document.querySelectorAll('[data-water-widget]').forEach((el) => {
+      loadWidget(el);
+      const mins = Number(el.getAttribute('data-refresh')) || 90;
+      setInterval(() => loadWidget(el), Math.max(15, mins) * 60 * 1000);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>
