@@ -2,7 +2,7 @@
  * admin-nav.js — shared console switcher for every VillageFirst admin page.
  *
  * Renders a slim strip under the page topbar:
- *   ⌂ Admin home · 📊 Surveys · 📰 News desk · 🌐 Publish · 📖 Playbook
+ *   ⌂ Admin home · 📊 Surveys · 📰 News desk · 🌐 Publish · 🤝 Contributions · 📖 Playbook
  * Current console is highlighted. Include with:
  *   <script src="/admin/admin-nav.js" defer></script>
  *
@@ -18,6 +18,8 @@
     { id: 'surveys',  href: '/survey-admin/',            label: '📊 Surveys' },
     { id: 'news',     href: '/admin/news/',              label: '📰 News desk' },
     { id: 'publish',  href: '/admin/publish-news.html',  label: '🌐 Publish' },
+    { id: 'contrib',  href: '/admin/contrib/',           label: '🤝 Contributions' },
+    { id: 'cocon',    href: '/admin/cocontribution/',    label: '📑 Co-contribution' },
     { id: 'playbook', href: '/admin/playbook/',          label: '📖 Playbooks' },
   ];
 
@@ -26,6 +28,8 @@
     if (p.indexOf('/survey-admin') === 0) return 'surveys';
     if (p.indexOf('/admin/playbook') === 0) return 'playbook';
     if (p.indexOf('/admin/news') === 0) return 'news';
+    if (p.indexOf('/admin/contrib') === 0) return 'contrib';
+    if (p.indexOf('/admin/cocontribution') === 0) return 'cocon';
     if (p.indexOf('publish-news') > -1) return 'publish';
     if (p.indexOf('/admin') === 0) return 'home';
     return '';

@@ -1,5 +1,17 @@
 # CLAUDE.md — smiths-lake-website (VillageFirst / Smiths Lake Community)
 
+## Separation from Agility Ops (STRICT — read first)
+VillageFirst is a **separate entity** from Agility Ops / InSite. There must be **zero
+crossover** between VillageFirst and ANY Agility Ops tool, website, account or service —
+including **Stripe** (VillageFirst uses its own separate Stripe registration with no link
+to the Agility Ops Stripe account, keys, webhook or runbook), Notion licence infrastructure,
+the Central API, and payments.
+
+**The ONLY permitted connection** is course-signal logging: VillageFirst work may be logged
+as coaching/course signals in `AOB-Course-Roadmap-Signal-Log.md` (per `.claude/rules/coaching-tips.md`).
+Nothing else. **If you are ever unsure whether something creates an Agility Ops ↔ VillageFirst
+crossover, STOP and ask Greg before proceeding.**
+
 ## Project Overview
 - **Live site:** https://villagefirst.org.au
 - **GitHub repo:** G-AOBptyltd/smiths-lake-website

@@ -151,6 +151,51 @@
 [[redirects]]
   from = "/api/water-level"
   to = "/.netlify/functions/water-level"
+# Contributions Portal API
+[[redirects]]
+  from = "/api/contrib-list"
+  to = "/.netlify/functions/contrib-list"
+  status = 200
+
+[[redirects]]
+  from = "/api/contrib-save"
+  to = "/.netlify/functions/contrib-save"
+  status = 200
+
+[[redirects]]
+  from = "/api/contrib-pledge"
+  to = "/.netlify/functions/contrib-pledge"
+  status = 200
+
+[[redirects]]
+  from = "/api/contrib-supporters"
+  to = "/.netlify/functions/contrib-supporters"
+  status = 200
+
+[[redirects]]
+  from = "/api/contrib-lifecycle"
+  to = "/.netlify/functions/contrib-lifecycle"
+  status = 200
+
+# Co-Contribution Schedule & Project Budget API
+[[redirects]]
+  from = "/api/cocon-get"
+  to = "/.netlify/functions/cocon-get"
+  status = 200
+
+[[redirects]]
+  from = "/api/cocon-save"
+  to = "/.netlify/functions/cocon-save"
+  status = 200
+
+[[redirects]]
+  from = "/api/cocon-lifecycle"
+  to = "/.netlify/functions/cocon-lifecycle"
+  status = 200
+
+[[redirects]]
+  from = "/api/cocon-export"
+  to = "/.netlify/functions/cocon-export"
   status = 200
 
 # Redirect old Blueys Beach project slug to current slug
