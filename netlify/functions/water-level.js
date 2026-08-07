@@ -8,7 +8,7 @@
  * water-level widget/ticker can render directly.
  *
  * Source endpoint (provided by MHL Client Data Manager, May 2026):
- *   https://api.manly.hydraulics.works/api/1.1/readings/latest/209465?username=publicwww
+ *   https://static.api.manly.hydraulics.works/api/1.1/readings/latest/209465?username=publicwww
  *
  * Upstream shape (keyed by sensor id — DO NOT hard-code the ids):
  *   {
@@ -38,7 +38,7 @@ const SITE_NO = process.env.MHL_SITE_NO || '209465';
 const USERNAME = process.env.MHL_USERNAME || 'publicwww';
 const SOURCE_URL =
   process.env.MHL_API_URL ||
-  `https://api.manly.hydraulics.works/api/1.1/readings/latest/${SITE_NO}?username=${USERNAME}`;
+  `https://static.api.manly.hydraulics.works/api/1.1/readings/latest/${SITE_NO}?username=${USERNAME}`;
 
 // Opening trigger for Smiths Lake (metres AHD). Configurable without a code change.
 const TRIGGER = Number(process.env.SMITHS_LAKE_TRIGGER || '2.1');
