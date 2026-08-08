@@ -1,6 +1,8 @@
 import { Client } from "@notionhq/client";
 // @ts-ignore — plain JS helper, no type declarations needed
 import { resilientFetch } from "./notion-fetch.js";
+// @ts-ignore — plain JS helper, no type declarations needed
+import { queryAllPages } from "./notion-query-all.js";
 
 const notion = new Client({
   auth: import.meta.env.NOTION_API_KEY,
@@ -91,9 +93,11 @@ export async function getDocuments(
   displayLocation: string,
   audience: "Public" | "Members" = "Public"
 ) {
-  let response;
+  let results: any[];
   try {
-    response = await notion.databases.query({
+    // Paginated — see notion-query-all.js. The library is small today, but a
+    // 101st document must not silently vanish from the site.
+    results = await queryAllPages(notion, {
       database_id: DATABASE_ID,
       filter: {
         and: [
@@ -116,7 +120,7 @@ export async function getDocuments(
     return [];
   }
 
-  return response.results.map((page: any) => ({
+  return results.map((page: any) => ({
     id: page.id,
     title: getPlainText(page?.properties?.Title) || "Untitled",
     url: getDocumentUrlFromPage(page) || "",

@@ -11,6 +11,7 @@ import { Client } from '@notionhq/client';
 import fs from 'fs';
 import path from 'path';
 import { resilientFetch } from './notion-fetch.js';
+import { queryAllPages } from './notion-query-all.js';
 
 const notion = new Client({
   auth: process.env.NOTION_API_KEY,
@@ -202,7 +203,8 @@ export async function fetchSectionSettings() {
   }
 
   try {
-    const response = await notion.databases.query({
+    // Paginated — see notion-query-all.js.
+    const results = await queryAllPages(notion, {
       database_id: SECTION_SETTINGS_DB,
       filter: {
         property: 'Status',
@@ -214,7 +216,7 @@ export async function fetchSectionSettings() {
     });
 
     const sections = {};
-    for (const page of response.results) {
+    for (const page of results) {
       const parsed = parseSectionSettingsPage(page);
       if (parsed.slug) {
         sections[parsed.slug] = parsed;

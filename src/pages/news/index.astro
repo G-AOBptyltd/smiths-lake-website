@@ -9,13 +9,14 @@ import Layout from '../../layouts/BaseLayout.astro';
 import SectionHero from '../../components/SectionHero.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
-import { generateSlug, getSectionPath, getSectionColour, getSectionDisplayName } from '../../lib/notion-detail-pages.js';
+import { generateSlug, resolveItemUrl, getSectionColour, getSectionDisplayName } from '../../lib/notion-detail-pages.js';
 
-function buildItemUrl(item: any) {
-  const slug = item.slug || generateSlug(item.title);
-  const section = item.section || '';
-  if (section === 'News') return `/news/${slug}/`;
-  return `/${getSectionPath(section)}/${slug}/`;
+// Cross-section links resolve centrally in notion-detail-pages.js so the news
+// feed, the homepage strip and the section pages can never disagree about where
+// an item lives. resolveItemUrl() returns null for a section with no route —
+// the card then renders unlinked rather than pointing at a URL that 404s.
+function buildItemUrl(item: any): string | null {
+  return resolveItemUrl(item);
 }
 
 function formatDate(iso: string) {
@@ -154,6 +155,12 @@ const listItems = newsItems.filter((i: any) => !featuredSet.has(i));
   .story .chip { font-size: 0.6rem; }
   .readmore { font-size: 0.78rem; font-weight: 700; color: #2d8b8b; }
   .readmore::after { content: ' →'; }
+  /* Story whose section has no detail route: still readable, but must not
+     pretend to be clickable. Belt-and-braces — resolveItemUrl() should mean
+     this almost never renders. */
+  .no-link { cursor: default; }
+  .no-link:hover h3, .no-link:hover h2 { color: inherit; }
+  .no-link:hover::after { opacity: inherit; }
   .feed-empty { padding: 1.5rem 0; color: #6b7280; font-size: 0.9rem; }
 
   /* ── Sidebar ───────────────────────────────────────────────────── */
@@ -225,16 +232,17 @@ const listItems = newsItems.filter((i: any) => !featuredSet.has(i));
               <div class={`featured ${featured.length === 1 ? 'single' : ''}`}>
                 {featured.map((item: any, i: number) => {
                   const acc = accentFor(item.section);
+                  const Tag = item._url ? 'a' : 'div';
                   return (
-                    <a href={item._url} class={`feat ${i === 1 ? 'secondary' : ''}`}
-                       style={`background-image: url('${item._img}');`} aria-label={item.title}>
+                    <Tag href={item._url || undefined} class={`feat ${i === 1 ? 'secondary' : ''} ${item._url ? '' : 'no-link'}`}
+                       style={`background-image: url('${item._img}');`} aria-label={item._url ? item.title : undefined}>
                       <div class="feat-body">
                         <span class="chip" style={`background: ${acc};`}>{getSectionDisplayName(item.section)}</span>
                         <h2>{item.title}</h2>
                         {i === 0 && item.description && <p>{trim(item.description, 170)}</p>}
                         <span class="feat-date">{formatDate(item.publishDate)}</span>
                       </div>
-                    </a>
+                    </Tag>
                   );
                 })}
               </div>
@@ -250,8 +258,9 @@ const listItems = newsItems.filter((i: any) => !featuredSet.has(i));
                     const acc = accentFor(item.section);
                     const dp = dateParts(item.publishDate);
                     const hasThumb = !!item._img;
+                    const Tag = item._url ? 'a' : 'div';
                     return (
-                      <a href={item._url} class="story" style={`--acc: ${acc};`} role="listitem">
+                      <Tag href={item._url || undefined} class={`story ${item._url ? '' : 'no-link'}`} style={`--acc: ${acc};`} role="listitem">
                         {hasThumb
                           ? <div class="thumb" style={`background-image: url('${item._img}');`} aria-hidden="true"></div>
                           : <div class="when"><div class="day">{dp.day}</div><div class="mon">{dp.mon}</div></div>}
@@ -259,9 +268,9 @@ const listItems = newsItems.filter((i: any) => !featuredSet.has(i));
                           <span class="chip" style={`background: ${acc};`}>{getSectionDisplayName(item.section)}</span>
                           <h3>{item.title}</h3>
                           {item.description && <p>{trim(item.description, 160)}</p>}
-                          <span class="readmore">Read more</span>
+                          {item._url && <span class="readmore">Read more</span>}
                         </div>
-                      </a>
+                      </Tag>
                     );
                   })}
                 </div>

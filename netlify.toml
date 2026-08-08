@@ -204,6 +204,18 @@
   to = "/projects/bluey-s-beach-village-survey-concept-designs/"
   status = 301
 
+# Redirect old Lilly Pilly Glade news slug to current slug.
+# The Notion title is "**Lilly Pilly Glade:** New seating and rest area now
+# established on the foreshore". parseProperty() used to read only the first
+# rich-text segment, so the title was truncated at the bold boundary to
+# "Lilly Pilly Glade:" and the slug became /news/lilly-pilly-glade/. Fixing the
+# truncation lengthens the slug, so this preserves the shared URL — same pattern
+# as the Blueys Beach rename above (Session 14.5).
+[[redirects]]
+  from = "/news/lilly-pilly-glade/"
+  to = "/news/lilly-pilly-glade-new-seating-and-rest-area-now-established-on-the-foreshore/"
+  status = 301
+
 # Custom 404 page
 [[redirects]]
   from = "/*"
