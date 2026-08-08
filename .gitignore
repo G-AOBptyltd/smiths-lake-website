@@ -15,3 +15,8 @@ deploy-*.zip
 # RDTI logs — LOCAL ONLY. Never commit: contains ABN, cost rates, R&D financials.
 # RDTI evidence lives locally + Notion + the Activity Register xlsx, not in this repo.
 .rdti/
+
+# Secrets — never commit. Set these in Netlify > Site settings > Environment variables.
+.env
+.env.*
+!.env.example
