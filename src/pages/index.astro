@@ -8,7 +8,7 @@ import SectionCard from '../components/SectionCard.astro';
 import WaterLevelTicker from '../components/WaterLevelTicker.astro';
 import { fetchSectionSettingsBySlug } from '../lib/notion-section-settings.js';
 import { fetchNotionContent } from '../lib/notion-unified.js';
-import { generateSlug, getSectionPath, getSectionColour, getSectionDisplayName } from '../lib/notion-detail-pages.js';
+import { generateSlug, resolveItemUrl, getSectionColour, getSectionDisplayName } from '../lib/notion-detail-pages.js';
 
 // Fetch home section settings (hero image, title, subtitle)
 const sectionSettings = await fetchSectionSettingsBySlug('home');
@@ -42,12 +42,18 @@ try {
   latestNews = allPublished
     .filter((item) => item.showInNewsFeed === true && item.publishDate)
     .sort((a, b) => new Date(b.publishDate).getTime() - new Date(a.publishDate).getTime())
-    .slice(0, 3)
     .map((item) => {
       const slug = item.slug || generateSlug(item.title);
-      const url = item.section === 'News' ? `/news/${slug}/` : `/${getSectionPath(item.section)}/${slug}/`;
-      return { ...item, _url: url, _img: cardImageManifest[slug] || null };
-    });
+      // Same resolver as the news feed — a Project Hub story shared into the
+      // feed must land on /projects/<slug>/, not a fabricated /content/ path.
+      return { ...item, _url: resolveItemUrl(item), _img: cardImageManifest[slug] || null };
+    })
+    // A story with no resolvable route is dropped rather than shown unlinked —
+    // the strip has only three slots and a card that goes nowhere wastes one.
+    // Filter BEFORE slice so dropping one promotes the next story instead of
+    // leaving a gap.
+    .filter((item) => !!item._url)
+    .slice(0, 3);
 } catch (e) { /* news strip is optional — never break the homepage */ }
 
 // Use Notion hero image if available, otherwise fall back to existing local image

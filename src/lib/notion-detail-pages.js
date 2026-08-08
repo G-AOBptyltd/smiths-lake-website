@@ -19,9 +19,20 @@ import { fetchItemsBySection, fetchNotionContent } from './notion-unified.js';
 /**
  * Section name → URL path mapping
  * Maps Notion section values to the folder structure in src/pages/
+ *
+ * IMPORTANT: this map is the single source of truth for *where a section's
+ * detail pages live on the site*. It is NOT a list of sections handled by this
+ * module's fetch pipeline. 'Project Hub' pages are built by notion-projects.js
+ * via src/pages/projects/[slug].astro, but they still need an entry here so
+ * that cross-section links (news feed, homepage strip, sitemap) can address
+ * them. Omitting an entry produces a link to a route that does not exist.
+ *
+ * Any section added in Notion MUST get an entry here AND a matching folder in
+ * src/pages/ — see resolveSectionPath() for what happens when it doesn't.
  */
 const SECTION_TO_PATH = {
   'News': 'news',
+  'Project Hub': 'projects',
   'Groups & Activities': 'groups',
   'Services': 'services',
   'Services & Amenities': 'services',
@@ -31,10 +42,19 @@ const SECTION_TO_PATH = {
 };
 
 /**
+ * Sections whose detail pages are built by a specialist pipeline rather than
+ * by fetchDetailPageItems() in this module. They are addressable (they appear
+ * in SECTION_TO_PATH) but must not be pulled into the generic route builder,
+ * or two getStaticPaths() would fight over the same URL.
+ */
+const SECTIONS_WITH_SPECIALIST_ROUTES = new Set(['Project Hub']);
+
+/**
  * Section name → parent page title mapping (for breadcrumbs)
  */
 const SECTION_DISPLAY_NAMES = {
   'News': 'News',
+  'Project Hub': 'Project Hub',
   'Groups & Activities': 'Groups & Activities',
   'Services': 'Services & Amenities',
   'Services & Amenities': 'Services & Amenities',
@@ -48,6 +68,7 @@ const SECTION_DISPLAY_NAMES = {
  */
 const SECTION_COLOURS = {
   'News': { hex: '#4db8b8', name: 'Teal' },
+  'Project Hub': { hex: '#1B365D', name: 'Navy Blue' },
   'Groups & Activities': { hex: '#5B9BD5', name: 'Sky Blue' },
   'Services': { hex: '#1B365D', name: 'Navy Blue' },
   'Services & Amenities': { hex: '#1B365D', name: 'Navy Blue' },
@@ -109,7 +130,9 @@ function ensureUniqueSlugs(items) {
  */
 function enrichItemForDetailPage(item) {
   const section = item.section || '';
-  const sectionPath = SECTION_TO_PATH[section] || 'content';
+  // Fall back to 'news' (a route that exists) rather than 'content' (which does
+  // not) so a mis-sectioned item degrades to a wrong-but-live page, never a 404.
+  const sectionPath = SECTION_TO_PATH[section] || 'news';
   const sectionDisplay = SECTION_DISPLAY_NAMES[section] || section;
   const sectionColour = SECTION_COLOURS[section] || { hex: '#1B365D', name: 'Navy Blue' };
   
@@ -264,23 +287,71 @@ export async function fetchDetailPageBySlug(sectionName, slug) {
  * @returns {Promise<Array>} All enriched items from all sections
  */
 export async function fetchAllDetailPageItems() {
-  const sections = Object.keys(SECTION_TO_PATH);
+  const sections = Object.keys(SECTION_TO_PATH)
+    .filter(section => !SECTIONS_WITH_SPECIALIST_ROUTES.has(section));
   const uniqueSections = [...new Set(sections)];
-  
+
   const allItems = [];
   for (const section of uniqueSections) {
     const items = await fetchDetailPageItems(section);
     allItems.push(...items);
   }
-  
+
   return allItems;
 }
 
 /**
+ * Resolve a Notion section name to its URL path segment.
+ *
+ * Returns null when the section has no route. Callers MUST handle null by not
+ * rendering a link — previously this fell back to the literal string 'content',
+ * which silently produced /content/<slug>/ URLs. No such route exists, so every
+ * one of them was a guaranteed 404. A missing mapping is a content/config
+ * problem; it should surface loudly at build time, never ship as a dead link.
+ *
+ * @param {string} sectionName - Notion "Section" value
+ * @returns {string|null} URL path segment, or null if the section has no route
+ */
+export function resolveSectionPath(sectionName) {
+  const path = SECTION_TO_PATH[sectionName];
+  if (!path) {
+    console.warn(
+      `[notion-detail-pages] No route for section "${sectionName}". ` +
+      `Items in this section will render without a link. ` +
+      `Add it to SECTION_TO_PATH and create the matching folder in src/pages/.`
+    );
+    return null;
+  }
+  return path;
+}
+
+/**
+ * Build the canonical site URL for a unified-database item.
+ *
+ * Single source of truth for cross-section links (news feed, homepage strip).
+ * Returns null when the item's section has no route — render it unlinked.
+ *
+ * @param {{ section?: string, slug?: string, title?: string }} item
+ * @returns {string|null} Absolute site path e.g. "/projects/my-slug/", or null
+ */
+export function resolveItemUrl(item) {
+  if (!item) return null;
+  const sectionPath = resolveSectionPath(item.section || '');
+  if (!sectionPath) return null;
+  const slug = item.slug || generateSlug(item.title);
+  if (!slug || slug === 'untitled') return null;
+  return `/${sectionPath}/${slug}/`;
+}
+
+/**
  * Get section path from Notion section name
+ *
+ * @deprecated Use resolveItemUrl() / resolveSectionPath() — they cannot emit a
+ * dead link. Retained so existing call sites keep compiling; it now returns
+ * 'news' rather than the non-existent 'content' for unmapped sections.
  */
 export function getSectionPath(sectionName) {
-  return SECTION_TO_PATH[sectionName] || 'content';
+  return SECTION_TO_PATH[sectionName] || 'news';
 }
 
 /**
@@ -320,6 +391,8 @@ export default {
   fetchDetailPageBySlug,
   fetchAllDetailPageItems,
   generateSlug,
+  resolveItemUrl,
+  resolveSectionPath,
   getSectionPath,
   getSectionDisplayName,
 };

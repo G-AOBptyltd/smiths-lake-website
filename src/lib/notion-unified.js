@@ -9,6 +9,7 @@ import { Client } from '@notionhq/client';
 import fs from 'fs';
 import path from 'path';
 import { resilientFetch } from './notion-fetch.js';
+import { queryAllPages } from './notion-query-all.js';
 
 const notion = new Client({
   auth: process.env.NOTION_API_KEY,
@@ -42,7 +43,14 @@ function parseProperty(property) {
 
   switch (property.type) {
     case 'title':
-      return property.title?.[0]?.plain_text || '';
+      // Join ALL segments, exactly like rich_text below. Notion splits a title
+      // into a new segment at every formatting boundary, so reading only [0]
+      // truncated any title containing bold/italic/link/code at the first such
+      // boundary. Live example: the Notion title
+      //   "**Lilly Pilly Glade:** New seating and rest area ... foreshore"
+      // rendered as the dangling headline "Lilly Pilly Glade:" and produced the
+      // slug /news/lilly-pilly-glade/ instead of the full-title slug.
+      return property.title?.map(t => t.plain_text).join('') || '';
     case 'rich_text':
       return property.rich_text?.map(t => t.plain_text).join('') || '';
     case 'select':
@@ -263,7 +271,10 @@ export async function fetchNotionContent(filters = {}) {
       ? { and: filterConditions }
       : undefined;
 
-    const response = await notion.databases.query({
+    // MUST paginate. Notion caps a query at 100 rows; this database is already
+    // past that. A single un-paginated call silently dropped every row sorted
+    // beyond position 100 from the built site.
+    const results = await queryAllPages(notion, {
       database_id: DATABASE_ID,
       filter: notionFilter,
       sorts: [
@@ -274,7 +285,7 @@ export async function fetchNotionContent(filters = {}) {
       ],
     });
 
-    let items = response.results.map(parseNotionPage);
+    let items = results.map(parseNotionPage);
 
     // Cache the results
     try {
