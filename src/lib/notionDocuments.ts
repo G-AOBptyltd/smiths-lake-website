@@ -89,7 +89,38 @@ function getDocumentUrlFromPage(page: any): string {
  * - audience matches select: "Document Audience"
  * - "Show on Website" is SELECT with TRUE/FALSE
  */
+/**
+ * Per-build memo, keyed by (displayLocation, audience).
+ *
+ * BaseLayout calls getPublicDocuments("Footer - Key Documents") on EVERY page,
+ * so a 118-page build fired 118 identical Notion queries — by far the largest
+ * source of API traffic in the build and a direct contributor to the HTTP 429
+ * that killed a deploy. The answer is the same for every page, so fetch once.
+ *
+ * Stores the in-flight promise so concurrent page renders share one request,
+ * and drops it on failure so a transient error is not cached for the build.
+ */
+const _docsMemo = new Map<string, Promise<any[]>>();
+
 export async function getDocuments(
+  displayLocation: string,
+  audience: "Public" | "Members" = "Public"
+) {
+  const memoKey = `${displayLocation}::${audience}`;
+  const memoised = _docsMemo.get(memoKey);
+  if (memoised) return memoised;
+
+  const pending = fetchDocuments(displayLocation, audience);
+  _docsMemo.set(memoKey, pending);
+  try {
+    return await pending;
+  } catch (err) {
+    _docsMemo.delete(memoKey);
+    throw err;
+  }
+}
+
+async function fetchDocuments(
   displayLocation: string,
   audience: "Public" | "Members" = "Public"
 ) {
