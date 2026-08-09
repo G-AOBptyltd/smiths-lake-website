@@ -37,7 +37,13 @@ let footerDocuments: Array<{
 }> = [];
 
 try {
-  footerDocuments = await getPublicDocuments("Footer – Key Documents");
+  // NOTE THE DASH. This string must byte-match the Notion multi_select option
+  // exactly. It previously used an EN DASH (U+2013) while Notion has a plain
+  // HYPHEN-MINUS (U+002D), so Notion rejected every request with
+  // "multi_select option ... not found" — on all 118 pages, every build. It
+  // failed open to [], so the footer silently showed hardcoded fallback links
+  // and the Notion-managed Key Documents list never worked at all.
+  footerDocuments = await getPublicDocuments("Footer - Key Documents");
 } catch (err) {
   console.warn("Notion footer documents fetch failed:", err);
   footerDocuments = [];
