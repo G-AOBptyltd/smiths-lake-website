@@ -220,63 +220,31 @@ function parseNotionPage(page) {
 }
 
 /**
- * Fetch all items from unified database with optional filters
+ * In-process memo of the whole database for one build.
+ *
+ * WHY: 18 call sites across the site (every section index, every [slug] route,
+ * the homepage, news, sitemap, search index) each used to issue their own Notion
+ * query. Adding pagination doubled that to ~36 requests per build, and with
+ * several Netlify builds running concurrently that tipped the workspace over
+ * Notion's public API rate limit — HTTP 429, which fails the whole deploy.
+ *
+ * Every one of those call sites wants a subset of the SAME table, so fetch it
+ * once per process and filter in memory. Net effect: ~36 requests → 1 query
+ * (2 pages), well below even the original un-paginated behaviour.
+ *
+ * Content is read at build time and the process is short-lived, so there is no
+ * staleness risk — a new build always starts with an empty memo.
  */
-export async function fetchNotionContent(filters = {}) {
-  try {
-    // Build filter conditions dynamically
-    const filterConditions = [];
-    
-    // Filter by "Status on Web" (default: only show "Published" items)
-    if (filters.requireShowOnWebsite === true) {
-      filterConditions.push({
-        or: [
-          {
-            property: 'Status on Web',
-            select: {
-              equals: 'Published',
-            },
-          },
-          {
-            property: 'Show on Website',
-            select: {
-              equals: 'TRUE',
-            },
-          }
-        ]
-      });
-    }
+let _allRowsPromise = null;
 
-    // Add section filter
-    if (filters.section) {
-      filterConditions.push({
-        property: 'Section',
-        select: {
-          equals: filters.section,
-        },
-      });
-    }
+async function fetchAllRowsOnce() {
+  if (_allRowsPromise) return _allRowsPromise;
 
-    // Add category filter
-    if (filters.category) {
-      filterConditions.push({
-        property: 'Category',
-        select: {
-          equals: filters.category,
-        },
-      });
-    }
-
-    const notionFilter = filterConditions.length > 0 
-      ? { and: filterConditions }
-      : undefined;
-
-    // MUST paginate. Notion caps a query at 100 rows; this database is already
-    // past that. A single un-paginated call silently dropped every row sorted
-    // beyond position 100 from the built site.
+  // Store the promise, not the result, so concurrent callers share one request
+  // instead of racing and each firing their own.
+  _allRowsPromise = (async () => {
     const results = await queryAllPages(notion, {
       database_id: DATABASE_ID,
-      filter: notionFilter,
       sorts: [
         {
           property: 'Priority Order',
@@ -284,18 +252,50 @@ export async function fetchNotionContent(filters = {}) {
         },
       ],
     });
+    return results.map(parseNotionPage);
+  })();
 
-    let items = results.map(parseNotionPage);
+  try {
+    return await _allRowsPromise;
+  } catch (err) {
+    // Never memoise a failure — a transient 429 must not poison the whole build.
+    _allRowsPromise = null;
+    throw err;
+  }
+}
 
-    // Cache the results
+/** Apply the same filters in memory that we used to push down to Notion. */
+function applyFilters(items, filters = {}) {
+  let data = items;
+  if (filters.requireShowOnWebsite === true) {
+    data = data.filter(
+      (item) => item.statusOnWeb === 'Published' || item.showOnWebsite === 'TRUE'
+    );
+  }
+  if (filters.section) data = data.filter((item) => item.section === filters.section);
+  if (filters.category) data = data.filter((item) => item.category === filters.category);
+  return data;
+}
+
+/**
+ * Fetch all items from unified database with optional filters
+ */
+export async function fetchNotionContent(filters = {}) {
+  try {
+    const allItems = await fetchAllRowsOnce();
+    const items = applyFilters(allItems, filters);
+
+    // Cache the FULL row set, not the filtered view — the fallback path below
+    // re-applies filters itself, and caching a narrow slice would starve every
+    // other call site that later falls back to it.
     try {
       fs.writeFileSync(
         CACHE_FILE,
         JSON.stringify(
           {
             timestamp: new Date().toISOString(),
-            data: items,
-            filters: filters,
+            data: allItems,
+            filters: {},
           },
           null,
           2
