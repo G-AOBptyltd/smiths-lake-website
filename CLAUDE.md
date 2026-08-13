@@ -3,9 +3,17 @@
 ## Separation from Agility Ops (STRICT — read first)
 VillageFirst is a **separate entity** from Agility Ops / InSite. There must be **zero
 crossover** between VillageFirst and ANY Agility Ops tool, website, account or service —
-including **Stripe** (VillageFirst uses its own separate Stripe registration with no link
-to the Agility Ops Stripe account, keys, webhook or runbook), Notion licence infrastructure,
-the Central API, and payments.
+including **payments** (VillageFirst payments run through PPCA's own Tyro merchant
+facility, MID 341148 — no link to the Agility Ops Stripe account, keys, webhook or
+runbook), Notion licence infrastructure, and the Central API.
+
+**Payments (Aug 2026):** Stripe is NOT used — the old Payment Link scaffolding was removed.
+Online memberships (primary) + donations (secondary) will use the **Tyro Connect Pay API
+("Pay Online")**: server-side Pay Request via `netlify/functions/tyro-pay-request.js` →
+embedded `tyro.js` card form on `/contribute/` → `tyro-webhook.js` writes the Contribution
+to Notion as Received. Plan: `~/AgilityOpsBizAI/AOB/villagefirst/docs/payments-platform/VillageFirst-Tyro-PayOnline-Implementation-Plan.html`.
+Blocked on Tyro enabling eCommerce for MID 341148 (call 1300 00 8976). Env vars (Netlify):
+`TYRO_API_TOKEN`, `TYRO_LOCATION_ID`, `TYRO_LIVE_MODE`, `TYRO_WEBHOOK_SECRET`.
 
 **The ONLY permitted connection** is course-signal logging: VillageFirst work may be logged
 as coaching/course signals in `AOB-Course-Roadmap-Signal-Log.md` (per `.claude/rules/coaching-tips.md`).
@@ -13,6 +21,7 @@ Nothing else. **If you are ever unsure whether something creates an Agility Ops 
 crossover, STOP and ask Greg before proceeding.**
 
 ## Project Overview
+- **Local path:** `~/AgilityOpsBizAI/repos/Village1stPlatform/smiths-lake-website` (moved here 14 Aug 2026 from `~/AOB Websites/`; repo index at `~/AgilityOpsBizAI/repos/CLAUDE.md`)
 - **Live site:** https://villagefirst.org.au
 - **GitHub repo:** G-AOBptyltd/smiths-lake-website
 - **Hosting:** Netlify — project name `smithscommunityfirst`
@@ -34,7 +43,7 @@ git remote set-url origin https://G-AOBptyltd@github.com/G-AOBptyltd/smiths-lake
 
 **Git lock fix** — if `git commit` fails with "Unable to create HEAD.lock" or "index.lock", run:
 ```bash
-rm /Users/gregcollocott/AOB\ Websites/smiths-lake-website/.git/index.lock 2>/dev/null; rm /Users/gregcollocott/AOB\ Websites/smiths-lake-website/.git/HEAD.lock 2>/dev/null
+rm /Users/gregcollocott/AgilityOpsBizAI/repos/Village1stPlatform/smiths-lake-website/.git/index.lock 2>/dev/null; rm /Users/gregcollocott/AgilityOpsBizAI/repos/Village1stPlatform/smiths-lake-website/.git/HEAD.lock 2>/dev/null
 ```
 Then retry the commit. Claude's sandbox cannot remove these files — must be run locally.
 
@@ -123,6 +132,7 @@ Active Zaps (all polling-based, ~15 min delay, Free plan):
 - **Session 15 (Jun 11):** News/Services split + deliberate publishing. Root cause of "fake news" fixed: feed no longer sorts all sections by `notionLastEditedTime`. New Notion properties `Publish Date` (date) + `Show in News Feed` (checkbox) drive the feed. `/news/` = image-forward feed (photo lead story + photo card grid + more-stories list), only items with checkbox ✓ AND a Publish Date, sorted by Publish Date desc. `/services/` = services directory only. Nav split: "News" + "Services". Homepage banner → /news/. Article template prefers Publish Date and uses card photo hero. New: `netlify/functions/publish-news.js` (POSTs to `NEWS_BUILD_HOOK_URL` env var) + `/admin/publish-news.html` maintainer button. Notion: "📰 News Desk" view added; How-to page updated. SETUP REQUIRED: create Netlify build hook + set `NEWS_BUILD_HOOK_URL` env var.
 
 - **Session 16 (Jun 23):** News Desk image upload — editors now add story photos directly in `/admin/news/` (Netlify Blobs), removing the "photos go in Notion" stopgap and the expiring-S3-URL problem. New `news-image.js` function (`/api/news-image`), `Image URL` Notion property, client-side downscale, render prefers the stable URL over the build-time manifest. Full detail in "News Desk Image Pipeline" below. SETUP REQUIRED: `npm install @netlify/blobs` + add `Image URL` (URL) property to the content DB.
+- **Session 17 (Jul 28):** `/news/` **hybrid layout** shipped (`src/pages/news/index.astro`, live). Fixed the "images don't display well" complaint — root cause was **data, not code**: every published story has a null `Image URL` (editors skip the News Desk photo-upload step); the render pipeline, `news-image` Blobs function, and deploy were all healthy. Replaced the photo-forward masthead (big splash + thumbnail tiles that showed empty gradient/emoji fillers with no photo) with a **graceful hybrid**: stories WITH a photo → a "Featured" band (max 2, full-bleed image tiles); every other story → a clean newspaper text row (date · section chip · serif headline · excerpt · read-more · thin section-colour left accent). The Featured band is **omitted entirely at zero photos**, so the page looks intentional today and grows richer as editors upload images. Sidebar (Netlify `newsletter` form, Have Your Say, Local Services) unchanged. **Process note:** an earlier CSS-tint restyle was rejected ("looks terrible") — for VF visual changes, build a **viewable HTML mockup first**, don't push a full Astro branch sight-unseen. **Open:** seed real photos onto current stories so the Featured band shows in prod; add an "add a photo" nudge to `/admin/news/`.
 
 ## Admin Hub & News Desk (added Session 15)
 - **`/admin/`** — single bookmarkable admin hub. Registry-driven tiles (TOOLS array in `public/admin/index.html`), Netlify Identity gated, role-filtered (reuses survey role model from `_auth.js`: super-admin, `<village>:admin/steward/viewer`). Tiles: Surveys → /survey-admin/, News desk → /admin/news/, Publish website → /admin/publish-news.html, Playbook; Events & Advertising marked coming soon.

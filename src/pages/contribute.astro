@@ -4,25 +4,11 @@
  *
  * Public front door to the Contributions portal. Two paths, both feeding the
  * VF Contributions Notion DB (admin ledger at /admin/contrib):
- *   1. "Donate money now"  → Stripe Payment Link buttons (URLs in STRIPE_LINKS below)
- *   2. "Pledge or offer"    → public form → /api/contrib-pledge (logged as Pledged)
- *
- * ┌──────────────────────────────────────────────────────────────────────┐
- * │  STRIPE SETUP — paste your Stripe Payment Link URLs here.              │
- * │  Create them in the Stripe Dashboard → Payment Links (one per amount). │
- * │  These are PUBLIC buy.stripe.com URLs — never a secret key.            │
- * │  While a url is '#', that button renders disabled with a note.         │
- * └──────────────────────────────────────────────────────────────────────┘
+ *   1. "Pay online" — PPCA memberships + card donations via Tyro Pay Online
+ *      (coming soon; integration plan in AgilityOpsBizAI/AOB/villagefirst/docs/
+ *      payments-platform/VillageFirst-Tyro-PayOnline-Implementation-Plan.html)
+ *   2. "Pledge or offer" → public form → /api/contrib-pledge (logged as Pledged)
  */
-const STRIPE_LINKS = [
-  { label: '$25',  amount: 25,  url: '#' },
-  { label: '$50',  amount: 50,  url: '#' },
-  { label: '$100', amount: 100, url: '#' },
-  { label: 'Any amount', amount: null, url: '#' },
-];
-
-const stripeLive = STRIPE_LINKS.some((l) => l.url && l.url !== '#');
-
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 ---
@@ -48,29 +34,18 @@ import Hero from '../components/Hero.astro';
         </p>
       </div>
 
-      <!-- ── Donate money now ─────────────────────────────────────── -->
+      <!-- ── Pay online (Tyro — coming soon) ──────────────────────── -->
       <div class="card card--donate">
-        <h2>💳 Donate now</h2>
-        <p>Make a secure card donation through Stripe. Choose an amount to get started.</p>
-
-        <div class="amount-grid">
-          {STRIPE_LINKS.map((link) => (
-            (link.url && link.url !== '#') ? (
-              <a class="amount-btn" href={link.url} target="_blank" rel="noopener noreferrer">
-                {link.label}
-              </a>
-            ) : (
-              <span class="amount-btn is-disabled" aria-disabled="true">{link.label}</span>
-            )
-          ))}
-        </div>
-
-        {!stripeLive && (
-          <p class="donate-note">
-            🔧 Online card donations are coming soon. In the meantime, you can
-            <a href="#pledge">pledge a donation</a> below and a PPCA volunteer will be in touch.
-          </p>
-        )}
+        <h2>💳 Memberships &amp; donations online — coming soon</h2>
+        <p>
+          PPCA is setting up secure online card payments with Tyro, an Australian
+          payments provider. Soon you'll be able to pay your PPCA membership and
+          make donations right here.
+        </p>
+        <p class="donate-note">
+          In the meantime, you can <a href="#pledge">pledge a donation or offer support</a>
+          below and a PPCA volunteer will be in touch.
+        </p>
       </div>
 
       <!-- ── Pledge or offer ──────────────────────────────────────── -->
@@ -179,6 +154,7 @@ import Hero from '../components/Hero.astro';
   .card > p { color: #374151; line-height: 1.6; margin-bottom: 1.25rem; }
   .card--donate { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-color: #7dd3fc; }
 
+  /* .amount-grid/.amount-btn: kept for the Tyro membership/donation buttons (Phase 1) */
   .amount-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
   .amount-btn {
     display: flex; align-items: center; justify-content: center;
