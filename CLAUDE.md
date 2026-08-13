@@ -3,9 +3,17 @@
 ## Separation from Agility Ops (STRICT — read first)
 VillageFirst is a **separate entity** from Agility Ops / InSite. There must be **zero
 crossover** between VillageFirst and ANY Agility Ops tool, website, account or service —
-including **Stripe** (VillageFirst uses its own separate Stripe registration with no link
-to the Agility Ops Stripe account, keys, webhook or runbook), Notion licence infrastructure,
-the Central API, and payments.
+including **payments** (VillageFirst payments run through PPCA's own Tyro merchant
+facility, MID 341148 — no link to the Agility Ops Stripe account, keys, webhook or
+runbook), Notion licence infrastructure, and the Central API.
+
+**Payments (Aug 2026):** Stripe is NOT used — the old Payment Link scaffolding was removed.
+Online memberships (primary) + donations (secondary) will use the **Tyro Connect Pay API
+("Pay Online")**: server-side Pay Request via `netlify/functions/tyro-pay-request.js` →
+embedded `tyro.js` card form on `/contribute/` → `tyro-webhook.js` writes the Contribution
+to Notion as Received. Plan: `~/AgilityOpsBizAI/AOB/villagefirst/docs/payments-platform/VillageFirst-Tyro-PayOnline-Implementation-Plan.html`.
+Blocked on Tyro enabling eCommerce for MID 341148 (call 1300 00 8976). Env vars (Netlify):
+`TYRO_API_TOKEN`, `TYRO_LOCATION_ID`, `TYRO_LIVE_MODE`, `TYRO_WEBHOOK_SECRET`.
 
 **The ONLY permitted connection** is course-signal logging: VillageFirst work may be logged
 as coaching/course signals in `AOB-Course-Roadmap-Signal-Log.md` (per `.claude/rules/coaching-tips.md`).
