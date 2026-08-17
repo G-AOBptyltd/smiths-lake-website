@@ -1,0 +1,170 @@
+---
+/**
+ * Events page — what's on, with registration.
+ *
+ * Published events load live from /api/event-list (no rebuild needed) and
+ * registrations post to /api/event-rsvp. Capacity is enforced server-side:
+ * full events take waitlist registrations, stated honestly up front.
+ * v1 is RSVP + pay at the door; online ticket sales arrive with each
+ * village's own Tyro merchant.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+---
+
+<BaseLayout
+  title="What's On"
+  description="Community events at Smiths Lake — see what's coming up and register your spot."
+>
+  <Hero
+    title="What's On"
+    subtitle="Trivia nights, markets, meetings and get-togethers — save your spot in a few taps."
+    size="small"
+  />
+
+  <section class="section">
+    <div class="container container--narrow">
+      <div id="events-list">
+        <p class="ev-loading">Loading what's on…</p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .section { padding: 3rem 0; }
+  .container--narrow { max-width: 760px; margin: 0 auto; padding: 0 1rem; }
+</style>
+
+<!-- Event cards are built by JS — global styles required. -->
+<style is:global>
+  .ev-loading { color: #6b7280; font-size: 1rem; }
+  .ev-card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.6rem 1.7rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .ev-when { font-size: 0.85rem; font-weight: 800; color: #15795f; text-transform: uppercase; letter-spacing: 0.05em; }
+  .ev-name { font-size: 1.35rem; font-weight: 800; color: #143d2e; margin: 0.2rem 0 0.5rem; }
+  .ev-desc { color: #374151; line-height: 1.65; margin-bottom: 0.8rem; }
+  .ev-meta { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.9rem; color: #4b5563; margin-bottom: 1rem; }
+  .ev-meta b { color: #143d2e; }
+  .ev-left { font-weight: 700; }
+  .ev-left.is-low { color: #b45309; }
+  .ev-left.is-full { color: #b91c1c; }
+  .ev-btn { background: #15795f; color: white; border: none; border-radius: 10px; padding: 0.8rem 1.7rem; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .ev-btn:hover { background: #0f5c48; }
+  .ev-btn:disabled { background: #9ca3af; cursor: wait; }
+  .ev-form { margin-top: 1.1rem; border-top: 1px solid #eef2ef; padding-top: 1.1rem; }
+  .ev-row { display: flex; gap: 0.9rem; flex-wrap: wrap; }
+  .ev-field { flex: 1; min-width: 160px; margin-bottom: 0.9rem; }
+  .ev-field label { display: block; font-size: 0.88rem; font-weight: 600; color: #374151; margin-bottom: 0.3rem; }
+  .ev-field input, .ev-field select { width: 100%; border: 1.5px solid #d1d5db; border-radius: 9px; padding: 0.65rem 0.8rem; font-size: 1rem; font-family: inherit; background: white; box-sizing: border-box; }
+  .ev-field input:focus, .ev-field select:focus { outline: 2.5px solid #15a06e66; border-color: #15795f; }
+  .ev-status { font-size: 0.9rem; font-weight: 600; color: #6b7280; margin-left: 0.8rem; }
+  .ev-status.err { color: #b91c1c; }
+  .ev-done { background: #f0fdf6; border: 1px solid #bbf7d0; border-radius: 10px; padding: 1rem 1.2rem; margin-top: 1rem; }
+  .ev-done b { color: #15795f; }
+  .ev-hp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+  .ev-none { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 2rem; text-align: center; color: #6b7280; line-height: 1.7; }
+</style>
+
+<script>
+  const VILLAGE = 'Smiths Lake';
+
+  function esc(s: any) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!)); }
+
+  function fmtWhen(start: string | null, end: string | null) {
+    if (!start) return 'Date to be announced';
+    const d = new Date(start);
+    const day = d.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' });
+    const t = start.slice(11, 16);
+    const e = (end || '').slice(11, 16);
+    return day + (t && t !== '00:00' ? ` · ${t}${e ? '–' + e : ''}` : '');
+  }
+
+  function leftBadge(ev: any) {
+    if (ev.capacity == null) return '';
+    if (ev.seatsLeft <= 0) return '<span class="ev-left is-full">Event full — waitlist open</span>';
+    if (ev.seatsLeft <= Math.max(3, ev.capacity * 0.2)) return `<span class="ev-left is-low">Only ${ev.seatsLeft} place${ev.seatsLeft === 1 ? '' : 's'} left</span>`;
+    return `<span class="ev-left">${ev.seatsLeft} places left</span>`;
+  }
+
+  async function load() {
+    const el = document.getElementById('events-list')!;
+    let events: any[] = [];
+    try {
+      const r = await fetch('/api/event-list?village=' + encodeURIComponent(VILLAGE));
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || '');
+      events = data.events || [];
+    } catch (e) {
+      el.innerHTML = '<div class="ev-none">We couldn\'t load events just now — please try again later.</div>';
+      return;
+    }
+    if (!events.length) {
+      el.innerHTML = '<div class="ev-none"><b>Nothing on the calendar right now.</b><br>Community events appear here as soon as they\'re announced — check the <a href="/news/">village news</a> for what\'s brewing.</div>';
+      return;
+    }
+    el.innerHTML = events.map((ev, i) => `
+      <div class="ev-card">
+        <div class="ev-when">${esc(fmtWhen(ev.start, ev.end))}</div>
+        <h2 class="ev-name">${esc(ev.name)}</h2>
+        ${ev.description ? `<p class="ev-desc">${esc(ev.description)}</p>` : ''}
+        <div class="ev-meta">
+          ${ev.location ? `<span>📍 <b>${esc(ev.location)}</b></span>` : ''}
+          ${ev.price ? `<span>🎟 <b>${esc(ev.price)}</b> at the door</span>` : '<span>🎟 <b>Free</b></span>'}
+          ${leftBadge(ev)}
+        </div>
+        <button class="ev-btn" data-open="${i}">${ev.capacity != null && ev.seatsLeft <= 0 ? 'Join the waitlist' : 'Save my spot'}</button>
+        <form class="ev-form" data-event="${ev.id}" data-idx="${i}" hidden novalidate>
+          <p class="ev-hp" aria-hidden="true"><label>Leave this field empty <input type="text" name="website" tabindex="-1" autocomplete="off" /></label></p>
+          <div class="ev-row">
+            <div class="ev-field"><label>First name *</label><input name="firstName" maxlength="100" required autocomplete="given-name" /></div>
+            <div class="ev-field"><label>Last name *</label><input name="lastName" maxlength="100" required autocomplete="family-name" /></div>
+          </div>
+          <div class="ev-row">
+            <div class="ev-field"><label>Email *</label><input type="email" name="email" maxlength="200" required autocomplete="email" /></div>
+            <div class="ev-field"><label>Phone</label><input type="tel" name="phone" maxlength="50" autocomplete="tel" /></div>
+            <div class="ev-field" style="max-width:130px;"><label>How many?</label>
+              <select name="seats">${[1,2,3,4,5,6,7,8,9,10].map(n => `<option>${n}</option>`).join('')}</select></div>
+          </div>
+          <button type="submit" class="ev-btn">Register</button><span class="ev-status" role="status"></span>
+        </form>
+        <div class="ev-done" data-done="${i}" hidden></div>
+      </div>`).join('');
+
+    document.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => {
+      const i = (b as HTMLElement).dataset.open!;
+      const f = document.querySelector(`form[data-idx="${i}"]`) as HTMLElement;
+      f.hidden = !f.hidden;
+      if (!f.hidden) (f.querySelector('input[name=firstName]') as HTMLInputElement).focus();
+    }));
+
+    document.querySelectorAll('form[data-event]').forEach((form) => form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = form as HTMLFormElement;
+      const status = f.querySelector('.ev-status') as HTMLElement;
+      const btn = f.querySelector('button[type=submit]') as HTMLButtonElement;
+      const fd = new FormData(f);
+      if (!String(fd.get('firstName') || '').trim() || !String(fd.get('lastName') || '').trim()) { status.textContent = 'Please add your name.'; status.className = 'ev-status err'; return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(fd.get('email') || ''))) { status.textContent = 'Please add a valid email.'; status.className = 'ev-status err'; return; }
+      btn.disabled = true; status.textContent = 'Sending…'; status.className = 'ev-status';
+      try {
+        const r = await fetch('/api/event-rsvp', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ village: VILLAGE, eventId: f.dataset.event, ...Object.fromEntries(fd) }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Something went wrong');
+        f.hidden = true;
+        const done = document.querySelector(`[data-done="${f.dataset.idx}"]`) as HTMLElement;
+        done.hidden = false;
+        done.innerHTML = data.status === 'Waitlist'
+          ? '<b>You\'re on the waitlist 📝</b> — the event is currently full, but we\'ll email you if places open up.'
+          : `<b>You're in! 🎟</b> ${Number(data.seats) > 1 ? `Your party of ${data.seats} is` : 'Your spot is'} registered — a confirmation email is on its way.`;
+      } catch (err) {
+        status.textContent = (err as Error).message; status.className = 'ev-status err';
+        btn.disabled = false;
+      }
+    }));
+  }
+
+  load();
+</script>

@@ -198,6 +198,22 @@
   to = "/.netlify/functions/volunteer-provision"
   status = 200
 
+# Events & ticketing API
+[[redirects]]
+  from = "/api/event-list"
+  to = "/.netlify/functions/event-list"
+  status = 200
+
+[[redirects]]
+  from = "/api/event-rsvp"
+  to = "/.netlify/functions/event-rsvp"
+  status = 200
+
+[[redirects]]
+  from = "/api/event-admin"
+  to = "/.netlify/functions/event-admin"
+  status = 200
+
 # Facility bookings API
 [[redirects]]
   from = "/api/booking-availability"

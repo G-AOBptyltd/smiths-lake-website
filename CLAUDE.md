@@ -186,6 +186,21 @@ to `VF_MEMBER_PAY_INSTRUCTIONS`) + conditions, declined) via VF Resend, stamped 
 Functions: `booking-availability` (public, no PII), `booking-request` (public), `booking-admin`
 (admin, PII), `facility-admin`, `booking-email`, `booking-provision`, shared `_bookings.js`.
 
+## Events & ticketing (/events/ + /admin/events/, added Aug 2026)
+Pre-Tyro model chosen by Greg: **RSVP + capacity + pay at the door**. 🎟 VF Events (Status
+Draft → Published → Closed/Cancelled/Completed; only Published show publicly) + 🙌 VF Event
+RSVPs (Registered | Waitlist | Cancelled | Attended; a row = a party of ≤10 seats). Capacity
+enforced SERVER-side at RSVP time — full events take Waitlist rows and say so honestly;
+promoting off the waitlist re-checks capacity (409 + force override). Public /events/ loads
+live from `event-list` (no PII — seats counted only) and posts to `event-rsvp` (member-join
+hardening; auto confirmation email to registrant + committee heads-up, env-gated fail-open).
+Console /admin/events/: event editor, door list (✓ Arrived check-in, per-party door takings
+via `rsvpPayment`, waitlist promote, door-list CSV). Env `NOTION_VF_EVENTS_DB_ID` /
+`NOTION_VF_EVENT_RSVPS_DB_ID` + baked fallbacks. Functions: `event-list` (public),
+`event-rsvp` (public), `event-admin` (admin, PII), shared `_events.js`. Village-segregated
+like bookings (Village column + village-scoped roles); per-village payment config arrives
+with the Villages-registry generalisation pass (see Facility bookings section).
+
 ## Survey Tool
 - **URL:** https://villagefirst.org.au/surveys/blueys-beach-survey.html
 - **Backend:** Google Apps Script Web App (deployed under admin@villagefirst.org.au)

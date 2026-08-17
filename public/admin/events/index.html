@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Events & ticketing — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; font-size: 14px; color: #1f2937; }
+  button { font-family: inherit; }
+
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; white-space: nowrap; font-family: inherit; }
+  .village-select option { color: #1f2937; }
+
+  .layout { display: flex; min-height: calc(100vh - 46px); }
+  .sidebar { width: 180px; background: #fff; border-right: 1px solid #e2e8f0; padding: 10px 0; flex-shrink: 0; }
+  .s-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font-size: 12.5px; color: #4b5563; cursor: pointer; border-left: 3px solid transparent; }
+  .s-item:hover { background: #f0fdf6; }
+  .s-item.on { color: #0f5c48; background: #e7f6ee; border-left-color: #15795f; font-weight: 700; }
+  .main { flex: 1; padding: 20px; max-width: 960px; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+  h1 { font-size: 1.05rem; color: #143d2e; margin-bottom: 2px; }
+  .sub { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+  .stat-num { font-size: 1.35rem; font-weight: 800; color: #0f5c48; }
+  .stat-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+
+  .ledger { background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-top: 1px solid #f1f5f9; cursor: pointer; }
+  .row:first-child { border-top: none; }
+  .row:hover { background: #f8fafc; }
+  .row-main { flex: 1; min-width: 0; }
+  .row-name { font-size: 13px; font-weight: 700; color: #1f2937; }
+  .row-note { font-size: 11.5px; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-val { font-size: 12.5px; font-weight: 700; color: #0f5c48; white-space: nowrap; }
+  .chip { font-size: 9.5px; font-weight: 700; border-radius: 9px; padding: 2px 8px; white-space: nowrap; }
+  .chip-draft { background: #fef3c7; color: #92400e; }
+  .chip-published { background: #c9f0dd; color: #0f5c48; }
+  .chip-closed { background: #e2e8f0; color: #475569; }
+  .chip-cancelled { background: #fee2e2; color: #991b1b; }
+  .chip-completed { background: #dbeafe; color: #1e40af; }
+  .chip-registered { background: #c9f0dd; color: #0f5c48; }
+  .chip-waitlist { background: #fef3c7; color: #92400e; }
+  .chip-attended { background: #dbeafe; color: #1e40af; }
+  .row-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; margin-left: 4px; }
+  .link-btn { background: none; border: none; color: #1d6fb8; font-size: 11px; cursor: pointer; padding: 0; font-family: inherit; }
+  .link-btn:hover { text-decoration: underline; }
+  .link-btn.danger { color: #b91c1c; }
+
+  .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 640px; margin-bottom: 16px; }
+  .form-card h2 { font-size: 13.5px; color: #143d2e; margin-bottom: 10px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin: 14px 0 4px; }
+  .hint { font-weight: 400; color: #9ca3af; }
+  input[type=text], input[type=number], input[type=date], input[type=time], textarea, select { width: 100%; border: 1px solid #d1d5db; border-radius: 7px; padding: 9px 11px; font-size: 13px; font-family: inherit; background: white; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid #15a06e; border-color: #15a06e; }
+  textarea { min-height: 64px; resize: vertical; line-height: 1.6; }
+  .two-col { display: flex; gap: 12px; flex-wrap: wrap; }
+  .two-col > div { flex: 1; min-width: 140px; }
+  .form-actions { display: flex; gap: 8px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 7px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btn-green { background: #15795f; color: white; }
+  .btn-green:hover { background: #0f5c48; }
+  .btn:disabled { background: #9ca3af; cursor: wait; }
+  .btn-blue { background: #1d6fb8; color: white; }
+  .btn-amber { background: #b45309; color: white; }
+  .btn-ghost { background: white; color: #4b5563; border: 1px solid #d1d5db; }
+  .btn-ghost:hover { border-color: #9ca3af; }
+  .btn-danger { background: white; color: #b91c1c; border: 1px solid #fecaca; }
+  .status-msg { font-size: 12px; font-weight: 600; min-height: 1.2em; }
+  .status-msg.ok { color: #15803d; } .status-msg.err { color: #b91c1c; }
+  .meta-line { font-size: 11.5px; color: #9ca3af; line-height: 1.7; }
+
+  .help-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 640px; font-size: 13px; line-height: 1.7; color: #374151; }
+  .help-card h2 { font-size: 13.5px; color: #143d2e; margin: 14px 0 4px; }
+  .help-card h2:first-child { margin-top: 0; }
+
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; padding: 1rem; text-align: center; }
+  .auth-screen h1 { font-size: 1.2rem; }
+  .auth-screen p { font-size: 0.85rem; color: #6b7280; max-width: 360px; }
+  .auth-btn { background: #15795f; color: white; border: none; border-radius: 8px; padding: 0.75rem 2rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+
+  .empty { color: #9ca3af; font-size: 12.5px; padding: 16px; text-align: center; }
+  @media (max-width: 700px) { .sidebar { width: 120px; } .main { padding: 14px; } }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">🎟️</div>
+  <h1>VillageFirst Events</h1>
+  <p>Create events, watch registrations roll in, run the door on the night. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+  <p style="margin-top:1rem;"><a href="/admin/" style="color:#15795f; font-size:0.78rem;">← Admin home</a></p>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · Events</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <button class="s-item on" data-panel="events" onclick="showPanel('events')">🎟 Events</button>
+      <button class="s-item" data-panel="help" onclick="showPanel('help')">💡 Help</button>
+    </div>
+
+    <div class="main">
+
+      <!-- ── Events list ─────────────────────────────────────────── -->
+      <div class="panel on" id="panel-events">
+        <h1>Events</h1>
+        <p class="sub">Draft it, publish it, watch registrations arrive. Click an event to manage it and run the door.</p>
+        <div class="stats" id="stats"></div>
+        <div class="toolbar">
+          <button class="btn btn-green" onclick="newEvent()">➕ New event</button>
+        </div>
+        <div class="ledger" id="events"><div class="empty">Loading events…</div></div>
+      </div>
+
+      <!-- ── Event editor + door list ────────────────────────────── -->
+      <div class="panel" id="panel-event">
+        <h1 id="ev-title">Event</h1>
+        <p class="sub"><a href="#" onclick="showPanel('events'); return false;" style="color:#15795f;">← Back to events</a></p>
+
+        <div class="form-card">
+          <h2 id="ev-status-line">Details</h2>
+          <label for="e-name">Event name</label>
+          <input type="text" id="e-name" maxlength="200" placeholder='e.g. "Trivia night at the hall"' />
+          <label for="e-desc">Description <span class="hint">(shows on the public page)</span></label>
+          <textarea id="e-desc" maxlength="2000"></textarea>
+          <div class="two-col">
+            <div><label for="e-date">Date</label><input type="date" id="e-date" /></div>
+            <div><label for="e-start">From</label><input type="time" id="e-start" step="1800" value="18:00" /></div>
+            <div><label for="e-end">Until <span class="hint">(optional)</span></label><input type="time" id="e-end" step="1800" /></div>
+          </div>
+          <div class="two-col">
+            <div><label for="e-location">Location</label><input type="text" id="e-location" maxlength="300" placeholder="e.g. Community Hall" /></div>
+            <div><label for="e-capacity">Capacity <span class="hint">(blank = unlimited)</span></label><input type="number" id="e-capacity" min="1" /></div>
+          </div>
+          <div class="two-col">
+            <div><label for="e-price">Price <span class="hint">(text — collected at the door until online payments)</span></label><input type="text" id="e-price" maxlength="300" placeholder='e.g. "$15, kids free"' /></div>
+            <div><label for="e-organiser">Organiser</label><input type="text" id="e-organiser" maxlength="200" /></div>
+          </div>
+          <label for="e-note">Committee note <span class="hint">(not public)</span></label>
+          <textarea id="e-note" maxlength="2000"></textarea>
+          <div class="form-actions" id="ev-actions"></div>
+          <div class="form-actions"><span class="status-msg" id="ev-msg"></span></div>
+          <div class="meta-line" id="ev-meta"></div>
+        </div>
+
+        <div class="form-card" id="door-card" style="max-width:760px;">
+          <h2>🚪 Door list · <span id="door-summary"></span></h2>
+          <div class="toolbar">
+            <button class="btn btn-ghost" onclick="exportDoorCSV()">⬇ Door list CSV</button>
+          </div>
+          <div class="ledger" id="rsvp-list"><div class="empty">No registrations yet.</div></div>
+        </div>
+      </div>
+
+      <!-- ── Help ────────────────────────────────────────────────── -->
+      <div class="panel" id="panel-help">
+        <h1>Help</h1>
+        <p class="sub">The 60-second guide.</p>
+        <div class="help-card">
+          <h2>Running an event</h2>
+          Press <b>New event</b>, fill in the details (capacity blank = unlimited) and <b>Save</b> — it starts as a Draft nobody can see. Press <b>Publish</b> when you're ready and it appears on <a href="/events/" target="_blank">villagefirst.org.au/events</a> instantly.
+          <h2>Registrations</h2>
+          People register on the website (parties up to 10). They get a confirmation email automatically; when the event is full, new registrations go to the <b>waitlist</b> and are told so honestly. Promote waitlisted parties from the door list when places free up — the tool re-checks capacity for you.
+          <h2>The night of</h2>
+          Open the event on your phone. The <b>door list</b> shows every party — tick <b>Arrived</b> as they come in, and record door takings against each party if the event is paid. <b>⬇ Door list CSV</b> prints nicely if you'd rather run paper.
+          <h2>Money</h2>
+          v1 is pay-at-the-door — record takings per party so the night reconciles. Online ticket sales switch on with each village's own Tyro merchant later; nothing here changes.
+          <h2>Cancelling</h2>
+          <b>Close</b> stops new registrations but keeps the event visible in your list; <b>Cancel</b> pulls it from the website. Email the attendees from your usual email using the CSV — automatic cancellation emails are a later stage.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+  let events = [], rsvps = [];
+  let openId = null;
+
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+
+  function isSuper() {
+    const roles = (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || [];
+    return roles.includes('super-admin');
+  }
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+    loadVillages();
+    loadAll();
+  }
+
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const data = await r.json();
+      const villages = (data.villages || []).filter(v => v.status === 'live');
+      if (!villages.length) return;
+      sel.innerHTML = '';
+      villages.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v.name; o.textContent = v.name;
+        if (v.name === VILLAGE) o.selected = true;
+        sel.appendChild(o);
+      });
+    } catch (e) { /* keep default */ }
+    sel.onchange = () => { VILLAGE = sel.value; localStorage.setItem('vf_active_village', VILLAGE); loadAll(); };
+  }
+
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+    document.getElementById('panel-' + name).classList.add('on');
+    document.querySelectorAll('.s-item').forEach(b => b.classList.toggle('on', b.dataset.panel === name));
+  }
+
+  async function loadAll() {
+    try {
+      const r = await fetch('/api/event-admin?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not load events');
+      events = data.events || [];
+      rsvps = data.rsvps || [];
+      renderEvents();
+      if (openId) { const ev = events.find(x => x.id === openId); if (ev) fillEvent(ev); }
+    } catch (e) {
+      document.getElementById('events').innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+    }
+  }
+
+  // ── Events list ────────────────────────────────────────────────
+  const ECHIP = { 'Draft': 'chip-draft', 'Published': 'chip-published', 'Closed': 'chip-closed', 'Cancelled': 'chip-cancelled', 'Completed': 'chip-completed' };
+  const RCHIP = { 'Registered': 'chip-registered', 'Waitlist': 'chip-waitlist', 'Cancelled': 'chip-cancelled', 'Attended': 'chip-attended' };
+
+  function seatsFor(ev, statuses) {
+    return rsvps.filter(r => r.eventId === ev.id.replace(/-/g, '') && statuses.includes(r.status))
+      .reduce((s, r) => s + (r.seats || 1), 0);
+  }
+
+  function fmtWhen(start, end) {
+    if (!start) return '(no date)';
+    const d = start.slice(0, 10), t = start.slice(11, 16), e = (end || '').slice(11, 16);
+    const [y, m, day] = d.split('-');
+    const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m, 10) - 1];
+    return parseInt(day, 10) + ' ' + mon + ' ' + y.slice(2) + (t && t !== '00:00' ? ' · ' + t + (e ? '–' + e : '') : '');
+  }
+
+  function renderEvents() {
+    const today = new Date().toISOString().slice(0, 10);
+    const upcoming = events.filter(ev => ev.status === 'Published' && (ev.start || '').slice(0, 10) >= today);
+    const regSeats = upcoming.reduce((s, ev) => s + seatsFor(ev, ['Registered', 'Attended']), 0);
+    const door = rsvps.filter(r => (r.amountPaid || 0) > 0).reduce((s, r) => s + r.amountPaid, 0);
+    document.getElementById('stats').innerHTML =
+      stat(upcoming.length, 'Published & upcoming') + stat(regSeats, 'Seats registered') +
+      stat(rsvps.filter(r => r.status === 'Waitlist').length, 'Waitlisted parties') +
+      stat('$' + Math.round(door).toLocaleString('en-AU'), 'Door takings recorded');
+
+    const el = document.getElementById('events');
+    if (!events.length) { el.innerHTML = '<div class="empty">No events yet — create your first with "New event".</div>'; return; }
+    el.innerHTML = events.map(ev => {
+      const taken = seatsFor(ev, ['Registered', 'Attended']);
+      const cap = ev.capacity != null ? taken + '/' + ev.capacity : String(taken);
+      return '<div class="row" onclick="openEvent(\'' + ev.id + '\')">' +
+        '<span class="chip ' + (ECHIP[ev.status] || '') + '">' + esc(ev.status) + '</span>' +
+        '<div class="row-main"><div class="row-name">' + esc(ev.name) + '</div>' +
+        '<div class="row-note">' + esc(fmtWhen(ev.start, ev.end) + (ev.location ? ' · ' + ev.location : '')) + '</div></div>' +
+        '<span class="row-val">' + cap + ' seats</span></div>';
+    }).join('');
+  }
+
+  function stat(num, label) {
+    return '<div class="stat"><div class="stat-num">' + num + '</div><div class="stat-label">' + esc(label) + '</div></div>';
+  }
+
+  // ── Event editor ───────────────────────────────────────────────
+  function newEvent() {
+    openId = null;
+    fillEvent({ name: '', description: '', start: null, end: null, location: 'Community Hall', capacity: null, price: '', organiser: '', note: '', status: 'Draft' });
+    document.getElementById('ev-title').textContent = 'New event';
+    showPanel('event');
+  }
+
+  function openEvent(id) {
+    const ev = events.find(x => x.id === id);
+    if (!ev) return;
+    openId = id;
+    fillEvent(ev);
+    showPanel('event');
+  }
+
+  function fillEvent(ev) {
+    document.getElementById('ev-title').textContent = ev.id ? ev.name : 'New event';
+    document.getElementById('ev-status-line').innerHTML = 'Details · <span class="chip ' + (ECHIP[ev.status] || '') + '">' + esc(ev.status) + '</span>';
+    document.getElementById('e-name').value = ev.name || '';
+    document.getElementById('e-desc').value = ev.description || '';
+    document.getElementById('e-date').value = (ev.start || '').slice(0, 10);
+    document.getElementById('e-start').value = (ev.start || '').slice(11, 16) || '18:00';
+    document.getElementById('e-end').value = (ev.end || '').slice(11, 16);
+    document.getElementById('e-location').value = ev.location || '';
+    document.getElementById('e-capacity').value = ev.capacity ?? '';
+    document.getElementById('e-price').value = ev.price || '';
+    document.getElementById('e-organiser').value = ev.organiser || '';
+    document.getElementById('e-note').value = ev.note || '';
+
+    const acts = [btn('Save', 'btn-green', 'saveEvent()')];
+    if (ev.id) {
+      if (ev.status === 'Draft' || ev.status === 'Closed') acts.push(btn('Publish', 'btn-blue', "eventStatus('Published')"));
+      if (ev.status === 'Published') acts.push(btn('Close registrations', 'btn-amber', "eventStatus('Closed')"));
+      if (ev.status !== 'Cancelled' && ev.status !== 'Completed') acts.push(btn('Cancel event', 'btn-ghost', "eventStatus('Cancelled')"));
+      if (ev.status !== 'Completed') acts.push(btn('Mark completed', 'btn-ghost', "eventStatus('Completed')"));
+      if (isSuper()) acts.push(btn('Delete', 'btn-danger', 'deleteEvent()'));
+    }
+    document.getElementById('ev-actions').innerHTML = acts.join('');
+    document.getElementById('ev-meta').textContent = [ev.createdBy ? 'Created by ' + ev.createdBy : '', ev.lastUpdatedBy ? 'Last updated: ' + ev.lastUpdatedBy : ''].filter(Boolean).join(' · ');
+    setMsg('ev-msg', '', '');
+    renderDoor(ev);
+  }
+
+  function btn(label, cls, fn) { return '<button class="btn ' + cls + '" onclick="' + fn + '">' + label + '</button>'; }
+
+  async function call(payload, msgId) {
+    setMsg(msgId, 'Saving…', '');
+    const r = await fetch('/api/event-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, ...payload }) });
+    const data = await r.json();
+    if (!r.ok) { const err = new Error(data.error || 'Update failed'); err.canForce = data.canForce; throw err; }
+    return data;
+  }
+
+  async function saveEvent() {
+    try {
+      const data = await call({
+        action: 'save', pageId: openId || undefined,
+        name: document.getElementById('e-name').value,
+        description: document.getElementById('e-desc').value,
+        date: document.getElementById('e-date').value,
+        startTime: document.getElementById('e-start').value,
+        endTime: document.getElementById('e-end').value,
+        location: document.getElementById('e-location').value,
+        capacity: document.getElementById('e-capacity').value,
+        price: document.getElementById('e-price').value,
+        organiser: document.getElementById('e-organiser').value,
+        note: document.getElementById('e-note').value,
+      }, 'ev-msg');
+      openId = data.pageId;
+      setMsg('ev-msg', 'Saved ✓' + (events.find(x => x.id === openId) ? '' : ' — it\'s a Draft until you press Publish'), 'ok');
+      await loadAll();
+    } catch (e) { setMsg('ev-msg', e.message, 'err'); }
+  }
+
+  async function eventStatus(status) {
+    if (status === 'Cancelled' && !confirm('Cancel this event? It comes off the website immediately. Let the registered attendees know (grab the CSV first).')) return;
+    try {
+      await call({ action: 'eventStatus', pageId: openId, status }, 'ev-msg');
+      setMsg('ev-msg', status === 'Published' ? 'Published ✓ — live on /events/ now' : 'Updated ✓', 'ok');
+      await loadAll();
+    } catch (e) { setMsg('ev-msg', e.message, 'err'); }
+  }
+
+  async function deleteEvent() {
+    if (!confirm('Permanently remove this event AND leave its registrations orphaned?\n\nUse Cancelled to keep the record. Continue?')) return;
+    try { await call({ action: 'delete', pageId: openId, kind: 'event' }, 'ev-msg'); openId = null; await loadAll(); showPanel('events'); }
+    catch (e) { setMsg('ev-msg', e.message, 'err'); }
+  }
+
+  // ── Door list ──────────────────────────────────────────────────
+  function eventRsvps(ev) {
+    if (!ev.id) return [];
+    const key = ev.id.replace(/-/g, '');
+    return rsvps.filter(r => r.eventId === key);
+  }
+
+  function renderDoor(ev) {
+    const list = eventRsvps(ev);
+    const reg = list.filter(r => ['Registered', 'Attended'].includes(r.status)).reduce((s, r) => s + (r.seats || 1), 0);
+    const arrived = list.filter(r => r.status === 'Attended').reduce((s, r) => s + (r.seats || 1), 0);
+    document.getElementById('door-summary').textContent = ev.id
+      ? (reg + ' seats registered' + (ev.capacity != null ? ' of ' + ev.capacity : '') + ' · ' + arrived + ' arrived')
+      : 'save the event first';
+    const el = document.getElementById('rsvp-list');
+    if (!list.length) { el.innerHTML = '<div class="empty">No registrations yet — they appear the moment someone registers on the website.</div>'; return; }
+    el.innerHTML = list.map(r => {
+      const acts = [];
+      if (r.status === 'Registered') acts.push('<button class="link-btn" onclick="event.stopPropagation(); rsvpStatus(\'' + r.id + '\', \'Attended\')">✓ Arrived</button>');
+      if (r.status === 'Attended') acts.push('<button class="link-btn" onclick="event.stopPropagation(); rsvpStatus(\'' + r.id + '\', \'Registered\')">undo arrived</button>');
+      if (r.status === 'Waitlist') acts.push('<button class="link-btn" onclick="event.stopPropagation(); rsvpStatus(\'' + r.id + '\', \'Registered\')">Promote</button>');
+      if (r.status !== 'Cancelled') {
+        acts.push('<button class="link-btn" onclick="event.stopPropagation(); recordDoor(\'' + r.id + '\')">$ door</button>');
+        acts.push('<button class="link-btn danger" onclick="event.stopPropagation(); rsvpStatus(\'' + r.id + '\', \'Cancelled\')">cancel</button>');
+      } else {
+        acts.push('<button class="link-btn" onclick="event.stopPropagation(); rsvpStatus(\'' + r.id + '\', \'Registered\')">restore</button>');
+      }
+      return '<div class="row" style="cursor:default;">' +
+        '<span class="chip ' + (RCHIP[r.status] || '') + '">' + esc(r.status) + '</span>' +
+        '<div class="row-main"><div class="row-name">' + esc(r.name) + ' <span class="hint">× ' + (r.seats || 1) + '</span></div>' +
+        '<div class="row-note">' + esc([r.email, r.phone, r.message].filter(Boolean).join(' · ')) + '</div></div>' +
+        '<span class="row-val">' + (r.amountPaid != null ? '$' + r.amountPaid : '') + '</span>' +
+        '<span class="row-actions">' + acts.join('') + '</span></div>';
+    }).join('');
+  }
+
+  async function rsvpStatus(id, status, force) {
+    try {
+      await call({ action: 'rsvpStatus', pageId: id, status, ...(force ? { force: true } : {}) }, 'ev-msg');
+      await loadAll();
+    } catch (e) {
+      if (e.canForce && confirm(e.message + '\n\nPromote anyway (over capacity)?')) return rsvpStatus(id, status, true);
+      alert('⚠️ ' + e.message);
+    }
+  }
+
+  async function recordDoor(id) {
+    const r = rsvps.find(x => x.id === id);
+    if (!r) return;
+    const amount = prompt('Door takings for ' + r.name + ' (party of ' + (r.seats || 1) + '):', r.amountPaid ?? '');
+    if (amount === null) return;
+    try { await call({ action: 'rsvpPayment', pageId: id, amountPaid: amount }, 'ev-msg'); await loadAll(); }
+    catch (e) { alert('⚠️ ' + e.message); }
+  }
+
+  function exportDoorCSV() {
+    const ev = events.find(x => x.id === openId);
+    if (!ev) return;
+    const cols = ['Name', 'Seats', 'Status', 'Email', 'Phone', 'Message', 'Amount Paid'];
+    const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const rows = eventRsvps(ev).map(r => [r.name, r.seats, r.status, r.email, r.phone, r.message, r.amountPaid].map(cell).join(','));
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\uFEFF' + cols.join(',') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'door-list-' + (ev.name || 'event').toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function setMsg(id, msg, kind) {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = msg; el.className = 'status-msg' + (kind ? ' ' + kind : ''); }
+  }
+
+  function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+</script>
+</body>
+</html>
