@@ -319,6 +319,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <div class="tmpl-name">Annual Satisfaction</div>
                 <div class="tmpl-desc">Recurring pulse check. Service ratings + NPS + open text.</div>
               </div>
+              <div class="tmpl-opt" id="tmpl-namevote" onclick="selTmpl('name-vote',this)">
+                <div class="tmpl-icon">🏷️</div>
+                <div class="tmpl-name">Name Vote</div>
+                <div class="tmpl-desc">Put candidate names to the community — one vote each for their favourite.</div>
+              </div>
             </div>
             <div style="display:flex;gap:7px;margin-top:4px;">
               <button class="btn btn-g" onclick="if(!bd.selectedTemplates.length){showToast('Please choose at least one template.');return;}setWiz(2)">Next: Details →</button>
@@ -460,6 +465,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <div class="add-row">
                 <input class="f-i" id="new-polloption" placeholder="Add an option..." style="flex:1;" onkeydown="if(event.key==='Enter'){addGeneric('pollOptions','new-polloption','polloptions-list');event.preventDefault();}">
                 <button class="btn btn-g" onclick="addGeneric('pollOptions','new-polloption','polloptions-list')">+ Add</button>
+              </div>
+            </div>
+
+            <!-- name-vote questions -->
+            <div id="q-namevote" style="display:none;">
+              <div class="f-f"><div class="f-l">Voting question <span style="font-weight:400;color:#9ca3af;">(optional)</span></div><input class="f-i" id="b-namevote-q" placeholder="Which name do you like best?"></div>
+              <div class="f-l" style="margin:12px 0 6px;">Candidate names <span class="f-req">*</span> <span style="font-weight:400;font-size:10px;text-transform:none;color:#9ca3af;">— add 2 or more; each respondent votes for one</span></div>
+              <div class="item-list" id="namecandidates-list"></div>
+              <div class="add-row">
+                <input class="f-i" id="new-namecandidate" placeholder="Add a name..." style="flex:1;" onkeydown="if(event.key==='Enter'){addGeneric('nameCandidates','new-namecandidate','namecandidates-list');event.preventDefault();}">
+                <button class="btn btn-g" onclick="addGeneric('nameCandidates','new-namecandidate','namecandidates-list')">+ Add</button>
               </div>
             </div>
 
@@ -1615,6 +1631,7 @@ function configToBd(t, c) {
   else if (t === 'likert-agreement') { bd.statements = labels(c.statements || c.items); }
   else if (t === 'star-rating') { bd.starItems = labels(c.items || c.serviceRatings); }
   else if (t === 'quick-poll') { bd.pollQuestion = c.question || ''; bd.pollOptions = labels(c.options); }
+  else if (t === 'name-vote') { bd.nameVoteQ = c.question || ''; bd.nameCandidates = labels(c.candidates); }
   else if (t === 'open-feedback') { bd.prompts = labels(c.prompts || c.items); }
   else if (t === 'ranked-choice') { bd.rankItems = labels(c.items); }
   else if (t === 'budget-allocation') { bd.budgetItems = labels(c.items); bd.budgetTotal = c.total || 100; }
@@ -1804,6 +1821,7 @@ function resetBuilder() {
   bd.items=[]; bd.sharedFeatures=[]; bd.attributes=[]; bd.serviceRatings=[];
   bd.statements=[]; bd.starItems=[]; bd.pollOptions=[]; bd.prompts=[]; bd.pollQuestion='';
   bd.rankItems=[]; bd.budgetItems=[]; bd.budgetTotal=100; bd.ipaItems=[]; bd.demoFields=[];
+  bd.nameCandidates=[]; bd.nameVoteQ='';
   bd.rounds=4; bd.setSize=5; bd.openQuestion=''; bd.opt1Name=''; bd.opt2Name='';
   bd.description=''; bd.snapshotLabel=''; bd.npsQ=''; bd.priorityQ=''; bd.visibility=st.defaultVis||'public';
   document.querySelectorAll('.tmpl-opt').forEach(t=>t.classList.remove('sel'));
@@ -1833,8 +1851,8 @@ function setWiz(n) {
 }
 
 const SECTIONABLE = ['likert-agreement','star-rating','quick-poll','open-feedback','ranked-choice','budget-allocation','importance-performance','demographic'];
-const TMPL_CARD_ID = {'conjoint-design-options':'tmpl-conjoint','priority-ranking':'tmpl-maxdiff','annual-satisfaction':'tmpl-sat','quick-poll':'tmpl-quickpoll','likert-agreement':'tmpl-likert','star-rating':'tmpl-star','open-feedback':'tmpl-open','ranked-choice':'tmpl-ranked','budget-allocation':'tmpl-budget','importance-performance':'tmpl-ipa','demographic':'tmpl-demo'};
-const TMPL_LABEL = {'conjoint-design-options':'Design Option Preference','priority-ranking':'Priority Ranking','annual-satisfaction':'Annual Satisfaction','quick-poll':'Quick Poll','likert-agreement':'Likert Agreement','star-rating':'Star / Rating Review','open-feedback':'Open Feedback','ranked-choice':'Ranked Choice','budget-allocation':'Budget Allocation','importance-performance':'Importance vs Performance','demographic':'Demographic'};
+const TMPL_CARD_ID = {'conjoint-design-options':'tmpl-conjoint','priority-ranking':'tmpl-maxdiff','annual-satisfaction':'tmpl-sat','quick-poll':'tmpl-quickpoll','name-vote':'tmpl-namevote','likert-agreement':'tmpl-likert','star-rating':'tmpl-star','open-feedback':'tmpl-open','ranked-choice':'tmpl-ranked','budget-allocation':'tmpl-budget','importance-performance':'tmpl-ipa','demographic':'tmpl-demo'};
+const TMPL_LABEL = {'conjoint-design-options':'Design Option Preference','priority-ranking':'Priority Ranking','annual-satisfaction':'Annual Satisfaction','quick-poll':'Quick Poll','name-vote':'Name Vote','likert-agreement':'Likert Agreement','star-rating':'Star / Rating Review','open-feedback':'Open Feedback','ranked-choice':'Ranked Choice','budget-allocation':'Budget Allocation','importance-performance':'Importance vs Performance','demographic':'Demographic'};
 
 function selTmpl(t, el) {
   const sel = bd.selectedTemplates;
@@ -1902,7 +1920,7 @@ async function saveEdit() {
 function showQuestionsForTemplate() {
   const map = {
     'priority-ranking':'q-maxdiff', 'conjoint-design-options':'q-conjoint', 'annual-satisfaction':'q-sat',
-    'likert-agreement':'q-likert', 'star-rating':'q-star', 'quick-poll':'q-quickpoll', 'open-feedback':'q-open',
+    'likert-agreement':'q-likert', 'star-rating':'q-star', 'quick-poll':'q-quickpoll', 'name-vote':'q-namevote', 'open-feedback':'q-open',
     'ranked-choice':'q-ranked', 'budget-allocation':'q-budget', 'importance-performance':'q-ipa', 'demographic':'q-demo',
   };
   Object.values(map).forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
@@ -1919,8 +1937,10 @@ function showQuestionsForTemplate() {
   renderGenericList('budgetItems','budgetitems-list');
   renderGenericList('ipaItems','ipaitems-list');
   renderGenericList('demoFields','demofields-list');
+  renderGenericList('nameCandidates','namecandidates-list');
   const pq=document.getElementById('b-pollq'); if(pq) pq.value=bd.pollQuestion||'';
   const bt=document.getElementById('b-budget-total'); if(bt) bt.value=bd.budgetTotal||100;
+  const nvq=document.getElementById('b-namevote-q'); if(nvq) nvq.value=bd.nameVoteQ||'';
 }
 
 // Item list helpers
@@ -1997,6 +2017,9 @@ function saveQuestions() {
       bd.pollQuestion=document.getElementById('b-pollq').value.trim();
       if(!bd.pollQuestion){showToast('Enter a poll question.');return;}
       if(bd.pollOptions.length<2){showToast('Add at least 2 options.');return;}
+    } else if(t==='name-vote') {
+      bd.nameVoteQ=document.getElementById('b-namevote-q').value.trim();
+      if(bd.nameCandidates.length<2){showToast('Add at least 2 candidate names.');return;}
     } else if(t==='open-feedback') {
       if(bd.prompts.length<1){showToast('Add at least 1 question.');return;}
     } else if(t==='ranked-choice') {
@@ -2045,6 +2068,8 @@ function buildConfigFor(t) {
     return { ...base, items:bd.starItems };
   } else if(t==='quick-poll') {
     return { ...base, question:bd.pollQuestion, options:bd.pollOptions };
+  } else if(t==='name-vote') {
+    return { ...base, question:bd.nameVoteQ||'Which name do you like best?', candidates:bd.nameCandidates };
   } else if(t==='open-feedback') {
     return { ...base, prompts:bd.prompts };
   } else if(t==='ranked-choice') {

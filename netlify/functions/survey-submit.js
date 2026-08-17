@@ -251,6 +251,8 @@ function buildRowValues(data, survey) {
     fieldOrder = ['respondentType', ...numKeys('r'), 'comment'];
   } else if (template === 'quick-poll') {
     fieldOrder = ['respondentType', 'choice'];
+  } else if (template === 'name-vote') {
+    fieldOrder = ['respondentType', 'choice', 'comment'];
   } else if (template === 'open-feedback') {
     fieldOrder = ['respondentType', ...numKeys('q')];
   } else if (template === 'ranked-choice') {

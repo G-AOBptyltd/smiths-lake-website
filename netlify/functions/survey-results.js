@@ -150,6 +150,8 @@ function aggregate(rows, header, template, config) {
     return aggregateRatingList(rows, header, count, respondentBreakdown, 'r', (config.items || config.serviceRatings || []), 'comment');
   } else if (template === 'quick-poll') {
     return aggregateQuickPoll(rows, header, count, respondentBreakdown);
+  } else if (template === 'name-vote') {
+    return aggregateNameVote(rows, header, count, respondentBreakdown, config);
   } else if (template === 'open-feedback') {
     return aggregateOpenFeedback(rows, header, count, respondentBreakdown, config);
   } else if (template === 'ranked-choice') {
@@ -334,6 +336,23 @@ function aggregateQuickPoll(rows, header, count, respondentBreakdown) {
     .map(([label, n]) => ({ label, bestPct: count ? Math.round((n / count) * 100) : 0, n }))
     .sort((a, b) => b.n - a.n);
   return { count, respondentBreakdown, serviceRatings };
+}
+
+// Count votes per candidate name (zero-vote candidates included) → serviceRatings shape.
+function aggregateNameVote(rows, header, count, respondentBreakdown, config) {
+  const candidates = (config.candidates || []).map(c => (c && c.label) ? c.label : c);
+  const col = header.indexOf('choice');
+  const counts = {};
+  candidates.forEach(c => { counts[c] = 0; });
+  rows.forEach(r => { const v = r[col]; if (v) counts[v] = (counts[v] || 0) + 1; });
+  const serviceRatings = Object.entries(counts)
+    .map(([label, n]) => ({ label, bestPct: count ? Math.round((n / count) * 100) : 0, n }))
+    .sort((a, b) => b.n - a.n);
+  const cCol = header.indexOf('comment');
+  const openText = rows
+    .map((r, i) => ({ person: `Person ${i + 1}`, text: cCol > -1 ? (r[cCol] || '') : '' }))
+    .filter(r => r.text);
+  return { count, respondentBreakdown, serviceRatings, openText };
 }
 
 // Collect all open-text answers → openText list.
