@@ -165,6 +165,67 @@ import Hero from '../components/Hero.astro';
         </p>
       </div>
 
+      <!-- ── Free community updates (the old Stay Connected signup) ── -->
+      <div class="card" id="updates">
+        <h2>📬 Just want community updates?</h2>
+        <p>
+          Not ready to become a member? Sign up free for news about PPCA meetings, community
+          events, local projects, emergency preparedness and volunteer opportunities.
+          You can unsubscribe anytime.
+        </p>
+
+        <form
+          name="newsletter"
+          method="POST"
+          data-netlify="true"
+          netlify-honeypot="bot-field"
+          class="updates-form"
+        >
+          <input type="hidden" name="form-name" value="newsletter" />
+          <p class="hp" aria-hidden="true">
+            <label>Don't fill this out: <input name="bot-field" /></label>
+          </p>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="u-first" class="form-label form-label--required">First name</label>
+              <input type="text" id="u-first" name="first-name" class="form-input" required autocomplete="given-name" />
+            </div>
+            <div class="form-group">
+              <label for="u-last" class="form-label">Last name <span class="hint">(optional)</span></label>
+              <input type="text" id="u-last" name="last-name" class="form-input" autocomplete="family-name" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="u-email" class="form-label form-label--required">Email address</label>
+              <input type="email" id="u-email" name="email" class="form-input" required autocomplete="email" />
+            </div>
+            <div class="form-group">
+              <label for="u-resident" class="form-label">I am a… <span class="hint">(optional)</span></label>
+              <select id="u-resident" name="resident-type" class="form-input">
+                <option value="">Please select…</option>
+                <option value="permanent">Permanent Resident</option>
+                <option value="holiday">Holiday Home Owner</option>
+                <option value="renter">Renter</option>
+                <option value="visitor">Visitor / Prospective Resident</option>
+                <option value="business">Local Business</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="optin-check updates-consent">
+            <input type="checkbox" name="privacy-consent" required />
+            <span>I agree to receive community updates and understand I can unsubscribe anytime. <a href="/privacy/">Privacy Policy</a> <span class="req-mark">*</span></span>
+          </label>
+
+          <div class="form-group">
+            <button type="submit" class="btn btn--primary">Sign me up</button>
+          </div>
+        </form>
+      </div>
+
       <aside class="privacy-note">
         <h2>🔒 Your details are safe</h2>
         <p>
@@ -195,6 +256,9 @@ import Hero from '../components/Hero.astro';
   .card--fees { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-color: #7dd3fc; }
   .card--support { background: #f0fdf4; border-color: #86efac; }
   .card--support a { color: #15795f; font-weight: 600; }
+
+  .updates-form { margin-top: 0.5rem; }
+  .updates-consent { margin-bottom: 1.25rem; }
 
   .fee-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin: 1rem 0; }
   .fee-tile {

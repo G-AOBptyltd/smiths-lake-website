@@ -114,6 +114,10 @@ Active Zaps (all polling-based, ~15 min delay, Free plan):
   fee derived server-side, Status always Applied, env-gated PPCA notify via VF_RESEND vars).
 - Stay Connected opt-in re-posts to the Netlify `newsletter` form (exact field names) so the
   Zapier → Mailchimp zap works unchanged — the zap watches the FORM NAME, not the page URL.
+- `/newsletter/` is RETIRED (Aug 2026): page deleted, 301 → `/membership/#updates`; the free
+  signup lives in the membership page's "Just want community updates?" section, and the static
+  `newsletter` form also survives in the `/news/` sidebar (keeps Netlify form detection alive).
+  Footer/homepage/sitemap/project CTAs all point to `/membership/` now.
 - `/contribute/` coming-soon card links here; when Tyro Pay Online ships, membership payment
   happens on `/contribute/` and this page's payment options get a "pay online" path.
 

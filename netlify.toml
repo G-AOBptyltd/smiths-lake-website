@@ -209,6 +209,15 @@
   to = "/projects/bluey-s-beach-village-survey-concept-designs/"
   status = 301
 
+# Legacy newsletter URL — the "Stay Connected" signup now lives on the
+# membership page (free-updates section). The Netlify `newsletter` form itself
+# still renders statically on /membership/ and the /news/ sidebar, so the
+# Zapier → Mailchimp zap (keyed to the FORM NAME, not this URL) is unaffected.
+[[redirects]]
+  from = "/newsletter/"
+  to = "/membership/#updates"
+  status = 301
+
 # Redirect old Lilly Pilly Glade news slug to current slug.
 # The Notion title is "**Lilly Pilly Glade:** New seating and rest area now
 # established on the foreshore". parseProperty() used to read only the first
