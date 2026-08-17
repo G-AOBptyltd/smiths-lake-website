@@ -124,6 +124,15 @@
 
         <div class="form-card">
           <h2 id="sv-name-line">Listing details</h2>
+          <label>Hero image <span class="hint">(shows on the service's card and at the top of its page)</span></label>
+          <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap;">
+            <img id="s-img-preview" src="" alt="" style="display:none; width:180px; height:120px; object-fit:cover; border-radius:8px; border:1px solid #e2e8f0;" />
+            <div>
+              <input type="file" id="s-img-input" accept="image/*" style="display:none;" onchange="photoPicked(this)" />
+              <button class="btn btn-ghost" id="s-img-btn" onclick="document.getElementById('s-img-input').click()">📷 Choose a photo</button>
+              <div class="meta-line" id="s-img-note" style="margin-top:6px;">Photos are shrunk automatically; the image appears on the website after the next publish.</div>
+            </div>
+          </div>
           <label for="s-desc">Description <span class="hint">(what visitors read on the website)</span></label>
           <textarea id="s-desc" maxlength="2000"></textarea>
           <div class="two-col">
@@ -289,7 +298,35 @@
     showPanel('service');
   }
 
+  let photoData = null; // { contentType, dataBase64 } pending upload
+
+  function photoPicked(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      photoData = { contentType: 'image/jpeg', dataBase64: dataUrl.split(',')[1] };
+      const prev = document.getElementById('s-img-preview');
+      prev.src = dataUrl; prev.style.display = '';
+      document.getElementById('s-img-btn').textContent = '📷 Photo chosen ✓ (tap to change)';
+      document.getElementById('s-img-note').textContent = 'New photo attached — it uploads when you press Save, and shows on the website after the next publish.';
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
+  }
+
   function fillService(s) {
+    photoData = null;
+    const prev = document.getElementById('s-img-preview');
+    if (s.heroImage) { prev.src = s.heroImage; prev.style.display = ''; } else { prev.src = ''; prev.style.display = 'none'; }
+    document.getElementById('s-img-btn').textContent = s.heroImage ? '📷 Change photo' : '📷 Choose a photo';
+    document.getElementById('s-img-note').textContent = 'Photos are shrunk automatically; the image appears on the website after the next publish.';
     document.getElementById('sv-title').textContent = s.title;
     document.getElementById('sv-name-line').textContent = 'Listing details — ' + s.title;
     document.getElementById('sv-view').href = '/' + s.path + '/';
@@ -311,7 +348,20 @@
     btn.disabled = true;
     setMsg('s-msg', 'Saving…', '');
     try {
+      // Upload a newly chosen photo to the stable Blobs store first (same
+      // pipeline as News Desk photos), then reference it in the save.
+      let imageUrl;
+      if (photoData) {
+        setMsg('s-msg', 'Uploading photo…', '');
+        const up = await fetch('/api/news-image', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({
+          village: VILLAGE, storyKey: openId, contentType: photoData.contentType, dataBase64: photoData.dataBase64,
+        }) });
+        const upData = await up.json();
+        if (!up.ok) throw new Error(upData.error || 'Photo upload failed');
+        imageUrl = 'https://villagefirst.org.au' + upData.url;
+      }
       const r = await fetch('/api/service-update', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({
+        ...(imageUrl ? { imageUrl } : {}),
         village: VILLAGE, pageId: openId,
         description: document.getElementById('s-desc').value,
         operatingHours: document.getElementById('s-hours').value,

@@ -103,6 +103,19 @@ export const handler = async (event, context) => {
       if (payload) properties[name] = payload;
     }
 
+    // Hero image: an absolute stable URL (the Netlify-Blobs pipeline via
+    // /api/news-image). Written as an EXTERNAL file on 'Hero Image File' so
+    // the build-time card/page image pipeline picks it up on next publish.
+    // Only set when provided — never clobbers an existing image with blank.
+    if (body.imageUrl && /^https:\/\//i.test(body.imageUrl)) {
+      if (schema['Hero Image File']?.type === 'files') {
+        properties['Hero Image File'] = { files: [{ type: 'external', name: 'hero-image', external: { url: String(body.imageUrl).slice(0, 500) } }] };
+      }
+      if (schema['Image URL']?.type === 'url') {
+        properties['Image URL'] = { url: String(body.imageUrl).slice(0, 500) };
+      }
+    }
+
     const res = await fetch(`https://api.notion.com/v1/pages/${body.pageId}`, {
       method: 'PATCH', headers: nh(), body: JSON.stringify({ properties }),
     });

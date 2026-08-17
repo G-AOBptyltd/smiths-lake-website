@@ -48,6 +48,8 @@ export function parseService(page) {
     facebookUrl: p['Facebook URL']?.url || '',
     operatingHours: text(p['Operating Hours']),
     address: text(p.Address),
+    heroImage: (p['Hero Image File']?.files || [])[0]?.external?.url
+      || (p['Hero Image File']?.files || [])[0]?.file?.url || '',
     lastEdited: page.last_edited_time,
   };
 }
