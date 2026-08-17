@@ -171,6 +171,21 @@ Card-level volunteer management: network → village → **card** (a content pag
   privacy-safe default story text (counts, not names). Mockup preserved at
   `/admin/volunteers/mockup.html`.
 
+## Facility bookings (/facilities/ + /admin/bookings/, added Aug 2026)
+Community-hall hire: public page shows rates + a 2-month availability calendar (live from
+`/api/booking-availability` — no rebuild when rates change) and posts requests (member-join
+hardening) → 📅 VF Bookings as **Requested**; the committee confirms every booking (no
+auto-confirm; clashes are flagged, not rejected — committee decides). 🏛 VF Facilities holds
+the hireable spaces + rates/conditions, edited in the console (Facilities & rates tab).
+Created by POST `/api/booking-provision` (super-admin; seeds the hall with placeholder rates);
+env vars `NOTION_VF_FACILITIES_DB_ID` / `NOTION_VF_BOOKINGS_DB_ID`. Booking Date property
+holds start+end datetimes → conflict check is one interval overlap. Status flow Requested →
+Confirmed | Declined → Cancelled / Completed; payment recorded manually (fee/bond/reference/
+bond-returned) until Tyro; emails (confirmed incl. `VF_BOOKING_PAY_INSTRUCTIONS` (falls back
+to `VF_MEMBER_PAY_INSTRUCTIONS`) + conditions, declined) via VF Resend, stamped in Last Email.
+Functions: `booking-availability` (public, no PII), `booking-request` (public), `booking-admin`
+(admin, PII), `facility-admin`, `booking-email`, `booking-provision`, shared `_bookings.js`.
+
 ## Survey Tool
 - **URL:** https://villagefirst.org.au/surveys/blueys-beach-survey.html
 - **Backend:** Google Apps Script Web App (deployed under admin@villagefirst.org.au)

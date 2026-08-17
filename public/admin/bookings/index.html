@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Facility bookings — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; font-size: 14px; color: #1f2937; }
+  button { font-family: inherit; }
+
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; white-space: nowrap; font-family: inherit; }
+  .village-select option { color: #1f2937; }
+
+  .layout { display: flex; min-height: calc(100vh - 46px); }
+  .sidebar { width: 180px; background: #fff; border-right: 1px solid #e2e8f0; padding: 10px 0; flex-shrink: 0; }
+  .s-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font-size: 12.5px; color: #4b5563; cursor: pointer; border-left: 3px solid transparent; }
+  .s-item:hover { background: #f0fdf6; }
+  .s-item.on { color: #0f5c48; background: #e7f6ee; border-left-color: #15795f; font-weight: 700; }
+  .main { flex: 1; padding: 20px; max-width: 960px; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+  h1 { font-size: 1.05rem; color: #143d2e; margin-bottom: 2px; }
+  .sub { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+  .stat-num { font-size: 1.35rem; font-weight: 800; color: #0f5c48; }
+  .stat-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .fchip { border: 1.5px solid #e2e8f0; background: white; border-radius: 16px; padding: 5px 12px; font-size: 11.5px; font-weight: 600; color: #4b5563; cursor: pointer; }
+  .fchip.on { border-color: #15a06e; background: #e7f6ee; color: #0f5c48; }
+  .toolbar input[type=search] { flex: 1; min-width: 150px; border: 1px solid #d1d5db; border-radius: 7px; padding: 8px 11px; font-size: 13px; font-family: inherit; }
+
+  .ledger { background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+  .day-head { background: #f8fafc; border-top: 1px solid #f1f5f9; padding: 6px 14px; font-size: 11px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-top: 1px solid #f1f5f9; cursor: pointer; }
+  .row:hover { background: #f8fafc; }
+  .row-main { flex: 1; min-width: 0; }
+  .row-name { font-size: 13px; font-weight: 700; color: #1f2937; }
+  .row-note { font-size: 11.5px; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-val { font-size: 12.5px; font-weight: 700; color: #0f5c48; white-space: nowrap; }
+  .chip { font-size: 9.5px; font-weight: 700; border-radius: 9px; padding: 2px 8px; white-space: nowrap; }
+  .chip-requested { background: #fef3c7; color: #92400e; }
+  .chip-confirmed { background: #c9f0dd; color: #0f5c48; }
+  .chip-declined { background: #fee2e2; color: #991b1b; }
+  .chip-cancelled { background: #e2e8f0; color: #475569; }
+  .chip-completed { background: #dbeafe; color: #1e40af; }
+  .chip-clash { background: #fee2e2; color: #991b1b; }
+  .row-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; margin-left: 4px; }
+  .link-btn { background: none; border: none; color: #1d6fb8; font-size: 11px; cursor: pointer; padding: 0; font-family: inherit; }
+  .link-btn:hover { text-decoration: underline; }
+
+  .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 640px; margin-bottom: 16px; }
+  .form-card h2 { font-size: 13.5px; color: #143d2e; margin-bottom: 10px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin: 14px 0 4px; }
+  .hint { font-weight: 400; color: #9ca3af; }
+  input[type=text], input[type=email], input[type=tel], input[type=number], input[type=date], input[type=time], textarea, select { width: 100%; border: 1px solid #d1d5db; border-radius: 7px; padding: 9px 11px; font-size: 13px; font-family: inherit; background: white; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid #15a06e; border-color: #15a06e; }
+  textarea { min-height: 64px; resize: vertical; line-height: 1.6; }
+  .two-col { display: flex; gap: 12px; flex-wrap: wrap; }
+  .two-col > div { flex: 1; min-width: 140px; }
+  .form-actions { display: flex; gap: 8px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 7px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btn-green { background: #15795f; color: white; }
+  .btn-green:hover { background: #0f5c48; }
+  .btn:disabled { background: #9ca3af; cursor: wait; }
+  .btn-blue { background: #1d6fb8; color: white; }
+  .btn-amber { background: #b45309; color: white; }
+  .btn-ghost { background: white; color: #4b5563; border: 1px solid #d1d5db; }
+  .btn-ghost:hover { border-color: #9ca3af; }
+  .btn-danger { background: white; color: #b91c1c; border: 1px solid #fecaca; }
+  .status-msg { font-size: 12px; font-weight: 600; min-height: 1.2em; }
+  .status-msg.ok { color: #15803d; } .status-msg.err { color: #b91c1c; }
+  .meta-line { font-size: 11.5px; color: #9ca3af; line-height: 1.7; }
+  .pay-box { background: #f0fdf6; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 14px; margin-top: 12px; }
+
+  .help-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 640px; font-size: 13px; line-height: 1.7; color: #374151; }
+  .help-card h2 { font-size: 13.5px; color: #143d2e; margin: 14px 0 4px; }
+  .help-card h2:first-child { margin-top: 0; }
+
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; padding: 1rem; text-align: center; }
+  .auth-screen h1 { font-size: 1.2rem; }
+  .auth-screen p { font-size: 0.85rem; color: #6b7280; max-width: 360px; }
+  .auth-btn { background: #15795f; color: white; border: none; border-radius: 8px; padding: 0.75rem 2rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+
+  .empty { color: #9ca3af; font-size: 12.5px; padding: 16px; text-align: center; }
+  @media (max-width: 700px) { .sidebar { width: 120px; } .main { padding: 14px; } }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">🏛️</div>
+  <h1>VillageFirst Facility bookings</h1>
+  <p>Hall hire requests, the booking calendar, fees and bonds — the committee's booking book. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+  <p style="margin-top:1rem;"><a href="/admin/" style="color:#15795f; font-size:0.78rem;">← Admin home</a></p>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · Facility bookings</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <button class="s-item on" data-panel="bookings" onclick="showPanel('bookings')">📅 Bookings</button>
+      <button class="s-item" data-panel="facilities" onclick="showPanel('facilities')">🏛 Facilities & rates</button>
+      <button class="s-item" data-panel="help" onclick="showPanel('help')">💡 Help</button>
+    </div>
+
+    <div class="main">
+
+      <!-- ── Bookings ────────────────────────────────────────────── -->
+      <div class="panel on" id="panel-bookings">
+        <h1>Booking book</h1>
+        <p class="sub">Requests from the website land here — confirm or decline each one. Click a booking to manage it.</p>
+        <div class="stats" id="stats"></div>
+        <div class="toolbar">
+          <button class="fchip on" data-status="" onclick="pickStatus('')">Upcoming</button>
+          <button class="fchip" data-status="Requested" onclick="pickStatus('Requested')">Requested</button>
+          <button class="fchip" data-status="Confirmed" onclick="pickStatus('Confirmed')">Confirmed</button>
+          <button class="fchip" data-status="past" onclick="pickStatus('past')">Past & closed</button>
+          <input type="search" id="search" placeholder="Search name, purpose…" oninput="renderBookings()" />
+        </div>
+        <div class="ledger" id="bookings"><div class="empty">Loading bookings…</div></div>
+      </div>
+
+      <!-- ── Booking detail ──────────────────────────────────────── -->
+      <div class="panel" id="panel-booking">
+        <h1 id="bk-title">Booking</h1>
+        <p class="sub"><a href="#" onclick="showPanel('bookings'); return false;" style="color:#15795f;">← Back to bookings</a></p>
+
+        <div class="form-card">
+          <h2>Status · <span id="bk-chip"></span> <span id="bk-clash"></span></h2>
+          <div class="meta-line" id="bk-summary"></div>
+          <div class="form-actions" id="bk-actions"></div>
+          <div class="form-actions"><span class="status-msg" id="bk-msg"></span></div>
+          <div class="meta-line" id="bk-meta" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="form-card">
+          <h2>Fee, bond & payment</h2>
+          <div class="two-col">
+            <div><label for="p-fee">Fee quoted ($)</label><input type="number" id="p-fee" min="0" step="0.01" /></div>
+            <div><label for="p-bond">Bond ($)</label><input type="number" id="p-bond" min="0" step="0.01" /></div>
+          </div>
+          <div class="pay-box">
+            <div class="two-col">
+              <div><label for="p-date">Payment date</label><input type="date" id="p-date" /></div>
+              <div><label for="p-amount">Amount paid ($)</label><input type="number" id="p-amount" min="0" step="0.01" /></div>
+            </div>
+            <label for="p-ref">Reference <span class="hint">(transfer description / receipt)</span></label>
+            <input type="text" id="p-ref" maxlength="200" />
+            <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;margin-top:12px;"><input type="checkbox" id="p-bond-returned" style="width:auto;accent-color:#0f766e;" /> Bond returned after inspection</label>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-green" id="p-save" onclick="savePayment()">Save payment details</button>
+            <span class="status-msg" id="p-msg"></span>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <h2>Booking details</h2>
+          <div class="two-col">
+            <div><label for="d-date">Date</label><input type="date" id="d-date" /></div>
+            <div><label for="d-start">From</label><input type="time" id="d-start" step="1800" /></div>
+            <div><label for="d-end">Until</label><input type="time" id="d-end" step="1800" /></div>
+          </div>
+          <label for="d-purpose">Purpose</label>
+          <input type="text" id="d-purpose" maxlength="500" />
+          <div class="two-col">
+            <div><label for="d-attendees">Attendees</label><input type="number" id="d-attendees" min="1" /></div>
+          </div>
+          <label for="d-note">Committee note <span class="hint">(key handover, extras…)</span></label>
+          <textarea id="d-note" maxlength="2000"></textarea>
+          <div class="form-actions">
+            <button class="btn btn-green" id="d-save" onclick="saveDetails()">Save details</button>
+            <span class="status-msg" id="d-msg"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Facilities ──────────────────────────────────────────── -->
+      <div class="panel" id="panel-facilities">
+        <h1>Facilities & rates</h1>
+        <p class="sub">What can be hired, and what it costs. These rates show on the public <a href="/facilities/" target="_blank">Hire the Hall</a> page instantly — no publish step.</p>
+        <div id="facility-forms"></div>
+        <button class="btn btn-ghost" onclick="addFacility()">➕ Add another facility</button>
+      </div>
+
+      <!-- ── Help ────────────────────────────────────────────────── -->
+      <div class="panel" id="panel-help">
+        <h1>Help</h1>
+        <p class="sub">The 60-second guide.</p>
+        <div class="help-card">
+          <h2>How bookings arrive</h2>
+          Residents request the hall on <a href="/facilities/" target="_blank">villagefirst.org.au/facilities</a> — they see the rates and a calendar of taken days first. Requests land here as <b>Requested</b> and the committee gets an email (with a ⚠️ flag if it clashes with an existing booking).
+          <h2>Confirming (the everyday job)</h2>
+          Open the request, check the calendar didn't double-book, set the <b>fee quoted</b> if it differs from the standard rates, press <b>Confirm</b>, then <b>Send confirmation email</b> — it carries the fee, bond, payment details and the conditions of hire.
+          <h2>Money</h2>
+          When the transfer lands, record it under <b>Fee, bond & payment</b> (date, amount, reference). After the event and inspection, tick <b>Bond returned</b>. Online card payment arrives with Tyro later — nothing changes in this book when it does.
+          <h2>Declining & cancelling</h2>
+          <b>Decline</b> a request that doesn't work (send the decline email — it invites them to pick another time). <b>Cancelled</b> is for confirmed bookings that fall through. Nothing is ever deleted — the book is the record.
+          <h2>After the event</h2>
+          Mark it <b>Completed</b> once the keys are back and the hall's checked. That frees the record for the bond return tick.
+          <h2>Rates</h2>
+          Edit rates and conditions under <b>Facilities & rates</b> — the public page updates immediately.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+  let bookings = [], facilities = [];
+  let statusFilter = '';
+  let openId = null;
+
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+
+  function isSuper() {
+    const roles = (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || [];
+    return roles.includes('super-admin');
+  }
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+    loadVillages();
+    loadAll();
+  }
+
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const data = await r.json();
+      const villages = (data.villages || []).filter(v => v.status === 'live');
+      if (!villages.length) return;
+      sel.innerHTML = '';
+      villages.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v.name; o.textContent = v.name;
+        if (v.name === VILLAGE) o.selected = true;
+        sel.appendChild(o);
+      });
+    } catch (e) { /* keep default */ }
+    sel.onchange = () => { VILLAGE = sel.value; localStorage.setItem('vf_active_village', VILLAGE); loadAll(); };
+  }
+
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+    document.getElementById('panel-' + name).classList.add('on');
+    document.querySelectorAll('.s-item').forEach(b => b.classList.toggle('on', b.dataset.panel === name));
+  }
+
+  async function loadAll() {
+    try {
+      const r = await fetch('/api/booking-admin?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not load bookings');
+      bookings = data.bookings || [];
+      facilities = data.facilities || [];
+      renderBookings();
+      renderFacilities();
+      if (openId) { const b = bookings.find(x => x.id === openId); if (b) fillBooking(b); }
+    } catch (e) {
+      document.getElementById('bookings').innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+    }
+  }
+
+  // ── Bookings list ──────────────────────────────────────────────
+  const CHIP = { 'Requested': 'chip-requested', 'Confirmed': 'chip-confirmed', 'Declined': 'chip-declined', 'Cancelled': 'chip-cancelled', 'Completed': 'chip-completed' };
+
+  function pickStatus(s) {
+    statusFilter = s;
+    document.querySelectorAll('.fchip').forEach(el => el.classList.toggle('on', el.dataset.status === s));
+    renderBookings();
+  }
+
+  function fmtWhen(b) {
+    if (!b.start) return '(no date)';
+    const d = b.start.slice(0, 10), st = b.start.slice(11, 16), en = (b.end || '').slice(11, 16);
+    const [y, m, day] = d.split('-');
+    const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m, 10) - 1];
+    return parseInt(day, 10) + ' ' + mon + ' ' + y.slice(2) + (st ? ' · ' + st + '–' + en : '');
+  }
+
+  function hasClash(b) {
+    return ['Requested', 'Confirmed'].includes(b.status) && bookings.some(o =>
+      o.id !== b.id && ['Requested', 'Confirmed'].includes(o.status) && o.facilityId === b.facilityId &&
+      o.start && b.start && o.start < (b.end || b.start) && b.start < (o.end || o.start));
+  }
+
+  function renderBookings() {
+    const today = new Date().toISOString().slice(0, 10);
+    const upcoming = bookings.filter(b => (b.start || '').slice(0, 10) >= today && ['Requested', 'Confirmed'].includes(b.status));
+    const stats = {
+      requested: bookings.filter(b => b.status === 'Requested').length,
+      upcoming: upcoming.filter(b => b.status === 'Confirmed').length,
+      feesYear: bookings.filter(b => (b.paymentDate || '').slice(0, 4) === today.slice(0, 4)).reduce((s, b) => s + (b.amountPaid || 0), 0),
+    };
+    document.getElementById('stats').innerHTML =
+      stat(stats.requested, 'Awaiting a decision') + stat(stats.upcoming, 'Confirmed & upcoming') +
+      stat('$' + Math.round(stats.feesYear).toLocaleString('en-AU'), 'Hire fees received (' + today.slice(0, 4) + ')') +
+      stat(bookings.length, 'All bookings');
+
+    const q = document.getElementById('search').value.trim().toLowerCase();
+    let list = bookings.slice();
+    if (statusFilter === 'past') list = list.filter(b => (b.start || '').slice(0, 10) < today || ['Declined', 'Cancelled', 'Completed'].includes(b.status));
+    else if (statusFilter) list = list.filter(b => b.status === statusFilter && (b.start || '').slice(0, 10) >= today);
+    else list = list.filter(b => (b.start || '').slice(0, 10) >= today && ['Requested', 'Confirmed'].includes(b.status));
+    if (q) list = list.filter(b => [b.name, b.purpose, b.email].join(' ').toLowerCase().includes(q));
+    if (statusFilter === 'past') list.reverse();
+
+    const el = document.getElementById('bookings');
+    if (!list.length) { el.innerHTML = '<div class="empty">Nothing here. Requests from the website land automatically.</div>'; return; }
+    let html = '', lastDay = null;
+    for (const b of list) {
+      const day = (b.start || '').slice(0, 10);
+      if (day !== lastDay) { html += '<div class="day-head">' + esc(fmtWhen({ start: b.start }).split(' · ')[0]) + '</div>'; lastDay = day; }
+      const quick = b.status === 'Requested'
+        ? '<button class="link-btn" onclick="event.stopPropagation(); quickConfirm(\'' + b.id + '\')">Confirm</button>' : '';
+      html += '<div class="row" onclick="openBooking(\'' + b.id + '\')">' +
+        '<span class="chip ' + (CHIP[b.status] || '') + '">' + esc(b.status) + '</span>' +
+        (hasClash(b) ? '<span class="chip chip-clash">⚠ clash</span>' : '') +
+        '<div class="row-main"><div class="row-name">' + esc(b.name) + ' — ' + esc(b.purpose) + '</div>' +
+        '<div class="row-note">' + esc((b.start || '').slice(11, 16) + '–' + (b.end || '').slice(11, 16) + ' · ' + b.facility + (b.attendees ? ' · ~' + b.attendees + ' people' : '')) + '</div></div>' +
+        '<span class="row-val">' + (b.amountPaid != null ? '$' + b.amountPaid + ' paid' : (b.feeQuoted != null ? '$' + b.feeQuoted : '')) + '</span>' +
+        '<span class="row-actions">' + quick + '</span></div>';
+    }
+    el.innerHTML = html;
+  }
+
+  function stat(num, label) {
+    return '<div class="stat"><div class="stat-num">' + num + '</div><div class="stat-label">' + esc(label) + '</div></div>';
+  }
+
+  // ── Booking detail ─────────────────────────────────────────────
+  function openBooking(id) {
+    const b = bookings.find(x => x.id === id);
+    if (!b) return;
+    openId = id;
+    fillBooking(b);
+    showPanel('booking');
+  }
+
+  function fillBooking(b) {
+    document.getElementById('bk-title').textContent = b.name + ' — ' + b.facility;
+    document.getElementById('bk-chip').innerHTML = '<span class="chip ' + (CHIP[b.status] || '') + '">' + esc(b.status) + '</span>';
+    document.getElementById('bk-clash').innerHTML = hasClash(b) ? '<span class="chip chip-clash">⚠ clashes with another booking</span>' : '';
+    document.getElementById('bk-summary').innerHTML =
+      esc(fmtWhen(b)) + ' · ' + esc(b.purpose) + (b.attendees ? ' · ~' + b.attendees + ' people' : '') + '<br>' +
+      esc([b.email, b.phone].filter(Boolean).join(' · '));
+
+    const meta = [];
+    if (b.dateRequested) meta.push('Requested ' + b.dateRequested + (b.loggedBy ? ' · ' + esc(b.loggedBy) : ''));
+    if (b.lastEmail) meta.push('Last email: ' + esc(b.lastEmail));
+    if (b.lastUpdatedBy) meta.push('Last updated: ' + esc(b.lastUpdatedBy));
+    document.getElementById('bk-meta').innerHTML = meta.join('<br>');
+
+    const acts = [];
+    if (b.status === 'Requested') {
+      acts.push(btn('Confirm booking', 'btn-green', "doStatus('Confirmed')"));
+      acts.push(btn('Decline', 'btn-amber', "doStatus('Declined')"));
+    }
+    if (b.status === 'Confirmed') {
+      acts.push(btn('Send confirmation email', 'btn-blue', "sendEmail('confirmed')"));
+      acts.push(btn('Mark completed', 'btn-ghost', "doStatus('Completed')"));
+      acts.push(btn('Cancel booking', 'btn-amber', "doStatus('Cancelled')"));
+    }
+    if (b.status === 'Declined') acts.push(btn('Send decline email', 'btn-blue', "sendEmail('declined')"));
+    if (['Declined', 'Cancelled', 'Completed'].includes(b.status)) acts.push(btn('Re-open as Requested', 'btn-ghost', "doStatus('Requested')"));
+    if (isSuper()) acts.push(btn('Delete', 'btn-danger', 'doDelete()'));
+    document.getElementById('bk-actions').innerHTML = acts.join('');
+
+    document.getElementById('p-fee').value = b.feeQuoted ?? '';
+    document.getElementById('p-bond').value = b.bond ?? '';
+    document.getElementById('p-date').value = b.paymentDate || '';
+    document.getElementById('p-amount').value = b.amountPaid ?? '';
+    document.getElementById('p-ref').value = b.paymentReference || '';
+    document.getElementById('p-bond-returned').checked = !!b.bondReturned;
+
+    document.getElementById('d-date').value = (b.start || '').slice(0, 10);
+    document.getElementById('d-start').value = (b.start || '').slice(11, 16);
+    document.getElementById('d-end').value = (b.end || '').slice(11, 16);
+    document.getElementById('d-purpose').value = b.purpose || '';
+    document.getElementById('d-attendees').value = b.attendees ?? '';
+    document.getElementById('d-note').value = b.note || '';
+    setMsg('bk-msg', '', ''); setMsg('p-msg', '', ''); setMsg('d-msg', '', '');
+  }
+
+  function btn(label, cls, fn) { return '<button class="btn ' + cls + '" onclick="' + fn + '">' + label + '</button>'; }
+
+  async function call(payload, msgId) {
+    setMsg(msgId, 'Saving…', '');
+    const r = await fetch('/api/booking-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, pageId: openId, ...payload }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Update failed');
+    return data;
+  }
+
+  async function quickConfirm(id) {
+    const saved = openId; openId = id;
+    try { await call({ action: 'status', status: 'Confirmed' }, 'bk-msg'); await loadAll(); }
+    catch (e) { alert('⚠️ ' + e.message); }
+    finally { openId = saved; }
+  }
+
+  async function doStatus(status) {
+    try {
+      await call({ action: 'status', status }, 'bk-msg');
+      setMsg('bk-msg', status === 'Confirmed' ? 'Confirmed ✓ — now send the confirmation email' : 'Updated ✓', 'ok');
+      await loadAll();
+    } catch (e) { setMsg('bk-msg', e.message, 'err'); }
+  }
+
+  async function savePayment() {
+    const b = document.getElementById('p-save'); b.disabled = true;
+    try {
+      await call({
+        action: 'details',
+        feeQuoted: document.getElementById('p-fee').value,
+        bond: document.getElementById('p-bond').value,
+      }, 'p-msg');
+      await call({
+        action: 'payment',
+        paymentDate: document.getElementById('p-date').value || undefined,
+        amountPaid: document.getElementById('p-amount').value,
+        paymentReference: document.getElementById('p-ref').value.trim(),
+        bondReturned: document.getElementById('p-bond-returned').checked,
+      }, 'p-msg');
+      setMsg('p-msg', 'Saved ✓', 'ok');
+      await loadAll();
+    } catch (e) { setMsg('p-msg', e.message, 'err'); }
+    finally { b.disabled = false; }
+  }
+
+  async function saveDetails() {
+    const b = document.getElementById('d-save'); b.disabled = true;
+    try {
+      await call({
+        action: 'details',
+        date: document.getElementById('d-date').value,
+        startTime: document.getElementById('d-start').value,
+        endTime: document.getElementById('d-end').value,
+        purpose: document.getElementById('d-purpose').value,
+        attendees: document.getElementById('d-attendees').value,
+        note: document.getElementById('d-note').value,
+      }, 'd-msg');
+      setMsg('d-msg', 'Saved ✓', 'ok');
+      await loadAll();
+    } catch (e) { setMsg('d-msg', e.message, 'err'); }
+    finally { b.disabled = false; }
+  }
+
+  async function doDelete() {
+    const b = bookings.find(x => x.id === openId);
+    if (!b || !confirm('Permanently remove this booking for ' + b.name + '?\n\nMoves to Notion\'s trash. Use Declined or Cancelled to keep the record.')) return;
+    try { await call({ action: 'delete' }, 'bk-msg'); openId = null; await loadAll(); showPanel('bookings'); }
+    catch (e) { setMsg('bk-msg', e.message, 'err'); }
+  }
+
+  async function sendEmail(template) {
+    const b = bookings.find(x => x.id === openId);
+    if (!b) return;
+    if (!b.email) { setMsg('bk-msg', 'No email address on this booking.', 'err'); return; }
+    if (!confirm('Send the ' + (template === 'confirmed' ? 'confirmation' : 'decline') + ' email to ' + b.email + '?')) return;
+    setMsg('bk-msg', 'Sending…', '');
+    try {
+      const r = await fetch('/api/booking-email', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, pageId: openId, template }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Send failed');
+      setMsg('bk-msg', 'Sent to ' + data.to + ' ✓', 'ok');
+      await loadAll();
+    } catch (e) { setMsg('bk-msg', e.message, 'err'); }
+  }
+
+  // ── Facilities ─────────────────────────────────────────────────
+  function renderFacilities() {
+    const el = document.getElementById('facility-forms');
+    el.innerHTML = '';
+    facilities.forEach((f, i) => el.appendChild(facilityForm(f, i)));
+    if (!facilities.length) el.innerHTML = '<div class="empty">No facilities yet — add the hall below.</div>';
+  }
+
+  function facilityForm(f, i) {
+    const d = document.createElement('div');
+    d.className = 'form-card';
+    d.innerHTML =
+      '<h2>' + (f.id ? esc(f.name) : 'New facility') + (f.status === 'Inactive' ? ' <span class="chip chip-cancelled">Hidden from public page</span>' : '') + '</h2>' +
+      '<label>Name</label><input type="text" id="f-name-' + i + '" maxlength="200" value="' + esc(f.name === '(unnamed)' ? '' : f.name) + '" />' +
+      '<label>Description <span class="hint">(shows on the public page)</span></label><textarea id="f-desc-' + i + '" maxlength="2000">' + esc(f.description) + '</textarea>' +
+      '<div class="two-col">' +
+      '<div><label>Hourly $</label><input type="number" id="f-hr-' + i + '" min="0" value="' + (f.hourlyRate ?? '') + '" /></div>' +
+      '<div><label>Half day $</label><input type="number" id="f-hd-' + i + '" min="0" value="' + (f.halfDayRate ?? '') + '" /></div>' +
+      '<div><label>Full day $</label><input type="number" id="f-fd-' + i + '" min="0" value="' + (f.fullDayRate ?? '') + '" /></div>' +
+      '<div><label>Bond $</label><input type="number" id="f-bd-' + i + '" min="0" value="' + (f.bond ?? '') + '" /></div>' +
+      '</div>' +
+      '<label>Conditions of hire <span class="hint">(goes in the confirmation email too)</span></label><textarea id="f-cond-' + i + '" maxlength="2000">' + esc(f.conditions) + '</textarea>' +
+      '<div class="form-actions">' +
+      '<button class="btn btn-green" onclick="saveFacility(' + i + ')">Save</button>' +
+      (f.id ? '<button class="btn btn-ghost" onclick="toggleFacility(' + i + ')">' + (f.status === 'Inactive' ? 'Show on public page' : 'Hide from public page') + '</button>' : '') +
+      '<span class="status-msg" id="f-msg-' + i + '"></span></div>';
+    return d;
+  }
+
+  function addFacility() {
+    facilities.push({ id: '', name: '(unnamed)', description: '', rates: '', hourlyRate: null, halfDayRate: null, fullDayRate: null, bond: null, conditions: '', status: 'Active', order: facilities.length + 1 });
+    renderFacilities();
+  }
+
+  async function saveFacility(i) {
+    const f = facilities[i];
+    const v = (id) => document.getElementById(id + '-' + i).value;
+    setMsg('f-msg-' + i, 'Saving…', '');
+    try {
+      const r = await fetch('/api/facility-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({
+        village: VILLAGE, action: 'save', pageId: f.id || undefined,
+        name: v('f-name'), description: v('f-desc'),
+        hourlyRate: v('f-hr'), halfDayRate: v('f-hd'), fullDayRate: v('f-fd'), bond: v('f-bd'),
+        conditions: v('f-cond'), order: f.order,
+      }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Save failed');
+      setMsg('f-msg-' + i, 'Saved ✓ — live on the public page', 'ok');
+      await loadAll();
+    } catch (e) { setMsg('f-msg-' + i, e.message, 'err'); }
+  }
+
+  async function toggleFacility(i) {
+    const f = facilities[i];
+    try {
+      const r = await fetch('/api/facility-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({
+        village: VILLAGE, action: 'status', pageId: f.id, status: f.status === 'Inactive' ? 'Active' : 'Inactive',
+      }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Failed');
+      await loadAll();
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
+
+  function setMsg(id, msg, kind) {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = msg; el.className = 'status-msg' + (kind ? ' ' + kind : ''); }
+  }
+
+  function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+</script>
+</body>
+</html>

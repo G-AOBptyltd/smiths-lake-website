@@ -198,6 +198,37 @@
   to = "/.netlify/functions/volunteer-provision"
   status = 200
 
+# Facility bookings API
+[[redirects]]
+  from = "/api/booking-availability"
+  to = "/.netlify/functions/booking-availability"
+  status = 200
+
+[[redirects]]
+  from = "/api/booking-request"
+  to = "/.netlify/functions/booking-request"
+  status = 200
+
+[[redirects]]
+  from = "/api/booking-admin"
+  to = "/.netlify/functions/booking-admin"
+  status = 200
+
+[[redirects]]
+  from = "/api/facility-admin"
+  to = "/.netlify/functions/facility-admin"
+  status = 200
+
+[[redirects]]
+  from = "/api/booking-email"
+  to = "/.netlify/functions/booking-email"
+  status = 200
+
+[[redirects]]
+  from = "/api/booking-provision"
+  to = "/.netlify/functions/booking-provision"
+  status = 200
+
 # Membership admin API
 [[redirects]]
   from = "/api/member-list"
