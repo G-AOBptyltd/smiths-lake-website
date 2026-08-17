@@ -1,0 +1,151 @@
+---
+/**
+ * VolunteerSignup — "Volunteer for this group" block on card detail pages.
+ *
+ * Posts to /api/volunteer-signup (public, honeypot-protected). The card is
+ * identified by its site path ("environment/landcare-and-bush-regeneration"),
+ * the same key the Volunteer hub uses to scope stewards and activities.
+ *
+ * Rendered by DetailPage.astro for volunteer-friendly sections only
+ * (Environment, Groups & Activities, Emergency & Safety).
+ */
+interface Props {
+  cardPath: string;
+  cardTitle: string;
+  accentHex?: string;
+  village?: string;
+}
+const { cardPath, cardTitle, accentHex = '#15795f', village = 'Smiths Lake' } = Astro.props;
+---
+
+<section class="volunteer-signup" aria-labelledby="volunteer-heading" style={`--vs-accent: ${accentHex}`}>
+  <div class="vs-inner">
+    <h2 id="volunteer-heading">🙋 Volunteer for this group</h2>
+    <p class="vs-blurb">
+      {cardTitle} runs on volunteers — many hands, an hour here and there.
+      Leave your details and the group's steward will be in touch.
+    </p>
+
+    <form id="volunteer-form" novalidate>
+      <input type="hidden" name="village" value={village} />
+      <input type="hidden" name="cardPath" value={cardPath} />
+      <input type="hidden" name="cardTitle" value={cardTitle} />
+      <p class="vs-hp" aria-hidden="true">
+        <label>Leave this field empty <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+      </p>
+
+      <div class="vs-row">
+        <div class="vs-field">
+          <label for="vs-first">First name *</label>
+          <input type="text" id="vs-first" name="firstName" maxlength="100" required autocomplete="given-name" />
+        </div>
+        <div class="vs-field">
+          <label for="vs-last">Last name *</label>
+          <input type="text" id="vs-last" name="lastName" maxlength="100" required autocomplete="family-name" />
+        </div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-field">
+          <label for="vs-email">Email *</label>
+          <input type="email" id="vs-email" name="email" maxlength="200" required autocomplete="email" />
+        </div>
+        <div class="vs-field">
+          <label for="vs-phone">Phone</label>
+          <input type="tel" id="vs-phone" name="phone" maxlength="50" autocomplete="tel" />
+        </div>
+      </div>
+      <div class="vs-field">
+        <label for="vs-message">Anything the steward should know? <span class="vs-opt">(skills, availability — optional)</span></label>
+        <textarea id="vs-message" name="message" maxlength="2000" rows="3"></textarea>
+      </div>
+      <label class="vs-check">
+        <input type="checkbox" name="isMember" />
+        <span>I'm a PPCA member <span class="vs-opt">(not required — just helps the register)</span></span>
+      </label>
+
+      <div class="vs-actions">
+        <button type="submit" class="vs-submit">Put my hand up</button>
+        <span class="vs-status" id="vs-status" role="status"></span>
+      </div>
+    </form>
+
+    <div class="vs-done" id="vs-done" hidden>
+      <strong>Thanks — you're on the list! 🎉</strong>
+      <p>The {cardTitle} steward has been notified and will be in touch about the next working bee or get-together.</p>
+    </div>
+  </div>
+</section>
+
+<script>
+  const form = document.getElementById('volunteer-form') as HTMLFormElement | null;
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = document.getElementById('vs-status')!;
+      const btn = form.querySelector('.vs-submit') as HTMLButtonElement;
+      const fd = new FormData(form);
+      const payload: Record<string, unknown> = {};
+      fd.forEach((v, k) => { payload[k] = v; });
+      payload.isMember = !!fd.get('isMember');
+
+      if (!String(payload.firstName || '').trim() || !String(payload.lastName || '').trim()) {
+        status.textContent = 'Please add your first and last name.'; status.className = 'vs-status vs-err'; return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(payload.email || ''))) {
+        status.textContent = 'Please add a valid email address.'; status.className = 'vs-status vs-err'; return;
+      }
+
+      btn.disabled = true;
+      status.textContent = 'Sending…'; status.className = 'vs-status';
+      try {
+        const r = await fetch('/api/volunteer-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Something went wrong');
+        form.hidden = true;
+        document.getElementById('vs-done')!.hidden = false;
+      } catch (err) {
+        status.textContent = (err as Error).message; status.className = 'vs-status vs-err';
+        btn.disabled = false;
+      }
+    });
+  }
+</script>
+
+<style>
+  .volunteer-signup { margin: 2.5rem 0 1rem; }
+  .vs-inner {
+    background: color-mix(in srgb, var(--vs-accent) 6%, white);
+    border: 1px solid color-mix(in srgb, var(--vs-accent) 25%, white);
+    border-radius: 12px;
+    padding: 1.5rem 1.5rem 1.25rem;
+  }
+  .volunteer-signup h2 { font-size: 1.15rem; color: var(--vs-accent); margin: 0 0 0.35rem; }
+  .vs-blurb { font-size: 0.92rem; color: #4b5563; margin: 0 0 1rem; line-height: 1.6; }
+  .vs-hp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+  .vs-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .vs-field { flex: 1; min-width: 180px; margin-bottom: 0.75rem; }
+  .vs-field label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 0.25rem; }
+  .vs-opt { font-weight: 400; color: #9ca3af; }
+  .vs-field input, .vs-field textarea {
+    width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 0.6rem 0.75rem;
+    font-size: 0.9rem; font-family: inherit; background: white; box-sizing: border-box;
+  }
+  .vs-field input:focus, .vs-field textarea:focus { outline: 2px solid var(--vs-accent); border-color: var(--vs-accent); }
+  .vs-check { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.85rem; color: #374151; cursor: pointer; margin: 0.25rem 0 0.75rem; }
+  .vs-check input { width: 1rem; height: 1rem; margin-top: 0.1rem; accent-color: var(--vs-accent); }
+  .vs-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .vs-submit {
+    background: var(--vs-accent); color: white; border: none; border-radius: 8px;
+    padding: 0.7rem 1.6rem; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .vs-submit:hover { filter: brightness(0.92); }
+  .vs-submit:disabled { background: #9ca3af; cursor: wait; }
+  .vs-status { font-size: 0.82rem; font-weight: 600; color: #6b7280; }
+  .vs-status.vs-err { color: #b91c1c; }
+  .vs-done strong { color: var(--vs-accent); font-size: 1rem; }
+  .vs-done p { font-size: 0.9rem; color: #4b5563; margin: 0.4rem 0 0; line-height: 1.6; }
+</style>

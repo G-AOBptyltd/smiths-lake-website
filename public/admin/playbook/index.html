@@ -69,6 +69,16 @@
       <div class="pb-name">Contributions Playbook</div>
       <div class="pb-desc">Log donations, pledges, time &amp; services, and run the public supporters board.</div>
     </a>
+    <a class="pb-card" href="#membership">
+      <div class="pb-icon">🪪</div>
+      <div class="pb-name">Membership Playbook</div>
+      <div class="pb-desc">Approve applications, record fees, run renewals and export the register.</div>
+    </a>
+    <a class="pb-card" href="#volunteers">
+      <div class="pb-icon">🙋</div>
+      <div class="pb-name">Volunteer Hub Playbook</div>
+      <div class="pb-desc">Group stewards, sign-ups, working bees and the hours that back grant applications.</div>
+    </a>
     <a class="pb-card" href="#publishing">
       <div class="pb-icon">🌐</div>
       <div class="pb-name">Publishing Playbook</div>
@@ -171,6 +181,78 @@
     <div class="tip">💡 Every pledge is saved to the Ledger. An optional email to PPCA on each new pledge can be switched on later — until then, check the Ledger to see what's come in.</div>
   </div>
 
+  <div class="guide" id="membership">
+    <h2>🪪 Membership Playbook</h2>
+    <div class="g-sub">The PPCA member register — from application to financial member. Console: <a href="/admin/members/">Admin → Membership</a> (Village Admins only)</div>
+
+    <h3>How members arrive</h3>
+    <p>Residents apply on <a href="/membership/">villagefirst.org.au/membership</a>. The application lands in the <b>Register</b> instantly with an amber <b>Applied</b> chip, and the committee gets a notification email. Nothing to publish, nothing to set up.</p>
+
+    <h3>The member lifecycle (the everyday job)</h3>
+    <ol>
+      <li><b>Applied</b> — a new application. Press <b>Approve</b> (on the row, or inside the member) once the committee is happy.</li>
+      <li><b>Approved</b> — a member awaiting payment. Press <b>Send welcome email</b> — it confirms the approval and explains how to pay.</li>
+      <li><b>Paid</b> — press <b>Record payment</b> when the fee arrives: date, method, a reference (bank transfer description or receipt number) and the amount. That makes them financial, and the "Fees collected" total ticks up.</li>
+      <li><b>Lapsed</b> — for members who don't renew or have left. Nothing is deleted; the history stays.</li>
+    </ol>
+
+    <h3>Renewals (each new year from 1 July)</h3>
+    <ul>
+      <li>The membership year runs <b>1 July – 30 June</b>. Each year is its own row in the register, so past years stay untouched — that's your audit trail for AGMs.</li>
+      <li>Open the <b>Renewals</b> tab: it lists every member from earlier years with no row for the new year. Press <b>Create renewal row</b> (starts them as Approved, unpaid) and/or <b>Send reminder</b>.</li>
+      <li>When their fee arrives, record the payment on the new row as usual.</li>
+    </ul>
+
+    <h3>The AGM / committee export</h3>
+    <ul>
+      <li>Filter the register to what you need — e.g. <b>Paid</b> + the current year — and press <b>⬇ CSV</b>. The export matches exactly what's on screen, ready for the AGM or the auditor.</li>
+    </ul>
+
+    <h3>Fixing things</h3>
+    <ul>
+      <li>Open any member to correct names, addresses, contact details or the membership type — every change records who made it and when.</li>
+      <li>Deleting a register row entirely (typos, duplicates, test entries) is reserved for the <b>Super Village Admin</b>. For real members who've left, use <b>Lapsed</b>.</li>
+    </ul>
+
+    <div class="tip">💡 Member details are personal information — that's why the Membership console is Village Admin only, and why exports should only go to committee members who need them.</div>
+  </div>
+
+  <div class="guide" id="volunteers">
+    <h2>🙋 Volunteer Hub Playbook</h2>
+    <div class="g-sub">Group rosters, working bees and the hours behind grant applications. Group leaders get a simple phone-friendly home at <a href="/admin/volunteers/my/">/admin/volunteers/my/</a> (they land there automatically); Village Admins also have the full <a href="/admin/volunteers/?console=1">console</a>.</div>
+
+    <h3>The one idea to understand</h3>
+    <p>Every community group has a page ("card") on the website — Landcare, the fire shed, a social group. The Volunteer hub organises everything <b>per card</b>: who volunteers for it, what activities it ran, and how many hours went in. A <b>Community Steward</b> is a volunteer trusted to run one or more cards — they sign in to this same admin portal and see <i>only their groups</i>.</p>
+
+    <h3>How volunteers arrive</h3>
+    <ul>
+      <li>Group pages on the website (Environment, Groups &amp; Activities, Emergency sections) carry a <b>"Volunteer for this group"</b> form. Signups land in the <b>Roster</b> as <b>Applied</b>, and the group's steward gets an email.</li>
+      <li>Press <b>Approve</b> to make them Active. Someone volunteering for a second group is recognised by their email — the new group is simply added to their record.</li>
+    </ul>
+
+    <h3>Recording a working bee (the everyday job)</h3>
+    <ol>
+      <li>Open <b>Activities</b> → <b>New activity</b>. Name it ("March working bee — foreshore weeding"), pick the group and date.</li>
+      <li>Add who came and their hours — start typing a name and roster members are suggested; people not on the roster can be typed in free.</li>
+      <li><b>Save</b> keeps it as a Draft. Press <b>Confirm</b> when the numbers are right.</li>
+    </ol>
+
+    <h3>Why the hours matter (grants)</h3>
+    <ul>
+      <li>Confirmed hours are the village's <b>in-kind co-contribution</b> evidence for grant applications — every claimed hour traceable to a named session, a date and a group.</li>
+      <li>In the next stage, a Village Admin will push confirmed activities into the <b>Contributions portal</b> as time-in-kind entries; a pushed activity locks so the financial record can't drift.</li>
+    </ul>
+
+    <h3>Appointing a Community Steward (Village Admins)</h3>
+    <ol>
+      <li>Open the <b>Stewards</b> tab, enter their email, tick the card(s) they'll run, press <b>Appoint steward</b>.</li>
+      <li>If they don't have a sign-in yet, an invitation email goes out automatically and their access is ready the moment they accept. No Netlify, no technical steps.</li>
+      <li>To change their groups later: <b>Edit cards</b>. To take access away: <b>Remove</b> — they keep their sign-in but see no groups.</li>
+    </ol>
+
+    <div class="tip">💡 Stewards can do everything in this playbook for their own cards — approve volunteers, record activities, confirm hours. They can't see other groups, membership records or village-wide admin.</div>
+  </div>
+
   <div class="guide" id="publishing">
     <h2>🌐 Publishing Playbook</h2>
     <div class="g-sub">How villagefirst.org.au actually updates. Console: <a href="/admin/publish-news.html">Admin → Publish</a></div>
@@ -201,6 +283,7 @@
       <li><b>Super Admin</b> — everything, every village (Greg / AOB).</li>
       <li><b>Village Admin</b> — full control of their village: surveys, news desk, publishing, settings, access.</li>
       <li><b>Survey Steward</b> — runs surveys <i>and</i> the News Desk for their village. The right role for most volunteers.</li>
+      <li><b>Community Steward</b> — a steward whose home is the <a href="/admin/volunteers/">Volunteer hub</a>: they run the roster, activities and hours for the specific group card(s) a Village Admin assigns them. Appointed from the Volunteer hub's <b>Stewards</b> tab (not the Surveys console) — the invite and access are wired automatically.</li>
       <li><b>Committee Viewer</b> — read-only: can see results, can't change anything.</li>
     </ul>
 

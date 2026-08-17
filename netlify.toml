@@ -172,6 +172,32 @@
   to = "/.netlify/functions/member-join"
   status = 200
 
+# Volunteer hub API
+[[redirects]]
+  from = "/api/volunteer-signup"
+  to = "/.netlify/functions/volunteer-signup"
+  status = 200
+
+[[redirects]]
+  from = "/api/volunteer-roster"
+  to = "/.netlify/functions/volunteer-roster"
+  status = 200
+
+[[redirects]]
+  from = "/api/volunteer-activity"
+  to = "/.netlify/functions/volunteer-activity"
+  status = 200
+
+[[redirects]]
+  from = "/api/steward-admin"
+  to = "/.netlify/functions/steward-admin"
+  status = 200
+
+[[redirects]]
+  from = "/api/volunteer-provision"
+  to = "/.netlify/functions/volunteer-provision"
+  status = 200
+
 # Membership admin API
 [[redirects]]
   from = "/api/member-list"

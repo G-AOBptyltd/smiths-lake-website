@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Volunteer hub — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; font-size: 14px; color: #1f2937; }
+  button { font-family: inherit; }
+
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; white-space: nowrap; font-family: inherit; }
+  .village-select option { color: #1f2937; }
+
+  .layout { display: flex; min-height: calc(100vh - 46px); }
+  .sidebar { width: 180px; background: #fff; border-right: 1px solid #e2e8f0; padding: 10px 0; flex-shrink: 0; }
+  .s-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font-size: 12.5px; color: #4b5563; cursor: pointer; border-left: 3px solid transparent; }
+  .s-item:hover { background: #f0fdf6; }
+  .s-item.on { color: #0f5c48; background: #e7f6ee; border-left-color: #15795f; font-weight: 700; }
+  .main { flex: 1; padding: 20px; max-width: 960px; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+  h1 { font-size: 1.05rem; color: #143d2e; margin-bottom: 2px; }
+  .sub { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+  .stat-num { font-size: 1.35rem; font-weight: 800; color: #0f5c48; }
+  .stat-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .toolbar select, .toolbar input[type=search] { border: 1px solid #d1d5db; border-radius: 7px; padding: 8px 11px; font-size: 12.5px; font-family: inherit; background: white; }
+  .toolbar input[type=search] { flex: 1; min-width: 140px; }
+
+  .ledger { background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-top: 1px solid #f1f5f9; cursor: pointer; }
+  .row:first-child { border-top: none; }
+  .row:hover { background: #f8fafc; }
+  .row-main { flex: 1; min-width: 0; }
+  .row-name { font-size: 13px; font-weight: 700; color: #1f2937; }
+  .row-note { font-size: 11.5px; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-val { font-size: 12.5px; font-weight: 700; color: #0f5c48; white-space: nowrap; }
+  .chip { font-size: 9.5px; font-weight: 700; border-radius: 9px; padding: 2px 8px; white-space: nowrap; }
+  .chip-applied { background: #fef3c7; color: #92400e; }
+  .chip-active, .chip-confirmed { background: #c9f0dd; color: #0f5c48; }
+  .chip-inactive, .chip-removed { background: #e2e8f0; color: #475569; }
+  .chip-draft { background: #fef3c7; color: #92400e; }
+  .chip-pushed { background: #dbeafe; color: #1e40af; }
+  .chip-card { background: #ede9fe; color: #6d28d9; }
+  .chip-member { background: #dbeafe; color: #1e40af; }
+  .row-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; margin-left: 4px; }
+  .link-btn { background: none; border: none; color: #1d6fb8; font-size: 11px; cursor: pointer; padding: 0; font-family: inherit; }
+  .link-btn:hover { text-decoration: underline; }
+  .link-btn.danger { color: #b91c1c; }
+
+  .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 640px; margin-bottom: 16px; }
+  .form-card h2 { font-size: 13.5px; color: #143d2e; margin-bottom: 10px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin: 14px 0 4px; }
+  .hint { font-weight: 400; color: #9ca3af; }
+  input[type=text], input[type=email], input[type=tel], input[type=number], input[type=date], textarea, select { width: 100%; border: 1px solid #d1d5db; border-radius: 7px; padding: 9px 11px; font-size: 13px; font-family: inherit; background: white; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid #15a06e; border-color: #15a06e; }
+  textarea { min-height: 64px; resize: vertical; line-height: 1.6; }
+  .two-col { display: flex; gap: 12px; flex-wrap: wrap; }
+  .two-col > div { flex: 1; min-width: 150px; }
+  .form-actions { display: flex; gap: 8px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 7px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btn-green { background: #15795f; color: white; }
+  .btn-green:hover { background: #0f5c48; }
+  .btn:disabled { background: #9ca3af; cursor: wait; }
+  .btn-blue { background: #1d6fb8; color: white; }
+  .btn-amber { background: #b45309; color: white; }
+  .btn-ghost { background: white; color: #4b5563; border: 1px solid #d1d5db; }
+  .btn-ghost:hover { border-color: #9ca3af; }
+  .btn-danger { background: white; color: #b91c1c; border: 1px solid #fecaca; }
+  .status-msg { font-size: 12px; font-weight: 600; min-height: 1.2em; }
+  .status-msg.ok { color: #15803d; } .status-msg.err { color: #b91c1c; }
+  .meta-line { font-size: 11.5px; color: #9ca3af; line-height: 1.7; }
+
+  .cardpick { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; }
+  .cardpick label { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 500; font-size: 12.5px; cursor: pointer; }
+  .cardpick input { width: auto; accent-color: #0f766e; }
+  .cardpick .cp-section { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-top: 6px; }
+
+  .att-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  .att-table td { padding: 4px 6px 4px 0; }
+  .att-table input { padding: 7px 9px; font-size: 12.5px; }
+  .att-hours { width: 88px; }
+  .att-total { font-size: 12.5px; font-weight: 700; color: #0f5c48; margin-top: 8px; }
+
+  .help-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 640px; font-size: 13px; line-height: 1.7; color: #374151; }
+  .help-card h2 { font-size: 13.5px; color: #143d2e; margin: 14px 0 4px; }
+  .help-card h2:first-child { margin-top: 0; }
+
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; padding: 1rem; text-align: center; }
+  .auth-screen h1 { font-size: 1.2rem; }
+  .auth-screen p { font-size: 0.85rem; color: #6b7280; max-width: 360px; }
+  .auth-btn { background: #15795f; color: white; border: none; border-radius: 8px; padding: 0.75rem 2rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+
+  .empty { color: #9ca3af; font-size: 12.5px; padding: 16px; text-align: center; }
+  @media (max-width: 700px) { .sidebar { width: 120px; } .main { padding: 14px; } }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">🙋</div>
+  <h1>VillageFirst Volunteer hub</h1>
+  <p>Rosters, working bees and volunteer hours for every community group — the audit trail behind grant applications. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+  <p style="margin-top:1rem;"><a href="/admin/" style="color:#15795f; font-size:0.78rem;">← Admin home</a></p>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · Volunteer hub</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <button class="s-item on" data-panel="roster" onclick="showPanel('roster')">🙋 Roster</button>
+      <button class="s-item" data-panel="activities" onclick="showPanel('activities')">🛠 Activities</button>
+      <button class="s-item" data-panel="stewards" id="nav-stewards" style="display:none;" onclick="showPanel('stewards')">🧭 Stewards</button>
+      <button class="s-item" data-panel="help" onclick="showPanel('help')">💡 Help</button>
+    </div>
+
+    <div class="main">
+
+      <!-- ── Roster ──────────────────────────────────────────────── -->
+      <div class="panel on" id="panel-roster">
+        <h1>Volunteer roster</h1>
+        <p class="sub" id="roster-sub">Everyone who has put their hand up. Click a volunteer to manage them.</p>
+        <div class="stats" id="roster-stats"></div>
+        <div class="toolbar">
+          <select id="roster-card" onchange="renderRoster()"><option value="">All cards</option></select>
+          <select id="roster-status" onchange="renderRoster()">
+            <option value="">All statuses</option><option>Applied</option><option>Active</option><option>Inactive</option>
+          </select>
+          <input type="search" id="roster-search" placeholder="Search name, email…" oninput="renderRoster()" />
+        </div>
+        <div class="ledger" id="roster"><div class="empty">Loading volunteers…</div></div>
+      </div>
+
+      <!-- ── Volunteer detail ────────────────────────────────────── -->
+      <div class="panel" id="panel-volunteer">
+        <h1 id="v-title">Volunteer</h1>
+        <p class="sub"><a href="#" onclick="showPanel('roster'); return false;" style="color:#15795f;">← Back to roster</a></p>
+
+        <div class="form-card">
+          <h2>Status · <span id="v-status-chip"></span></h2>
+          <div class="meta-line" id="v-summary"></div>
+          <div class="form-actions" id="v-actions"></div>
+          <div class="form-actions"><span class="status-msg" id="v-status-msg"></span></div>
+          <div class="meta-line" id="v-meta" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="form-card">
+          <h2>Groups (cards)</h2>
+          <div class="cardpick" id="v-cards"></div>
+          <div class="form-actions">
+            <button class="btn btn-green" onclick="saveVolunteerCards()">Save groups</button>
+            <span class="status-msg" id="v-cards-msg"></span>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <h2>Details</h2>
+          <div class="two-col">
+            <div><label for="v-first">First name</label><input type="text" id="v-first" maxlength="100" /></div>
+            <div><label for="v-last">Last name</label><input type="text" id="v-last" maxlength="100" /></div>
+          </div>
+          <div class="two-col">
+            <div><label for="v-email">Email</label><input type="email" id="v-email" maxlength="200" /></div>
+            <div><label for="v-phone">Phone</label><input type="tel" id="v-phone" maxlength="50" /></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;"><input type="checkbox" id="v-member" style="width:auto;accent-color:#0f766e;" /> PPCA member <span class="hint">(useful for insurance & grants — not required to volunteer)</span></label>
+          <label for="v-message">Notes / message</label>
+          <textarea id="v-message" maxlength="2000"></textarea>
+          <div class="form-actions">
+            <button class="btn btn-green" id="v-save" onclick="saveVolunteerDetails()">Save details</button>
+            <span class="status-msg" id="v-details-msg"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Activities ──────────────────────────────────────────── -->
+      <div class="panel" id="panel-activities">
+        <h1>Activities & hours</h1>
+        <p class="sub">Working bees, sessions and events — with who came and for how long. Confirmed activities become the grant audit trail.</p>
+        <div class="stats" id="act-stats"></div>
+        <div class="toolbar">
+          <select id="act-card" onchange="renderActivities()"><option value="">All cards</option></select>
+          <button class="btn btn-green" onclick="newActivity()">➕ New activity</button>
+        </div>
+        <div class="ledger" id="activities"><div class="empty">Loading activities…</div></div>
+      </div>
+
+      <!-- ── Activity editor ─────────────────────────────────────── -->
+      <div class="panel" id="panel-activity">
+        <h1 id="a-title">New activity</h1>
+        <p class="sub"><a href="#" onclick="showPanel('activities'); return false;" style="color:#15795f;">← Back to activities</a></p>
+        <div class="form-card">
+          <label for="a-name">Activity name</label>
+          <input type="text" id="a-name" maxlength="200" placeholder='e.g. "March working bee — foreshore weeding"' />
+          <div class="two-col">
+            <div>
+              <label for="a-card">Group (card)</label>
+              <select id="a-card"></select>
+            </div>
+            <div>
+              <label for="a-date">Date</label>
+              <input type="date" id="a-date" />
+            </div>
+          </div>
+          <label for="a-desc">What happened? <span class="hint">(optional — helps the grant story)</span></label>
+          <textarea id="a-desc" maxlength="2000"></textarea>
+
+          <label>Attendance & hours</label>
+          <table class="att-table" id="att-table"></table>
+          <div class="form-actions" style="margin-top:6px;">
+            <button class="btn btn-ghost" onclick="addAttRow()">+ Add person</button>
+            <span class="att-total" id="att-total">Total: 0 hrs</span>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-green" id="a-save" onclick="saveActivity()">Save activity</button>
+            <button class="btn btn-blue" id="a-confirm" style="display:none;" onclick="confirmActivity()">Confirm (lock in the hours)</button>
+            <button class="btn btn-danger" id="a-delete" style="display:none;" onclick="deleteActivity()">Delete</button>
+            <span class="status-msg" id="a-msg"></span>
+          </div>
+          <div class="meta-line" id="a-meta" style="margin-top:8px;"></div>
+        </div>
+      </div>
+
+      <!-- ── Stewards (admin only) ───────────────────────────────── -->
+      <div class="panel" id="panel-stewards">
+        <h1>Community stewards</h1>
+        <p class="sub">Give someone the keys to their group. A steward signs in to this portal and manages ONLY the cards you pick — roster, activities and hours for their group.</p>
+
+        <div class="form-card">
+          <h2>Appoint a steward</h2>
+          <div class="two-col">
+            <div><label for="s-email">Email</label><input type="email" id="s-email" maxlength="200" placeholder="them@example.com" /></div>
+            <div><label for="s-name">Name <span class="hint">(optional)</span></label><input type="text" id="s-name" maxlength="200" /></div>
+          </div>
+          <label>Their cards</label>
+          <div class="cardpick" id="s-cards"></div>
+          <div class="form-actions">
+            <button class="btn btn-green" id="s-save" onclick="appointSteward()">Appoint steward</button>
+            <span class="status-msg" id="s-msg"></span>
+          </div>
+          <p class="meta-line" style="margin-top:8px;">If they don't have an admin account yet, an invitation email is sent automatically and their steward access is ready the moment they accept.</p>
+        </div>
+
+        <div class="ledger" id="stewards"><div class="empty">Loading stewards…</div></div>
+      </div>
+
+      <!-- ── Help ────────────────────────────────────────────────── -->
+      <div class="panel" id="panel-help">
+        <h1>Help</h1>
+        <p class="sub">The 60-second guide.</p>
+        <div class="help-card">
+          <h2>How volunteers arrive</h2>
+          Every group page on the website (Environment, Groups & Activities, Emergency) has a <b>"Volunteer for this group"</b> form. Signups land in the <b>Roster</b> as Applied — the group's steward (and the village notify list) gets an email. Approve them to make them Active.
+          <h2>Stewards</h2>
+          A <b>community steward</b> runs one or more cards — they see only their groups' volunteers and activities in this portal. Village admins appoint stewards from the Stewards tab; the invitation and access are wired automatically.
+          <h2>Recording hours</h2>
+          Create an <b>activity</b> (a working bee, a planting day, a training session), pick the group, add who came and their hours. Save keeps it as a Draft; press <b>Confirm</b> when the numbers are right — confirmed hours are what the village can later claim as in-kind co-contribution on grants.
+          <h2>The money link</h2>
+          In the next stage, a village admin will review confirmed activities and push them into the <b>Contributions portal</b> as time-in-kind entries — every claimed dollar traceable back to a named session and its hours. Until then, everything you record here is already building that audit trail.
+          <h2>Removing people</h2>
+          Use <b>Inactive</b> for volunteers who've moved on. Full deletion is reserved for the super-admin.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+  let volunteers = [], activities = [], stewards = [], catalogue = [];
+  let scope = { isAdmin: false, cards: [] };
+  let openVolunteerId = null, openActivityId = null;
+
+  // Same map + slug algorithm as the website build — keys steward cards to page paths.
+  const SECTION_TO_PATH = {
+    'Groups & Activities': 'groups',
+    'Environment & Sustainability': 'environment',
+    'Emergency & Safety': 'emergency',
+    'Services & Amenities': 'services',
+    'Services': 'services',
+    'History & Culture': 'history',
+  };
+  const VOLUNTEER_SECTIONS = ['Environment & Sustainability', 'Groups & Activities', 'Emergency & Safety'];
+  function generateSlug(title) {
+    if (!title) return 'untitled';
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 100);
+  }
+
+  // ── Auth ───────────────────────────────────────────────────────
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+
+  function isSuper() {
+    const roles = (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || [];
+    return roles.includes('super-admin');
+  }
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+    loadVillages();
+    loadAll();
+  }
+
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const data = await r.json();
+      const villages = (data.villages || []).filter(v => v.status === 'live');
+      if (!villages.length) return;
+      sel.innerHTML = '';
+      villages.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v.name; o.textContent = v.name;
+        if (v.name === VILLAGE) o.selected = true;
+        sel.appendChild(o);
+      });
+    } catch (e) { /* keep default */ }
+    sel.onchange = () => { VILLAGE = sel.value; localStorage.setItem('vf_active_village', VILLAGE); loadAll(); };
+  }
+
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+    document.getElementById('panel-' + name).classList.add('on');
+    document.querySelectorAll('.s-item').forEach(b => b.classList.toggle('on', b.dataset.panel === name));
+  }
+
+  // ── Data loading ───────────────────────────────────────────────
+  async function loadAll() {
+    const h = await authHeaders();
+    try {
+      const [rosterRes, actRes] = await Promise.all([
+        fetch('/api/volunteer-roster?village=' + encodeURIComponent(VILLAGE), { headers: h }).then(r => r.json().then(d => ({ ok: r.ok, d }))),
+        fetch('/api/volunteer-activity?village=' + encodeURIComponent(VILLAGE), { headers: h }).then(r => r.json().then(d => ({ ok: r.ok, d }))),
+      ]);
+      if (!rosterRes.ok) throw new Error(rosterRes.d.error || 'Could not load the roster');
+      volunteers = rosterRes.d.volunteers || [];
+      scope = rosterRes.d.scope || { isAdmin: false, cards: [] };
+      activities = actRes.ok ? (actRes.d.activities || []) : [];
+
+      // Stewards get the simple task-first home; this console is the admin
+      // surface (?console=1 lets anyone in deliberately).
+      if (!scope.isAdmin && !new URLSearchParams(location.search).has('console')) {
+        location.replace('/admin/volunteers/my/');
+        return;
+      }
+
+      document.getElementById('nav-stewards').style.display = scope.isAdmin ? '' : 'none';
+      if (scope.isAdmin) loadStewards();
+      loadCatalogue();
+      buildCardFilters();
+      renderRoster(); renderActivities();
+      if (!scope.isAdmin && !(scope.cards || []).length) {
+        document.getElementById('roster').innerHTML = '<div class="empty">No cards are assigned to you yet — ask your village admin to appoint you as a steward of a group.</div>';
+      }
+    } catch (e) {
+      document.getElementById('roster').innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+      document.getElementById('activities').innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+    }
+  }
+
+  async function loadStewards() {
+    try {
+      const r = await fetch('/api/steward-admin?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not load stewards');
+      stewards = data.stewards || [];
+      renderStewards();
+    } catch (e) {
+      document.getElementById('stewards').innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+    }
+  }
+
+  // Card catalogue — admins pick from every published card in the volunteer
+  // sections; stewards are limited to their own cards.
+  async function loadCatalogue() {
+    if (!scope.isAdmin) {
+      catalogue = (scope.cards || []).slice();
+      buildCardPickers();
+      return;
+    }
+    try {
+      const r = await fetch('/api/news-content-search?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || '');
+      catalogue = (data.items || [])
+        .filter(i => VOLUNTEER_SECTIONS.includes(i.section))
+        .map(i => ({ path: SECTION_TO_PATH[i.section] + '/' + generateSlug(i.title), title: i.title, section: i.section }))
+        .sort((a, b) => (a.section + a.title).localeCompare(b.section + b.title));
+    } catch (e) { catalogue = []; }
+    buildCardPickers();
+  }
+
+  function allKnownCards() {
+    // Union of catalogue + any card seen on volunteers/activities/stewards
+    // (covers cards renamed or unpublished since signup).
+    const seen = new Map();
+    catalogue.forEach(c => seen.set(c.path, c));
+    volunteers.forEach(v => (v.cards || []).forEach(c => { if (!seen.has(c.path)) seen.set(c.path, c); }));
+    activities.forEach(a => { if (a.cardPath && !seen.has(a.cardPath)) seen.set(a.cardPath, { path: a.cardPath, title: a.cardTitle || a.cardPath }); });
+    return [...seen.values()];
+  }
+
+  function buildCardFilters() {
+    ['roster-card', 'act-card'].forEach(id => {
+      const sel = document.getElementById(id);
+      const prev = sel.value;
+      sel.innerHTML = '<option value="">All cards</option>' + allKnownCards().map(c =>
+        '<option value="' + esc(c.path) + '"' + (c.path === prev ? ' selected' : '') + '>' + esc(c.title) + '</option>').join('');
+    });
+  }
+
+  function buildCardPickers() {
+    buildCardFilters();
+    const s = document.getElementById('s-cards');
+    if (scope.isAdmin) s.innerHTML = cardCheckboxes(catalogue, []);
+    const a = document.getElementById('a-card');
+    const opts = scope.isAdmin ? allKnownCards() : (scope.cards || []);
+    a.innerHTML = opts.map(c => '<option value="' + esc(c.path) + '" data-title="' + esc(c.title) + '">' + esc(c.title) + '</option>').join('');
+  }
+
+  function cardCheckboxes(cards, selectedPaths) {
+    if (!cards.length) return '<div class="empty">No cards found — publish the group\'s page on the website first.</div>';
+    let html = '', lastSection = null;
+    for (const c of cards) {
+      if (c.section && c.section !== lastSection) { html += '<div class="cp-section">' + esc(c.section) + '</div>'; lastSection = c.section; }
+      html += '<label><input type="checkbox" value="' + esc(c.path) + '" data-title="' + esc(c.title) + '"' +
+        (selectedPaths.includes(c.path) ? ' checked' : '') + ' /> ' + esc(c.title) + '</label>';
+    }
+    return html;
+  }
+
+  function pickedCards(containerId) {
+    return [...document.querySelectorAll('#' + containerId + ' input:checked')]
+      .map(i => ({ path: i.value, title: i.dataset.title }));
+  }
+
+  // ── Roster ─────────────────────────────────────────────────────
+  const VCHIP = { 'Applied': 'chip-applied', 'Active': 'chip-active', 'Inactive': 'chip-inactive' };
+
+  function fmtDate(d) {
+    if (!d) return '';
+    const parts = d.split('-');
+    const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return parts.length === 3 ? (parseInt(parts[2], 10) + ' ' + mon[parseInt(parts[1], 10) - 1] + ' ' + parts[0].slice(2)) : d;
+  }
+
+  function renderRoster() {
+    const stats = { applied: 0, active: 0, hours: 0 };
+    volunteers.forEach(v => { if (v.status === 'Applied') stats.applied++; if (v.status === 'Active') stats.active++; });
+    activities.forEach(a => { if (a.status !== 'Draft') stats.hours += a.totalHours || 0; });
+    document.getElementById('roster-stats').innerHTML =
+      stat(stats.active, 'Active volunteers') + stat(stats.applied, 'Awaiting approval') +
+      stat(allKnownCards().length, 'Groups covered') + stat(stats.hours + ' hrs', 'Confirmed hours');
+
+    const card = document.getElementById('roster-card').value;
+    const status = document.getElementById('roster-status').value;
+    const q = document.getElementById('roster-search').value.trim().toLowerCase();
+    const list = volunteers.filter(v => {
+      if (card && !(v.cards || []).some(c => c.path === card)) return false;
+      if (status && v.status !== status) return false;
+      if (q && ![v.name, v.email, v.phone].join(' ').toLowerCase().includes(q)) return false;
+      return true;
+    });
+    const el = document.getElementById('roster');
+    if (!list.length) { el.innerHTML = '<div class="empty">No volunteers match. Signups from the website land here automatically.</div>'; return; }
+    el.innerHTML = list.map(v => {
+      const cardsLine = (v.cards || []).map(c => '<span class="chip chip-card">' + esc(c.title) + '</span>').join(' ');
+      const note = [v.email, v.phone].filter(Boolean).join(' · ');
+      const quick = v.status === 'Applied'
+        ? '<button class="link-btn" onclick="event.stopPropagation(); quickVolunteerStatus(\'' + v.id + '\', \'Active\')">Approve</button>' : '';
+      return '<div class="row" onclick="openVolunteer(\'' + v.id + '\')">' +
+        '<span class="chip ' + (VCHIP[v.status] || 'chip-inactive') + '">' + esc(v.status) + '</span>' +
+        '<div class="row-main"><div class="row-name">' + esc(v.name) + ' ' + (v.isMember ? '<span class="chip chip-member">member</span>' : '') + '</div>' +
+        '<div class="row-note">' + esc(note) + '</div><div class="row-note">' + cardsLine + '</div></div>' +
+        '<span class="row-actions">' + quick + '</span></div>';
+    }).join('');
+  }
+
+  function stat(num, label) {
+    return '<div class="stat"><div class="stat-num">' + num + '</div><div class="stat-label">' + esc(label) + '</div></div>';
+  }
+
+  function openVolunteer(id) {
+    const v = volunteers.find(x => x.id === id);
+    if (!v) return;
+    openVolunteerId = id;
+    document.getElementById('v-title').textContent = v.name;
+    document.getElementById('v-status-chip').innerHTML = '<span class="chip ' + (VCHIP[v.status] || '') + '">' + esc(v.status) + '</span>';
+    document.getElementById('v-summary').textContent = (v.dateJoined ? 'Signed up ' + fmtDate(v.dateJoined) + ' · ' : '') + (v.loggedBy || '');
+    document.getElementById('v-meta').textContent = v.lastUpdatedBy ? 'Last updated: ' + v.lastUpdatedBy : '';
+
+    const acts = [];
+    if (v.status === 'Applied') acts.push(vbtn('Approve', 'btn-green', "volunteerStatus('Active')"));
+    if (v.status === 'Active') acts.push(vbtn('Mark inactive', 'btn-amber', "volunteerStatus('Inactive')"));
+    if (v.status === 'Inactive') acts.push(vbtn('Reinstate', 'btn-green', "volunteerStatus('Active')"));
+    if (v.status !== 'Applied') acts.push(vbtn('Revert to Applied', 'btn-ghost', "volunteerStatus('Applied')"));
+    if (isSuper()) acts.push(vbtn('Delete', 'btn-danger', 'deleteVolunteer()'));
+    document.getElementById('v-actions').innerHTML = acts.join('');
+
+    // Card picker: admin sees the whole catalogue; steward sees own cards ∪ the volunteer's current cards (theirs are editable, others locked).
+    const options = scope.isAdmin ? withVolunteerCards(catalogue, v) : withVolunteerCards(scope.cards || [], v);
+    document.getElementById('v-cards').innerHTML = cardCheckboxes(options, (v.cards || []).map(c => c.path));
+    if (!scope.isAdmin) {
+      [...document.querySelectorAll('#v-cards input')].forEach(i => {
+        if (!(scope.cards || []).some(c => c.path === i.value)) i.disabled = true;
+      });
+    }
+
+    document.getElementById('v-first').value = v.firstName || '';
+    document.getElementById('v-last').value = v.lastName || '';
+    document.getElementById('v-email').value = v.email || '';
+    document.getElementById('v-phone').value = v.phone || '';
+    document.getElementById('v-member').checked = !!v.isMember;
+    document.getElementById('v-message').value = v.message || '';
+    setMsg('v-status-msg', '', ''); setMsg('v-details-msg', '', ''); setMsg('v-cards-msg', '', '');
+    showPanel('volunteer');
+  }
+
+  function withVolunteerCards(base, v) {
+    const seen = new Map(base.map(c => [c.path, c]));
+    (v.cards || []).forEach(c => { if (!seen.has(c.path)) seen.set(c.path, c); });
+    return [...seen.values()];
+  }
+
+  function vbtn(label, cls, fn) { return '<button class="btn ' + cls + '" onclick="' + fn + '">' + label + '</button>'; }
+
+  async function rosterCall(payload, msgId) {
+    setMsg(msgId, 'Saving…', '');
+    const r = await fetch('/api/volunteer-roster', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, pageId: openVolunteerId, ...payload }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Update failed');
+    return data;
+  }
+
+  async function quickVolunteerStatus(id, status) {
+    const saved = openVolunteerId; openVolunteerId = id;
+    try { await rosterCall({ action: 'status', status }, 'v-status-msg'); await loadAll(); }
+    catch (e) { alert('⚠️ ' + e.message); }
+    finally { openVolunteerId = saved; }
+  }
+
+  async function volunteerStatus(status) {
+    try { await rosterCall({ action: 'status', status }, 'v-status-msg'); setMsg('v-status-msg', 'Updated ✓', 'ok'); await loadAll(); const v = volunteers.find(x => x.id === openVolunteerId); if (v) openVolunteer(v.id); }
+    catch (e) { setMsg('v-status-msg', e.message, 'err'); }
+  }
+
+  async function saveVolunteerCards() {
+    try {
+      const picked = pickedCards('v-cards');
+      // Include cards the steward couldn't edit (disabled but checked = outside their scope, keep them).
+      [...document.querySelectorAll('#v-cards input:disabled:checked')].forEach(i => {
+        if (!picked.some(c => c.path === i.value)) picked.push({ path: i.value, title: i.dataset.title });
+      });
+      await rosterCall({ action: 'cards', cards: picked }, 'v-cards-msg');
+      setMsg('v-cards-msg', 'Saved ✓', 'ok');
+      await loadAll();
+    } catch (e) { setMsg('v-cards-msg', e.message, 'err'); }
+  }
+
+  async function saveVolunteerDetails() {
+    const b = document.getElementById('v-save'); b.disabled = true;
+    try {
+      await rosterCall({
+        action: 'details',
+        firstName: document.getElementById('v-first').value,
+        lastName: document.getElementById('v-last').value,
+        email: document.getElementById('v-email').value,
+        phone: document.getElementById('v-phone').value,
+        isMember: document.getElementById('v-member').checked,
+        message: document.getElementById('v-message').value,
+      }, 'v-details-msg');
+      setMsg('v-details-msg', 'Saved ✓', 'ok');
+      await loadAll();
+    } catch (e) { setMsg('v-details-msg', e.message, 'err'); }
+    finally { b.disabled = false; }
+  }
+
+  async function deleteVolunteer() {
+    const v = volunteers.find(x => x.id === openVolunteerId);
+    if (!v || !confirm('Permanently remove ' + v.name + ' from the roster?\n\nMoves to Notion\'s trash (recoverable there). Use Inactive for people who have simply moved on.')) return;
+    try { await rosterCall({ action: 'delete' }, 'v-status-msg'); openVolunteerId = null; await loadAll(); showPanel('roster'); }
+    catch (e) { setMsg('v-status-msg', e.message, 'err'); }
+  }
+
+  // ── Activities ─────────────────────────────────────────────────
+  const ACHIP = { 'Draft': 'chip-draft', 'Confirmed': 'chip-confirmed', 'Pushed': 'chip-pushed' };
+
+  function renderActivities() {
+    const confirmed = activities.filter(a => a.status !== 'Draft');
+    const totalHours = confirmed.reduce((s, a) => s + (a.totalHours || 0), 0);
+    document.getElementById('act-stats').innerHTML =
+      stat(activities.length, 'Activities recorded') + stat(confirmed.length, 'Confirmed') +
+      stat(totalHours + ' hrs', 'Confirmed hours') + stat(activities.filter(a => a.status === 'Pushed').length, 'Pushed to Contributions');
+
+    const card = document.getElementById('act-card').value;
+    const list = activities.filter(a => !card || a.cardPath === card);
+    const el = document.getElementById('activities');
+    if (!list.length) { el.innerHTML = '<div class="empty">No activities yet — record your first working bee with "New activity".</div>'; return; }
+    el.innerHTML = list.map(a =>
+      '<div class="row" onclick="openActivity(\'' + a.id + '\')">' +
+      '<span class="chip ' + (ACHIP[a.status] || '') + '">' + esc(a.status) + '</span>' +
+      '<div class="row-main"><div class="row-name">' + esc(a.name) + '</div>' +
+      '<div class="row-note"><span class="chip chip-card">' + esc(a.cardTitle || a.cardPath) + '</span> ' +
+      esc((a.attendance || []).length + ' people') + '</div></div>' +
+      '<span class="row-val">' + (a.totalHours || 0) + ' hrs</span>' +
+      '<span class="row-note">' + fmtDate(a.date) + '</span></div>').join('');
+  }
+
+  function newActivity() {
+    openActivityId = null;
+    document.getElementById('a-title').textContent = 'New activity';
+    document.getElementById('a-name').value = '';
+    document.getElementById('a-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('a-desc').value = '';
+    document.getElementById('att-table').innerHTML = '';
+    addAttRow(); addAttRow(); addAttRow();
+    document.getElementById('a-confirm').style.display = 'none';
+    document.getElementById('a-delete').style.display = 'none';
+    document.getElementById('a-meta').textContent = '';
+    setMsg('a-msg', '', '');
+    setEditorLocked(false);
+    updateAttTotal();
+    showPanel('activity');
+  }
+
+  function openActivity(id) {
+    const a = activities.find(x => x.id === id);
+    if (!a) return;
+    openActivityId = id;
+    document.getElementById('a-title').textContent = a.name;
+    document.getElementById('a-name').value = a.name;
+    const sel = document.getElementById('a-card');
+    if (![...sel.options].some(o => o.value === a.cardPath)) {
+      const o = document.createElement('option');
+      o.value = a.cardPath; o.dataset.title = a.cardTitle || a.cardPath; o.textContent = a.cardTitle || a.cardPath;
+      sel.appendChild(o);
+    }
+    sel.value = a.cardPath;
+    document.getElementById('a-date').value = a.date || '';
+    document.getElementById('a-desc').value = a.description || '';
+    document.getElementById('att-table').innerHTML = '';
+    (a.attendance || []).forEach(x => addAttRow(x.name, x.hours));
+    if (!(a.attendance || []).length) addAttRow();
+    const locked = a.status === 'Pushed';
+    document.getElementById('a-confirm').style.display = (a.status === 'Draft' && !locked) ? '' : 'none';
+    document.getElementById('a-delete').style.display = (!locked && (scope.isAdmin || a.status === 'Draft')) ? '' : 'none';
+    document.getElementById('a-meta').textContent =
+      [a.createdBy ? 'Created by ' + a.createdBy : '', a.lastUpdatedBy ? 'Last updated: ' + a.lastUpdatedBy : '',
+       locked ? 'Pushed to Contributions — locked' : ''].filter(Boolean).join(' · ');
+    setMsg('a-msg', locked ? 'This activity is part of the financial record and can no longer be edited.' : '', locked ? 'err' : '');
+    setEditorLocked(locked);
+    updateAttTotal();
+    showPanel('activity');
+  }
+
+  function setEditorLocked(locked) {
+    ['a-name', 'a-card', 'a-date', 'a-desc'].forEach(id => document.getElementById(id).disabled = locked);
+    document.getElementById('a-save').style.display = locked ? 'none' : '';
+    [...document.querySelectorAll('#att-table input, #att-table button')].forEach(el => el.disabled = locked);
+  }
+
+  function addAttRow(name, hours) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td><input type="text" list="volunteer-names" maxlength="200" placeholder="Name" value="' + esc(name || '') + '" /></td>' +
+      '<td class="att-hours"><input type="number" min="0" max="24" step="0.5" placeholder="hrs" value="' + (hours ?? '') + '" oninput="updateAttTotal()" /></td>' +
+      '<td><button class="link-btn danger" onclick="this.closest(\'tr\').remove(); updateAttTotal();">remove</button></td>';
+    document.getElementById('att-table').appendChild(tr);
+    ensureNameList();
+  }
+
+  function ensureNameList() {
+    if (document.getElementById('volunteer-names')) refreshNameList();
+    else {
+      const dl = document.createElement('datalist');
+      dl.id = 'volunteer-names';
+      document.body.appendChild(dl);
+      refreshNameList();
+    }
+  }
+  function refreshNameList() {
+    document.getElementById('volunteer-names').innerHTML =
+      volunteers.filter(v => v.status !== 'Inactive').map(v => '<option value="' + esc(v.name) + '"></option>').join('');
+  }
+
+  function readAttendance() {
+    return [...document.querySelectorAll('#att-table tr')].map(tr => {
+      const [nameEl, hoursEl] = tr.querySelectorAll('input');
+      const name = nameEl.value.trim();
+      const hours = parseFloat(hoursEl.value);
+      if (!name || !Number.isFinite(hours) || hours <= 0) return null;
+      const match = volunteers.find(v => v.name.toLowerCase() === name.toLowerCase());
+      return { name, hours, ...(match ? { volunteerId: match.id } : {}) };
+    }).filter(Boolean);
+  }
+
+  function updateAttTotal() {
+    const total = readAttendance().reduce((s, a) => s + a.hours, 0);
+    document.getElementById('att-total').textContent = 'Total: ' + (Math.round(total * 2) / 2) + ' hrs';
+  }
+
+  async function activityCall(payload) {
+    const r = await fetch('/api/volunteer-activity', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, ...payload }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Action failed');
+    return data;
+  }
+
+  async function saveActivity() {
+    const sel = document.getElementById('a-card');
+    const opt = sel.options[sel.selectedIndex];
+    if (!opt) { setMsg('a-msg', 'Pick a group for this activity.', 'err'); return; }
+    const b = document.getElementById('a-save'); b.disabled = true;
+    setMsg('a-msg', 'Saving…', '');
+    try {
+      const data = await activityCall({
+        action: 'save',
+        pageId: openActivityId || undefined,
+        name: document.getElementById('a-name').value.trim(),
+        cardPath: opt.value,
+        cardTitle: opt.dataset.title || opt.textContent,
+        date: document.getElementById('a-date').value || undefined,
+        description: document.getElementById('a-desc').value.trim(),
+        attendance: readAttendance(),
+      });
+      openActivityId = data.pageId;
+      setMsg('a-msg', 'Saved ✓ (' + data.totalHours + ' hrs)', 'ok');
+      document.getElementById('a-confirm').style.display = '';
+      document.getElementById('a-delete').style.display = '';
+      await reloadActivities();
+    } catch (e) { setMsg('a-msg', e.message, 'err'); }
+    finally { b.disabled = false; }
+  }
+
+  async function confirmActivity() {
+    if (!openActivityId) return;
+    if (!confirm('Confirm this activity? Confirmed hours are treated as final for grant reporting (a village admin can still edit if something was wrong).')) return;
+    try {
+      await activityCall({ action: 'status', pageId: openActivityId, status: 'Confirmed' });
+      setMsg('a-msg', 'Confirmed ✓', 'ok');
+      await reloadActivities();
+      openActivity(openActivityId);
+    } catch (e) { setMsg('a-msg', e.message, 'err'); }
+  }
+
+  async function deleteActivity() {
+    const a = activities.find(x => x.id === openActivityId);
+    if (!a || !confirm('Delete "' + a.name + '"? It moves to Notion\'s trash (recoverable there).')) return;
+    try {
+      await activityCall({ action: 'delete', pageId: openActivityId });
+      openActivityId = null;
+      await reloadActivities();
+      showPanel('activities');
+    } catch (e) { setMsg('a-msg', e.message, 'err'); }
+  }
+
+  async function reloadActivities() {
+    try {
+      const r = await fetch('/api/volunteer-activity?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (r.ok) { activities = data.activities || []; buildCardFilters(); renderActivities(); renderRoster(); }
+    } catch (e) {}
+  }
+
+  // ── Stewards ───────────────────────────────────────────────────
+  function renderStewards() {
+    const el = document.getElementById('stewards');
+    if (!stewards.length) { el.innerHTML = '<div class="empty">No stewards yet — appoint your first group steward above.</div>'; return; }
+    el.innerHTML = stewards.map(s => {
+      const cardsLine = (s.cards || []).map(c => '<span class="chip chip-card">' + esc(c.title) + '</span>').join(' ');
+      const removed = s.status === 'Removed';
+      const actions =
+        (removed ? '<button class="link-btn" onclick="event.stopPropagation(); stewardAction(\'' + s.id + '\', \'restore\')">Restore</button>'
+                 : '<button class="link-btn" onclick="event.stopPropagation(); editStewardCards(\'' + s.id + '\')">Edit cards</button>' +
+                   '<button class="link-btn danger" onclick="event.stopPropagation(); stewardAction(\'' + s.id + '\', \'remove\')">Remove</button>');
+      return '<div class="row" style="cursor:default;">' +
+        '<span class="chip ' + (removed ? 'chip-removed' : 'chip-active') + '">' + esc(s.status) + '</span>' +
+        '<div class="row-main"><div class="row-name">' + esc(s.name || s.email) + '</div>' +
+        '<div class="row-note">' + esc(s.email) + '</div><div class="row-note">' + cardsLine + '</div></div>' +
+        '<span class="row-actions">' + actions + '</span></div>';
+    }).join('');
+  }
+
+  async function appointSteward() {
+    const email = document.getElementById('s-email').value.trim();
+    const cards = pickedCards('s-cards');
+    if (!email) { setMsg('s-msg', 'An email address is required.', 'err'); return; }
+    if (!cards.length) { setMsg('s-msg', 'Tick at least one card.', 'err'); return; }
+    const b = document.getElementById('s-save'); b.disabled = true;
+    setMsg('s-msg', 'Saving…', '');
+    try {
+      const r = await fetch('/api/steward-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, action: 'add', email, name: document.getElementById('s-name').value.trim(), cards }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Appoint failed');
+      setMsg('s-msg', data.warning ? ('Saved, but: ' + data.warning) : 'Steward appointed ✓', data.warning ? 'err' : 'ok');
+      document.getElementById('s-email').value = ''; document.getElementById('s-name').value = '';
+      [...document.querySelectorAll('#s-cards input')].forEach(i => i.checked = false);
+      loadStewards();
+    } catch (e) { setMsg('s-msg', e.message, 'err'); }
+    finally { b.disabled = false; }
+  }
+
+  async function stewardAction(id, action) {
+    const s = stewards.find(x => x.id === id);
+    if (!s) return;
+    if (action === 'remove' && !confirm('Remove ' + (s.name || s.email) + ' as a steward? They keep their sign-in but lose access to their cards.')) return;
+    try {
+      const r = await fetch('/api/steward-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, action, pageId: id }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Action failed');
+      loadStewards();
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
+
+  function editStewardCards(id) {
+    const s = stewards.find(x => x.id === id);
+    if (!s) return;
+    // Reuse the appoint form pre-filled — saving upserts by email.
+    document.getElementById('s-email').value = s.email;
+    document.getElementById('s-name').value = s.name || '';
+    const options = withVolunteerCards(catalogue, { cards: s.cards });
+    document.getElementById('s-cards').innerHTML = cardCheckboxes(options, (s.cards || []).map(c => c.path));
+    setMsg('s-msg', 'Editing ' + (s.name || s.email) + ' — tick/untick cards and press Appoint steward to save.', '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function setMsg(id, msg, kind) {
+    const el = document.getElementById(id);
+    el.textContent = msg; el.className = 'status-msg' + (kind ? ' ' + kind : '');
+  }
+
+  function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+</script>
+</body>
+</html>
