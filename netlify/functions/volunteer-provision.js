@@ -74,19 +74,49 @@ const SCHEMAS = {
   },
 };
 
+/**
+ * Find a Notion page to parent the new DBs under. Tries the Members DB first,
+ * then the Contributions and Surveys DBs, walking block parents up to the
+ * containing page (DBs nested inside page sections have block parents, not
+ * page parents). An explicit parentPageId in the body always wins.
+ */
+async function findParentPage(explicit) {
+  if (explicit) return String(explicit).replace(/[^a-f0-9-]/gi, '');
+  const candidates = [
+    MEMBERS_DB_ID,
+    process.env.NOTION_CONTRIB_DB_ID || '6d182a0d4f0c42c2879f13753e355861',
+    process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596',
+  ];
+  const trail = [];
+  for (const dbId of candidates) {
+    try {
+      const res = await fetch(`https://api.notion.com/v1/databases/${dbId}`, { headers: notionHeaders() });
+      if (!res.ok) { trail.push(`${dbId.slice(0, 8)}→${res.status}`); continue; }
+      let parent = (await res.json()).parent;
+      for (let hop = 0; hop < 5 && parent; hop++) {
+        if (parent.type === 'page_id') return parent.page_id;
+        if (parent.type !== 'block_id') break;
+        const b = await fetch(`https://api.notion.com/v1/blocks/${parent.block_id}`, { headers: notionHeaders() });
+        if (!b.ok) break;
+        parent = (await b.json()).parent;
+      }
+      trail.push(`${dbId.slice(0, 8)}→${parent?.type || 'none'}`);
+    } catch (_) { trail.push(`${dbId.slice(0, 8)}→err`); }
+  }
+  throw new Error(`No page parent found (${trail.join(', ')}) — POST again with {"parentPageId":"<notion page id>"}`);
+}
+
 export const handler = async (event, context) => {
   if (event.httpMethod !== 'POST') return jsonResp(405, { error: 'POST only' });
 
   const auth = requireRole(context, { anyOf: ['super-admin'] });
   if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
 
+  let body = {};
+  try { body = JSON.parse(event.body || '{}'); } catch (_) {}
+
   try {
-    // Parent page = wherever the VF Members DB lives (Smiths Lake Community).
-    const memRes = await fetch(`https://api.notion.com/v1/databases/${MEMBERS_DB_ID}`, { headers: notionHeaders() });
-    if (!memRes.ok) throw new Error(`Could not read Members DB (${memRes.status}) to find the parent page`);
-    const members = await memRes.json();
-    const parentPageId = members.parent?.page_id;
-    if (!parentPageId) throw new Error('Members DB has no page parent — create the volunteer DBs manually');
+    const parentPageId = await findParentPage(body.parentPageId);
 
     const out = {};
     const created = [];
