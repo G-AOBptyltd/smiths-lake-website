@@ -21,6 +21,7 @@
     { id: 'contrib',  href: '/admin/contrib/',           label: '🤝 Contributions' },
     { id: 'cocon',    href: '/admin/cocontribution/',    label: '📑 Co-contribution' },
     { id: 'members',  href: '/admin/members/',           label: '🪪 Membership' },
+    { id: 'volunteers', href: '/admin/volunteers/',      label: '🙋 Volunteers' },
     { id: 'playbook', href: '/admin/playbook/',          label: '📖 Playbooks' },
   ];
 
@@ -32,6 +33,7 @@
     if (p.indexOf('/admin/contrib') === 0) return 'contrib';
     if (p.indexOf('/admin/cocontribution') === 0) return 'cocon';
     if (p.indexOf('/admin/members') === 0) return 'members';
+    if (p.indexOf('/admin/volunteers') === 0) return 'volunteers';
     if (p.indexOf('publish-news') > -1) return 'publish';
     if (p.indexOf('/admin') === 0) return 'home';
     return '';

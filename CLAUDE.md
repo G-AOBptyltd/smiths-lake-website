@@ -132,6 +132,34 @@ Active Zaps (all polling-based, ~15 min delay, Free plan):
   `VF_MEMBER_ORG_NAME` (sign-off, default PPCA), `VF_MEMBER_PAY_INSTRUCTIONS` (bank details
   block shown to unpaid members in emails).
 
+## Volunteer hub (/admin/volunteers/, added Aug 2026)
+Card-level volunteer management: network → village → **card** (a content page like
+/environment/landcare-and-bush-regeneration/, keyed by its site path `sectionPath/slug`).
+
+- **Permission model:** Identity role `<village>:steward` opens the portal; WHICH cards a
+  steward runs comes from the **VF Stewards** Notion register (email → cards JSON). Admins see
+  everything; `_stewards.js` `resolveScope()`/`scopeHasCard()` enforce it server-side in every
+  function. Appointing a steward (admin-only, Stewards tab) upserts the register row AND
+  auto-wires Netlify Identity via `context.clientContext.identity` (invites unknown emails,
+  grants `<village>:steward` to role-less accounts, never downgrades existing roles).
+- **Three shared DBs** (all villages, Village text column; created once by POST
+  `/api/volunteer-provision`, super-admin): 🧭 VF Stewards, 🙋 VF Volunteers, 🛠 VF Activities —
+  siblings of the VF Members DB. Ids live in env vars `NOTION_VF_STEWARDS_DB_ID` /
+  `NOTION_VF_VOLUNTEERS_DB_ID` / `NOTION_VF_ACTIVITIES_DB_ID` (functions 503 until set).
+  JSON blobs (Cards, Attendance) are chunked across 1900-char rich_text segments (`rtChunks`).
+- **Public signup:** `VolunteerSignup.astro` renders on DetailPage cards in sections
+  environment / groups / emergency only (Project Hub excluded — its Slug override would break
+  path keying; services/history don't volunteer). Posts to `/api/volunteer-signup`
+  (member-join-style hardening; upserts by email+village, appends cards for repeat signups,
+  emails the card's stewards, falling back to VF_PLEDGE_NOTIFY_TO).
+- **Functions:** `volunteer-roster` (GET scoped list / POST status·details·cards·delete[super]),
+  `volunteer-activity` (working bees: attendance JSON + server-derived Total Hours; Draft →
+  Confirmed → Pushed, where Pushed = locked, reserved for the contributions push stage),
+  `steward-admin` (add/cards/remove/restore), `volunteer-provision`. Shared `_stewards.js`.
+- **Hours → money (next stage):** admin reviews Confirmed activities and pushes them into the
+  Contributions portal as time-in-kind entries linked back via `Contribution ID` — the grant
+  co-contribution audit trail. Valuation reuses the co-contribution rates.
+
 ## Survey Tool
 - **URL:** https://villagefirst.org.au/surveys/blueys-beach-survey.html
 - **Backend:** Google Apps Script Web App (deployed under admin@villagefirst.org.au)
