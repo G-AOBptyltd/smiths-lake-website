@@ -865,7 +865,7 @@
         L.marker(pts[i], { icon: pin(i + 1) }).addTo(trailLayer)
           .bindPopup('<b>' + esc(a.location || a.name) + '</b><br>' + fmtDate(a.date) + ' · ' + (a.totalHours || 0) + ' hrs');
       });
-      trailMap.fitBounds(L.latLngBounds(pts).pad(cfg ? 0.5 : 0.35));
+      trailMap.fitBounds(L.latLngBounds(pts).pad(cfg ? 0.5 : 0.35), { maxZoom: cfg ? -0.5 : 16 });
       trailMap.invalidateSize();
     }, 80);
   }
