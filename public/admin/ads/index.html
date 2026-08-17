@@ -277,6 +277,13 @@
   const CHIP = { 'Draft': 'chip-draft', 'Active': 'chip-active', 'Expired': 'chip-expired', 'Cancelled': 'chip-cancelled' };
   const today = () => new Date().toISOString().slice(0, 10);
   const isLive = a => a.status === 'Active' && (!a.startDate || a.startDate <= today()) && (!a.endDate || a.endDate >= today());
+  // Explain WHY an Active placement isn't showing publicly yet/anymore.
+  const whyNotLive = a => {
+    if (a.status !== 'Active' || isLive(a)) return '';
+    if (a.startDate && a.startDate > today()) return '<span class="chip chip-draft">starts ' + esc(a.startDate) + '</span>';
+    if (a.endDate && a.endDate < today()) return '<span class="chip chip-expired">ended ' + esc(a.endDate) + '</span>';
+    return '';
+  };
 
   function renderAds() {
     const yr = today().slice(0, 4);
@@ -291,7 +298,7 @@
     if (!ads.length) { el.innerHTML = '<div class="empty">No advertisers yet — record your first placement with "New advertiser".</div>'; return; }
     el.innerHTML = ads.map(a =>
       '<div class="row" onclick="openAd(\'' + a.id + '\')">' +
-      '<span class="chip ' + (CHIP[a.status] || '') + '">' + esc(a.status) + '</span>' +
+      '<span class="chip ' + (CHIP[a.status] || '') + '">' + esc(a.status) + '</span>' + whyNotLive(a) +
       '<span class="chip chip-tier">' + esc(a.tier) + '</span>' +
       '<div class="row-main"><div class="row-name">' + esc(a.business) + '</div>' +
       '<div class="row-note">' + esc([a.startDate && a.endDate ? a.startDate + ' → ' + a.endDate : 'no dates', a.contact || a.email].filter(Boolean).join(' · ')) + '</div></div>' +
@@ -319,7 +326,7 @@
 
   function fillAd(a) {
     document.getElementById('ad-title').textContent = a.id ? a.business : 'New advertiser';
-    document.getElementById('ad-status-line').innerHTML = 'Details · <span class="chip ' + (CHIP[a.status] || '') + '">' + esc(a.status) + '</span>' + (isLive(a) ? ' <span class="chip chip-active">live now</span>' : '');
+    document.getElementById('ad-status-line').innerHTML = 'Details · <span class="chip ' + (CHIP[a.status] || '') + '">' + esc(a.status) + '</span>' + (isLive(a) ? ' <span class="chip chip-active">live now</span>' : ' ' + whyNotLive(a));
     document.getElementById('a-business').value = a.business === '(unnamed)' ? '' : a.business;
     document.getElementById('a-blurb').value = a.blurb || '';
     document.getElementById('a-website').value = a.website || '';
