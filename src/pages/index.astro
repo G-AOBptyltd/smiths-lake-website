@@ -6,6 +6,7 @@ import Hero from '../components/Hero.astro';
 import QuickInfo from '../components/QuickInfo.astro';
 import SectionCard from '../components/SectionCard.astro';
 import WaterLevelTicker from '../components/WaterLevelTicker.astro';
+import SponsorStrip from '../components/SponsorStrip.astro';
 import { fetchSectionSettingsBySlug } from '../lib/notion-section-settings.js';
 import { fetchNotionContent } from '../lib/notion-unified.js';
 import { generateSlug, resolveItemUrl, getSectionColour, getSectionDisplayName } from '../lib/notion-detail-pages.js';
@@ -234,6 +235,9 @@ const sections = [
       </div>
     </div>
   </section>
+
+  <!-- Community sponsors — renders nothing until a placement is live -->
+  <SponsorStrip variant="band" />
 </BaseLayout>
 
 <style>

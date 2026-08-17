@@ -7,6 +7,7 @@
 // Feed rule: only items with "Show in News Feed" ✓ AND a "Publish Date", newest first.
 import Layout from '../../layouts/BaseLayout.astro';
 import SectionHero from '../../components/SectionHero.astro';
+import SponsorStrip from '../../components/SponsorStrip.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 import { generateSlug, resolveItemUrl, getSectionColour, getSectionDisplayName } from '../../lib/notion-detail-pages.js';
@@ -310,6 +311,9 @@ const listItems = newsItems.filter((i: any) => !featuredSet.has(i));
                 <p>Facilities, amenities, and services for residents and visitors.</p>
                 <a href="/services/" class="side-btn">Browse the directory</a>
               </div>
+
+              <!-- Community sponsors — renders nothing until a placement is live -->
+              <SponsorStrip variant="sidebar" />
             </aside>
           </div>
         </>
