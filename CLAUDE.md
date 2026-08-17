@@ -201,6 +201,20 @@ via `rsvpPayment`, waitlist promote, door-list CSV). Env `NOTION_VF_EVENTS_DB_ID
 like bookings (Village column + village-scoped roles); per-village payment config arrives
 with the Villages-registry generalisation pass (see Facility bookings section).
 
+## Module surfacing & per-village enablement (Aug 2026)
+- **Surfacing:** "What's On" is in the Header nav (icon `events`); footer Connect links carry
+  What's On + Hire the Hall; homepage has a "What's On & Hall Hire" banner (news-banner
+  pattern); sitemap lists both; /events/ ↔ /facilities/ cross-link. Two DRAFT launch news
+  stories sit in the content DB (Status on Web = Pending) for the committee to publish via
+  the News Desk when the hall rates are confirmed.
+- **Per-village module flags:** the VF Villages registry has a **Modules** multi-select
+  (surveys, news, publish, contrib, cocon, members, volunteers, bookings, events).
+  `village-list` returns `modules[]` per village; the admin hub filters tiles by the active
+  village's flags (Playbooks always shows; empty/missing = ALL modules, fail-open so the
+  registry can never brick an admin). Village 02 onboarding = tick the modules they're ready
+  for. Public-site nav is per-site (each village site ships its own Header) — flags govern
+  the admin surface; server functions all take `village` and enforce roles regardless.
+
 ## Survey Tool
 - **URL:** https://villagefirst.org.au/surveys/blueys-beach-survey.html
 - **Backend:** Google Apps Script Web App (deployed under admin@villagefirst.org.au)

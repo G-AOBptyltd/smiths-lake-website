@@ -91,12 +91,25 @@
   ];
 
   let currentUser = null;
+  let villagesData = [];
 
   function userRoles() {
     return (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || [];
   }
 
+  // A village only shows tiles for the modules it has switched on in the
+  // Villages registry ("Modules" multi-select). Empty/missing = all modules
+  // (fail-open); Playbooks always show.
+  function moduleEnabled(tool) {
+    if (tool.id === 'playbook') return true;
+    const active = document.getElementById('village-select').value || localStorage.getItem('vf_active_village') || 'Smiths Lake';
+    const v = villagesData.find(function(x) { return x.name === active; });
+    if (!v || !Array.isArray(v.modules) || !v.modules.length) return true;
+    return v.modules.includes(tool.id);
+  }
+
   function canSee(tool) {
+    if (!moduleEnabled(tool)) return false;
     const roles = userRoles();
     if (roles.includes('super-admin')) return true;
     if (roles.length === 0) return true; // email-allowlist bridge users: server still enforces
@@ -130,6 +143,7 @@
       const data = await r.json();
       const villages = (data.villages || []).filter(function(v) { return v.status === 'live'; });
       if (!villages.length) return;
+      villagesData = villages;
       sel.innerHTML = '';
       villages.forEach(function(v) {
         const o = document.createElement('option');
@@ -137,8 +151,9 @@
         if (v.name === active) o.selected = true;
         sel.appendChild(o);
       });
+      renderTiles(); // re-filter tiles now module flags are known
     } catch (e) { /* keep default */ }
-    sel.onchange = function() { localStorage.setItem('vf_active_village', sel.value); };
+    sel.onchange = function() { localStorage.setItem('vf_active_village', sel.value); renderTiles(); };
   }
 
   function showApp() {

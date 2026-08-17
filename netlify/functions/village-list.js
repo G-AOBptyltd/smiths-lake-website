@@ -48,6 +48,9 @@ export const handler = async (event, context) => {
       villages = (data.results || []).map(p => ({
         name: p.properties['Village Name']?.title?.[0]?.plain_text || '',
         status: p.properties['Status']?.select?.name || 'live',
+        // Which platform modules this village has switched on. Empty/missing
+        // fails OPEN (all modules) so the registry can't brick an admin.
+        modules: (p.properties['Modules']?.multi_select || []).map(o => o.name),
       })).filter(v => v.name);
     } else {
       // VF Villages unreadable — fail open to the survey tags so the admin still loads.
