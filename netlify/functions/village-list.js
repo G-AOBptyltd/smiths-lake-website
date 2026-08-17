@@ -48,6 +48,9 @@ export const handler = async (event, context) => {
       villages = (data.results || []).map(p => ({
         name: p.properties['Village Name']?.title?.[0]?.plain_text || '',
         status: p.properties['Status']?.select?.name || 'live',
+        // Gated modules (events/bookings) whose PUBLIC pages this village has
+        // switched on via the admin-hub toggle.
+        publicModules: (p.properties['Public Modules']?.multi_select || []).map(o => o.name),
       })).filter(v => v.name);
     } else {
       // VF Villages unreadable — fail open to the survey tags so the admin still loads.

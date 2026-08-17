@@ -89,13 +89,19 @@ import Hero from '../components/Hero.astro';
   async function load() {
     const el = document.getElementById('events-list')!;
     let events: any[] = [];
+    let notPublic = false;
     try {
       const r = await fetch('/api/event-list?village=' + encodeURIComponent(VILLAGE));
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || '');
       events = data.events || [];
+      notPublic = data.notPublic === true;
     } catch (e) {
       el.innerHTML = '<div class="ev-none">We couldn\'t load events just now — please try again later.</div>';
+      return;
+    }
+    if (notPublic) {
+      el.innerHTML = '<div class="ev-none"><b>Nearly ready!</b><br>Online event listings are being set up for this village — keep an eye on the <a href="/news/">village news</a> in the meantime.</div>';
       return;
     }
     if (!events.length) {

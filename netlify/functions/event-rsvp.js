@@ -16,6 +16,7 @@ import {
   RSVPS_DB_ID, EVENTS_DB_ID, notionHeaders, jsonResp, notProvisioned,
   rtChunks, queryAll, parseRsvp, getEvent, seatsTaken,
 } from './_events.js';
+import { isModulePublic } from './_villages.js';
 
 function esc(s) {
   return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -85,6 +86,10 @@ export const handler = async (event) => {
 
   // Honeypot — pretend success so bots don't learn.
   if ((body.website || '').trim()) return jsonResp(200, { ok: true, status: 'Registered' });
+
+  if (!(await isModulePublic(body.village || 'Smiths Lake', 'events'))) {
+    return jsonResp(403, { error: 'Event registrations are not open yet.' });
+  }
 
   const firstName = (body.firstName || '').trim().slice(0, 100);
   const lastName = (body.lastName || '').trim().slice(0, 100);
