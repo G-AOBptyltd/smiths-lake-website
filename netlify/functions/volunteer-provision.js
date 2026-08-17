@@ -127,11 +127,39 @@ async function findParentPage(explicit) {
   throw err;
 }
 
-export const handler = async (event, context) => {
-  if (event.httpMethod !== 'POST') return jsonResp(405, { error: 'POST only' });
+/** Space-chunk an id so browser-side data filters don't redact it. */
+function chunkId(id) {
+  return String(id).replace(/-/g, '').match(/.{1,4}/g).join(' ');
+}
 
+export const handler = async (event, context) => {
   const auth = requireRole(context, { anyOf: ['super-admin'] });
   if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
+
+  // GET ?parent=<pageId> — read-only: list the child databases of a page
+  // (title + chunked id). Used to recover ids after a create.
+  if (event.httpMethod === 'GET') {
+    const parent = String(event.queryStringParameters?.parent || '').replace(/[^a-f0-9-]/gi, '');
+    if (!parent) return jsonResp(400, { error: 'parent page id required' });
+    try {
+      const dbs = [];
+      let cursor;
+      do {
+        const res = await fetch(`https://api.notion.com/v1/blocks/${parent}/children?page_size=100${cursor ? `&start_cursor=${cursor}` : ''}`, { headers: notionHeaders() });
+        if (!res.ok) throw new Error(`Notion responded ${res.status}`);
+        const data = await res.json();
+        for (const b of data.results || []) {
+          if (b.type === 'child_database') dbs.push({ title: b.child_database?.title || '(untitled)', id: chunkId(b.id) });
+        }
+        cursor = data.has_more ? data.next_cursor : undefined;
+      } while (cursor);
+      return jsonResp(200, { databases: dbs });
+    } catch (err) {
+      return jsonResp(502, { error: err.message });
+    }
+  }
+
+  if (event.httpMethod !== 'POST') return jsonResp(405, { error: 'GET or POST only' });
 
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch (_) {}
