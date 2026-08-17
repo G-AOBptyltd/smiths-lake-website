@@ -102,6 +102,24 @@ Active Zaps (all polling-based, ~15 min delay, Free plan):
 - **Community Inbox DB:** `2c6d508adfc180148c2f9260af61fc1`
 - **TECHNICAL-REFERENCE:** `30cd508adfc1809a9f3fe22f2c8c356a`
 - **VillageFirst Playbooks:** `2cdd508adfc181db9136e2c4f72fc1ac`
+- **VF Members DB (PPCA member register):** `494becca311c4d668a0f7f2750c08a74` — written by
+  `/api/member-join` (env override `NOTION_MEMBERS_DB_ID`). Fees Individual $10 / Household $20,
+  year 1 Jul–30 Jun, Status flow Applied → Approved → Paid → Lapsed. NOTE: child DBs do NOT
+  inherit the parent page's integration connections — a new VF DB must be manually connected
+  to BOTH `villagefirst-website` and `VF1` (⋯ → Connections) or writes 404 ("object_not_found").
+
+## Membership (/membership/, added Aug 2026)
+- `src/pages/membership.astro` — PPCA membership application form → `/api/member-join`
+  (`netlify/functions/member-join.js`, modelled on contrib-pledge: honeypot, length caps,
+  fee derived server-side, Status always Applied, env-gated PPCA notify via VF_RESEND vars).
+- Stay Connected opt-in re-posts to the Netlify `newsletter` form (exact field names) so the
+  Zapier → Mailchimp zap works unchanged — the zap watches the FORM NAME, not the page URL.
+- `/newsletter/` is RETIRED (Aug 2026): page deleted, 301 → `/membership/#updates`; the free
+  signup lives in the membership page's "Just want community updates?" section, and the static
+  `newsletter` form also survives in the `/news/` sidebar (keeps Netlify form detection alive).
+  Footer/homepage/sitemap/project CTAs all point to `/membership/` now.
+- `/contribute/` coming-soon card links here; when Tyro Pay Online ships, membership payment
+  happens on `/contribute/` and this page's payment options get a "pay online" path.
 
 ## Survey Tool
 - **URL:** https://villagefirst.org.au/surveys/blueys-beach-survey.html

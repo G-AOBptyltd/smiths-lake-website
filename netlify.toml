@@ -168,6 +168,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/member-join"
+  to = "/.netlify/functions/member-join"
+  status = 200
+
+[[redirects]]
   from = "/api/contrib-supporters"
   to = "/.netlify/functions/contrib-supporters"
   status = 200
@@ -202,6 +207,15 @@
 [[redirects]]
   from = "/projects/bluey-s-beach-village-centre/"
   to = "/projects/bluey-s-beach-village-survey-concept-designs/"
+  status = 301
+
+# Legacy newsletter URL — the "Stay Connected" signup now lives on the
+# membership page (free-updates section). The Netlify `newsletter` form itself
+# still renders statically on /membership/ and the /news/ sidebar, so the
+# Zapier → Mailchimp zap (keyed to the FORM NAME, not this URL) is unaffected.
+[[redirects]]
+  from = "/newsletter/"
+  to = "/membership/#updates"
   status = 301
 
 # Redirect old Lilly Pilly Glade news slug to current slug.
