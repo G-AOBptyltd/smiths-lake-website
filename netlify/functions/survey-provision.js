@@ -198,6 +198,10 @@ function buildHeader(template, config) {
     return [...base, 'choice'];
   }
 
+  if (template === 'name-vote') {
+    return [...base, 'choice', 'comment'];
+  }
+
   if (template === 'open-feedback') {
     const prompts = config?.prompts || config?.items || [];
     const cols = prompts.length ? prompts.map((_, i) => `q${i + 1}`) : ['q1'];

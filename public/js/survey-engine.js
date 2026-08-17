@@ -154,6 +154,7 @@
     else if (t === 'likert-agreement') renderRatingTemplate({ prefix: 'l', items: surveyConfig.config.statements || surveyConfig.config.items || [], scaleNote: '1 = Strongly disagree, 5 = Strongly agree', heading: 'Your views', introDefault: 'Tell us how much you agree with each statement.' });
     else if (t === 'star-rating') renderRatingTemplate({ prefix: 'r', items: surveyConfig.config.items || surveyConfig.config.serviceRatings || [], scaleNote: '1 = Poor, 5 = Excellent', heading: 'Your ratings', introDefault: 'Please rate each of the following.' });
     else if (t === 'quick-poll') renderQuickPoll();
+    else if (t === 'name-vote') renderNameVote();
     else if (t === 'open-feedback') renderOpenFeedback();
     else if (t === 'multi-section') renderMultiSection();
     else if (t === 'ranked-choice') renderRankedChoice();
@@ -864,6 +865,40 @@
     document.getElementById('submit-btn').onclick = async () => {
       if (!responses.respondentType) { alert('Please select who you are.'); return; }
       if (!responses.choice) { alert('Please choose an option.'); return; }
+      await submitSurvey();
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TEMPLATE: NAME-VOTE (candidate names on a ballot — vote for your favourite)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function renderNameVote() {
+    const cfg = surveyConfig.config;
+    const question = cfg.question || 'Which name do you like best?';
+    const candidates = (cfg.candidates || []).map(c => (c && c.label) ? c.label : c);
+    root().innerHTML = `
+      <div class="vf-survey">
+        ${renderSurveyHeader()}
+        ${renderIntroCard('Vote for your favourite name — one vote per person.')}
+        <div class="vf-field" style="margin-top:20px;">
+          <div class="vf-field-label">${question}</div>
+          <div class="vf-pills" id="name-options" style="gap:10px;margin-top:10px;">
+            ${candidates.map(c => `<button class="vf-pill" data-value="${c}" style="font-size:16px;font-weight:600;padding:14px 22px;">${c}</button>`).join('')}
+          </div>
+        </div>
+        <div class="vf-field" style="margin-top:20px;">
+          <label class="vf-field-label">${cfg.commentPrompt || 'Why this name? (optional)'}</label>
+          <textarea class="vf-textarea" id="nv-comment" rows="2" placeholder="Optional…"></textarea>
+        </div>
+        <div class="vf-nav"><span></span><button class="vf-btn" id="submit-btn">Submit my vote →</button></div>
+      </div>`;
+    attachPillHandlers('respondent-pills', 'respondentType', responses);
+    attachPillHandlers('name-options', 'choice', responses);
+    document.getElementById('submit-btn').onclick = async () => {
+      if (!responses.respondentType) { alert('Please select who you are.'); return; }
+      if (!responses.choice) { alert('Please pick your favourite name.'); return; }
+      responses.comment = document.getElementById('nv-comment')?.value || '';
       await submitSurvey();
     };
   }
