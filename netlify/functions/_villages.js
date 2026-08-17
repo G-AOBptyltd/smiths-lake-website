@@ -58,5 +58,22 @@ async function queryVillage(village) {
     status: p.properties['Status']?.select?.name || 'live',
     contentDbId: (p.properties['Content DB ID']?.rich_text || []).map(t => t.plain_text).join('').replace(/[^a-f0-9]/gi, '') || null,
     newsBuildHook: p.properties['News Build Hook']?.url || null,
+    publicModules: (p.properties['Public Modules']?.multi_select || []).map(o => o.name),
   };
+}
+
+/**
+ * Modules whose PUBLIC surfaces are gated by the registry's "Public Modules"
+ * multi-select — a village must explicitly switch these on (fail-CLOSED, the
+ * opposite of everything else here) via the admin-hub toggle. Modules not in
+ * this list are always public once shipped.
+ */
+const PUBLICLY_GATED = ['events', 'bookings'];
+
+export async function isModulePublic(village, module) {
+  if (!PUBLICLY_GATED.includes(module)) return true;
+  try {
+    const rec = await queryVillage(village || 'Smiths Lake');
+    return !!rec && Array.isArray(rec.publicModules) && rec.publicModules.includes(module);
+  } catch (_) { return false; } // gated modules fail closed
 }

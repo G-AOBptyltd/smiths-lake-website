@@ -213,6 +213,16 @@ vf1-publicity-gated-by-greg): all public visibility changes need Greg's explicit
 NOTE: Smiths Lake has NO hall — the Facility bookings module is dormant platform inventory
 for a future village (Smiths Lake facility seed removed, `bookings` off in its Modules flags).
 
+## Public module toggles (events & bookings, Aug 2026)
+The VF Villages registry has a **Public Modules** multi-select (options: events, bookings).
+These two modules are **fail-CLOSED**: their public pages (/events/, /facilities/) show a
+"nearly ready" notice and their public APIs refuse reads/writes (`notPublic: true` /
+403) unless the village has switched the module on. Toggle = the "Public page ON/OFF"
+chip on the Events and Facility bookings tiles at /admin/ (village-admin gated, POST
+`/api/village-modules`). `_villages.js isModulePublic()` is the server gate — modules NOT
+in its PUBLICLY_GATED list are always public. Admin consoles work regardless of the toggle.
+Smiths Lake ships with BOTH OFF (no hall; events not yet publicised).
+
 ## Survey Tool
 - **URL:** https://villagefirst.org.au/surveys/blueys-beach-survey.html
 - **Backend:** Google Apps Script Web App (deployed under admin@villagefirst.org.au)

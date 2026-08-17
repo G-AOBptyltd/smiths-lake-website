@@ -183,6 +183,7 @@ import Hero from '../components/Hero.astro';
   let facilities: any[] = [];
   let slots: any[] = [];
   let facilityId = '';
+  let notPublic = false;
 
   const $ = (id: string) => document.getElementById(id)!;
 
@@ -199,6 +200,10 @@ import Hero from '../components/Hero.astro';
 
   function renderFacility() {
     const el = $('facility-info');
+    if (notPublic) {
+      el.innerHTML = '<p class="fac-loading"><b>Nearly ready!</b> Online hall booking is being set up for this village — in the meantime, please use the <a href="/contact/">contact form</a> to ask about hiring.</p>';
+      return;
+    }
     if (!facilities.length) {
       el.innerHTML = '<p class="fac-loading">The booking calendar isn\'t available right now — please try again later, or use the <a href="/contact/">contact form</a>.</p>';
       return;
@@ -277,6 +282,7 @@ import Hero from '../components/Hero.astro';
       if (!r.ok) throw new Error(data.error || '');
       facilities = data.facilities || [];
       slots = data.slots || [];
+      notPublic = data.notPublic === true;
     } catch (e) { facilities = []; }
     renderFacility();
     renderCalendars();

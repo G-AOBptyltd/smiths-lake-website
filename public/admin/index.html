@@ -36,6 +36,10 @@
   .tile.is-soon { opacity: 0.6; border-style: dashed; pointer-events: none; }
   .tile.is-soon .tile-name { color: #6b7280; }
   .soon-chip { display: inline-block; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #92400E; background: #FEF3C7; border-radius: 8px; padding: 2px 8px; margin-top: 0.4rem; }
+  .pub-chip { display: inline-block; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 8px; padding: 3px 9px; margin-top: 0.45rem; cursor: pointer; border: 1.5px solid; font-family: inherit; }
+  .pub-chip.is-on { color: #0f5c48; background: #e7f6ee; border-color: #15a06e; }
+  .pub-chip.is-off { color: #6b7280; background: #f3f4f6; border-color: #d1d5db; }
+  .pub-chip:hover { filter: brightness(0.96); }
 
   .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; padding: 1rem; text-align: center; }
   .auth-screen h1 { font-size: 1.2rem; color: #143d2e; }
@@ -84,13 +88,49 @@
     { id: 'contrib',  icon: '🤝', name: 'Contributions portal', desc: 'Log donations, payments, gifts, time in kind & donated services', href: '/admin/contrib/', roles: ['admin', 'steward'] },
     { id: 'cocon',    icon: '📑', name: 'Co-contribution & budget', desc: 'Grant co-contribution schedule & project budget — live dashboard + council export', href: '/admin/cocontribution/', roles: ['admin', 'steward'] },
     { id: 'members',  icon: '🪪', name: 'Membership',          desc: 'Member register — approvals, payments, renewals & member emails', href: '/admin/members/', roles: ['admin'] },
-    { id: 'events',   icon: '🎟️', name: 'Events & ticketing', desc: 'Create events, take registrations, run the door on the night', href: '/admin/events/', roles: ['admin'] },
+    { id: 'events',   icon: '🎟️', name: 'Events & ticketing', desc: 'Create events, take registrations, run the door on the night', href: '/admin/events/', roles: ['admin'], publicToggle: true },
     { id: 'ads',      icon: '📣', name: 'Advertising',        desc: 'Local business placements & sponsorships — dates, tiers & fees', href: '/admin/ads/', roles: ['admin'] },
     { id: 'volunteers', icon: '🙋', name: 'Volunteer hub',     desc: 'Group rosters, working bees & volunteer hours — stewards see their own groups', href: '/admin/volunteers/', roles: ['admin', 'steward'] },
-    { id: 'bookings', icon: '🏛️', name: 'Facility bookings',  desc: 'Hall hire requests, the booking calendar, fees & bonds', href: '/admin/bookings/', roles: ['admin'] },
+    { id: 'bookings', icon: '🏛️', name: 'Facility bookings',  desc: 'Hall hire requests, the booking calendar, fees & bonds', href: '/admin/bookings/', roles: ['admin'], publicToggle: true },
   ];
 
   let currentUser = null;
+  let villagesData = [];
+
+  function activeVillage() {
+    return document.getElementById('village-select').value || localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  }
+
+  function isModulePublic(moduleId) {
+    const v = villagesData.find(function(x) { return x.name === activeVillage(); });
+    return !!(v && Array.isArray(v.publicModules) && v.publicModules.includes(moduleId));
+  }
+
+  // The "Public page ON/OFF" switch on gated tiles (events, bookings).
+  // OFF = the admin console works fully but the module's public website pages
+  // show a "nearly ready" notice and refuse signups. Server enforces too.
+  async function togglePublic(ev, moduleId, name) {
+    ev.preventDefault(); ev.stopPropagation();
+    const on = isModulePublic(moduleId);
+    const msg = on
+      ? 'Switch the PUBLIC ' + name + ' page OFF for ' + activeVillage() + '? The website page shows a "nearly ready" notice and stops taking signups. The admin console is unaffected.'
+      : 'Switch the PUBLIC ' + name + ' page ON for ' + activeVillage() + '? Residents can then see and use it on the website immediately.';
+    if (!confirm(msg)) return;
+    try {
+      let token = null;
+      try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+      const r = await fetch('/api/village-modules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) },
+        body: JSON.stringify({ village: activeVillage(), module: moduleId, public: !on }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Toggle failed');
+      const v = villagesData.find(function(x) { return x.name === activeVillage(); });
+      if (v) v.publicModules = data.publicModules;
+      renderTiles();
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
 
   function userRoles() {
     return (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || [];
@@ -112,10 +152,17 @@
       const a = document.createElement(tool.soon ? 'div' : 'a');
       a.className = 'tile' + (tool.soon ? ' is-soon' : '');
       if (!tool.soon) a.href = tool.href;
+      let extra = tool.soon ? '<span class="soon-chip">Coming soon</span>' : '';
+      if (tool.publicToggle && !tool.soon) {
+        const on = isModulePublic(tool.id);
+        extra += '<button class="pub-chip ' + (on ? 'is-on' : 'is-off') + '" ' +
+          'onclick="togglePublic(event, \'' + tool.id + '\', \'' + tool.name + '\')" ' +
+          'title="Controls the PUBLIC website page only — the console always works">' +
+          'Public page: ' + (on ? 'ON' : 'OFF') + '</button>';
+      }
       a.innerHTML = '<div class="tile-icon">' + tool.icon + '</div>' +
         '<div class="tile-name">' + tool.name + '</div>' +
-        '<div class="tile-desc">' + tool.desc + '</div>' +
-        (tool.soon ? '<span class="soon-chip">Coming soon</span>' : '');
+        '<div class="tile-desc">' + tool.desc + '</div>' + extra;
       el.appendChild(a);
     });
   }
@@ -131,14 +178,16 @@
       const villages = (data.villages || []).filter(function(v) { return v.status === 'live'; });
       if (!villages.length) return;
       sel.innerHTML = '';
+      villagesData = villages;
       villages.forEach(function(v) {
         const o = document.createElement('option');
         o.value = v.name; o.textContent = v.name;
         if (v.name === active) o.selected = true;
         sel.appendChild(o);
       });
+      renderTiles(); // repaint the public ON/OFF chips now flags are known
     } catch (e) { /* keep default */ }
-    sel.onchange = function() { localStorage.setItem('vf_active_village', sel.value); };
+    sel.onchange = function() { localStorage.setItem('vf_active_village', sel.value); renderTiles(); };
   }
 
   function showApp() {

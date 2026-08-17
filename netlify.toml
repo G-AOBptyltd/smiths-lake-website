@@ -111,6 +111,11 @@
   to = "/.netlify/functions/village-status"
   status = 200
 
+[[redirects]]
+  from = "/api/village-modules"
+  to = "/.netlify/functions/village-modules"
+  status = 200
+
 # News Desk API
 [[redirects]]
   from = "/api/news-list"

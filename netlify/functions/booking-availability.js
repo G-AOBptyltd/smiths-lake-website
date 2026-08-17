@@ -11,12 +11,14 @@ import {
   FACILITIES_DB_ID, BOOKINGS_DB_ID, jsonResp, notProvisioned,
   queryAll, parseFacility, parseBooking, OCCUPYING,
 } from './_bookings.js';
+import { isModulePublic } from './_villages.js';
 
 export const handler = async (event) => {
   if (event.httpMethod !== 'GET') return jsonResp(405, { error: 'GET only' });
   if (!FACILITIES_DB_ID || !BOOKINGS_DB_ID) return notProvisioned();
 
   const village = event.queryStringParameters?.village || 'Smiths Lake';
+  if (!(await isModulePublic(village, 'bookings'))) return jsonResp(200, { facilities: [], slots: [], notPublic: true });
 
   try {
     const [facPages, bookingPages] = await Promise.all([
