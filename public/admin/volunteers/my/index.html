@@ -358,6 +358,26 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  // ── Group artwork maps ─────────────────────────────────────────
+  // Cards with their own illustrated map (e.g. the Foreshore High Water Trail
+  // A1 poster for Landcare) get it as the trail-map background instead of
+  // street tiles. `sites` are the group's known work spots: pixel positions
+  // detected from the artwork's own site markers (exact), lat/lng approximate
+  // (±100 m — refine on the ground); they also seed the wizard's "usual spots".
+  const GROUP_MAPS = {
+    'environment/landcare-and-bush-regeneration': {
+      image: '/images/maps/landcare-hwt-map.jpg', w: 2200, h: 1121,
+      credit: 'Foreshore High Water Trail — base map © OpenStreetMap',
+      sites: [
+        { name: 'Amaroo Drive foreshore',    x: 732,  y: 614,  lat: -32.3872, lng: 152.4460 },
+        { name: 'Western Village Shoreline', x: 815,  y: 779,  lat: -32.3902, lng: 152.4478 },
+        { name: 'Debert Reserve',            x: 1011, y: 695,  lat: -32.3890, lng: 152.4520 },
+        { name: 'Lilly Pilly Glade',         x: 1115, y: 814,  lat: -32.3901, lng: 152.4547 },
+        { name: 'Bull Island',               x: 1213, y: 1085, lat: -32.3952, lng: 152.4560 },
+      ],
+    },
+  };
+
   let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
   let currentUser = null;
   let volunteers = [], activities = [], scope = { isAdmin: false, cards: [] };
@@ -561,7 +581,12 @@
         seen.set(a.location.toLowerCase(), { name: a.location, lat: a.lat, lng: a.lng, last: a.date });
       }
     });
-    return [...seen.values()].slice(0, 6);
+    // Seed the group's known sites from its artwork map (history wins on dates).
+    const cfg = GROUP_MAPS[GROUP && GROUP.path];
+    if (cfg) cfg.sites.forEach(s => {
+      if (!seen.has(s.name.toLowerCase())) seen.set(s.name.toLowerCase(), { name: s.name, lat: s.lat, lng: s.lng, last: null, seeded: true });
+    });
+    return [...seen.values()].slice(0, 8);
   }
 
   function fmtDate(d) {
@@ -577,7 +602,7 @@
     el.innerHTML = places.map((p, i) =>
       '<button class="place-btn' + (chosenPlace && chosenPlace.name === p.name ? ' sel' : '') + '" onclick="pickPlace(' + i + ')">' +
       '<span class="p-pin">📍</span><span>' + esc(p.name) +
-      (p.last ? '<span class="p-sub">last time: ' + fmtDate(p.last) + '</span>' : '') + '</span></button>').join('');
+      (p.last ? '<span class="p-sub">last time: ' + fmtDate(p.last) + '</span>' : (p.seeded ? '<span class="p-sub">one of your group\'s sites</span>' : '')) + '</span></button>').join('');
     window._places = places;
   }
 
@@ -805,8 +830,10 @@
         '<div class="vol-sub">' + esc(sub) + '</div></div></div>';
     }).join('') || '<div class="sub">No volunteers yet — share your group\'s page with the village!</div>';
 
-    // Trail map
-    const located = acts.filter(a => Number.isFinite(a.lat) && Number.isFinite(a.lng));
+    // Trail map — artwork mode (the group's own illustrated map) or tile mode.
+    const cfg = GROUP_MAPS[GROUP.path];
+    const locate = artworkLocator(cfg);
+    const located = acts.filter(a => (cfg && locate(a)) || (!cfg && Number.isFinite(a.lat) && Number.isFinite(a.lng)));
     const frame = document.getElementById('trail-frame');
     document.getElementById('trail-list').innerHTML = located.slice().reverse().map((a, i) =>
       '<div class="trail-item"><span class="trail-num">' + (located.length - i) + '</span><b>' + esc(a.location || a.name) + '</b> — ' +
@@ -814,26 +841,60 @@
     if (!located.length) { frame.style.display = 'none'; return; }
     frame.style.display = '';
     setTimeout(() => {
-      if (!trailMap) {
+      if (trailMap) { trailMap.remove(); trailMap = null; }
+      const pin = (n) => L.divIcon({
+        className: '',
+        html: '<div style="background:#15795f;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);">' + n + '</div>',
+        iconSize: [28, 28], iconAnchor: [14, 14],
+      });
+      let pts;
+      if (cfg) {
+        trailMap = L.map('trail-map', { crs: L.CRS.Simple, minZoom: -2, maxZoom: 2, zoomSnap: 0.25, attributionControl: false });
+        const bounds = [[0, 0], [cfg.h, cfg.w]];
+        L.imageOverlay(cfg.image, bounds).addTo(trailMap);
+        trailMap.setMaxBounds([[-80, -80], [cfg.h + 80, cfg.w + 80]]);
+        pts = located.map(a => { const p = locate(a); return [cfg.h - p.y, p.x]; });
+      } else {
         trailMap = L.map('trail-map');
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap © CARTO' }).addTo(trailMap);
+        pts = located.map(a => [a.lat, a.lng]);
       }
-      if (trailLayer) trailLayer.remove();
       trailLayer = L.layerGroup().addTo(trailMap);
-      const pts = located.map(a => [a.lat, a.lng]);
       L.polyline(pts, { color: '#1d3a54', weight: 3.5, dashArray: '2 10', lineCap: 'round' }).addTo(trailLayer);
       located.forEach((a, i) => {
-        L.marker([a.lat, a.lng], {
-          icon: L.divIcon({
-            className: '',
-            html: '<div style="background:#15795f;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);">' + (i + 1) + '</div>',
-            iconSize: [28, 28], iconAnchor: [14, 14],
-          }),
-        }).addTo(trailLayer).bindPopup('<b>' + esc(a.location || a.name) + '</b><br>' + fmtDate(a.date) + ' · ' + (a.totalHours || 0) + ' hrs');
+        L.marker(pts[i], { icon: pin(i + 1) }).addTo(trailLayer)
+          .bindPopup('<b>' + esc(a.location || a.name) + '</b><br>' + fmtDate(a.date) + ' · ' + (a.totalHours || 0) + ' hrs');
       });
-      trailMap.fitBounds(L.latLngBounds(pts).pad(0.35));
+      trailMap.fitBounds(L.latLngBounds(pts).pad(cfg ? 0.5 : 0.35));
       trailMap.invalidateSize();
     }, 80);
+  }
+
+  /**
+   * For artwork maps: activity → pixel position. Named sites use their exact
+   * hand-verified artwork positions; anything else falls back to a linear
+   * lat/lng fit derived from the sites (the artwork is north-up uniform scale).
+   */
+  function artworkLocator(cfg) {
+    if (!cfg) return () => null;
+    const fit = (pairs) => {
+      const n = pairs.length;
+      const sx = pairs.reduce((s, p) => s + p[0], 0), sy = pairs.reduce((s, p) => s + p[1], 0);
+      const sxx = pairs.reduce((s, p) => s + p[0] * p[0], 0), sxy = pairs.reduce((s, p) => s + p[0] * p[1], 0);
+      const b = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+      return [ (sy - b * sx) / n, b ];
+    };
+    const [ax, bx] = fit(cfg.sites.map(s => [s.lng, s.x]));
+    const [ay, by] = fit(cfg.sites.map(s => [s.lat, s.y]));
+    return (a) => {
+      const site = cfg.sites.find(s => (a.location || '').toLowerCase() === s.name.toLowerCase());
+      if (site) return { x: site.x, y: site.y };
+      if (Number.isFinite(a.lat) && Number.isFinite(a.lng)) {
+        const x = ax + bx * a.lng, y = ay + by * a.lat;
+        if (x > -50 && x < cfg.w + 50 && y > -50 && y < cfg.h + 50) return { x, y };
+      }
+      return null;
+    };
   }
 </script>
 </body>
