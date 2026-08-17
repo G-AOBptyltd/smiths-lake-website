@@ -203,6 +203,17 @@
   to = "/.netlify/functions/volunteer-provision"
   status = 200
 
+# Services module API
+[[redirects]]
+  from = "/api/service-list"
+  to = "/.netlify/functions/service-list"
+  status = 200
+
+[[redirects]]
+  from = "/api/service-update"
+  to = "/.netlify/functions/service-update"
+  status = 200
+
 # Advertising API
 [[redirects]]
   from = "/api/ad-list"

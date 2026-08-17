@@ -223,6 +223,21 @@ chip on the Events and Facility bookings tiles at /admin/ (village-admin gated, 
 in its PUBLICLY_GATED list are always public. Admin consoles work regardless of the toggle.
 Smiths Lake ships with BOTH OFF (no hall; events not yet publicised).
 
+## Services module (/admin/services/, added Aug 2026)
+Manage the /services/ directory with **Service Stewards** — the Volunteer-hub steward model
+reused verbatim: same 🧭 VF Stewards register + `_stewards.js` scoping, card paths
+`services/<generateSlug(title)>`. Functions: `service-list` (admin sees all content-DB
+Services/Services & Amenities cards; stewards see only theirs), `service-update`
+(card-scoped PATCH of Description / Operating Hours / Address / Website+Facebook URL /
+Contact Person/Email/Phone / Show Contact Publicly — **schema-introspecting**: reads the
+content DB property types and writes email/phone/url/select/checkbox/rich_text to match).
+Titles NOT editable (rename = slug/URL change = admin job in Notion). Site is build-time
+static → console offers Save (Notion only) vs **Save & publish website** (fires the
+news-publish build hook, ~3 min). Console Stewards tab appoints via `steward-admin`,
+carefully PRESERVING any non-services cards on the same steward row (upsert-by-email would
+otherwise wipe volunteer-group assignments). One person can steward services + volunteer
+groups with one sign-in.
+
 ## Survey Tool
 - **URL:** https://villagefirst.org.au/surveys/blueys-beach-survey.html
 - **Backend:** Google Apps Script Web App (deployed under admin@villagefirst.org.au)

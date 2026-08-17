@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Services — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; font-size: 14px; color: #1f2937; }
+  button { font-family: inherit; }
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; white-space: nowrap; font-family: inherit; }
+  .village-select option { color: #1f2937; }
+  .layout { display: flex; min-height: calc(100vh - 46px); }
+  .sidebar { width: 180px; background: #fff; border-right: 1px solid #e2e8f0; padding: 10px 0; flex-shrink: 0; }
+  .s-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font-size: 12.5px; color: #4b5563; cursor: pointer; border-left: 3px solid transparent; }
+  .s-item:hover { background: #f0fdf6; }
+  .s-item.on { color: #0f5c48; background: #e7f6ee; border-left-color: #15795f; font-weight: 700; }
+  .main { flex: 1; padding: 20px; max-width: 960px; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+  h1 { font-size: 1.05rem; color: #143d2e; margin-bottom: 2px; }
+  .sub { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
+  .ledger { background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-top: 1px solid #f1f5f9; cursor: pointer; }
+  .row:first-child { border-top: none; }
+  .row:hover { background: #f8fafc; }
+  .row-main { flex: 1; min-width: 0; }
+  .row-name { font-size: 13px; font-weight: 700; color: #1f2937; }
+  .row-note { font-size: 11.5px; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chip { font-size: 9.5px; font-weight: 700; border-radius: 9px; padding: 2px 8px; white-space: nowrap; }
+  .chip-published { background: #c9f0dd; color: #0f5c48; }
+  .chip-pending { background: #fef3c7; color: #92400e; }
+  .chip-card { background: #ede9fe; color: #6d28d9; }
+  .chip-active { background: #c9f0dd; color: #0f5c48; }
+  .chip-removed { background: #e2e8f0; color: #475569; }
+  .row-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; margin-left: 4px; }
+  .link-btn { background: none; border: none; color: #1d6fb8; font-size: 11px; cursor: pointer; padding: 0; font-family: inherit; }
+  .link-btn:hover { text-decoration: underline; }
+  .link-btn.danger { color: #b91c1c; }
+  .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 640px; margin-bottom: 16px; }
+  .form-card h2 { font-size: 13.5px; color: #143d2e; margin-bottom: 10px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin: 14px 0 4px; }
+  .hint { font-weight: 400; color: #9ca3af; }
+  input[type=text], input[type=email], input[type=tel], input[type=url], textarea, select { width: 100%; border: 1px solid #d1d5db; border-radius: 7px; padding: 9px 11px; font-size: 13px; font-family: inherit; background: white; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid #15a06e; border-color: #15a06e; }
+  textarea { min-height: 90px; resize: vertical; line-height: 1.6; }
+  .two-col { display: flex; gap: 12px; flex-wrap: wrap; }
+  .two-col > div { flex: 1; min-width: 150px; }
+  .form-actions { display: flex; gap: 8px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 7px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btn-green { background: #15795f; color: white; }
+  .btn-green:hover { background: #0f5c48; }
+  .btn:disabled { background: #9ca3af; cursor: wait; }
+  .btn-blue { background: #1d6fb8; color: white; }
+  .btn-ghost { background: white; color: #4b5563; border: 1px solid #d1d5db; }
+  .status-msg { font-size: 12px; font-weight: 600; min-height: 1.2em; }
+  .status-msg.ok { color: #15803d; } .status-msg.err { color: #b91c1c; }
+  .meta-line { font-size: 11.5px; color: #9ca3af; line-height: 1.7; }
+  .pub-note { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 10px 14px; font-size: 12.5px; color: #92400e; margin-bottom: 14px; }
+  .cardpick { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; }
+  .cardpick label { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 500; font-size: 12.5px; cursor: pointer; }
+  .cardpick input { width: auto; accent-color: #0f766e; }
+  .help-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 640px; font-size: 13px; line-height: 1.7; color: #374151; }
+  .help-card h2 { font-size: 13.5px; color: #143d2e; margin: 14px 0 4px; }
+  .help-card h2:first-child { margin-top: 0; }
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; padding: 1rem; text-align: center; }
+  .auth-screen h1 { font-size: 1.2rem; }
+  .auth-screen p { font-size: 0.85rem; color: #6b7280; max-width: 360px; }
+  .auth-btn { background: #15795f; color: white; border: none; border-radius: 8px; padding: 0.75rem 2rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .empty { color: #9ca3af; font-size: 12.5px; padding: 16px; text-align: center; }
+  @media (max-width: 700px) { .sidebar { width: 120px; } .main { padding: 14px; } }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">🏪</div>
+  <h1>VillageFirst Services</h1>
+  <p>Keep the village services directory accurate — every listing looked after by the people who run it. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+  <p style="margin-top:1rem;"><a href="/admin/" style="color:#15795f; font-size:0.78rem;">← Admin home</a></p>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · Services</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <button class="s-item on" data-panel="services" onclick="showPanel('services')">🏪 Services</button>
+      <button class="s-item" data-panel="stewards" id="nav-stewards" style="display:none;" onclick="showPanel('stewards')">🧭 Service stewards</button>
+      <button class="s-item" data-panel="help" onclick="showPanel('help')">💡 Help</button>
+    </div>
+
+    <div class="main">
+
+      <!-- ── Services list ───────────────────────────────────────── -->
+      <div class="panel on" id="panel-services">
+        <h1 id="svc-heading">Services directory</h1>
+        <p class="sub" id="svc-sub">Every listing on the website's Services pages. Click one to update it.</p>
+        <div class="ledger" id="services"><div class="empty">Loading services…</div></div>
+      </div>
+
+      <!-- ── Service editor ──────────────────────────────────────── -->
+      <div class="panel" id="panel-service">
+        <h1 id="sv-title">Service</h1>
+        <p class="sub"><a href="#" onclick="showPanel('services'); return false;" style="color:#15795f;">← Back to services</a> · <a id="sv-view" href="#" target="_blank" style="color:#15795f;">view on the website ↗</a></p>
+
+        <div class="pub-note">📢 Saving updates the register straight away, but the <b>website only changes when you press "Save &amp; publish website"</b> (takes about 3 minutes). Plain Save is fine while you're still drafting.</div>
+
+        <div class="form-card">
+          <h2 id="sv-name-line">Listing details</h2>
+          <label for="s-desc">Description <span class="hint">(what visitors read on the website)</span></label>
+          <textarea id="s-desc" maxlength="2000"></textarea>
+          <div class="two-col">
+            <div><label for="s-hours">Opening hours <span class="hint">(e.g. "Mon–Fri 9–5, Sat mornings")</span></label><input type="text" id="s-hours" maxlength="500" /></div>
+            <div><label for="s-address">Address / location</label><input type="text" id="s-address" maxlength="300" /></div>
+          </div>
+          <div class="two-col">
+            <div><label for="s-web">Website</label><input type="url" id="s-web" maxlength="300" placeholder="https://…" /></div>
+            <div><label for="s-fb">Facebook page</label><input type="url" id="s-fb" maxlength="300" placeholder="https://facebook.com/…" /></div>
+          </div>
+          <h2 style="margin-top:18px;">Contact details</h2>
+          <div class="two-col">
+            <div><label for="s-person">Contact person</label><input type="text" id="s-person" maxlength="200" /></div>
+            <div><label for="s-email">Email</label><input type="email" id="s-email" maxlength="200" /></div>
+            <div><label for="s-phone">Phone</label><input type="tel" id="s-phone" maxlength="50" /></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;"><input type="checkbox" id="s-showcontact" style="width:auto;accent-color:#0f766e;" /> Show these contact details publicly on the website</label>
+          <div class="form-actions">
+            <button class="btn btn-ghost" id="s-save" onclick="saveService(false)">Save</button>
+            <button class="btn btn-green" id="s-savepub" onclick="saveService(true)">Save &amp; publish website</button>
+            <span class="status-msg" id="s-msg"></span>
+          </div>
+          <div class="meta-line" id="sv-meta"></div>
+        </div>
+      </div>
+
+      <!-- ── Stewards (admin only) ───────────────────────────────── -->
+      <div class="panel" id="panel-stewards">
+        <h1>Service stewards</h1>
+        <p class="sub">Hand a service's listing to the person who runs it. A Service Steward signs in here and can update ONLY the services you assign — description, hours, contacts — and publish the change.</p>
+
+        <div class="form-card">
+          <h2>Appoint a steward</h2>
+          <div class="two-col">
+            <div><label for="st-email">Email</label><input type="email" id="st-email" maxlength="200" placeholder="them@example.com" /></div>
+            <div><label for="st-name">Name <span class="hint">(optional)</span></label><input type="text" id="st-name" maxlength="200" /></div>
+          </div>
+          <label>Their services</label>
+          <div class="cardpick" id="st-cards"></div>
+          <div class="form-actions">
+            <button class="btn btn-green" id="st-save" onclick="appointSteward()">Appoint steward</button>
+            <span class="status-msg" id="st-msg"></span>
+          </div>
+          <p class="meta-line" style="margin-top:8px;">No account yet? An invitation email goes out automatically and their access is ready the moment they accept. A person can steward services here AND volunteer groups in the Volunteer hub — same sign-in.</p>
+        </div>
+
+        <div class="ledger" id="stewards"><div class="empty">Loading stewards…</div></div>
+      </div>
+
+      <!-- ── Help ────────────────────────────────────────────────── -->
+      <div class="panel" id="panel-help">
+        <h1>Help</h1>
+        <p class="sub">The 60-second guide.</p>
+        <div class="help-card">
+          <h2>Updating a listing (the everyday job)</h2>
+          Click the service, fix the description, hours, address or contact details, and press <b>Save &amp; publish website</b>. The live site updates in about 3 minutes. Plain <b>Save</b> stores your changes without touching the website — good for drafting.
+          <h2>Service Stewards</h2>
+          Village admins can hand each listing to the person who actually runs the service — the bowlo manager updates the bowlo. Appoint them under <b>Service stewards</b>: they sign in and see only their listings. Invitations and access are automatic.
+          <h2>What stewards can't do</h2>
+          Renaming a service or adding/removing listings stays with the village admins (a rename changes the page's web address). Contact the committee for those.
+          <h2>Contact privacy</h2>
+          Untick <b>"Show these contact details publicly"</b> to keep the contact person/email/phone out of the public page while still having them on record for the committee.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+  let services = [], stewards = [];
+  let scope = { isAdmin: false, cards: [] };
+  let openId = null;
+
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+    loadVillages();
+    loadAll();
+  }
+
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const data = await r.json();
+      const villages = (data.villages || []).filter(v => v.status === 'live');
+      if (!villages.length) return;
+      sel.innerHTML = '';
+      villages.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v.name; o.textContent = v.name;
+        if (v.name === VILLAGE) o.selected = true;
+        sel.appendChild(o);
+      });
+    } catch (e) { /* keep default */ }
+    sel.onchange = () => { VILLAGE = sel.value; localStorage.setItem('vf_active_village', VILLAGE); loadAll(); };
+  }
+
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+    document.getElementById('panel-' + name).classList.add('on');
+    document.querySelectorAll('.s-item').forEach(b => b.classList.toggle('on', b.dataset.panel === name));
+  }
+
+  async function loadAll() {
+    try {
+      const r = await fetch('/api/service-list?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not load services');
+      services = data.services || [];
+      scope = data.scope || { isAdmin: false, cards: [] };
+      document.getElementById('nav-stewards').style.display = scope.isAdmin ? '' : 'none';
+      document.getElementById('svc-heading').textContent = scope.isAdmin ? 'Services directory' : 'Your services';
+      document.getElementById('svc-sub').textContent = scope.isAdmin
+        ? "Every listing on the website's Services pages. Click one to update it."
+        : 'The listings assigned to you. Click one to update it — changes go live when you publish.';
+      renderServices();
+      if (scope.isAdmin) loadStewards();
+      if (openId) { const s = services.find(x => x.id === openId); if (s) fillService(s); }
+    } catch (e) {
+      document.getElementById('services').innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+    }
+  }
+
+  function renderServices() {
+    const el = document.getElementById('services');
+    if (!services.length) {
+      el.innerHTML = '<div class="empty">' + (scope.isAdmin
+        ? 'No service listings found in the website content.'
+        : 'No services are assigned to you yet — ask your village admin.') + '</div>';
+      return;
+    }
+    el.innerHTML = services.map(s => {
+      const pub = s.statusOnWeb === 'Published';
+      const note = [s.operatingHours, s.contactPhone || s.contactEmail].filter(Boolean).join(' · ');
+      return '<div class="row" onclick="openService(\'' + s.id + '\')">' +
+        '<span class="chip ' + (pub ? 'chip-published' : 'chip-pending') + '">' + esc(s.statusOnWeb || 'Draft') + '</span>' +
+        '<div class="row-main"><div class="row-name">' + esc(s.title) + '</div>' +
+        (note ? '<div class="row-note">' + esc(note) + '</div>' : '') + '</div>' +
+        '<span class="row-actions"><span class="chip chip-card">' + esc(s.section) + '</span></span></div>';
+    }).join('');
+  }
+
+  function openService(id) {
+    const s = services.find(x => x.id === id);
+    if (!s) return;
+    openId = id;
+    fillService(s);
+    showPanel('service');
+  }
+
+  function fillService(s) {
+    document.getElementById('sv-title').textContent = s.title;
+    document.getElementById('sv-name-line').textContent = 'Listing details — ' + s.title;
+    document.getElementById('sv-view').href = '/' + s.path + '/';
+    document.getElementById('s-desc').value = s.description || '';
+    document.getElementById('s-hours').value = s.operatingHours || '';
+    document.getElementById('s-address').value = s.address || '';
+    document.getElementById('s-web').value = s.websiteUrl || '';
+    document.getElementById('s-fb').value = s.facebookUrl || '';
+    document.getElementById('s-person').value = s.contactPerson || '';
+    document.getElementById('s-email').value = s.contactEmail || '';
+    document.getElementById('s-phone').value = s.contactPhone || '';
+    document.getElementById('s-showcontact').checked = s.showContactPublicly !== 'FALSE';
+    document.getElementById('sv-meta').textContent = s.lastEdited ? 'Last edited ' + new Date(s.lastEdited).toLocaleString('en-AU') : '';
+    setMsg('s-msg', '', '');
+  }
+
+  async function saveService(publish) {
+    const btn = document.getElementById(publish ? 's-savepub' : 's-save');
+    btn.disabled = true;
+    setMsg('s-msg', 'Saving…', '');
+    try {
+      const r = await fetch('/api/service-update', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({
+        village: VILLAGE, pageId: openId,
+        description: document.getElementById('s-desc').value,
+        operatingHours: document.getElementById('s-hours').value,
+        address: document.getElementById('s-address').value,
+        websiteUrl: document.getElementById('s-web').value,
+        facebookUrl: document.getElementById('s-fb').value,
+        contactPerson: document.getElementById('s-person').value,
+        contactEmail: document.getElementById('s-email').value,
+        contactPhone: document.getElementById('s-phone').value,
+        showContactPublicly: document.getElementById('s-showcontact').checked,
+      }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Save failed');
+      if (publish) {
+        await fetch('/api/news-publish', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE }) });
+        setMsg('s-msg', 'Saved ✓ — publishing now, the website updates in ~3 minutes', 'ok');
+      } else {
+        setMsg('s-msg', 'Saved ✓ (not on the website until you publish)', 'ok');
+      }
+      await loadAll();
+    } catch (e) { setMsg('s-msg', e.message, 'err'); }
+    finally { btn.disabled = false; }
+  }
+
+  // ── Stewards (reuses the shared VF Stewards register) ───────────
+  async function loadStewards() {
+    try {
+      const r = await fetch('/api/steward-admin?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not load stewards');
+      // Show only stewards holding at least one services/ card.
+      stewards = (data.stewards || []).filter(s => (s.cards || []).some(c => String(c.path).startsWith('services/')));
+      renderStewards();
+      buildCardPicker();
+    } catch (e) {
+      document.getElementById('stewards').innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+    }
+  }
+
+  function buildCardPicker(selected, extraCards) {
+    const el = document.getElementById('st-cards');
+    const cards = services.map(s => ({ path: s.path, title: s.title }));
+    (extraCards || []).forEach(c => { if (!cards.some(x => x.path === c.path)) cards.push(c); });
+    if (!cards.length) { el.innerHTML = '<div class="empty">No services found.</div>'; return; }
+    const sel = selected || [];
+    el.innerHTML = cards.map(c =>
+      '<label><input type="checkbox" value="' + esc(c.path) + '" data-title="' + esc(c.title) + '"' +
+      (sel.includes(c.path) ? ' checked' : '') + ' /> ' + esc(c.title) + '</label>').join('');
+  }
+
+  async function appointSteward() {
+    const email = document.getElementById('st-email').value.trim();
+    const cards = [...document.querySelectorAll('#st-cards input:checked')].map(i => ({ path: i.value, title: i.dataset.title }));
+    if (!email) { setMsg('st-msg', 'An email address is required.', 'err'); return; }
+    if (!cards.length) { setMsg('st-msg', 'Tick at least one service.', 'err'); return; }
+    const b = document.getElementById('st-save'); b.disabled = true;
+    setMsg('st-msg', 'Saving…', '');
+    try {
+      // NOTE: steward-admin upserts by email — include any NON-services cards
+      // the person already stewards so a services appointment never wipes
+      // their volunteer-group assignments.
+      const r0 = await fetch('/api/steward-admin?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const all = (await r0.json()).stewards || [];
+      const existing = all.find(s => s.email === email.toLowerCase());
+      const keep = existing ? (existing.cards || []).filter(c => !String(c.path).startsWith('services/')) : [];
+      const r = await fetch('/api/steward-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({
+        village: VILLAGE, action: 'add', email,
+        name: document.getElementById('st-name').value.trim(),
+        cards: [...keep, ...cards],
+      }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Appoint failed');
+      setMsg('st-msg', data.warning ? ('Saved, but: ' + data.warning) : 'Steward appointed ✓', data.warning ? 'err' : 'ok');
+      document.getElementById('st-email').value = ''; document.getElementById('st-name').value = '';
+      buildCardPicker();
+      loadStewards();
+    } catch (e) { setMsg('st-msg', e.message, 'err'); }
+    finally { b.disabled = false; }
+  }
+
+  function renderStewards() {
+    const el = document.getElementById('stewards');
+    if (!stewards.length) { el.innerHTML = '<div class="empty">No service stewards yet — appoint your first above.</div>'; return; }
+    el.innerHTML = stewards.map(s => {
+      const svcCards = (s.cards || []).filter(c => String(c.path).startsWith('services/'));
+      const removed = s.status === 'Removed';
+      return '<div class="row" style="cursor:default;">' +
+        '<span class="chip ' + (removed ? 'chip-removed' : 'chip-active') + '">' + esc(s.status) + '</span>' +
+        '<div class="row-main"><div class="row-name">' + esc(s.name || s.email) + '</div>' +
+        '<div class="row-note">' + esc(s.email) + '</div>' +
+        '<div class="row-note">' + svcCards.map(c => '<span class="chip chip-card">' + esc(c.title) + '</span>').join(' ') + '</div></div>' +
+        '<span class="row-actions">' +
+        (removed
+          ? '<button class="link-btn" onclick="stewardAction(\'' + s.id + '\', \'restore\')">Restore</button>'
+          : '<button class="link-btn" onclick="editSteward(\'' + s.id + '\')">Edit services</button>' +
+            '<button class="link-btn danger" onclick="stewardAction(\'' + s.id + '\', \'remove\')">Remove</button>') +
+        '</span></div>';
+    }).join('');
+  }
+
+  function editSteward(id) {
+    const s = stewards.find(x => x.id === id);
+    if (!s) return;
+    document.getElementById('st-email').value = s.email;
+    document.getElementById('st-name').value = s.name || '';
+    const svcPaths = (s.cards || []).filter(c => String(c.path).startsWith('services/')).map(c => c.path);
+    buildCardPicker(svcPaths, (s.cards || []).filter(c => String(c.path).startsWith('services/')));
+    setMsg('st-msg', 'Editing ' + (s.name || s.email) + ' — tick/untick services and press Appoint steward to save.', '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function stewardAction(id, action) {
+    const s = stewards.find(x => x.id === id);
+    if (!s) return;
+    if (action === 'remove' && !confirm('Remove ' + (s.name || s.email) + ' as a steward? They keep their sign-in but lose access to these listings. (This also removes any volunteer-group cards on the same record — check the Volunteer hub if they steward groups too.)')) return;
+    try {
+      const r = await fetch('/api/steward-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, action, pageId: id }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Action failed');
+      loadStewards();
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
+
+  function setMsg(id, msg, kind) {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = msg; el.className = 'status-msg' + (kind ? ' ' + kind : ''); }
+  }
+
+  function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+</script>
+</body>
+</html>

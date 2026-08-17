@@ -20,6 +20,7 @@
     { id: 'publish',  href: '/admin/publish-news.html',  label: '🌐 Publish' },
     { id: 'contrib',  href: '/admin/contrib/',           label: '🤝 Contributions' },
     { id: 'cocon',    href: '/admin/cocontribution/',    label: '📑 Co-contribution' },
+    { id: 'services', href: '/admin/services/',          label: '🏪 Services' },
     { id: 'members',  href: '/admin/members/',           label: '🪪 Membership' },
     { id: 'volunteers', href: '/admin/volunteers/',      label: '🙋 Volunteers' },
     { id: 'bookings', href: '/admin/bookings/',          label: '🏛 Bookings' },
@@ -35,6 +36,7 @@
     if (p.indexOf('/admin/news') === 0) return 'news';
     if (p.indexOf('/admin/contrib') === 0) return 'contrib';
     if (p.indexOf('/admin/cocontribution') === 0) return 'cocon';
+    if (p.indexOf('/admin/services') === 0) return 'services';
     if (p.indexOf('/admin/members') === 0) return 'members';
     if (p.indexOf('/admin/volunteers') === 0) return 'volunteers';
     if (p.indexOf('/admin/bookings') === 0) return 'bookings';
