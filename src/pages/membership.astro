@@ -1,0 +1,398 @@
+---
+/**
+ * Membership page — PPCA membership application.
+ *
+ * Applications post to /api/member-join → VF Members Notion DB (the PPCA
+ * member register), Status = Applied. Fees: Individual $10, Household $20;
+ * membership year 1 July – 30 June (year derived server-side).
+ *
+ * Online card payment for memberships arrives with Tyro Pay Online on
+ * /contribute/ — until then the form captures how the applicant wants to pay.
+ * The optional "Stay Connected" opt-in also posts to the existing Netlify
+ * `newsletter` form so the Zapier → Mailchimp zap keeps working untouched.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+---
+
+<BaseLayout
+  title="Become a Member"
+  description="Join Pacific Palms Community Association (PPCA) — membership supports local projects and gives you a voice in Smiths Lake community decisions."
+>
+  <Hero
+    title="Become a PPCA Member"
+    subtitle="Join your community association — have your say and help local projects happen."
+    size="small"
+  />
+
+  <section class="section">
+    <div class="container container--narrow">
+
+      <div class="intro">
+        <p>
+          Pacific Palms Community Association (PPCA) is run by volunteers for the people of
+          Smiths Lake and surrounds. Becoming a member supports local projects, events and
+          advocacy — and gives you a voice at community meetings.
+        </p>
+      </div>
+
+      <!-- ── Fees ─────────────────────────────────────────────────── -->
+      <div class="card card--fees">
+        <h2>🪪 Membership fees</h2>
+        <div class="fee-grid">
+          <div class="fee-tile"><span class="fee-name">Individual</span><span class="fee-amount">$10</span><span class="fee-per">per year</span></div>
+          <div class="fee-tile"><span class="fee-name">Household</span><span class="fee-amount">$20</span><span class="fee-per">per year</span></div>
+        </div>
+        <p class="fee-note">The membership year runs 1 July to 30 June.</p>
+      </div>
+
+      <!-- ── Application form ─────────────────────────────────────── -->
+      <div class="card" id="join">
+        <h2>✍️ Apply to join</h2>
+        <p>
+          Fill in your details below and your application goes straight to the PPCA team.
+          You don't pay anything now — choose how you'd like to pay and we'll take it from there.
+        </p>
+
+        <form id="member-form" class="member-form" novalidate>
+          <fieldset class="type-fieldset">
+            <legend class="form-label form-label--required">Membership type</legend>
+            <div class="type-grid">
+              <label class="type-opt is-sel"><input type="radio" name="membershipType" value="Individual" checked /> <span>Individual — $10</span></label>
+              <label class="type-opt"><input type="radio" name="membershipType" value="Household" /> <span>Household — $20</span></label>
+            </div>
+          </fieldset>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label form-label--required" for="m-first">First name</label>
+              <input type="text" id="m-first" name="firstName" class="form-input" maxlength="100" autocomplete="given-name" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label form-label--required" for="m-last">Last name</label>
+              <input type="text" id="m-last" name="lastName" class="form-input" maxlength="100" autocomplete="family-name" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label form-label--required" for="m-email">Email</label>
+              <input type="email" id="m-email" name="email" class="form-input" maxlength="200" autocomplete="email" required />
+              <p class="form-help">For your membership confirmation and renewals.</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="m-phone">Phone <span class="hint">(optional)</span></label>
+              <input type="tel" id="m-phone" name="phone" class="form-input" maxlength="50" autocomplete="tel" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label form-label--required" for="m-address">Residential address</label>
+            <input type="text" id="m-address" name="address" class="form-input" maxlength="300" autocomplete="street-address" placeholder="Street, suburb and postcode" required />
+            <p class="form-help">The association's register of members needs your name and address.</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="m-postal">Postal address, if different <span class="hint">(optional)</span></label>
+            <input type="text" id="m-postal" name="postalAddress" class="form-input" maxlength="300" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="m-resident">I am a… <span class="hint">(optional)</span></label>
+            <select id="m-resident" name="residentCategory" class="form-input">
+              <option value="">Please select…</option>
+              <option value="Permanent Resident">Permanent Resident</option>
+              <option value="Holiday Home Owner">Holiday Home Owner</option>
+              <option value="Renter">Renter</option>
+              <option value="Visitor / Prospective Resident">Visitor / Prospective Resident</option>
+              <option value="Local Business">Local Business</option>
+            </select>
+          </div>
+
+          <fieldset class="type-fieldset">
+            <legend class="form-label form-label--required">How would you like to pay?</legend>
+            <div class="type-grid type-grid--pay">
+              <label class="type-opt is-sel"><input type="radio" name="paymentMethod" value="Bank transfer" checked /> <span>🏦 Bank transfer</span></label>
+              <label class="type-opt"><input type="radio" name="paymentMethod" value="Cash at meeting" /> <span>💵 Cash at a PPCA meeting</span></label>
+              <label class="type-opt"><input type="radio" name="paymentMethod" value="Notify when online payments open" /> <span>💳 Tell me when I can pay online</span></label>
+            </div>
+            <p class="form-help">Secure online card payment is coming soon — see <a href="/contribute/">Support Us</a>.</p>
+          </fieldset>
+
+          <div class="form-group">
+            <label class="form-label" for="m-note">Anything you'd like to add? <span class="hint">(optional)</span></label>
+            <textarea id="m-note" name="note" class="form-textarea" rows="3" maxlength="2000" placeholder="e.g. Our household is two adults, or I'd also love to volunteer."></textarea>
+          </div>
+
+          <div class="declarations">
+            <label class="optin-check">
+              <input type="checkbox" name="declaration" required />
+              <span>I support the purposes of Pacific Palms Community Association and apply to become a member. <span class="req-mark">*</span></span>
+            </label>
+            <label class="optin-check">
+              <input type="checkbox" name="privacyConsent" required />
+              <span>I agree to PPCA storing my details to manage my membership. <a href="/privacy/">Privacy Policy</a> <span class="req-mark">*</span></span>
+            </label>
+            <label class="optin-check">
+              <input type="checkbox" name="stayConnected" checked />
+              <span>Also send me community updates (you can unsubscribe anytime).</span>
+            </label>
+          </div>
+
+          <!-- Honeypot: hidden from people, catches bots -->
+          <p class="hp" aria-hidden="true"><label>Leave this empty<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></p>
+
+          <div class="form-group">
+            <button type="submit" class="btn btn--primary btn--lg btn--full" id="m-submit">Send my application</button>
+          </div>
+          <p class="form-status" id="m-status" role="status" aria-live="polite"></p>
+        </form>
+
+        <div class="join-success" id="join-success" style="display:none;">
+          <div class="success-tick">✓</div>
+          <h3>Welcome — application received!</h3>
+          <p id="join-success-detail">Your application has reached the PPCA team.</p>
+        </div>
+      </div>
+
+      <!-- ── Other ways to support ─────────────────────────────────── -->
+      <div class="card card--support">
+        <h2>🤝 More ways to support Smiths Lake</h2>
+        <p>
+          Not ready to join, or want to do more? You can donate, pledge your time or offer a
+          service on our <a href="/contribute/">Support Us</a> page — and when secure online
+          card payments launch with Tyro, you'll be able to pay your membership there too.
+        </p>
+      </div>
+
+      <aside class="privacy-note">
+        <h2>🔒 Your details are safe</h2>
+        <p>
+          Your application is stored securely in PPCA's member register and used only to manage
+          your membership. We never sell or share your information, and this website never
+          handles your card details.
+        </p>
+        <p><a href="/privacy/">Read our full Privacy Policy</a></p>
+      </aside>
+
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .container--narrow { max-width: 800px; margin: 0 auto; padding: 0 1rem; }
+  .section { padding: 3rem 0; }
+
+  .intro { max-width: 700px; margin: 0 auto 2rem; }
+  .intro p { font-size: 1.1rem; color: #374151; line-height: 1.7; }
+
+  .card {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;
+    padding: 2rem; margin-bottom: 2rem;
+  }
+  .card h2 { color: #1B365D; font-size: 1.35rem; margin-bottom: 0.5rem; }
+  .card > p { color: #374151; line-height: 1.6; margin-bottom: 1.25rem; }
+  .card--fees { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-color: #7dd3fc; }
+  .card--support { background: #f0fdf4; border-color: #86efac; }
+  .card--support a { color: #15795f; font-weight: 600; }
+
+  .fee-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin: 1rem 0; }
+  .fee-tile {
+    display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+    background: #fff; border: 2px solid #7dd3fc; border-radius: 10px; padding: 1.1rem 1rem;
+  }
+  .fee-name { font-weight: 700; color: #1B365D; }
+  .fee-amount { font-size: 1.9rem; font-weight: 800; color: #0f766e; }
+  .fee-per { font-size: 0.85rem; color: #64748b; }
+  .fee-note { font-size: 0.95rem; color: #0369a1; margin: 0; }
+
+  .type-fieldset { border: none; padding: 0; margin: 0 0 1.5rem; }
+  .type-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.6rem; margin-top: 0.5rem; }
+  .type-grid--pay { grid-template-columns: 1fr; }
+  @media (min-width: 640px) { .type-grid--pay { grid-template-columns: repeat(3, 1fr); } }
+  .type-opt {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 0.9rem;
+    border: 2px solid #e2e8f0; border-radius: 8px; background: #fff; cursor: pointer;
+    font-weight: 600; color: #475569; font-size: 0.95rem;
+  }
+  .type-opt:hover { border-color: #94a3b8; }
+  .type-opt.is-sel { border-color: #4db8b8; background: #ecfeff; color: #0f766e; }
+  .type-opt input { accent-color: #0f766e; }
+  .type-fieldset .form-help { margin-top: 0.6rem; }
+  .type-fieldset .form-help a { color: #0f766e; font-weight: 600; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+  .form-group { margin-bottom: 1.5rem; }
+  .form-label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: #1f2937; }
+  .form-label--required::after { content: ' *'; color: #dc2626; }
+  .hint { font-weight: 400; color: #6b7280; }
+  .form-input, .form-textarea {
+    width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 6px;
+    font-size: 1rem; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s;
+    background: #fff;
+  }
+  .form-input:focus, .form-textarea:focus {
+    outline: none; border-color: #4db8b8; box-shadow: 0 0 0 3px rgba(77, 184, 184, 0.15);
+  }
+  .form-textarea { resize: vertical; min-height: 90px; }
+  .form-help { font-size: 0.85rem; color: #6b7280; margin-top: 0.25rem; }
+
+  .declarations { background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 8px; padding: 1rem 1.1rem; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+  .optin-check { display: flex; align-items: flex-start; gap: 0.6rem; cursor: pointer; color: #374151; line-height: 1.5; }
+  .optin-check input { width: 1.15rem; height: 1.15rem; margin-top: 0.15rem; flex-shrink: 0; accent-color: #0f766e; }
+  .optin-check a { color: #0f766e; font-weight: 600; }
+  .req-mark { color: #dc2626; font-weight: 700; }
+
+  .hp { position: absolute; left: -5000px; width: 1px; height: 1px; overflow: hidden; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 600; font-family: inherit;
+    text-decoration: none; border-radius: 6px; border: 2px solid transparent; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn--primary { background: #1B365D; color: #fff; border-color: #1B365D; }
+  .btn--primary:hover { background: #142847; border-color: #142847; }
+  .btn--primary:disabled { background: #94a3b8; border-color: #94a3b8; cursor: wait; }
+  .btn--lg { padding: 1rem 2rem; font-size: 1.1rem; }
+  .btn--full { width: 100%; }
+
+  .form-status { text-align: center; font-weight: 600; min-height: 1.4em; margin-top: 0.5rem; }
+  .form-status.is-err { color: #b91c1c; }
+
+  .join-success { text-align: center; padding: 1rem 0 0.5rem; }
+  .success-tick {
+    width: 56px; height: 56px; margin: 0 auto 0.75rem; border-radius: 50%;
+    background: #10b981; color: #fff; font-size: 2rem; line-height: 56px; font-weight: 700;
+  }
+  .join-success h3 { color: #1B365D; font-size: 1.25rem; margin-bottom: 0.5rem; }
+  .join-success p { color: #374151; line-height: 1.6; max-width: 500px; margin: 0 auto; }
+
+  .privacy-note { background: #1B365D; color: #fff; padding: 1.5rem; border-radius: 12px; }
+  .privacy-note h2 { color: #fff; font-size: 1.1rem; margin-bottom: 0.75rem; }
+  .privacy-note p { color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.6; }
+  .privacy-note p:last-child { margin-bottom: 0; }
+  .privacy-note a { color: #7dd3fc; }
+  .privacy-note a:hover { color: #fff; }
+</style>
+
+<script>
+  // Highlight the selected radio card (membership type + payment method).
+  const radioOpts = Array.from(document.querySelectorAll('.type-opt'));
+  function syncRadios() {
+    radioOpts.forEach((opt) => {
+      const input = opt.querySelector('input') as HTMLInputElement;
+      opt.classList.toggle('is-sel', input.checked);
+    });
+  }
+  radioOpts.forEach((opt) => opt.querySelector('input')?.addEventListener('change', syncRadios));
+  syncRadios();
+
+  const form = document.getElementById('member-form') as HTMLFormElement | null;
+  const statusEl = document.getElementById('m-status');
+  const submitBtn = document.getElementById('m-submit') as HTMLButtonElement | null;
+
+  function setStatus(msg: string, isErr: boolean) {
+    if (!statusEl) return;
+    statusEl.textContent = msg;
+    statusEl.className = 'form-status' + (isErr ? ' is-err' : '');
+  }
+
+  // The membership resident categories map onto the existing newsletter form's values.
+  const RESIDENT_MAP: Record<string, string> = {
+    'Permanent Resident': 'permanent',
+    'Holiday Home Owner': 'holiday',
+    'Renter': 'renter',
+    'Visitor / Prospective Resident': 'visitor',
+    'Local Business': 'business',
+  };
+
+  /**
+   * Fire-and-forget post to the existing Netlify `newsletter` form so the
+   * Zapier → Mailchimp zap picks the member up without any zap changes.
+   * Field names must stay exactly as the newsletter form defines them.
+   */
+  function joinStayConnected(first: string, last: string, email: string, resident: string) {
+    const params = new URLSearchParams({
+      'form-name': 'newsletter',
+      'first-name': first,
+      'last-name': last,
+      'email': email,
+      'resident-type': RESIDENT_MAP[resident] || '',
+      'privacy-consent': 'on',
+    });
+    fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    }).catch(() => { /* best-effort — never blocks the application */ });
+  }
+
+  const SUCCESS_BY_PAYMENT: Record<string, string> = {
+    'Bank transfer': 'A PPCA volunteer will email you the bank transfer details shortly.',
+    'Cash at meeting': 'You can pay at the next PPCA meeting — we look forward to seeing you there.',
+    'Notify when online payments open': "We'll email you as soon as secure online card payment opens.",
+  };
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    const firstName = String(data.get('firstName') || '').trim();
+    const lastName = String(data.get('lastName') || '').trim();
+    const email = String(data.get('email') || '').trim();
+    const address = String(data.get('address') || '').trim();
+    if (!firstName || !lastName) { setStatus('Please enter your first and last name.', true); return; }
+    if (!email) { setStatus('Please enter your email address.', true); return; }
+    if (!address) { setStatus('Please enter your residential address.', true); return; }
+    if (!data.get('declaration')) { setStatus('Please tick the membership declaration.', true); return; }
+    if (!data.get('privacyConsent')) { setStatus('Please agree to the privacy statement.', true); return; }
+
+    if (submitBtn) submitBtn.disabled = true;
+    setStatus('Sending…', false);
+
+    const residentCategory = String(data.get('residentCategory') || '');
+    const paymentMethod = String(data.get('paymentMethod') || 'Bank transfer');
+    const stayConnected = data.get('stayConnected') === 'on';
+
+    const payload = {
+      village: 'Smiths Lake',
+      firstName,
+      lastName,
+      email,
+      phone: String(data.get('phone') || '').trim(),
+      address,
+      postalAddress: String(data.get('postalAddress') || '').trim(),
+      membershipType: String(data.get('membershipType') || 'Individual'),
+      residentCategory,
+      paymentMethod,
+      stayConnected,
+      note: String(data.get('note') || '').trim(),
+      website: String(data.get('website') || ''), // honeypot
+    };
+
+    try {
+      const r = await fetch('/api/member-join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const out = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(out.error || 'Something went wrong. Please try again.');
+
+      if (stayConnected) joinStayConnected(firstName, lastName, email, residentCategory);
+
+      form.style.display = 'none';
+      const success = document.getElementById('join-success');
+      const detail = document.getElementById('join-success-detail');
+      if (detail) {
+        const feeBit = out.fee ? ` Your ${payload.membershipType} membership is $${out.fee} for the ${out.year || 'current'} year.` : '';
+        detail.textContent = `Your application has reached the PPCA team.${feeBit} ${SUCCESS_BY_PAYMENT[paymentMethod] || ''}`;
+      }
+      if (success) success.style.display = 'block';
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : 'Something went wrong. Please try again.', true);
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  });
+</script>

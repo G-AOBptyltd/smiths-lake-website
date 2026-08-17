@@ -168,6 +168,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/member-join"
+  to = "/.netlify/functions/member-join"
+  status = 200
+
+[[redirects]]
   from = "/api/contrib-supporters"
   to = "/.netlify/functions/contrib-supporters"
   status = 200
