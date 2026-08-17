@@ -305,6 +305,14 @@ const listItems = newsItems.filter((i: any) => !featuredSet.has(i));
                 <a href="/projects/" class="side-btn gold">View open projects</a>
               </div>
 
+              <!-- What's On — hides itself while the events public page is
+                   switched off (admin-hub chip); shows the next event when on -->
+              <div class="side-card" id="whats-on-card" hidden>
+                <h3>🎟️ What's On</h3>
+                <p id="whats-on-text">Community events — see what's coming up and save your spot.</p>
+                <a href="/events/" class="side-btn">See what's on</a>
+              </div>
+
               <!-- Local services -->
               <div class="side-card">
                 <h3>🏘️ Local Services</h3>
@@ -329,3 +337,26 @@ const listItems = newsItems.filter((i: any) => !featuredSet.has(i));
   </div>
 </div>
 </Layout>
+
+<script>
+  // What's On sidebar card: only appears when the events public page is
+  // switched on (admin-hub chip); shows the next upcoming event when there
+  // is one. Fail-quiet — any hiccup just leaves the card hidden.
+  (async () => {
+    const card = document.getElementById('whats-on-card');
+    if (!card) return;
+    try {
+      const r = await fetch('/api/event-list?village=Smiths%20Lake');
+      const data = await r.json();
+      if (!r.ok || data.notPublic) return;
+      const next = (data.events || [])[0];
+      if (next && next.start) {
+        const d = new Date(next.start);
+        const when = d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });
+        const t = document.getElementById('whats-on-text');
+        if (t) t.textContent = 'Next up: ' + next.name + ' — ' + when + '. Save your spot in a few taps.';
+      }
+      card.hidden = false;
+    } catch (e) { /* stay hidden */ }
+  })();
+</script>
