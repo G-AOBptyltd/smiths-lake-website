@@ -1,0 +1,319 @@
+---
+/**
+ * Facilities page — hire the community hall.
+ *
+ * Rates + availability load live from /api/booking-availability (no rebuild
+ * when the committee changes rates), and requests post to /api/booking-request
+ * → 📅 VF Bookings, Status = Requested. The committee confirms every booking
+ * from /admin/bookings/ — nothing auto-confirms.
+ *
+ * Payment is bank transfer / arranged with the committee until Tyro Pay
+ * Online is enabled; the confirmation email carries the details.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+---
+
+<BaseLayout
+  title="Hire the Hall"
+  description="Book the Smiths Lake Community Hall for meetings, classes, parties and community events — check availability and request a booking online."
+>
+  <Hero
+    title="Hire the Community Hall"
+    subtitle="Meetings, classes, parties and celebrations — the hall is here for the whole community."
+    size="small"
+  />
+
+  <section class="section">
+    <div class="container container--narrow">
+
+      <div class="intro">
+        <p>
+          Pick a date, tell us what you're planning, and the committee will confirm your booking
+          by email — usually within a couple of days. Every booking is checked by a real person,
+          so nothing is locked in until you hear from us.
+        </p>
+      </div>
+
+      <div id="facility-info" class="card">
+        <p class="fac-loading">Loading the hall's details…</p>
+      </div>
+
+      <!-- ── Availability ─────────────────────────────────────────── -->
+      <div class="card">
+        <h2>📅 Check a date</h2>
+        <p class="cal-help">Tap a day to start your request. <span class="cal-chip cal-chip--busy"></span> booked &nbsp; <span class="cal-chip cal-chip--pending"></span> pending request</p>
+        <div class="cal-wrap">
+          <div class="cal" id="cal-0"></div>
+          <div class="cal" id="cal-1"></div>
+        </div>
+      </div>
+
+      <!-- ── Request form ─────────────────────────────────────────── -->
+      <div class="card" id="request">
+        <h2>✍️ Request a booking</h2>
+        <form id="booking-form" novalidate>
+          <p class="hp" aria-hidden="true"><label>Leave this field empty <input type="text" name="website" tabindex="-1" autocomplete="off" /></label></p>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="b-date">Date *</label>
+              <input type="date" id="b-date" name="date" required />
+            </div>
+            <div class="form-field">
+              <label for="b-start">From *</label>
+              <select id="b-start" name="startTime"></select>
+            </div>
+            <div class="form-field">
+              <label for="b-end">Until *</label>
+              <select id="b-end" name="endTime"></select>
+            </div>
+          </div>
+          <p class="slot-note" id="slot-note"></p>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="b-first">First name *</label>
+              <input type="text" id="b-first" name="firstName" maxlength="100" required autocomplete="given-name" />
+            </div>
+            <div class="form-field">
+              <label for="b-last">Last name *</label>
+              <input type="text" id="b-last" name="lastName" maxlength="100" required autocomplete="family-name" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="b-email">Email *</label>
+              <input type="email" id="b-email" name="email" maxlength="200" required autocomplete="email" />
+            </div>
+            <div class="form-field">
+              <label for="b-phone">Phone</label>
+              <input type="tel" id="b-phone" name="phone" maxlength="50" autocomplete="tel" />
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="b-purpose">What's the booking for? *</label>
+            <input type="text" id="b-purpose" name="purpose" maxlength="500" placeholder="e.g. 60th birthday afternoon tea, yoga class, committee meeting" required />
+          </div>
+          <div class="form-field form-field--narrow">
+            <label for="b-attendees">Roughly how many people?</label>
+            <input type="number" id="b-attendees" name="attendees" min="1" max="500" />
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-submit" id="b-submit">Send booking request</button>
+            <span class="form-status" id="b-status" role="status"></span>
+          </div>
+          <p class="fine-print">We'll only use your details to manage this booking. The hire fee and bond are payable once your booking is confirmed — payment details come with the confirmation email.</p>
+        </form>
+
+        <div id="booking-done" hidden>
+          <h3>Request received — thank you! 🏛</h3>
+          <p>The committee has been notified and will confirm your booking by email, usually within a couple of days. Nothing to pay until it's confirmed.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .section { padding: 3rem 0; }
+  .container--narrow { max-width: 760px; margin: 0 auto; padding: 0 1rem; }
+  .intro p { font-size: 1.05rem; line-height: 1.7; color: #374151; margin-bottom: 1.5rem; }
+  .card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.6rem 1.7rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 1.25rem; color: #143d2e; margin: 0 0 0.75rem; }
+  .fac-loading { color: #6b7280; }
+  .hp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+  .form-row { display: flex; gap: 0.9rem; flex-wrap: wrap; }
+  .form-field { flex: 1; min-width: 150px; margin-bottom: 0.9rem; }
+  .form-field--narrow { max-width: 220px; }
+  .form-field label { display: block; font-size: 0.88rem; font-weight: 600; color: #374151; margin-bottom: 0.3rem; }
+  .form-field input, .form-field select {
+    width: 100%; border: 1.5px solid #d1d5db; border-radius: 9px; padding: 0.65rem 0.8rem;
+    font-size: 1rem; font-family: inherit; background: white; box-sizing: border-box;
+  }
+  .form-field input:focus, .form-field select:focus { outline: 2.5px solid #15a06e66; border-color: #15795f; }
+  .slot-note { font-size: 0.88rem; font-weight: 600; min-height: 1.2em; margin: -0.3rem 0 0.8rem; }
+  .form-actions { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; margin-top: 0.4rem; }
+  .btn-submit {
+    background: #15795f; color: white; border: none; border-radius: 10px; padding: 0.85rem 1.8rem;
+    font-size: 1.02rem; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  .btn-submit:hover { background: #0f5c48; }
+  .btn-submit:disabled { background: #9ca3af; cursor: wait; }
+  .form-status { font-size: 0.9rem; font-weight: 600; color: #6b7280; }
+  .fine-print { font-size: 0.82rem; color: #9ca3af; margin-top: 1rem; line-height: 1.6; }
+  #booking-done h3 { color: #15795f; font-size: 1.15rem; margin: 0 0 0.4rem; }
+  #booking-done p { color: #374151; line-height: 1.65; margin: 0; }
+  .cal-help { font-size: 0.88rem; color: #6b7280; margin-bottom: 0.9rem; }
+</style>
+
+<!-- Calendar cells and facility card content are built by JS — global styles
+     (Astro-scoped styles never reach JS-created DOM). -->
+<style is:global>
+  .fee-grid-fac { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.8rem; margin: 0.9rem 0; }
+  .fee-tile-fac { background: #f0fdf6; border: 1px solid #bbf7d0; border-radius: 10px; padding: 0.8rem; text-align: center; }
+  .fee-tile-fac .fn { display: block; font-size: 0.8rem; font-weight: 700; color: #0f5c48; text-transform: uppercase; letter-spacing: 0.04em; }
+  .fee-tile-fac .fa { display: block; font-size: 1.5rem; font-weight: 800; color: #143d2e; }
+  .fac-desc { color: #374151; line-height: 1.65; margin: 0 0 0.4rem; }
+  .fac-conditions { font-size: 0.85rem; color: #6b7280; line-height: 1.6; margin-top: 0.8rem; }
+  .cal-wrap { display: flex; gap: 1.2rem; flex-wrap: wrap; }
+  .cal { flex: 1; min-width: 260px; }
+  .cal-title { font-weight: 800; color: #143d2e; text-align: center; margin-bottom: 0.4rem; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .cal-dow { font-size: 0.68rem; font-weight: 700; color: #9ca3af; text-align: center; padding: 2px 0; }
+  .cal-day {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem; border-radius: 8px; border: 1.5px solid #eef2ef; background: white;
+    cursor: pointer; font-family: inherit; color: #1f2937;
+  }
+  .cal-day:hover { border-color: #15795f; }
+  .cal-day.is-past { color: #d1d5db; border-color: transparent; cursor: default; background: transparent; }
+  .cal-day.is-busy { background: #fee2e2; border-color: #fecaca; color: #991b1b; font-weight: 700; }
+  .cal-day.is-pending { background: #fef3c7; border-color: #fde68a; color: #92400e; font-weight: 700; }
+  .cal-day.is-picked { outline: 2.5px solid #15795f; font-weight: 800; }
+  .cal-chip { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; }
+  .cal-chip--busy { background: #fee2e2; border: 1px solid #fecaca; }
+  .cal-chip--pending { background: #fef3c7; border: 1px solid #fde68a; }
+</style>
+
+<script>
+  const VILLAGE = 'Smiths Lake';
+  let facilities: any[] = [];
+  let slots: any[] = [];
+  let facilityId = '';
+
+  const $ = (id: string) => document.getElementById(id)!;
+
+  function timeOptions(sel: HTMLSelectElement, from: number, to: number, def: string) {
+    const opts: string[] = [];
+    for (let h = from; h <= to; h++) for (const m of ['00', '30']) {
+      if (h === to && m === '30') continue;
+      opts.push(String(h).padStart(2, '0') + ':' + m);
+    }
+    sel.innerHTML = opts.map((t) => `<option${t === def ? ' selected' : ''}>${t}</option>`).join('');
+  }
+
+  function esc(s: any) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!)); }
+
+  function renderFacility() {
+    const el = $('facility-info');
+    if (!facilities.length) {
+      el.innerHTML = '<p class="fac-loading">The booking calendar isn\'t available right now — please try again later, or use the <a href="/contact/">contact form</a>.</p>';
+      return;
+    }
+    const f = facilities[0];
+    facilityId = f.id;
+    const tiles = [
+      f.hourlyRate != null ? `<div class="fee-tile-fac"><span class="fn">Per hour</span><span class="fa">$${f.hourlyRate}</span></div>` : '',
+      f.halfDayRate != null ? `<div class="fee-tile-fac"><span class="fn">Half day</span><span class="fa">$${f.halfDayRate}</span></div>` : '',
+      f.fullDayRate != null ? `<div class="fee-tile-fac"><span class="fn">Full day</span><span class="fa">$${f.fullDayRate}</span></div>` : '',
+      f.bond != null ? `<div class="fee-tile-fac"><span class="fn">Bond (refundable)</span><span class="fa">$${f.bond}</span></div>` : '',
+    ].join('');
+    el.innerHTML = `<h2>🏛 ${esc(f.name)}</h2>` +
+      (f.description ? `<p class="fac-desc">${esc(f.description)}</p>` : '') +
+      (tiles ? `<div class="fee-grid-fac">${tiles}</div>` : '') +
+      (f.conditions ? `<p class="fac-conditions"><b>Conditions of hire:</b> ${esc(f.conditions)}</p>` : '');
+  }
+
+  function dayState(iso: string) {
+    const day = slots.filter((s) => s.facilityId === facilityId && (s.start || '').slice(0, 10) === iso);
+    if (day.some((s) => s.status === 'Confirmed')) return 'busy';
+    if (day.length) return 'pending';
+    return 'free';
+  }
+
+  function renderCalendars() {
+    const today = new Date();
+    for (let i = 0; i < 2; i++) {
+      const base = new Date(today.getFullYear(), today.getMonth() + i, 1);
+      const el = $('cal-' + i);
+      const monthName = base.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
+      let html = `<div class="cal-title">${monthName}</div><div class="cal-grid">`;
+      for (const d of ['M', 'T', 'W', 'T', 'F', 'S', 'S']) html += `<div class="cal-dow">${d}</div>`;
+      const firstDow = (base.getDay() + 6) % 7; // Monday-first
+      for (let b = 0; b < firstDow; b++) html += '<div></div>';
+      const daysInMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+      const todayIso = today.toISOString().slice(0, 10);
+      for (let d = 1; d <= daysInMonth; d++) {
+        const iso = `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const past = iso < todayIso;
+        const state = past ? '' : dayState(iso);
+        const cls = ['cal-day', past ? 'is-past' : '', state === 'busy' ? 'is-busy' : '', state === 'pending' ? 'is-pending' : '',
+          (document.getElementById('b-date') as HTMLInputElement)?.value === iso ? 'is-picked' : ''].filter(Boolean).join(' ');
+        html += past ? `<div class="${cls}">${d}</div>` : `<button type="button" class="${cls}" data-iso="${iso}">${d}</button>`;
+      }
+      html += '</div>';
+      el.innerHTML = html;
+    }
+    document.querySelectorAll('.cal-day[data-iso]').forEach((b) => {
+      b.addEventListener('click', () => {
+        ($('b-date') as HTMLInputElement).value = (b as HTMLElement).dataset.iso!;
+        slotNote(); renderCalendars();
+        $('request').scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+  }
+
+  function slotNote() {
+    const iso = ($('b-date') as HTMLInputElement).value;
+    const el = $('slot-note');
+    if (!iso) { el.textContent = ''; return; }
+    const state = dayState(iso);
+    if (state === 'busy') { el.textContent = '⚠️ The hall already has a confirmed booking that day — the committee will check whether your times fit around it.'; el.style.color = '#b45309'; }
+    else if (state === 'pending') { el.textContent = 'ℹ️ Someone else has requested that day too — first confirmed wins, so it\'s still worth asking.'; el.style.color = '#92400e'; }
+    else { el.textContent = '✅ That day looks free.'; el.style.color = '#15803d'; }
+  }
+
+  async function load() {
+    timeOptions($('b-start') as HTMLSelectElement, 7, 22, '09:00');
+    timeOptions($('b-end') as HTMLSelectElement, 8, 23, '13:00');
+    ($('b-date') as HTMLInputElement).min = new Date().toISOString().slice(0, 10);
+    ($('b-date') as HTMLInputElement).addEventListener('change', () => { slotNote(); renderCalendars(); });
+    try {
+      const r = await fetch('/api/booking-availability?village=' + encodeURIComponent(VILLAGE));
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || '');
+      facilities = data.facilities || [];
+      slots = data.slots || [];
+    } catch (e) { facilities = []; }
+    renderFacility();
+    renderCalendars();
+  }
+
+  document.getElementById('booking-form')!.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = $('b-status');
+    const btn = $('b-submit') as HTMLButtonElement;
+    const val = (id: string) => (document.getElementById(id) as HTMLInputElement).value;
+    if (!val('b-date')) { status.textContent = 'Please pick a date.'; status.style.color = '#b91c1c'; return; }
+    if (!val('b-first').trim() || !val('b-last').trim()) { status.textContent = 'Please add your name.'; status.style.color = '#b91c1c'; return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('b-email'))) { status.textContent = 'Please add a valid email address.'; status.style.color = '#b91c1c'; return; }
+    if (!val('b-purpose').trim()) { status.textContent = 'Please tell us what the booking is for.'; status.style.color = '#b91c1c'; return; }
+    btn.disabled = true;
+    status.textContent = 'Sending…'; status.style.color = '#6b7280';
+    try {
+      const r = await fetch('/api/booking-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          village: VILLAGE, facilityId,
+          date: val('b-date'), startTime: val('b-start'), endTime: val('b-end'),
+          firstName: val('b-first'), lastName: val('b-last'), email: val('b-email'),
+          phone: val('b-phone'), purpose: val('b-purpose'), attendees: val('b-attendees'),
+          website: (document.querySelector('input[name=website]') as HTMLInputElement).value,
+        }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Something went wrong');
+      (document.getElementById('booking-form') as HTMLElement).hidden = true;
+      $('booking-done').hidden = false;
+    } catch (err) {
+      status.textContent = (err as Error).message; status.style.color = '#b91c1c';
+      btn.disabled = false;
+    }
+  });
+
+  load();
+</script>
