@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>MOCKUP — Steward home — VillageFirst</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; }
   :root {
@@ -98,12 +100,25 @@
     border-radius: 12px; border: 2px solid var(--line); background: white; cursor: pointer; color: #143d2e;
   }
   .date-quick button.sel { border-color: var(--green); background: var(--green-pale); }
-  input[type=date], input[type=text] {
+  input[type=date], input[type=text], textarea {
     width: 100%; font-size: 18px; font-family: inherit; padding: 14px; border-radius: 12px;
     border: 2px solid var(--line); background: white; color: var(--ink);
   }
-  input:focus { outline: 3px solid #15a06e55; border-color: var(--green); }
+  textarea { line-height: 1.55; resize: vertical; }
+  input:focus, textarea:focus { outline: 3px solid #15a06e55; border-color: var(--green); }
   label.fl { display: block; font-size: 16px; font-weight: 700; color: #374151; margin: 16px 0 6px; }
+
+  .place-btn {
+    display: flex; align-items: center; gap: 12px; width: 100%; background: white;
+    border: 2px solid var(--line); border-radius: 14px; padding: 15px 16px; margin-bottom: 10px;
+    font-family: inherit; font-size: 18px; font-weight: 700; color: #143d2e; cursor: pointer; text-align: left;
+  }
+  .place-btn .p-sub { display: block; font-size: 14px; font-weight: 500; color: var(--soft); }
+  .place-btn.sel { border-color: var(--green); background: var(--green-pale); }
+  .place-btn .p-pin { font-size: 22px; }
+
+  #pick-map, #trail-map { height: 260px; border-radius: 14px; border: 2px solid var(--line); margin-top: 10px; }
+  .map-note { font-size: 14px; color: var(--soft); margin-top: 6px; }
 
   .who-row {
     display: flex; align-items: center; gap: 12px; background: white; border: 2px solid var(--line);
@@ -129,11 +144,24 @@
     text-align: center; font-size: 18px; font-weight: 800; color: var(--green); margin: 14px 0 18px;
   }
 
-  .done-big { text-align: center; padding: 26px 0 10px; }
+  .done-big { text-align: center; padding: 10px 0 6px; }
   .done-emoji { font-size: 54px; }
   .done-head { font-size: 24px; font-weight: 800; color: #143d2e; margin: 12px 0 6px; }
-  .done-text { font-size: 18px; color: #374151; margin-bottom: 26px; }
+  .done-text { font-size: 18px; color: #374151; margin-bottom: 18px; }
   .done-text b { color: var(--green); }
+
+  .share-card {
+    background: white; border: 2px solid var(--line); border-radius: 16px; padding: 18px;
+    text-align: left; margin-bottom: 16px;
+  }
+  .share-card h3 { font-size: 18px; color: #143d2e; margin-bottom: 4px; }
+  .share-sub { font-size: 15px; color: var(--soft); margin-bottom: 12px; }
+  .photo-btn {
+    display: flex; align-items: center; gap: 10px; width: 100%; background: #fbfefc;
+    border: 2px dashed var(--line); border-radius: 12px; padding: 14px; margin: 12px 0;
+    font-family: inherit; font-size: 16px; font-weight: 700; color: var(--green); cursor: pointer;
+  }
+  .photo-btn.got { border-style: solid; border-color: var(--green); background: var(--green-pale); color: #143d2e; }
 
   .vol-row {
     display: flex; align-items: center; gap: 12px; background: white; border: 2px solid var(--line);
@@ -152,6 +180,12 @@
     margin-bottom: 18px; color: #1d3a2f;
   }
   .hours-summary b { font-size: 20px; }
+  .trail-item { font-size: 15.5px; color: #374151; margin: 6px 0; }
+  .trail-item b { color: #143d2e; }
+  .trail-num {
+    display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background: var(--green);
+    color: white; font-size: 13px; font-weight: 800; align-items: center; justify-content: center; margin-right: 8px;
+  }
 
   .toast {
     position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
@@ -187,12 +221,12 @@
 
     <button class="task-btn" onclick="startWizard()">
       <span class="task-icon">📝</span>
-      <span>Write down a working bee<span class="task-sub">Who came, and for how long</span></span>
+      <span>Write down a working bee<span class="task-sub">Who came, where, and for how long</span></span>
     </button>
 
     <button class="task-btn" onclick="go('s-volunteers')">
       <span class="task-icon">💚</span>
-      <span>Our volunteers &amp; hours<span class="task-sub">Everyone in the group, and what we've given</span></span>
+      <span>Our volunteers &amp; hours<span class="task-sub">Everyone in the group, and where we've worked</span></span>
     </button>
 
     <p class="hint">Stuck? Ring Greg on 0400 000 000 or <a href="#" onclick="return false;">read the one-page guide</a>.</p>
@@ -213,7 +247,7 @@
   <!-- ═══ WIZARD STEP 1 — WHEN ═══ -->
   <div class="screen" id="s-when">
     <button class="back" onclick="go('s-home')">← Home</button>
-    <div class="step-dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
+    <div class="step-dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
     <div class="h2">When was the working bee?</div>
     <div class="sub">Just pick the day — nothing else needed yet.</div>
 
@@ -225,14 +259,42 @@
     <input type="date" id="d-other" onchange="pickDay('other')" />
 
     <div style="margin-top:26px;">
-      <button class="big-btn big-green" onclick="go('s-who')">Next → Who came?</button>
+      <button class="big-btn big-green" onclick="go('s-where')">Next → Where were you?</button>
     </div>
   </div>
 
-  <!-- ═══ WIZARD STEP 2 — WHO ═══ -->
-  <div class="screen" id="s-who">
+  <!-- ═══ WIZARD STEP 2 — WHERE ═══ -->
+  <div class="screen" id="s-where">
     <button class="back" onclick="go('s-when')">← Back</button>
-    <div class="step-dots"><span class="dot on"></span><span class="dot on"></span><span class="dot"></span></div>
+    <div class="step-dots"><span class="dot on"></span><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
+    <div class="h2">Where did you work?</div>
+    <div class="sub">Tap one of your usual spots, or add a new one.</div>
+
+    <div id="place-list"></div>
+
+    <button class="place-btn" id="new-place-btn" onclick="newPlace()">
+      <span class="p-pin">➕</span>
+      <span>Somewhere new<span class="p-sub">Give it a name, and pop a pin on the map</span></span>
+    </button>
+
+    <div id="new-place-panel" style="display:none;">
+      <label class="fl" for="place-name">What do you call the spot?</label>
+      <input type="text" id="place-name" placeholder="e.g. Foreshore reserve — east end" />
+      <button class="big-btn big-plain" style="margin-top:12px;" onclick="useMyLocation()">📍 Use my phone's location</button>
+      <div id="pick-map"></div>
+      <div class="map-note">Drag the pin if it's not quite right. Close enough is good enough!</div>
+    </div>
+
+    <div style="margin-top:22px;">
+      <button class="big-btn big-green" onclick="go('s-who')">Next → Who came?</button>
+      <button class="big-btn big-plain" onclick="skipPlace()">Skip — not important this time</button>
+    </div>
+  </div>
+
+  <!-- ═══ WIZARD STEP 3 — WHO ═══ -->
+  <div class="screen" id="s-who">
+    <button class="back" onclick="go('s-where')">← Back</button>
+    <div class="step-dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot"></span></div>
     <div class="h2">Who came along?</div>
     <div class="sub">Tap a name to tick them off, then set their hours with + and −.</div>
 
@@ -248,19 +310,26 @@
     <button class="big-btn big-green" onclick="finishWizard()">Next → Finish</button>
   </div>
 
-  <!-- ═══ WIZARD STEP 3 — DONE ═══ -->
+  <!-- ═══ WIZARD STEP 4 — DONE + SHARE ═══ -->
   <div class="screen" id="s-done">
-    <div class="step-dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></div>
+    <div class="step-dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></div>
     <div class="done-big">
       <div class="done-emoji">🌿</div>
       <div class="done-head">That's saved — thank you!</div>
       <div class="done-text" id="done-text"></div>
-      <button class="big-btn big-green" onclick="go('s-home')">Back to home</button>
-      <button class="big-btn big-plain" onclick="startWizard()">Write down another one</button>
+    </div>
+
+    <div class="share-card">
+      <h3>📣 Tell the village?</h3>
+      <div class="share-sub">We've written a little story for the village news page. Change any words you like — or skip it, no worries.</div>
+      <textarea id="share-text" rows="5"></textarea>
+      <button class="photo-btn" id="photo-btn" onclick="fakePhoto()">📷 Add a photo from today (optional)</button>
+      <button class="big-btn big-green" onclick="shareStory()">Share on the village news page</button>
+      <button class="big-btn big-plain" onclick="go('s-home')">No thanks — just save</button>
     </div>
   </div>
 
-  <!-- ═══ VOLUNTEERS & HOURS ═══ -->
+  <!-- ═══ VOLUNTEERS, HOURS & MAP ═══ -->
   <div class="screen" id="s-volunteers">
     <button class="back" onclick="go('s-home')">← Home</button>
     <div class="h2">Our volunteers &amp; hours</div>
@@ -271,10 +340,17 @@
       Every hour counts toward the village's grant applications. 💪
     </div>
 
-    <div class="vol-row"><div class="vol-main"><div class="vol-name">Margaret Yates (you)</div><div class="vol-sub">Group leader · 12 hrs this year</div></div></div>
-    <div class="vol-row"><div class="vol-main"><div class="vol-name">Bill Ogden</div><div class="vol-sub">0455 123 456 · 8 hrs this year</div></div><button class="open-btn" onclick="toast('In the real version this opens Bill\'s details')">Open</button></div>
-    <div class="vol-row"><div class="vol-main"><div class="vol-name">Sue Tran</div><div class="vol-sub">sue@example.com · 5 hrs this year</div></div><button class="open-btn" onclick="toast('In the real version this opens Sue\'s details')">Open</button></div>
-    <div class="vol-row"><div class="vol-main"><div class="vol-name">Ken Broadbent</div><div class="vol-sub">0433 987 654 · 2.5 hrs this year</div></div><button class="open-btn" onclick="toast('In the real version this opens Ken\'s details')">Open</button></div>
+    <div class="h2" style="font-size:19px; margin-top:8px;">🗺 Where we've worked</div>
+    <div id="trail-map"></div>
+    <div style="margin:10px 0 22px;" id="trail-list"></div>
+
+    <div class="h2" style="font-size:19px;">💚 The team</div>
+    <div style="margin-top:10px;">
+      <div class="vol-row"><div class="vol-main"><div class="vol-name">Margaret Yates (you)</div><div class="vol-sub">Group leader · 12 hrs this year</div></div></div>
+      <div class="vol-row"><div class="vol-main"><div class="vol-name">Bill Ogden</div><div class="vol-sub">0455 123 456 · 8 hrs this year</div></div><button class="open-btn" onclick="toast('In the real version this opens Bill\'s details')">Open</button></div>
+      <div class="vol-row"><div class="vol-main"><div class="vol-name">Sue Tran</div><div class="vol-sub">sue@example.com · 5 hrs this year</div></div><button class="open-btn" onclick="toast('In the real version this opens Sue\'s details')">Open</button></div>
+      <div class="vol-row"><div class="vol-main"><div class="vol-name">Ken Broadbent</div><div class="vol-sub">0433 987 654 · 2.5 hrs this year</div></div><button class="open-btn" onclick="toast('In the real version this opens Ken\'s details')">Open</button></div>
+    </div>
   </div>
 
 </div>
@@ -288,12 +364,29 @@
     { name: 'Robert Chen', detail: '0401 222 333 · rob.chen@example.com', msg: '“Recently retired, happy to lend a hand with whatever needs doing.”' },
   ];
   const people = ['Margaret Yates (you)', 'Bill Ogden', 'Sue Tran', 'Ken Broadbent', 'Mary Preston'];
-  let who = {}; // name → hours
+  let who = {};           // name → hours
+  let chosenPlace = null; // { name, lat, lng }
+
+  // The group's remembered spots (in the real version these come from past activities).
+  const places = [
+    { name: 'Foreshore reserve — east end', last: 'last time: 3 Aug', lat: -32.3893, lng: 152.4547 },
+    { name: 'Lions Park lake edge', last: 'last time: 12 Jul', lat: -32.3919, lng: 152.4501 },
+    { name: 'Boat ramp dunes', last: 'last time: 21 Jun', lat: -32.3862, lng: 152.4589 },
+  ];
+  // Past working bees for the trail map (newest first).
+  const trail = [
+    { n: 1, name: 'Boat ramp dunes', date: '21 Jun', hrs: 6, lat: -32.3862, lng: 152.4589 },
+    { n: 2, name: 'Lions Park lake edge', date: '12 Jul', hrs: 8, lat: -32.3919, lng: 152.4501 },
+    { n: 3, name: 'Foreshore reserve — east end', date: '3 Aug', hrs: 8, lat: -32.3893, lng: 152.4547 },
+    { n: 4, name: 'Foreshore reserve — east end', date: '14 Aug', hrs: 5.5, lat: -32.3896, lng: 152.4552 },
+  ];
 
   function go(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
     document.getElementById(id).classList.add('on');
     if (id === 's-approve') renderApprove();
+    if (id === 's-where') renderPlaces();
+    if (id === 's-volunteers') setTimeout(initTrailMap, 60);
     window.scrollTo({ top: 0 });
   }
 
@@ -306,9 +399,7 @@
   // ── Approvals ────────────────────────────────────────────────
   function renderApprove() {
     const c = document.getElementById('approve-card');
-    if (!queue.length) {
-      go('s-home'); return;
-    }
+    if (!queue.length) { go('s-home'); return; }
     const p = queue[0];
     c.innerHTML = '<div class="person-name">' + p.name + '</div>' +
       '<div class="person-detail">' + p.detail + '</div>' +
@@ -326,7 +417,7 @@
 
   // ── Wizard ───────────────────────────────────────────────────
   function startWizard() {
-    who = {};
+    who = {}; chosenPlace = null;
     pickDay('today');
     renderWho();
     go('s-when');
@@ -338,6 +429,50 @@
     if (which !== 'other') document.getElementById('d-other').value = '';
   }
 
+  // ── Step 2: WHERE ────────────────────────────────────────────
+  let pickMap = null, pickPin = null;
+
+  function renderPlaces() {
+    const el = document.getElementById('place-list');
+    el.innerHTML = '';
+    places.forEach((p, i) => {
+      const b = document.createElement('button');
+      b.className = 'place-btn' + (chosenPlace && chosenPlace.name === p.name ? ' sel' : '');
+      b.innerHTML = '<span class="p-pin">📍</span><span>' + p.name + '<span class="p-sub">' + p.last + '</span></span>';
+      b.onclick = () => {
+        chosenPlace = { name: p.name, lat: p.lat, lng: p.lng };
+        document.getElementById('new-place-panel').style.display = 'none';
+        renderPlaces();
+        toast('📍 ' + p.name);
+      };
+      el.appendChild(b);
+    });
+  }
+
+  function newPlace() {
+    document.getElementById('new-place-panel').style.display = 'block';
+    chosenPlace = null;
+    renderPlaces();
+    setTimeout(() => {
+      if (!pickMap) {
+        pickMap = L.map('pick-map').setView([-32.3893, 152.4535], 15);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(pickMap);
+        pickPin = L.marker([-32.3893, 152.4535], { draggable: true }).addTo(pickMap);
+        pickPin.on('dragend', () => toast('Pin moved — close enough is good enough'));
+      }
+      pickMap.invalidateSize();
+      document.getElementById('place-name').focus();
+    }, 80);
+  }
+
+  function useMyLocation() {
+    toast('📍 In the real version this drops the pin right where you\'re standing');
+    if (pickPin) { pickPin.setLatLng([-32.3878, 152.4561]); pickMap.panTo([-32.3878, 152.4561]); }
+  }
+
+  function skipPlace() { chosenPlace = null; go('s-who'); }
+
+  // ── Step 3: WHO ──────────────────────────────────────────────
   function renderWho() {
     const el = document.getElementById('who-list');
     el.innerHTML = '';
@@ -386,14 +521,61 @@
       names.length ? (names.length + ' ' + (names.length === 1 ? 'person' : 'people') + ' · ' + total + ' hours all up') : 'No one ticked yet';
   }
 
+  // ── Step 4: DONE + SHARE ─────────────────────────────────────
   function finishWizard() {
     const names = Object.keys(who);
     if (!names.length) { toast('Tick at least one person first 🙂'); return; }
     const total = names.reduce((s, n) => s + who[n], 0);
+    const newName = document.getElementById('place-name').value.trim();
+    if (!chosenPlace && newName) chosenPlace = { name: newName, lat: pickPin ? pickPin.getLatLng().lat : null, lng: pickPin ? pickPin.getLatLng().lng : null };
+
     document.getElementById('done-text').innerHTML =
-      'You wrote down <b>' + total + ' hours</b> from <b>' + names.length + ' ' + (names.length === 1 ? 'helper' : 'helpers') + '</b> for Landcare.<br>' +
-      'These hours help the village win grants — every one matters.';
+      'You wrote down <b>' + total + ' hours</b> from <b>' + names.length + ' ' + (names.length === 1 ? 'helper' : 'helpers') + '</b>' +
+      (chosenPlace ? ' at <b>' + chosenPlace.name + '</b>' : '') + '.<br>These hours help the village win grants — every one matters.';
+
+    // Pre-written news story — counts and places, no names (privacy-safe default).
+    document.getElementById('share-text').value =
+      'Many hands at ' + (chosenPlace ? chosenPlace.name : 'our latest working bee') + ' today — ' +
+      names.length + ' Landcare volunteers put in ' + total + ' hours of weeding, planting and caring for our patch. ' +
+      'Want to join us next time? Pop your name down on the Landcare page. 🌿';
+    document.getElementById('photo-btn').classList.remove('got');
+    document.getElementById('photo-btn').textContent = '📷 Add a photo from today (optional)';
     go('s-done');
+  }
+
+  function fakePhoto() {
+    const b = document.getElementById('photo-btn');
+    b.classList.add('got');
+    b.textContent = '📷 working-bee.jpg attached ✓ (tap to change)';
+    toast('In the real version this opens your phone camera or photos');
+  }
+
+  function shareStory() {
+    toast('📣 Shared! In the real version this goes to the village news page');
+    setTimeout(() => go('s-home'), 1400);
+  }
+
+  // ── Trail map ────────────────────────────────────────────────
+  let trailMap = null;
+  function initTrailMap() {
+    if (!trailMap) {
+      trailMap = L.map('trail-map').setView([-32.389, 152.4545], 14);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(trailMap);
+      const pts = trail.map(t => [t.lat, t.lng]);
+      L.polyline(pts, { color: '#15795f', weight: 3, dashArray: '6 8' }).addTo(trailMap);
+      trail.forEach(t => {
+        L.marker([t.lat, t.lng], {
+          icon: L.divIcon({
+            className: '',
+            html: '<div style="background:#15795f;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);">' + t.n + '</div>',
+            iconSize: [28, 28], iconAnchor: [14, 14],
+          }),
+        }).addTo(trailMap).bindPopup('<b>' + t.name + '</b><br>' + t.date + ' · ' + t.hrs + ' hrs');
+      });
+      document.getElementById('trail-list').innerHTML = trail.slice().reverse().map(t =>
+        '<div class="trail-item"><span class="trail-num">' + t.n + '</span><b>' + t.name + '</b> — ' + t.date + ' · ' + t.hrs + ' hrs</div>').join('');
+    }
+    trailMap.invalidateSize();
   }
 </script>
 </body>
