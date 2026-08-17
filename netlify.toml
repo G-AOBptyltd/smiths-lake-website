@@ -198,6 +198,17 @@
   to = "/.netlify/functions/volunteer-provision"
   status = 200
 
+# Advertising API
+[[redirects]]
+  from = "/api/ad-list"
+  to = "/.netlify/functions/ad-list"
+  status = 200
+
+[[redirects]]
+  from = "/api/ad-admin"
+  to = "/.netlify/functions/ad-admin"
+  status = 200
+
 # Events & ticketing API
 [[redirects]]
   from = "/api/event-list"
