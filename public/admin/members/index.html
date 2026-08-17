@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Membership — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; font-size: 14px; color: #1f2937; }
+  button { font-family: inherit; }
+
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; white-space: nowrap; font-family: inherit; }
+  .village-select option { color: #1f2937; }
+
+  .layout { display: flex; min-height: calc(100vh - 46px); }
+  .sidebar { width: 180px; background: #fff; border-right: 1px solid #e2e8f0; padding: 10px 0; flex-shrink: 0; }
+  .s-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font-size: 12.5px; color: #4b5563; cursor: pointer; border-left: 3px solid transparent; }
+  .s-item:hover { background: #f0fdf6; }
+  .s-item.on { color: #0f5c48; background: #e7f6ee; border-left-color: #15795f; font-weight: 700; }
+  .main { flex: 1; padding: 20px; max-width: 960px; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+  h1 { font-size: 1.05rem; color: #143d2e; margin-bottom: 2px; }
+  .sub { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+  .stat-num { font-size: 1.35rem; font-weight: 800; color: #0f5c48; }
+  .stat-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+  .toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+  .toolbar input[type=search] { flex: 1; min-width: 160px; border: 1px solid #d1d5db; border-radius: 7px; padding: 8px 11px; font-size: 13px; font-family: inherit; }
+  .toolbar select { border: 1px solid #d1d5db; border-radius: 7px; padding: 8px 8px; font-size: 12.5px; font-family: inherit; background: white; }
+  .fchip { border: 1.5px solid #e2e8f0; background: white; border-radius: 16px; padding: 5px 12px; font-size: 11.5px; font-weight: 600; color: #4b5563; cursor: pointer; }
+  .fchip.on { border-color: #15a06e; background: #e7f6ee; color: #0f5c48; }
+
+  .ledger { background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-top: 1px solid #f1f5f9; cursor: pointer; }
+  .row:first-child { border-top: none; }
+  .row:hover { background: #f8fafc; }
+  .row-main { flex: 1; min-width: 0; }
+  .row-name { font-size: 13px; font-weight: 700; color: #1f2937; }
+  .row-note { font-size: 11.5px; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-val { font-size: 13px; font-weight: 700; color: #0f5c48; white-space: nowrap; }
+  .row-year { font-size: 11px; color: #9ca3af; width: 60px; text-align: right; white-space: nowrap; }
+  .chip { font-size: 9.5px; font-weight: 700; border-radius: 9px; padding: 2px 8px; white-space: nowrap; }
+  .chip-applied { background: #fef3c7; color: #92400e; }
+  .chip-approved { background: #dbeafe; color: #1e40af; }
+  .chip-paid { background: #c9f0dd; color: #0f5c48; }
+  .chip-lapsed { background: #e2e8f0; color: #475569; }
+  .chip-type { background: #ede9fe; color: #6d28d9; }
+  .row-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; margin-left: 4px; }
+  .link-btn { background: none; border: none; color: #1d6fb8; font-size: 11px; cursor: pointer; padding: 0; font-family: inherit; }
+  .link-btn:hover { text-decoration: underline; }
+  .link-btn.danger { color: #b91c1c; }
+
+  .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 620px; margin-bottom: 16px; }
+  .form-card h2 { font-size: 13.5px; color: #143d2e; margin-bottom: 10px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin: 14px 0 4px; }
+  label:first-of-type { margin-top: 0; }
+  .hint { font-weight: 400; color: #9ca3af; }
+  input[type=text], input[type=email], input[type=tel], input[type=number], input[type=date], textarea, select { width: 100%; border: 1px solid #d1d5db; border-radius: 7px; padding: 9px 11px; font-size: 13px; font-family: inherit; background: white; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid #15a06e; border-color: #15a06e; }
+  textarea { min-height: 64px; resize: vertical; line-height: 1.6; }
+  .two-col { display: flex; gap: 12px; flex-wrap: wrap; }
+  .two-col > div { flex: 1; min-width: 150px; }
+  .form-actions { display: flex; gap: 8px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 7px; padding: 9px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btn-green { background: #15795f; color: white; }
+  .btn-green:hover { background: #0f5c48; }
+  .btn:disabled { background: #9ca3af; cursor: wait; }
+  .btn-blue { background: #1d6fb8; color: white; }
+  .btn-amber { background: #b45309; color: white; }
+  .btn-ghost { background: white; color: #4b5563; border: 1px solid #d1d5db; }
+  .btn-ghost:hover { border-color: #9ca3af; }
+  .btn-danger { background: white; color: #b91c1c; border: 1px solid #fecaca; }
+  .status-msg { font-size: 12px; font-weight: 600; min-height: 1.2em; }
+  .status-msg.ok { color: #15803d; } .status-msg.err { color: #b91c1c; }
+
+  .meta-line { font-size: 11.5px; color: #9ca3af; line-height: 1.7; }
+  .payment-box { background: #f0fdf6; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 14px; margin-top: 12px; display: none; }
+  .payment-box.on { display: block; }
+
+  .help-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 640px; font-size: 13px; line-height: 1.7; color: #374151; }
+  .help-card h2 { font-size: 13.5px; color: #143d2e; margin: 14px 0 4px; }
+  .help-card h2:first-child { margin-top: 0; }
+
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; padding: 1rem; text-align: center; }
+  .auth-screen h1 { font-size: 1.2rem; }
+  .auth-screen p { font-size: 0.85rem; color: #6b7280; max-width: 360px; }
+  .auth-btn { background: #15795f; color: white; border: none; border-radius: 8px; padding: 0.75rem 2rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+
+  .empty { color: #9ca3af; font-size: 12.5px; padding: 16px; text-align: center; }
+  @media (max-width: 700px) { .sidebar { width: 120px; } .main { padding: 14px; } }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">🪪</div>
+  <h1>VillageFirst Membership</h1>
+  <p>The member register — approve applications, record payments, run renewals and keep the AGM list export-ready. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+  <p style="margin-top:1rem;"><a href="/admin/" style="color:#15795f; font-size:0.78rem;">← Admin home</a></p>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · Membership</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <button class="s-item on" data-panel="register" onclick="showPanel('register')">🪪 Register</button>
+      <button class="s-item" data-panel="renewals" onclick="showPanel('renewals')">🔁 Renewals</button>
+      <button class="s-item" data-panel="help" onclick="showPanel('help')">💡 Help</button>
+    </div>
+
+    <div class="main">
+
+      <!-- ── Register ────────────────────────────────────────────── -->
+      <div class="panel on" id="panel-register">
+        <h1>Member register</h1>
+        <p class="sub">Everyone who has applied or belongs, one row per membership year. Click a row to manage a member.</p>
+        <div class="stats" id="stats"></div>
+        <div class="toolbar">
+          <button class="fchip on" data-status="" onclick="pickStatus('')">All</button>
+          <button class="fchip" data-status="Applied" onclick="pickStatus('Applied')">Applied</button>
+          <button class="fchip" data-status="Approved" onclick="pickStatus('Approved')">Approved</button>
+          <button class="fchip" data-status="Paid" onclick="pickStatus('Paid')">Paid</button>
+          <button class="fchip" data-status="Lapsed" onclick="pickStatus('Lapsed')">Lapsed</button>
+          <select id="year-filter" onchange="renderRegister()"><option value="">All years</option></select>
+          <input type="search" id="search" placeholder="Search name, email, address…" oninput="renderRegister()" />
+          <button class="btn btn-ghost" onclick="exportCSV()">⬇ CSV</button>
+        </div>
+        <div class="ledger" id="register"><div class="empty">Loading members…</div></div>
+      </div>
+
+      <!-- ── Member detail ───────────────────────────────────────── -->
+      <div class="panel" id="panel-member">
+        <h1 id="m-title">Member</h1>
+        <p class="sub"><a href="#" onclick="showPanel('register'); return false;" style="color:#15795f;">← Back to register</a></p>
+
+        <div class="form-card">
+          <h2>Membership · <span id="m-status-chip"></span></h2>
+          <div class="meta-line" id="m-summary"></div>
+          <div class="form-actions" id="m-actions"></div>
+          <div class="payment-box" id="payment-box">
+            <div class="two-col">
+              <div>
+                <label for="p-date">Payment date</label>
+                <input type="date" id="p-date" />
+              </div>
+              <div>
+                <label for="p-amount">Amount ($)</label>
+                <input type="number" id="p-amount" min="0" step="0.01" />
+              </div>
+            </div>
+            <div class="two-col">
+              <div>
+                <label for="p-method">Method</label>
+                <select id="p-method">
+                  <option>Bank transfer</option>
+                  <option>Cash at meeting</option>
+                  <option>Notify when online payments open</option>
+                </select>
+              </div>
+              <div>
+                <label for="p-ref">Reference <span class="hint">(receipt no. / transfer description)</span></label>
+                <input type="text" id="p-ref" maxlength="200" />
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-green" id="p-save" onclick="savePayment()">Record payment</button>
+              <button class="btn btn-ghost" onclick="togglePaymentBox(false)">Cancel</button>
+            </div>
+          </div>
+          <div class="form-actions">
+            <span class="status-msg" id="m-status-msg"></span>
+          </div>
+          <div class="meta-line" id="m-meta" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="form-card">
+          <h2>Details</h2>
+          <div class="two-col">
+            <div><label for="d-first">First name</label><input type="text" id="d-first" maxlength="100" /></div>
+            <div><label for="d-last">Last name</label><input type="text" id="d-last" maxlength="100" /></div>
+          </div>
+          <div class="two-col">
+            <div><label for="d-email">Email</label><input type="email" id="d-email" maxlength="200" /></div>
+            <div><label for="d-phone">Phone</label><input type="tel" id="d-phone" maxlength="50" /></div>
+          </div>
+          <label for="d-address">Residential address</label>
+          <input type="text" id="d-address" maxlength="300" />
+          <label for="d-postal">Postal address <span class="hint">(if different)</span></label>
+          <input type="text" id="d-postal" maxlength="300" />
+          <div class="two-col">
+            <div>
+              <label for="d-type">Membership type</label>
+              <select id="d-type"><option>Individual</option><option>Household</option></select>
+            </div>
+            <div>
+              <label for="d-category">Resident category</label>
+              <select id="d-category">
+                <option value="">—</option>
+                <option>Permanent Resident</option>
+                <option>Holiday Home Owner</option>
+                <option>Renter</option>
+                <option>Visitor / Prospective Resident</option>
+                <option>Local Business</option>
+              </select>
+            </div>
+          </div>
+          <label for="d-note">Note</label>
+          <textarea id="d-note" maxlength="2000"></textarea>
+          <div class="form-actions">
+            <button class="btn btn-green" id="d-save" onclick="saveDetails()">Save details</button>
+            <span class="status-msg" id="d-status-msg"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Renewals ────────────────────────────────────────────── -->
+      <div class="panel" id="panel-renewals">
+        <h1>Renewals</h1>
+        <p class="sub" id="renewals-sub">Members from earlier years with no row for the current membership year.</p>
+        <div class="ledger" id="renewals"><div class="empty">Loading…</div></div>
+      </div>
+
+      <!-- ── Help ────────────────────────────────────────────────── -->
+      <div class="panel" id="panel-help">
+        <h1>Help</h1>
+        <p class="sub">The 60-second guide.</p>
+        <div class="help-card">
+          <h2>The member lifecycle</h2>
+          <b>Applied</b> (came in from the website form) → <b>Approve</b> at a committee meeting → <b>Record payment</b> when the fee arrives (that makes them financial) → <b>Lapsed</b> if a year ends unrenewed. Each membership year is its own row, so the register doubles as a year-by-year audit trail.
+          <h2>Recording a payment</h2>
+          Open the member, press <b>Record payment</b>, check the date/amount and add a reference (bank transfer description or receipt number). Status flips to Paid automatically.
+          <h2>Renewals</h2>
+          When a new membership year starts (1 July), the <b>Renewals</b> tab lists everyone who hasn't renewed. <b>Create renewal row</b> starts their new year (Approved, unpaid) and <b>Send reminder</b> emails them. Members who never respond just stay lapsed — nothing to clean up.
+          <h2>Emails</h2>
+          <b>Welcome</b> confirms an approval (and explains how to pay if they haven't); <b>Renewal reminder</b> nudges for the new year. Every send is stamped on the member's row so you can see what went when.
+          <h2>Exporting for the AGM</h2>
+          Filter the register (e.g. Paid + the current year) and press <b>⬇ CSV</b> — the export matches exactly what's on screen.
+          <h2>Removing a row</h2>
+          Use <b>Lapsed</b> for members who've left. Deleting a register row entirely is reserved for the super-admin (typos, duplicates, test entries).
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+  let items = [];
+  let currentYear = '';
+  let statusFilter = '';
+  let openId = null;
+
+  // ── Auth ───────────────────────────────────────────────────────
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+    loadVillages();
+    loadList();
+  }
+
+  function isSuper() {
+    const roles = (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || [];
+    return roles.includes('super-admin');
+  }
+
+  // ── Village picker ─────────────────────────────────────────────
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const data = await r.json();
+      const villages = (data.villages || []).filter(v => v.status === 'live');
+      if (!villages.length) return;
+      sel.innerHTML = '';
+      villages.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v.name; o.textContent = v.name;
+        if (v.name === VILLAGE) o.selected = true;
+        sel.appendChild(o);
+      });
+    } catch (e) { /* keep default */ }
+    sel.onchange = () => { VILLAGE = sel.value; localStorage.setItem('vf_active_village', VILLAGE); loadList(); };
+  }
+
+  // ── Panels ─────────────────────────────────────────────────────
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+    document.getElementById('panel-' + name).classList.add('on');
+    document.querySelectorAll('.s-item').forEach(b => b.classList.toggle('on', b.dataset.panel === name));
+    if (name === 'renewals') renderRenewals();
+  }
+
+  // ── Data ───────────────────────────────────────────────────────
+  async function loadList() {
+    try {
+      const r = await fetch('/api/member-list?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not load');
+      items = data.items || [];
+      currentYear = data.currentYear || '';
+      renderStats(data.totals || {});
+      buildYearFilter();
+      renderRegister();
+      if (document.getElementById('panel-renewals').classList.contains('on')) renderRenewals();
+      if (openId) {
+        const it = items.find(x => x.id === openId);
+        if (it) fillMember(it);
+      }
+    } catch (e) {
+      document.getElementById('register').innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+    }
+  }
+
+  function renderStats(t) {
+    document.getElementById('stats').innerHTML =
+      stat(t.paid || 0, 'Financial (' + currentYear + ')') +
+      stat(t.approved || 0, 'Approved, unpaid') +
+      stat(t.applied || 0, 'New applications') +
+      stat('$' + (t.feesCollected || 0).toLocaleString('en-AU'), 'Fees collected (' + currentYear + ')') +
+      stat(t.rows || 0, 'Register rows (all years)');
+  }
+  function stat(num, label) {
+    return '<div class="stat"><div class="stat-num">' + num + '</div><div class="stat-label">' + esc(label) + '</div></div>';
+  }
+
+  function buildYearFilter() {
+    const sel = document.getElementById('year-filter');
+    const prev = sel.value;
+    const years = [...new Set(items.map(i => i.year).filter(Boolean))].sort().reverse();
+    sel.innerHTML = '<option value="">All years</option>' + years.map(y => '<option' + ((prev ? y === prev : y === currentYear) ? ' selected' : '') + '>' + esc(y) + '</option>').join('');
+  }
+
+  // ── Register list ──────────────────────────────────────────────
+  const STATUS_CHIP = { 'Applied': 'chip-applied', 'Approved': 'chip-approved', 'Paid': 'chip-paid', 'Lapsed': 'chip-lapsed' };
+
+  function pickStatus(s) {
+    statusFilter = s;
+    document.querySelectorAll('.fchip').forEach(el => el.classList.toggle('on', el.dataset.status === s));
+    renderRegister();
+  }
+
+  function filteredItems() {
+    const q = document.getElementById('search').value.trim().toLowerCase();
+    const year = document.getElementById('year-filter').value;
+    return items.filter(it => {
+      if (statusFilter && it.status !== statusFilter) return false;
+      if (year && it.year !== year) return false;
+      if (q) {
+        const hay = [it.name, it.email, it.phone, it.address, it.postalAddress, it.note].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  function fmtDate(d) {
+    if (!d) return '';
+    const parts = d.split('-');
+    const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return parts.length === 3 ? (parseInt(parts[2], 10) + ' ' + mon[parseInt(parts[1], 10) - 1] + ' ' + parts[0].slice(2)) : d;
+  }
+
+  function renderRegister() {
+    const el = document.getElementById('register');
+    const list = filteredItems();
+    if (!list.length) { el.innerHTML = '<div class="empty">No members match. New applications from the website land here automatically.</div>'; return; }
+    el.innerHTML = list.map(it => {
+      const note = [it.email, it.phone, it.dateApplied ? 'applied ' + fmtDate(it.dateApplied) : ''].filter(Boolean).join(' · ');
+      const quick = it.status === 'Applied'
+        ? '<button class="link-btn" onclick="event.stopPropagation(); quickStatus(\'' + it.id + '\', \'Approved\')">Approve</button>'
+        : (it.status === 'Approved'
+          ? '<button class="link-btn" onclick="event.stopPropagation(); openMember(\'' + it.id + '\', true)">Record payment</button>'
+          : '');
+      return '<div class="row" onclick="openMember(\'' + it.id + '\')">' +
+        '<span class="chip ' + (STATUS_CHIP[it.status] || 'chip-lapsed') + '">' + esc(it.status || '—') + '</span>' +
+        '<div class="row-main"><div class="row-name">' + esc(it.name) + ' <span class="chip chip-type">' + esc(it.membershipType || '—') + '</span></div>' +
+        (note ? '<div class="row-note">' + esc(note) + '</div>' : '') + '</div>' +
+        '<span class="row-val">' + (it.status === 'Paid' ? '$' + (it.amountPaid ?? it.fee ?? '—') : (it.fee != null ? '$' + it.fee : '—')) + '</span>' +
+        '<span class="row-year">' + esc(it.year || '') + '</span>' +
+        '<span class="row-actions">' + quick + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  // ── Member detail ──────────────────────────────────────────────
+  function openMember(id, wantPayment) {
+    const it = items.find(x => x.id === id);
+    if (!it) return;
+    openId = id;
+    fillMember(it);
+    showPanel('member');
+    togglePaymentBox(!!wantPayment);
+  }
+
+  function fillMember(it) {
+    document.getElementById('m-title').textContent = it.name;
+    document.getElementById('m-status-chip').innerHTML = '<span class="chip ' + (STATUS_CHIP[it.status] || 'chip-lapsed') + '">' + esc(it.status || '—') + '</span>';
+    document.getElementById('m-summary').innerHTML =
+      esc(it.membershipType || '—') + ' · ' + esc(it.year || '—') + ' · fee $' + (it.fee ?? '—') +
+      ' · pays by ' + esc(it.paymentMethod || '—') +
+      (it.stayConnected ? ' · 📬 on the updates list' : '');
+
+    const meta = [];
+    if (it.status === 'Paid') meta.push('Paid ' + (it.paymentDate ? fmtDate(it.paymentDate) : '') + (it.amountPaid != null ? ' · $' + it.amountPaid : '') + (it.paymentReference ? ' · ref: ' + esc(it.paymentReference) : ''));
+    if (it.dateApplied) meta.push('Applied ' + fmtDate(it.dateApplied) + (it.loggedBy ? ' · via ' + esc(it.loggedBy) : ''));
+    if (it.lastEmail) meta.push('Last email: ' + esc(it.lastEmail));
+    if (it.lastUpdatedBy) meta.push('Last updated: ' + esc(it.lastUpdatedBy));
+    document.getElementById('m-meta').innerHTML = meta.join('<br>');
+
+    const acts = [];
+    if (it.status === 'Applied') acts.push(btn('Approve', 'btn-green', "doStatus('Approved')"));
+    if (it.status !== 'Paid') acts.push(btn('Record payment', 'btn-blue', 'togglePaymentBox(true)'));
+    if (it.status === 'Paid' || it.status === 'Approved') acts.push(btn('Send welcome email', 'btn-ghost', "sendEmail('welcome')"));
+    if (it.year && it.year < currentYear && !hasYearRow(it, nextYear(it.year))) {
+      acts.push(btn('Create renewal row (' + nextYear(it.year) + ')', 'btn-green', 'doRenew()'));
+      acts.push(btn('Send renewal reminder', 'btn-ghost', "sendEmail('renewal')"));
+    }
+    if (it.status !== 'Lapsed') acts.push(btn('Mark lapsed', 'btn-amber', "doStatus('Lapsed')"));
+    else acts.push(btn('Reinstate as Approved', 'btn-ghost', "doStatus('Approved')"));
+    if (it.status !== 'Applied') acts.push(btn('Revert to Applied', 'btn-ghost', "doStatus('Applied')"));
+    if (isSuper()) acts.push(btn('Delete row', 'btn-danger', 'doDelete()'));
+    document.getElementById('m-actions').innerHTML = acts.join('');
+
+    document.getElementById('p-date').value = it.paymentDate || new Date().toISOString().slice(0, 10);
+    document.getElementById('p-amount').value = it.amountPaid ?? it.fee ?? '';
+    document.getElementById('p-method').value = it.paymentMethod || 'Bank transfer';
+    document.getElementById('p-ref').value = it.paymentReference || '';
+
+    document.getElementById('d-first').value = it.firstName || '';
+    document.getElementById('d-last').value = it.lastName || '';
+    document.getElementById('d-email').value = it.email || '';
+    document.getElementById('d-phone').value = it.phone || '';
+    document.getElementById('d-address').value = it.address || '';
+    document.getElementById('d-postal').value = it.postalAddress || '';
+    document.getElementById('d-type').value = it.membershipType || 'Individual';
+    document.getElementById('d-category').value = it.residentCategory || '';
+    document.getElementById('d-note').value = it.note || '';
+    setMsg('m-status-msg', '', ''); setMsg('d-status-msg', '', '');
+  }
+
+  function btn(label, cls, fn) {
+    return '<button class="btn ' + cls + '" onclick="' + fn + '">' + label + '</button>';
+  }
+
+  function nextYear(label) {
+    const start = parseInt(String(label).slice(0, 4), 10);
+    return start ? (start + 1) + '-' + String((start + 2) % 100).padStart(2, '0') : '';
+  }
+
+  function memberKey(it) { return (it.email || it.name).toLowerCase(); }
+  function hasYearRow(it, year) {
+    return items.some(x => x.year === year && memberKey(x) === memberKey(it));
+  }
+
+  function togglePaymentBox(on) {
+    document.getElementById('payment-box').classList.toggle('on', !!on);
+  }
+
+  function setMsg(id, msg, kind) {
+    const el = document.getElementById(id);
+    el.textContent = msg; el.className = 'status-msg' + (kind ? ' ' + kind : '');
+  }
+
+  // ── Mutations ──────────────────────────────────────────────────
+  async function callUpdate(payload, msgId) {
+    setMsg(msgId, 'Saving…', '');
+    const r = await fetch('/api/member-update', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, pageId: openId, ...payload }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Update failed');
+    return data;
+  }
+
+  async function quickStatus(id, status) {
+    const saved = openId; openId = id;
+    try { await callUpdate({ action: 'status', status }, 'm-status-msg'); await loadList(); }
+    catch (e) { alert('⚠️ ' + e.message); }
+    finally { openId = saved; }
+  }
+
+  async function doStatus(status) {
+    try {
+      await callUpdate({ action: 'status', status }, 'm-status-msg');
+      setMsg('m-status-msg', 'Updated ✓', 'ok');
+      await loadList();
+    } catch (e) { setMsg('m-status-msg', e.message, 'err'); }
+  }
+
+  async function savePayment() {
+    const b = document.getElementById('p-save'); b.disabled = true;
+    try {
+      await callUpdate({
+        action: 'payment',
+        paymentDate: document.getElementById('p-date').value || undefined,
+        amountPaid: document.getElementById('p-amount').value,
+        paymentMethod: document.getElementById('p-method').value,
+        paymentReference: document.getElementById('p-ref').value.trim(),
+      }, 'm-status-msg');
+      setMsg('m-status-msg', 'Payment recorded ✓', 'ok');
+      togglePaymentBox(false);
+      await loadList();
+    } catch (e) { setMsg('m-status-msg', e.message, 'err'); }
+    finally { b.disabled = false; }
+  }
+
+  async function saveDetails() {
+    const b = document.getElementById('d-save'); b.disabled = true;
+    try {
+      await callUpdate({
+        action: 'details',
+        firstName: document.getElementById('d-first').value,
+        lastName: document.getElementById('d-last').value,
+        email: document.getElementById('d-email').value,
+        phone: document.getElementById('d-phone').value,
+        address: document.getElementById('d-address').value,
+        postalAddress: document.getElementById('d-postal').value,
+        membershipType: document.getElementById('d-type').value,
+        residentCategory: document.getElementById('d-category').value,
+        note: document.getElementById('d-note').value,
+      }, 'd-status-msg');
+      setMsg('d-status-msg', 'Saved ✓', 'ok');
+      await loadList();
+    } catch (e) { setMsg('d-status-msg', e.message, 'err'); }
+    finally { b.disabled = false; }
+  }
+
+  async function doRenew() {
+    const it = items.find(x => x.id === openId);
+    if (!it) return;
+    if (!confirm('Create a ' + nextYear(it.year) + ' register row for ' + it.name + '? It starts as Approved (unpaid); record the payment when the fee arrives.')) return;
+    try {
+      await callUpdate({ action: 'renew' }, 'm-status-msg');
+      setMsg('m-status-msg', 'Renewal row created ✓', 'ok');
+      await loadList();
+    } catch (e) { setMsg('m-status-msg', e.message, 'err'); }
+  }
+
+  async function doDelete() {
+    const it = items.find(x => x.id === openId);
+    if (!it) return;
+    if (!confirm('Permanently remove this register row for ' + it.name + ' (' + (it.year || 'no year') + ')?\n\nIt moves to Notion\'s trash (recoverable there). For members who have left, use Lapsed instead.')) return;
+    try {
+      await callUpdate({ action: 'delete' }, 'm-status-msg');
+      openId = null;
+      await loadList();
+      showPanel('register');
+    } catch (e) { setMsg('m-status-msg', e.message, 'err'); }
+  }
+
+  async function sendEmail(template) {
+    const it = items.find(x => x.id === openId);
+    if (!it) return;
+    if (!it.email) { setMsg('m-status-msg', 'No email address on file for this member.', 'err'); return; }
+    const label = template === 'welcome' ? 'welcome email' : 'renewal reminder';
+    if (!confirm('Send the ' + label + ' to ' + it.email + '?')) return;
+    setMsg('m-status-msg', 'Sending…', '');
+    try {
+      const r = await fetch('/api/member-email', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, pageId: openId, template }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Send failed');
+      setMsg('m-status-msg', 'Sent to ' + data.to + ' ✓', 'ok');
+      await loadList();
+    } catch (e) { setMsg('m-status-msg', e.message, 'err'); }
+  }
+
+  // ── Renewals ───────────────────────────────────────────────────
+  function renewalsDue() {
+    // Latest row per member (by email, falling back to name); due if that row
+    // is from an earlier year and they were a real member (Approved or Paid).
+    const latest = new Map();
+    for (const it of items) {
+      const k = memberKey(it);
+      const cur = latest.get(k);
+      if (!cur || (it.year || '') > (cur.year || '')) latest.set(k, it);
+    }
+    return [...latest.values()].filter(it =>
+      it.year && it.year < currentYear && (it.status === 'Paid' || it.status === 'Approved'));
+  }
+
+  function renderRenewals() {
+    document.getElementById('renewals-sub').textContent =
+      'Members from earlier years with no ' + currentYear + ' row yet. Create their new row and/or send a reminder.';
+    const el = document.getElementById('renewals');
+    const due = renewalsDue();
+    if (!due.length) { el.innerHTML = '<div class="empty">Nobody is due to renew — every known member has a ' + esc(currentYear) + ' row (or was never approved).</div>'; return; }
+    el.innerHTML = due.map(it => {
+      const note = [it.email, 'last year: ' + it.year + ' (' + it.status + ')'].filter(Boolean).join(' · ');
+      return '<div class="row" onclick="openMember(\'' + it.id + '\')">' +
+        '<span class="chip ' + (STATUS_CHIP[it.status] || 'chip-lapsed') + '">' + esc(it.status) + '</span>' +
+        '<div class="row-main"><div class="row-name">' + esc(it.name) + ' <span class="chip chip-type">' + esc(it.membershipType || '—') + '</span></div>' +
+        '<div class="row-note">' + esc(note) + '</div></div>' +
+        '<span class="row-actions">' +
+        '<button class="link-btn" onclick="event.stopPropagation(); renewFromList(\'' + it.id + '\')">Create renewal row</button>' +
+        (it.email ? '<button class="link-btn" onclick="event.stopPropagation(); emailFromList(\'' + it.id + '\')">Send reminder</button>' : '') +
+        '</span></div>';
+    }).join('');
+  }
+
+  async function renewFromList(id) {
+    const saved = openId; openId = id;
+    const it = items.find(x => x.id === id);
+    if (it && confirm('Create a ' + nextYear(it.year) + ' register row for ' + it.name + '?')) {
+      try { await callUpdate({ action: 'renew' }, 'm-status-msg'); await loadList(); }
+      catch (e) { alert('⚠️ ' + e.message); }
+    }
+    openId = saved;
+  }
+
+  async function emailFromList(id) {
+    const saved = openId; openId = id;
+    await sendEmail('renewal');
+    openId = saved;
+    renderRenewals();
+  }
+
+  // ── CSV export ─────────────────────────────────────────────────
+  function exportCSV() {
+    const cols = ['Name', 'First Name', 'Last Name', 'Email', 'Phone', 'Residential Address', 'Postal Address',
+      'Membership Type', 'Fee', 'Resident Category', 'Membership Year', 'Status', 'Payment Method',
+      'Payment Date', 'Payment Reference', 'Amount Paid', 'Date Applied', 'Stay Connected', 'Note'];
+    const cell = (v) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const rows = filteredItems().map(it => [
+      it.name, it.firstName, it.lastName, it.email, it.phone, it.address, it.postalAddress,
+      it.membershipType, it.fee, it.residentCategory, it.year, it.status, it.paymentMethod,
+      it.paymentDate, it.paymentReference, it.amountPaid, it.dateApplied, it.stayConnected ? 'Yes' : 'No', it.note,
+    ].map(cell).join(','));
+    const csv = cols.join(',') + '\n' + rows.join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+    const year = document.getElementById('year-filter').value || 'all-years';
+    a.download = 'members-' + VILLAGE.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + year + (statusFilter ? '-' + statusFilter.toLowerCase() : '') + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+</script>
+</body>
+</html>

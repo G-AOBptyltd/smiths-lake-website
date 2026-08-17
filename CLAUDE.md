@@ -120,6 +120,17 @@ Active Zaps (all polling-based, ~15 min delay, Free plan):
   Footer/homepage/sitemap/project CTAs all point to `/membership/` now.
 - `/contribute/` coming-soon card links here; when Tyro Pay Online ships, membership payment
   happens on `/contribute/` and this page's payment options get a "pay online" path.
+- **Membership ADMIN tool `/admin/members/`** (Aug 2026): the committee's register UI — status
+  workflow (Applied → Approved → Paid → Lapsed), payment recording (date/method/reference/amount),
+  year-by-year renewals (a renewal creates a NEW row for the next membership year, so the register
+  is its own audit trail), filtered CSV export, and welcome/renewal emails via the VF Resend vars
+  (reply-to = first `VF_PLEDGE_NOTIFY_TO` address). Functions: `member-list` (admin-only, PII),
+  `member-update` (actions status/payment/details/renew/delete — delete is super-admin only;
+  every write stamps `Last Updated By`), `member-email`, shared `_members.js`. The functions
+  SELF-HEAL the DB schema (idempotent PATCH adds Payment Date / Payment Reference / Amount Paid /
+  Last Email / Last Updated By) — no manual Notion property setup. Optional env:
+  `VF_MEMBER_ORG_NAME` (sign-off, default PPCA), `VF_MEMBER_PAY_INSTRUCTIONS` (bank details
+  block shown to unpaid members in emails).
 
 ## Survey Tool
 - **URL:** https://villagefirst.org.au/surveys/blueys-beach-survey.html
