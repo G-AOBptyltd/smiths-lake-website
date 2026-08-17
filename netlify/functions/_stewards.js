@@ -22,9 +22,10 @@ import { hasRole, requireRole } from './_auth.js';
 
 const NOTION_VERSION = '2022-06-28';
 
-export const STEWARDS_DB_ID = process.env.NOTION_VF_STEWARDS_DB_ID || '';
-export const VOLUNTEERS_DB_ID = process.env.NOTION_VF_VOLUNTEERS_DB_ID || '';
-export const ACTIVITIES_DB_ID = process.env.NOTION_VF_ACTIVITIES_DB_ID || '';
+// Fallbacks = the DBs provisioned under the Smiths Lake Community page (Aug 2026).
+export const STEWARDS_DB_ID = process.env.NOTION_VF_STEWARDS_DB_ID || '3bfd508adfc18193bbcee2e46817f988';
+export const VOLUNTEERS_DB_ID = process.env.NOTION_VF_VOLUNTEERS_DB_ID || '3bfd508adfc181b88653c4c957393fd8';
+export const ACTIVITIES_DB_ID = process.env.NOTION_VF_ACTIVITIES_DB_ID || '3bfd508adfc181fb8d09f877c9769c8a';
 
 export const VOLUNTEER_STATUSES = ['Applied', 'Active', 'Inactive'];
 export const ACTIVITY_STATUSES = ['Draft', 'Confirmed', 'Pushed'];
