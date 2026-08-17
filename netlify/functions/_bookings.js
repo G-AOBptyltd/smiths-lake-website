@@ -19,8 +19,9 @@
 
 const NOTION_VERSION = '2022-06-28';
 
-export const FACILITIES_DB_ID = process.env.NOTION_VF_FACILITIES_DB_ID || '';
-export const BOOKINGS_DB_ID = process.env.NOTION_VF_BOOKINGS_DB_ID || '';
+// Fallbacks = the DBs provisioned under the Smiths Lake Community page (Aug 2026).
+export const FACILITIES_DB_ID = process.env.NOTION_VF_FACILITIES_DB_ID || '3bfd508adfc18115882be11adc1f7c01';
+export const BOOKINGS_DB_ID = process.env.NOTION_VF_BOOKINGS_DB_ID || '3bfd508adfc1811fbdb9fc1c147a07ca';
 
 export const BOOKING_STATUSES = ['Requested', 'Confirmed', 'Declined', 'Cancelled', 'Completed'];
 // Statuses that occupy the calendar (block/flag other requests).
