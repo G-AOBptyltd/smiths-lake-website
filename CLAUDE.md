@@ -159,6 +159,17 @@ Card-level volunteer management: network → village → **card** (a content pag
 - **Hours → money (next stage):** admin reviews Confirmed activities and pushes them into the
   Contributions portal as time-in-kind entries linked back via `Contribution ID` — the grant
   co-contribution audit trail. Valuation reuses the co-contribution rates.
+- **Steward home `/admin/volunteers/my/`** (the 60+-friendly surface): task-first phone-first UI —
+  approvals queue, 4-step working-bee wizard (When → Where → Who → Done+Share), and the group's
+  volunteers/hours page with an adventure-style trail map (parchment cartouche + sepia CARTO
+  Voyager tiles, styled after the Smiths Lake Bridge poster in `~/AgilityOpsBizAI/AOB/villagefirst/events/`).
+  Non-admin stewards hitting `/admin/volunteers/` are auto-redirected here (`?console=1` overrides).
+  "Where" step: previous spots derived from past activities' Location/Lat/Lng (schema self-heals
+  via `ensureActivitySchema`), new spots via Leaflet pin or phone geolocation. Wizard saves with
+  `confirm:true` (lands Confirmed — the summary screen IS the confirm step). "Tell the village"
+  share step reuses news-save (+news-image photo, downscaled client-side) + news-publish —
+  privacy-safe default story text (counts, not names). Mockup preserved at
+  `/admin/volunteers/mockup.html`.
 
 ## Survey Tool
 - **URL:** https://villagefirst.org.au/surveys/blueys-beach-survey.html

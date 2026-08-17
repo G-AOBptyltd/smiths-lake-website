@@ -158,11 +158,32 @@ export function parseActivity(page) {
     status: p.Status?.select?.name || 'Draft',
     attendance: rtJson(p.Attendance, []),
     totalHours: p['Total Hours']?.number ?? 0,
+    location: rtText(p.Location),
+    lat: p.Lat?.number ?? null,
+    lng: p.Lng?.number ?? null,
     createdBy: rtText(p['Created By']),
     lastUpdatedBy: rtText(p['Last Updated By']),
     contributionId: rtText(p['Contribution ID']),
     note: rtText(p.Note),
   };
+}
+
+/**
+ * Location fields were added after the Activities DB was first provisioned —
+ * idempotent schema PATCH, same self-healing pattern as the Members module.
+ */
+let activitySchemaEnsured = null;
+export function ensureActivitySchema() {
+  if (!activitySchemaEnsured) {
+    activitySchemaEnsured = fetch(`https://api.notion.com/v1/databases/${ACTIVITIES_DB_ID}`, {
+      method: 'PATCH',
+      headers: notionHeaders(),
+      body: JSON.stringify({ properties: { 'Location': { rich_text: {} }, 'Lat': { number: {} }, 'Lng': { number: {} } } }),
+    }).then((res) => {
+      if (!res.ok) { activitySchemaEnsured = null; throw new Error(`Notion schema update responded ${res.status}`); }
+    });
+  }
+  return activitySchemaEnsured;
 }
 
 // ── Card-level scoping ────────────────────────────────────────────

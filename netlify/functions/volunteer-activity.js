@@ -23,7 +23,7 @@
 
 import {
   ACTIVITIES_DB_ID, notionHeaders, jsonResp, notProvisioned, rtChunks,
-  queryAll, parseActivity, resolveScope, scopeHasCard, normPath,
+  queryAll, parseActivity, resolveScope, scopeHasCard, normPath, ensureActivitySchema,
 } from './_stewards.js';
 
 async function getActivity(pageId) {
@@ -94,9 +94,14 @@ export const handler = async (event, context) => {
       if (!cardPath || !cardTitle) return jsonResp(400, { error: 'An activity must belong to a card' });
       if (!scopeHasCard(scope, cardPath)) return jsonResp(403, { error: 'That card is outside your scope' });
 
+      await ensureActivitySchema();
       const attendance = cleanAttendance(body.attendance);
       const totalHours = Math.round(attendance.reduce((s, a) => s + a.hours, 0) * 2) / 2;
+      const lat = Number(body.lat), lng = Number(body.lng);
       const properties = {
+        'Location': { rich_text: rtChunks((body.locationName || '').trim().slice(0, 200)) },
+        'Lat': { number: Number.isFinite(lat) ? lat : null },
+        'Lng': { number: Number.isFinite(lng) ? lng : null },
         'Activity': { title: [{ text: { content: name } }] },
         'Village': { rich_text: rtChunks(village.slice(0, 100)) },
         'Card Path': { rich_text: rtChunks(cardPath) },
@@ -119,7 +124,9 @@ export const handler = async (event, context) => {
           method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ properties }),
         });
       } else {
-        properties['Status'] = { select: { name: 'Draft' } };
+        // The steward-home wizard passes confirm:true — its summary screen IS
+        // the confirmation step, so the hours land Confirmed in one go.
+        properties['Status'] = { select: { name: body.confirm === true ? 'Confirmed' : 'Draft' } };
         properties['Created By'] = { rich_text: rtChunks(scope.user.email || 'admin') };
         res = await fetch('https://api.notion.com/v1/pages', {
           method: 'POST', headers: notionHeaders(),

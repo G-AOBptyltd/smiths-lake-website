@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>My group — VillageFirst Volunteers</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  :root {
+    --green: #15795f; --green-dark: #0f5c48; --green-pale: #e7f6ee;
+    --ink: #1f2937; --soft: #55606e; --line: #dbe3df;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f2f6f4; color: var(--ink);
+    font-size: 17px; line-height: 1.6; min-height: 100vh;
+  }
+  .top {
+    background: linear-gradient(135deg, #0f4c3a 0%, #15795f 70%, #0f8f80 100%);
+    color: white; padding: 14px 18px; display: flex; align-items: center; gap: 10px;
+  }
+  .top-title { font-weight: 800; font-size: 17px; }
+  .top-sp { flex: 1; }
+  .top-out { color: rgba(255,255,255,.85); font-size: 15px; background: none; font-family: inherit; cursor: pointer; border: 1.5px solid rgba(255,255,255,.4); border-radius: 8px; padding: 6px 14px; }
+
+  .wrap { max-width: 560px; margin: 0 auto; padding: 22px 16px 60px; }
+  .screen { display: none; }
+  .screen.on { display: block; animation: fade .18s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+
+  .hello { font-size: 26px; font-weight: 800; color: #143d2e; margin-bottom: 2px; }
+  .group-name { font-size: 18px; color: var(--green); font-weight: 700; margin-bottom: 6px; }
+  .switch-link { background: none; border: none; font-family: inherit; color: var(--soft); font-size: 15px; cursor: pointer; padding: 0; text-decoration: underline; margin-bottom: 18px; display: inline-block; }
+
+  .task-btn {
+    display: flex; align-items: center; gap: 16px; width: 100%;
+    background: white; border: 2px solid var(--line); border-radius: 16px;
+    padding: 20px 18px; margin-bottom: 14px; cursor: pointer; text-align: left;
+    font-family: inherit; font-size: 19px; font-weight: 700; color: #143d2e;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .task-btn:hover, .task-btn:focus-visible { border-color: var(--green); background: #fbfefc; }
+  .task-icon { font-size: 30px; }
+  .task-sub { display: block; font-size: 15px; font-weight: 500; color: var(--soft); margin-top: 2px; }
+  .task-count {
+    margin-left: auto; background: #d9534f; color: white; font-size: 16px; font-weight: 800;
+    border-radius: 999px; min-width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; padding: 0 10px;
+  }
+  .hint { font-size: 15px; color: var(--soft); margin-top: 26px; text-align: center; }
+  .hint a { color: var(--green); }
+
+  .back {
+    display: inline-flex; align-items: center; gap: 6px; background: none; border: none;
+    color: var(--green); font-size: 17px; font-weight: 700; cursor: pointer; font-family: inherit;
+    padding: 0; margin-bottom: 18px;
+  }
+  .h2 { font-size: 23px; font-weight: 800; color: #143d2e; margin-bottom: 4px; }
+  .sub { font-size: 16px; color: var(--soft); margin-bottom: 20px; }
+
+  .person-card {
+    background: white; border: 2px solid var(--line); border-radius: 16px; padding: 22px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .person-name { font-size: 22px; font-weight: 800; color: #143d2e; }
+  .person-detail { font-size: 16px; color: var(--soft); margin: 4px 0 12px; }
+  .person-msg {
+    background: var(--green-pale); border-radius: 12px; padding: 12px 16px; font-size: 17px;
+    font-style: italic; color: #2d3b35; margin-bottom: 20px;
+  }
+  .queue-progress { font-size: 15px; color: var(--soft); text-align: center; margin: 14px 0 10px; }
+
+  .big-btn {
+    display: block; width: 100%; border: none; border-radius: 14px; padding: 17px;
+    font-size: 19px; font-weight: 800; cursor: pointer; font-family: inherit; margin-bottom: 12px;
+  }
+  .big-green { background: var(--green); color: white; }
+  .big-green:hover { background: var(--green-dark); }
+  .big-green:disabled, .big-plain:disabled { background: #9ca3af; color: white; cursor: wait; }
+  .big-plain { background: white; color: #40505c; border: 2px solid var(--line); }
+  .big-plain:hover { border-color: #9ca3af; }
+
+  .step-dots { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: #cfe0d8; }
+  .dot.on { background: var(--green); }
+
+  .date-quick { display: flex; gap: 10px; margin-bottom: 14px; }
+  .date-quick button {
+    flex: 1; font-family: inherit; font-size: 18px; font-weight: 700; padding: 15px;
+    border-radius: 12px; border: 2px solid var(--line); background: white; cursor: pointer; color: #143d2e;
+  }
+  .date-quick button.sel { border-color: var(--green); background: var(--green-pale); }
+  input[type=date], input[type=text], textarea {
+    width: 100%; font-size: 18px; font-family: inherit; padding: 14px; border-radius: 12px;
+    border: 2px solid var(--line); background: white; color: var(--ink);
+  }
+  textarea { line-height: 1.55; resize: vertical; }
+  input:focus, textarea:focus { outline: 3px solid #15a06e55; border-color: var(--green); }
+  label.fl { display: block; font-size: 16px; font-weight: 700; color: #374151; margin: 16px 0 6px; }
+
+  .place-btn {
+    display: flex; align-items: center; gap: 12px; width: 100%; background: white;
+    border: 2px solid var(--line); border-radius: 14px; padding: 15px 16px; margin-bottom: 10px;
+    font-family: inherit; font-size: 18px; font-weight: 700; color: #143d2e; cursor: pointer; text-align: left;
+  }
+  .place-btn .p-sub { display: block; font-size: 14px; font-weight: 500; color: var(--soft); }
+  .place-btn.sel { border-color: var(--green); background: var(--green-pale); }
+  .place-btn .p-pin { font-size: 22px; }
+
+  #pick-map, #trail-map { height: 260px; border-radius: 10px; border: 2px solid var(--line); margin-top: 10px; }
+  .map-note { font-size: 14px; color: var(--soft); margin-top: 6px; }
+
+  .trail-frame {
+    background: #f4ecd6; border: 3px solid #1d3a54; border-radius: 16px; padding: 14px;
+    box-shadow: inset 0 0 0 2px #f4ecd6, inset 0 0 0 3.5px #b3a37e; position: relative;
+  }
+  .trail-cartouche {
+    text-align: center; font-weight: 800; color: #1d3a54; font-size: 18px;
+    letter-spacing: 0.04em; margin-bottom: 10px;
+  }
+  .trail-cartouche small { display: block; font-weight: 600; font-size: 13px; color: #7a6c4d; letter-spacing: 0.12em; text-transform: uppercase; }
+  .trail-frame #trail-map { border: 2px solid #b3a37e; margin-top: 0; height: 280px; }
+  #trail-map .leaflet-tile { filter: sepia(0.45) saturate(0.65) contrast(0.92) brightness(1.04); }
+  .trail-compass { position: absolute; z-index: 800; right: 14px; top: 14px; font-size: 26px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.3)); }
+  .trail-item { font-size: 15.5px; color: #374151; margin: 6px 0; }
+  .trail-item b { color: #143d2e; }
+  .trail-num {
+    display: inline-flex; width: 24px; height: 24px; border-radius: 50%; background: var(--green);
+    color: white; font-size: 13px; font-weight: 800; align-items: center; justify-content: center; margin-right: 8px;
+  }
+
+  .who-row {
+    display: flex; align-items: center; gap: 12px; background: white; border: 2px solid var(--line);
+    border-radius: 14px; padding: 13px 14px; margin-bottom: 10px;
+  }
+  .who-row.sel { border-color: var(--green); background: #fbfefc; }
+  .who-tick {
+    width: 34px; height: 34px; border-radius: 10px; border: 2.5px solid #b3c4bc; background: white;
+    display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; flex-shrink: 0; color: white;
+  }
+  .who-row.sel .who-tick { background: var(--green); border-color: var(--green); }
+  .who-name { font-size: 18px; font-weight: 700; flex: 1; cursor: pointer; }
+  .hours-ctl { display: none; align-items: center; gap: 2px; }
+  .who-row.sel .hours-ctl { display: flex; }
+  .hours-btn {
+    width: 42px; height: 42px; border-radius: 10px; border: 2px solid var(--line); background: white;
+    font-size: 22px; font-weight: 800; color: var(--green); cursor: pointer; font-family: inherit;
+  }
+  .hours-val { min-width: 64px; text-align: center; font-size: 17px; font-weight: 800; color: #143d2e; }
+  .add-name { margin: 6px 0 2px; }
+  .wizard-total { text-align: center; font-size: 18px; font-weight: 800; color: var(--green); margin: 14px 0 18px; }
+
+  .done-big { text-align: center; padding: 10px 0 6px; }
+  .done-emoji { font-size: 54px; }
+  .done-head { font-size: 24px; font-weight: 800; color: #143d2e; margin: 12px 0 6px; }
+  .done-text { font-size: 18px; color: #374151; margin-bottom: 18px; }
+  .done-text b { color: var(--green); }
+
+  .share-card {
+    background: white; border: 2px solid var(--line); border-radius: 16px; padding: 18px;
+    text-align: left; margin-bottom: 16px;
+  }
+  .share-card h3 { font-size: 18px; color: #143d2e; margin-bottom: 4px; }
+  .share-sub { font-size: 15px; color: var(--soft); margin-bottom: 12px; }
+  .photo-btn {
+    display: flex; align-items: center; gap: 10px; width: 100%; background: #fbfefc;
+    border: 2px dashed var(--line); border-radius: 12px; padding: 14px; margin: 12px 0;
+    font-family: inherit; font-size: 16px; font-weight: 700; color: var(--green); cursor: pointer;
+  }
+  .photo-btn.got { border-style: solid; border-color: var(--green); background: var(--green-pale); color: #143d2e; }
+
+  .vol-row {
+    display: flex; align-items: center; gap: 12px; background: white; border: 2px solid var(--line);
+    border-radius: 14px; padding: 15px 16px; margin-bottom: 10px;
+  }
+  .vol-main { flex: 1; }
+  .vol-name { font-size: 18px; font-weight: 700; color: #143d2e; }
+  .vol-sub { font-size: 15px; color: var(--soft); }
+  .hours-summary {
+    background: var(--green-pale); border-radius: 14px; padding: 16px 18px; font-size: 17px;
+    margin-bottom: 18px; color: #1d3a2f;
+  }
+  .hours-summary b { font-size: 20px; }
+
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; padding: 1rem; text-align: center; }
+  .auth-screen h1 { font-size: 1.3rem; color: #143d2e; }
+  .auth-screen p { font-size: 1rem; color: #6b7280; max-width: 380px; }
+  .auth-btn { background: var(--green); color: white; border: none; border-radius: 10px; padding: 0.9rem 2.2rem; font-size: 1.05rem; font-weight: 800; cursor: pointer; font-family: inherit; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+    background: #143d2e; color: white; font-size: 17px; font-weight: 700;
+    padding: 14px 22px; border-radius: 999px; box-shadow: 0 8px 22px rgba(0,0,0,.25);
+    opacity: 0; pointer-events: none; transition: opacity .25s; max-width: 92vw; text-align: center; z-index: 2000;
+  }
+  .toast.show { opacity: 1; }
+  .foot-links { text-align: center; margin-top: 30px; font-size: 14.5px; }
+  .foot-links a { color: var(--soft); }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:3rem;">🙋</div>
+  <h1>Smiths Lake Volunteers</h1>
+  <p>Your group's home — approve new helpers, write down working bees, and see the hours you've all given. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="top">
+    <div class="top-title">🏘️ <span id="top-village">Smiths Lake</span> Volunteers</div>
+    <div class="top-sp"></div>
+    <button class="top-out" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="wrap">
+
+    <!-- ═══ GROUP CHOOSER (multi-card stewards & admins) ═══ -->
+    <div class="screen" id="s-groups">
+      <div class="hello" id="hello-groups">G'day 👋</div>
+      <div class="sub" style="margin-top:6px;">Which group are you here for today?</div>
+      <div id="group-list"></div>
+    </div>
+
+    <!-- ═══ HOME ═══ -->
+    <div class="screen" id="s-home">
+      <div class="hello" id="hello">G'day 👋</div>
+      <div class="group-name" id="home-group"></div>
+      <button class="switch-link" id="switch-group" style="display:none;" onclick="go('s-groups')">switch group</button>
+
+      <button class="task-btn" onclick="go('s-approve')">
+        <span class="task-icon">🙋</span>
+        <span>See who wants to join<span class="task-sub">New helpers waiting for a yes</span></span>
+        <span class="task-count" id="approve-count" style="display:none;"></span>
+      </button>
+
+      <button class="task-btn" onclick="startWizard()">
+        <span class="task-icon">📝</span>
+        <span>Write down a working bee<span class="task-sub">Who came, where, and for how long</span></span>
+      </button>
+
+      <button class="task-btn" onclick="go('s-volunteers')">
+        <span class="task-icon">💚</span>
+        <span>Our volunteers &amp; hours<span class="task-sub">Everyone in the group, and where we've worked</span></span>
+      </button>
+
+      <p class="hint">Stuck? <a href="/admin/playbook/#volunteers">Read the one-page guide</a>.</p>
+      <div class="foot-links" id="admin-foot" style="display:none;"><a href="/admin/volunteers/?console=1">Open the full admin console →</a></div>
+    </div>
+
+    <!-- ═══ APPROVALS ═══ -->
+    <div class="screen" id="s-approve">
+      <button class="back" onclick="go('s-home')">← Home</button>
+      <div class="h2">Someone wants to join! 🎉</div>
+      <div class="sub" id="approve-sub">They filled in the form on your group's page of the village website.</div>
+      <div id="approve-body"></div>
+    </div>
+
+    <!-- ═══ WIZARD 1 — WHEN ═══ -->
+    <div class="screen" id="s-when">
+      <button class="back" onclick="go('s-home')">← Home</button>
+      <div class="step-dots"><span class="dot on"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="h2">When was the working bee?</div>
+      <div class="sub">Just pick the day — nothing else needed yet.</div>
+      <div class="date-quick">
+        <button id="d-today" class="sel" onclick="pickDay('today')">Today</button>
+        <button id="d-yest" onclick="pickDay('yest')">Yesterday</button>
+      </div>
+      <label class="fl" for="d-other">Or another day:</label>
+      <input type="date" id="d-other" onchange="pickDay('other')" />
+      <div style="margin-top:26px;">
+        <button class="big-btn big-green" onclick="go('s-where')">Next → Where were you?</button>
+      </div>
+    </div>
+
+    <!-- ═══ WIZARD 2 — WHERE ═══ -->
+    <div class="screen" id="s-where">
+      <button class="back" onclick="go('s-when')">← Back</button>
+      <div class="step-dots"><span class="dot on"></span><span class="dot on"></span><span class="dot"></span><span class="dot"></span></div>
+      <div class="h2">Where did you work?</div>
+      <div class="sub">Tap one of your usual spots, or add a new one.</div>
+      <div id="place-list"></div>
+      <button class="place-btn" onclick="newPlace()">
+        <span class="p-pin">➕</span>
+        <span>Somewhere new<span class="p-sub">Give it a name, and pop a pin on the map</span></span>
+      </button>
+      <div id="new-place-panel" style="display:none;">
+        <label class="fl" for="place-name">What do you call the spot?</label>
+        <input type="text" id="place-name" maxlength="200" placeholder="e.g. Foreshore reserve — east end" />
+        <button class="big-btn big-plain" style="margin-top:12px;" onclick="useMyLocation()">📍 Use my phone's location</button>
+        <div id="pick-map"></div>
+        <div class="map-note">Drag the pin if it's not quite right. Close enough is good enough!</div>
+      </div>
+      <div style="margin-top:22px;">
+        <button class="big-btn big-green" onclick="go('s-who')">Next → Who came?</button>
+        <button class="big-btn big-plain" onclick="skipPlace()">Skip — not important this time</button>
+      </div>
+    </div>
+
+    <!-- ═══ WIZARD 3 — WHO ═══ -->
+    <div class="screen" id="s-who">
+      <button class="back" onclick="go('s-where')">← Back</button>
+      <div class="step-dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot"></span></div>
+      <div class="h2">Who came along?</div>
+      <div class="sub">Tap a name to tick them off, then set their hours with + and −.</div>
+      <div id="who-list"></div>
+      <label class="fl" for="extra-name">Someone new turned up? Add their name:</label>
+      <div class="who-row add-name" style="border-style:dashed;">
+        <input type="text" id="extra-name" maxlength="200" placeholder="e.g. Joan from Amaroo Drive" style="border:none; padding:6px 2px; font-size:17px;" />
+        <button class="hours-btn" style="width:auto; padding:0 16px; font-size:16px;" onclick="addExtra()">Add</button>
+      </div>
+      <div class="wizard-total" id="who-total">No one ticked yet</div>
+      <button class="big-btn big-green" id="save-bee" onclick="finishWizard()">Next → Finish</button>
+    </div>
+
+    <!-- ═══ WIZARD 4 — DONE + SHARE ═══ -->
+    <div class="screen" id="s-done">
+      <div class="step-dots"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span></div>
+      <div class="done-big">
+        <div class="done-emoji">🌿</div>
+        <div class="done-head">That's saved — thank you!</div>
+        <div class="done-text" id="done-text"></div>
+      </div>
+      <div class="share-card">
+        <h3>📣 Tell the village?</h3>
+        <div class="share-sub">We've written a little story for the village news page. Change any words you like — or skip it, no worries.</div>
+        <textarea id="share-text" rows="5" maxlength="2000"></textarea>
+        <input type="file" id="photo-input" accept="image/*" style="display:none;" onchange="photoPicked(this)" />
+        <button class="photo-btn" id="photo-btn" onclick="document.getElementById('photo-input').click()">📷 Add a photo from today (optional)</button>
+        <button class="big-btn big-green" id="share-btn" onclick="shareStory()">Share on the village news page</button>
+        <button class="big-btn big-plain" onclick="go('s-home')">No thanks — just save</button>
+      </div>
+    </div>
+
+    <!-- ═══ VOLUNTEERS, HOURS & MAP ═══ -->
+    <div class="screen" id="s-volunteers">
+      <button class="back" onclick="go('s-home')">← Home</button>
+      <div class="h2">Our volunteers &amp; hours</div>
+      <div class="sub" id="vol-group-name"></div>
+      <div class="hours-summary" id="hours-summary"></div>
+      <div class="trail-frame" id="trail-frame" style="display:none;">
+        <div class="trail-cartouche"><small id="trail-village">Smiths Lake · VillageFirst</small>🗺 <span id="trail-title">Where we've worked</span></div>
+        <div class="trail-compass">🧭</div>
+        <div id="trail-map"></div>
+      </div>
+      <div style="margin:10px 0 22px;" id="trail-list"></div>
+      <div class="h2" style="font-size:19px;">💚 The team</div>
+      <div style="margin-top:10px;" id="team-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+  let volunteers = [], activities = [], scope = { isAdmin: false, cards: [] };
+  let GROUP = null;              // { path, title }
+  let who = {};                  // name → hours
+  let chosenPlace = null;        // { name, lat, lng }
+  let beeDate = null;
+  let savedBee = null;           // { pageId, totalHours, names }
+  let photoData = null;          // { contentType, dataBase64 }
+
+  // ── Auth ───────────────────────────────────────────────────────
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; boot(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); boot(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+
+  function firstName() {
+    const n = (currentUser?.user_metadata?.full_name || '').trim();
+    return n ? n.split(' ')[0] : '';
+  }
+
+  async function boot() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('top-village').textContent = VILLAGE;
+    document.getElementById('trail-village').textContent = VILLAGE + ' · VillageFirst';
+    const hi = 'G\'day' + (firstName() ? ' ' + firstName() : '') + ' 👋';
+    document.getElementById('hello').textContent = hi;
+    document.getElementById('hello-groups').textContent = hi;
+    await loadAll();
+  }
+
+  async function loadAll() {
+    const h = await authHeaders();
+    try {
+      const [rosterRes, actRes] = await Promise.all([
+        fetch('/api/volunteer-roster?village=' + encodeURIComponent(VILLAGE), { headers: h }).then(r => r.json().then(d => ({ ok: r.ok, d }))),
+        fetch('/api/volunteer-activity?village=' + encodeURIComponent(VILLAGE), { headers: h }).then(r => r.json().then(d => ({ ok: r.ok, d }))),
+      ]);
+      if (!rosterRes.ok) throw new Error(rosterRes.d.error || 'Could not load your groups');
+      volunteers = rosterRes.d.volunteers || [];
+      scope = rosterRes.d.scope || { isAdmin: false, cards: [] };
+      activities = actRes.ok ? (actRes.d.activities || []) : [];
+      document.getElementById('admin-foot').style.display = scope.isAdmin ? '' : 'none';
+      resolveGroup();
+    } catch (e) {
+      toast('⚠️ ' + e.message);
+    }
+  }
+
+  function myGroups() {
+    if (!scope.isAdmin) return scope.cards || [];
+    // Admins: every card seen anywhere (volunteers, activities).
+    const seen = new Map();
+    volunteers.forEach(v => (v.cards || []).forEach(c => seen.set(c.path, c)));
+    activities.forEach(a => { if (a.cardPath) seen.set(a.cardPath, { path: a.cardPath, title: a.cardTitle || a.cardPath }); });
+    return [...seen.values()];
+  }
+
+  function resolveGroup() {
+    const groups = myGroups();
+    if (!groups.length) {
+      document.getElementById('group-list').innerHTML =
+        '<div class="sub">No groups are assigned to you yet — ask your village admin to make you a group leader.</div>';
+      go('s-groups');
+      return;
+    }
+    const savedPath = localStorage.getItem('vf_my_group');
+    const saved = groups.find(g => g.path === savedPath);
+    document.getElementById('switch-group').style.display = groups.length > 1 || scope.isAdmin ? '' : 'none';
+    if (groups.length === 1) { setGroup(groups[0]); return; }
+    if (saved) { setGroup(saved); return; }
+    renderGroupChooser(groups);
+    go('s-groups');
+  }
+
+  function renderGroupChooser(groups) {
+    document.getElementById('group-list').innerHTML = groups.map((g, i) =>
+      '<button class="task-btn" onclick="chooseGroup(' + i + ')"><span class="task-icon">🌿</span><span>' + esc(g.title) + '</span></button>').join('');
+    window._groups = groups;
+  }
+
+  function chooseGroup(i) { setGroup(window._groups[i]); }
+
+  function setGroup(g) {
+    GROUP = g;
+    localStorage.setItem('vf_my_group', g.path);
+    document.getElementById('home-group').textContent = g.title;
+    document.getElementById('vol-group-name').textContent = g.title;
+    document.getElementById('trail-title').textContent = 'The ' + shortName(g.title) + ' trail — where we\'ve worked';
+    updateCounts();
+    go('s-home');
+  }
+
+  function shortName(title) { return title.split(/[—&-]/)[0].trim() || title; }
+
+  function groupVolunteers() { return volunteers.filter(v => (v.cards || []).some(c => c.path === GROUP.path)); }
+  function groupActivities() {
+    return activities.filter(a => a.cardPath === GROUP.path)
+      .slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+  }
+  function pendingJoiners() { return groupVolunteers().filter(v => v.status === 'Applied'); }
+
+  function updateCounts() {
+    const n = pendingJoiners().length;
+    const el = document.getElementById('approve-count');
+    el.textContent = n; el.style.display = n ? '' : 'none';
+  }
+
+  function go(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+    document.getElementById(id).classList.add('on');
+    if (id === 's-approve') renderApprove();
+    if (id === 's-where') renderPlaces();
+    if (id === 's-volunteers') renderVolunteers();
+    window.scrollTo({ top: 0 });
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+  // ── Approvals ──────────────────────────────────────────────────
+  let skipped = new Set();
+
+  function renderApprove() {
+    const body = document.getElementById('approve-body');
+    const queue = pendingJoiners().filter(v => !skipped.has(v.id));
+    if (!queue.length) {
+      body.innerHTML = '<div class="done-big"><div class="done-emoji">🌞</div><div class="done-head">All caught up!</div>' +
+        '<div class="done-text">No one is waiting to join right now.</div>' +
+        '<button class="big-btn big-plain" onclick="go(\'s-home\')">Back to home</button></div>';
+      return;
+    }
+    const p = queue[0];
+    body.innerHTML =
+      '<div class="person-card"><div class="person-name">' + esc(p.name) + '</div>' +
+      '<div class="person-detail">' + esc([p.email, p.phone].filter(Boolean).join(' · ')) + '</div>' +
+      (p.message ? '<div class="person-msg">“' + esc(p.message) + '”</div>' : '') + '</div>' +
+      '<div class="queue-progress">' + (queue.length > 1 ? '1 of ' + queue.length + ' waiting' : 'Last one!') + '</div>' +
+      '<button class="big-btn big-green" onclick="approveOne(\'' + p.id + '\')">✅ Welcome them in</button>' +
+      '<button class="big-btn big-plain" onclick="laterOne(\'' + p.id + '\')">Not now — decide later</button>';
+  }
+
+  async function approveOne(id) {
+    const p = volunteers.find(v => v.id === id);
+    try {
+      const r = await fetch('/api/volunteer-roster', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, pageId: id, action: 'status', status: 'Active' }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'That didn\'t save');
+      p.status = 'Active';
+      toast('✅ ' + p.name + ' is now a volunteer — welcome!');
+      updateCounts();
+      renderApprove();
+    } catch (e) { toast('⚠️ ' + e.message); }
+  }
+
+  function laterOne(id) {
+    skipped.add(id);
+    toast('No worries — they\'ll wait for next time');
+    updateCounts();
+    renderApprove();
+  }
+
+  // ── Wizard ─────────────────────────────────────────────────────
+  function startWizard() {
+    who = {}; chosenPlace = null; savedBee = null; photoData = null;
+    pickDay('today');
+    renderWho();
+    document.getElementById('place-name').value = '';
+    document.getElementById('new-place-panel').style.display = 'none';
+    go('s-when');
+  }
+
+  function pickDay(which) {
+    document.getElementById('d-today').classList.toggle('sel', which === 'today');
+    document.getElementById('d-yest').classList.toggle('sel', which === 'yest');
+    const today = new Date();
+    if (which === 'today') { beeDate = today.toISOString().slice(0, 10); document.getElementById('d-other').value = ''; }
+    else if (which === 'yest') { const y = new Date(today - 86400000); beeDate = y.toISOString().slice(0, 10); document.getElementById('d-other').value = ''; }
+    else { beeDate = document.getElementById('d-other').value || today.toISOString().slice(0, 10); }
+  }
+
+  // Step 2: WHERE — previous spots come from the group's saved activities.
+  let pickMap = null, pickPin = null;
+  const VILLAGE_CENTRE = [-32.389, 152.4545];
+
+  function knownPlaces() {
+    const seen = new Map();
+    groupActivities().slice().reverse().forEach(a => {
+      if (a.location && !seen.has(a.location.toLowerCase())) {
+        seen.set(a.location.toLowerCase(), { name: a.location, lat: a.lat, lng: a.lng, last: a.date });
+      }
+    });
+    return [...seen.values()].slice(0, 6);
+  }
+
+  function fmtDate(d) {
+    if (!d) return '';
+    const parts = String(d).split('-');
+    const mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return parts.length === 3 ? (parseInt(parts[2], 10) + ' ' + mon[parseInt(parts[1], 10) - 1]) : d;
+  }
+
+  function renderPlaces() {
+    const el = document.getElementById('place-list');
+    const places = knownPlaces();
+    el.innerHTML = places.map((p, i) =>
+      '<button class="place-btn' + (chosenPlace && chosenPlace.name === p.name ? ' sel' : '') + '" onclick="pickPlace(' + i + ')">' +
+      '<span class="p-pin">📍</span><span>' + esc(p.name) +
+      (p.last ? '<span class="p-sub">last time: ' + fmtDate(p.last) + '</span>' : '') + '</span></button>').join('');
+    window._places = places;
+  }
+
+  function pickPlace(i) {
+    const p = window._places[i];
+    chosenPlace = { name: p.name, lat: p.lat, lng: p.lng };
+    document.getElementById('new-place-panel').style.display = 'none';
+    renderPlaces();
+    toast('📍 ' + p.name);
+  }
+
+  function newPlace() {
+    document.getElementById('new-place-panel').style.display = 'block';
+    chosenPlace = null;
+    renderPlaces();
+    setTimeout(() => {
+      if (!pickMap) {
+        pickMap = L.map('pick-map').setView(VILLAGE_CENTRE, 15);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(pickMap);
+        pickPin = L.marker(VILLAGE_CENTRE, { draggable: true }).addTo(pickMap);
+      }
+      pickMap.invalidateSize();
+      document.getElementById('place-name').focus();
+    }, 80);
+  }
+
+  function useMyLocation() {
+    if (!navigator.geolocation) { toast('Your browser can\'t share its location'); return; }
+    toast('Finding you…');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const ll = [pos.coords.latitude, pos.coords.longitude];
+        if (pickPin) { pickPin.setLatLng(ll); pickMap.setView(ll, 16); }
+        toast('📍 Pin dropped where you are');
+      },
+      () => toast('Couldn\'t get your location — drag the pin instead'),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }
+
+  function skipPlace() { chosenPlace = null; go('s-who'); }
+
+  // Step 3: WHO
+  function renderWho() {
+    const el = document.getElementById('who-list');
+    const names = [...new Set([
+      ...groupVolunteers().filter(v => v.status !== 'Inactive').map(v => v.name),
+      ...Object.keys(who),
+    ])];
+    el.innerHTML = '';
+    names.forEach(name => {
+      const sel = who[name] != null;
+      const row = document.createElement('div');
+      row.className = 'who-row' + (sel ? ' sel' : '');
+      const safe = name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      row.innerHTML =
+        '<div class="who-tick" onclick="toggleWho(\'' + safe + '\')">' + (sel ? '✓' : '') + '</div>' +
+        '<div class="who-name" onclick="toggleWho(\'' + safe + '\')">' + esc(name) + '</div>' +
+        '<div class="hours-ctl">' +
+          '<button class="hours-btn" onclick="bump(\'' + safe + '\', -0.5)">−</button>' +
+          '<div class="hours-val">' + (sel ? who[name] : 2) + ' hrs</div>' +
+          '<button class="hours-btn" onclick="bump(\'' + safe + '\', 0.5)">+</button>' +
+        '</div>';
+      el.appendChild(row);
+    });
+    if (!names.length) el.innerHTML = '<div class="sub">No volunteers on the list yet — add whoever came below.</div>';
+    updateWhoTotal();
+  }
+
+  function toggleWho(name) { if (who[name] != null) delete who[name]; else who[name] = 2; renderWho(); }
+  function bump(name, d) { who[name] = Math.max(0.5, Math.min(12, (who[name] || 2) + d)); renderWho(); }
+
+  function addExtra() {
+    const inp = document.getElementById('extra-name');
+    const name = inp.value.trim();
+    if (!name) return;
+    who[name] = 2;
+    inp.value = '';
+    renderWho();
+    toast('✅ ' + name + ' added');
+  }
+
+  function updateWhoTotal() {
+    const names = Object.keys(who);
+    const total = names.reduce((s, n) => s + who[n], 0);
+    document.getElementById('who-total').textContent =
+      names.length ? (names.length + ' ' + (names.length === 1 ? 'person' : 'people') + ' · ' + total + ' hours all up') : 'No one ticked yet';
+  }
+
+  // Step 4: SAVE + SHARE
+  async function finishWizard() {
+    const names = Object.keys(who);
+    if (!names.length) { toast('Tick at least one person first 🙂'); return; }
+    const btn = document.getElementById('save-bee');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    const newName = document.getElementById('place-name').value.trim();
+    if (!chosenPlace && newName) {
+      const ll = pickPin ? pickPin.getLatLng() : null;
+      chosenPlace = { name: newName, lat: ll ? ll.lat : null, lng: ll ? ll.lng : null };
+    }
+    const attendance = names.map(n => {
+      const match = groupVolunteers().find(v => v.name.toLowerCase() === n.toLowerCase());
+      return { name: n, hours: who[n], ...(match ? { volunteerId: match.id } : {}) };
+    });
+    const title = 'Working bee' + (chosenPlace ? ' — ' + chosenPlace.name : '') + ' (' + fmtDate(beeDate) + ')';
+
+    try {
+      const r = await fetch('/api/volunteer-activity', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({
+        village: VILLAGE, action: 'save', confirm: true,
+        name: title, cardPath: GROUP.path, cardTitle: GROUP.title,
+        date: beeDate, attendance,
+        locationName: chosenPlace ? chosenPlace.name : '',
+        lat: chosenPlace ? chosenPlace.lat : undefined,
+        lng: chosenPlace ? chosenPlace.lng : undefined,
+      }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'That didn\'t save — try again');
+      savedBee = { pageId: data.pageId, totalHours: data.totalHours, names };
+
+      document.getElementById('done-text').innerHTML =
+        'You wrote down <b>' + data.totalHours + ' hours</b> from <b>' + names.length + ' ' + (names.length === 1 ? 'helper' : 'helpers') + '</b>' +
+        (chosenPlace ? ' at <b>' + esc(chosenPlace.name) + '</b>' : '') + '.<br>These hours help the village win grants — every one matters.';
+      document.getElementById('share-text').value =
+        'Many hands at ' + (chosenPlace ? chosenPlace.name : 'our latest working bee') + ' — ' +
+        names.length + ' ' + shortName(GROUP.title) + ' volunteers put in ' + data.totalHours + ' hours caring for our patch. ' +
+        'Want to join us next time? Pop your name down on the ' + shortName(GROUP.title) + ' page of the village website. 🌿';
+      const pb = document.getElementById('photo-btn');
+      pb.classList.remove('got'); pb.textContent = '📷 Add a photo from today (optional)';
+      await reloadActivities();
+      go('s-done');
+    } catch (e) { toast('⚠️ ' + e.message); }
+    finally { btn.disabled = false; btn.textContent = 'Next → Finish'; }
+  }
+
+  async function reloadActivities() {
+    try {
+      const r = await fetch('/api/volunteer-activity?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (r.ok) activities = data.activities || [];
+    } catch (e) {}
+  }
+
+  // Photo: downscale to ≤1600px JPEG like the News Desk, then hold for share.
+  function photoPicked(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      photoData = { contentType: 'image/jpeg', dataBase64: dataUrl.split(',')[1] };
+      const b = document.getElementById('photo-btn');
+      b.classList.add('got');
+      b.textContent = '📷 Photo attached ✓ (tap to change)';
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
+  }
+
+  async function shareStory() {
+    if (!savedBee) return;
+    const btn = document.getElementById('share-btn');
+    btn.disabled = true; btn.textContent = 'Sharing…';
+    try {
+      const h = await authHeaders();
+      const storyTitle = shortName(GROUP.title) + ' working bee — ' + fmtDate(beeDate);
+      const save = await fetch('/api/news-save', { method: 'POST', headers: h, body: JSON.stringify({
+        village: VILLAGE, title: storyTitle,
+        description: document.getElementById('share-text').value.trim(),
+        publishDate: beeDate, live: true,
+      }) }).then(r => r.json().then(d => ({ ok: r.ok, d })));
+      if (!save.ok) throw new Error(save.d.error || 'Could not save the story');
+
+      if (photoData) {
+        const up = await fetch('/api/news-image', { method: 'POST', headers: h, body: JSON.stringify({
+          village: VILLAGE, storyKey: save.d.pageId, contentType: photoData.contentType, dataBase64: photoData.dataBase64,
+        }) }).then(r => r.json().then(d => ({ ok: r.ok, d })));
+        if (up.ok && up.d.url) {
+          await fetch('/api/news-save', { method: 'POST', headers: h, body: JSON.stringify({
+            village: VILLAGE, pageId: save.d.pageId, title: storyTitle,
+            description: document.getElementById('share-text').value.trim(),
+            publishDate: beeDate, live: true, imageUrl: up.d.url,
+          }) });
+        }
+      }
+
+      await fetch('/api/news-publish', { method: 'POST', headers: h, body: JSON.stringify({ village: VILLAGE }) });
+      toast('📣 Shared! The website updates in a few minutes');
+      setTimeout(() => go('s-home'), 1600);
+    } catch (e) { toast('⚠️ ' + e.message); }
+    finally { btn.disabled = false; btn.textContent = 'Share on the village news page'; }
+  }
+
+  // ── Volunteers, hours & trail ──────────────────────────────────
+  let trailMap = null, trailLayer = null;
+
+  function fyStart() {
+    const now = new Date();
+    return (now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1) + '-07-01';
+  }
+
+  function renderVolunteers() {
+    const acts = groupActivities().filter(a => a.status !== 'Draft');
+    const fy = acts.filter(a => (a.date || '') >= fyStart());
+    const fyHours = Math.round(fy.reduce((s, a) => s + (a.totalHours || 0), 0) * 2) / 2;
+    document.getElementById('hours-summary').innerHTML = fy.length
+      ? 'This year the group has given <b>' + fyHours + ' hours</b> across <b>' + fy.length + ' working ' + (fy.length === 1 ? 'bee' : 'bees') + '</b>. Every hour counts toward the village\'s grant applications. 💪'
+      : 'No working bees written down yet this year — after your first one, the hours and the map fill in here. 💪';
+
+    // Per-person hours (matched by volunteerId, falling back to name)
+    const perPerson = {};
+    acts.forEach(a => (a.attendance || []).forEach(x => {
+      const key = x.volunteerId || x.name.toLowerCase();
+      perPerson[key] = (perPerson[key] || 0) + (x.hours || 0);
+    }));
+    document.getElementById('team-list').innerHTML = groupVolunteers().map(v => {
+      const hrs = Math.round(((perPerson[v.id] || perPerson[v.name.toLowerCase()] || 0)) * 2) / 2;
+      const sub = [v.status === 'Applied' ? 'waiting for a yes' : '', v.phone || v.email, hrs ? hrs + ' hrs' : ''].filter(Boolean).join(' · ');
+      return '<div class="vol-row"><div class="vol-main"><div class="vol-name">' + esc(v.name) + '</div>' +
+        '<div class="vol-sub">' + esc(sub) + '</div></div></div>';
+    }).join('') || '<div class="sub">No volunteers yet — share your group\'s page with the village!</div>';
+
+    // Trail map
+    const located = acts.filter(a => Number.isFinite(a.lat) && Number.isFinite(a.lng));
+    const frame = document.getElementById('trail-frame');
+    document.getElementById('trail-list').innerHTML = located.slice().reverse().map((a, i) =>
+      '<div class="trail-item"><span class="trail-num">' + (located.length - i) + '</span><b>' + esc(a.location || a.name) + '</b> — ' +
+      fmtDate(a.date) + ' · ' + (a.totalHours || 0) + ' hrs</div>').join('');
+    if (!located.length) { frame.style.display = 'none'; return; }
+    frame.style.display = '';
+    setTimeout(() => {
+      if (!trailMap) {
+        trailMap = L.map('trail-map');
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap © CARTO' }).addTo(trailMap);
+      }
+      if (trailLayer) trailLayer.remove();
+      trailLayer = L.layerGroup().addTo(trailMap);
+      const pts = located.map(a => [a.lat, a.lng]);
+      L.polyline(pts, { color: '#1d3a54', weight: 3.5, dashArray: '2 10', lineCap: 'round' }).addTo(trailLayer);
+      located.forEach((a, i) => {
+        L.marker([a.lat, a.lng], {
+          icon: L.divIcon({
+            className: '',
+            html: '<div style="background:#15795f;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);">' + (i + 1) + '</div>',
+            iconSize: [28, 28], iconAnchor: [14, 14],
+          }),
+        }).addTo(trailLayer).bindPopup('<b>' + esc(a.location || a.name) + '</b><br>' + fmtDate(a.date) + ' · ' + (a.totalHours || 0) + ' hrs');
+      });
+      trailMap.fitBounds(L.latLngBounds(pts).pad(0.35));
+      trailMap.invalidateSize();
+    }, 80);
+  }
+</script>
+</body>
+</html>

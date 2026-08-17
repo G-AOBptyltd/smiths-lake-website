@@ -372,6 +372,13 @@
       scope = rosterRes.d.scope || { isAdmin: false, cards: [] };
       activities = actRes.ok ? (actRes.d.activities || []) : [];
 
+      // Stewards get the simple task-first home; this console is the admin
+      // surface (?console=1 lets anyone in deliberately).
+      if (!scope.isAdmin && !new URLSearchParams(location.search).has('console')) {
+        location.replace('/admin/volunteers/my/');
+        return;
+      }
+
       document.getElementById('nav-stewards').style.display = scope.isAdmin ? '' : 'none';
       if (scope.isAdmin) loadStewards();
       loadCatalogue();
