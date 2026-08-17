@@ -201,6 +201,18 @@ via `rsvpPayment`, waitlist promote, door-list CSV). Env `NOTION_VF_EVENTS_DB_ID
 like bookings (Village column + village-scoped roles); per-village payment config arrives
 with the Villages-registry generalisation pass (see Facility bookings section).
 
+## Advertising (/admin/ads/, added Aug 2026)
+Local business placements & sponsorships register. 📣 VF Advertisers DB (env
+`NOTION_VF_ADS_DB_ID` + baked fallback): tier (Major Sponsor/Sponsor/Supporter), run dates,
+fee + payment recording; Status Draft → Active → Expired/Cancelled. `ad-list` (public) serves
+ONLY live placements' public-safe fields (business/blurb/website/tier — never money or
+contacts); `ad-admin` (admin, PII). **NOT rendered anywhere on the public site** — the
+console's "Public preview" tab shows the sponsor strip; WHERE it mounts (homepage/news/
+services) is a committee decision per the publicity-gating rule (see memory
+vf1-publicity-gated-by-greg): all public visibility changes need Greg's explicit go.
+NOTE: Smiths Lake has NO hall — the Facility bookings module is dormant platform inventory
+for a future village (Smiths Lake facility seed removed, `bookings` off in its Modules flags).
+
 ## Survey Tool
 - **URL:** https://villagefirst.org.au/surveys/blueys-beach-survey.html
 - **Backend:** Google Apps Script Web App (deployed under admin@villagefirst.org.au)

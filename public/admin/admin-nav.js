@@ -24,6 +24,7 @@
     { id: 'volunteers', href: '/admin/volunteers/',      label: '🙋 Volunteers' },
     { id: 'bookings', href: '/admin/bookings/',          label: '🏛 Bookings' },
     { id: 'events',   href: '/admin/events/',            label: '🎟 Events' },
+    { id: 'ads',      href: '/admin/ads/',               label: '📣 Advertising' },
     { id: 'playbook', href: '/admin/playbook/',          label: '📖 Playbooks' },
   ];
 
@@ -38,6 +39,7 @@
     if (p.indexOf('/admin/volunteers') === 0) return 'volunteers';
     if (p.indexOf('/admin/bookings') === 0) return 'bookings';
     if (p.indexOf('/admin/events') === 0) return 'events';
+    if (p.indexOf('/admin/ads') === 0) return 'ads';
     if (p.indexOf('publish-news') > -1) return 'publish';
     if (p.indexOf('/admin') === 0) return 'home';
     return '';
