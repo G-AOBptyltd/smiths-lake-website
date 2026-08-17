@@ -93,17 +93,38 @@ async function findParentPage(explicit) {
       const res = await fetch(`https://api.notion.com/v1/databases/${dbId}`, { headers: notionHeaders() });
       if (!res.ok) { trail.push(`${dbId.slice(0, 8)}→${res.status}`); continue; }
       let parent = (await res.json()).parent;
-      for (let hop = 0; hop < 5 && parent; hop++) {
+      const hops = [];
+      for (let hop = 0; hop < 8 && parent; hop++) {
         if (parent.type === 'page_id') return parent.page_id;
-        if (parent.type !== 'block_id') break;
+        if (parent.type !== 'block_id') { hops.push(parent.type); break; }
         const b = await fetch(`https://api.notion.com/v1/blocks/${parent.block_id}`, { headers: notionHeaders() });
-        if (!b.ok) break;
-        parent = (await b.json()).parent;
+        if (!b.ok) { hops.push(`block:${b.status}`); break; }
+        const blk = await b.json();
+        hops.push(blk.type || 'block');
+        parent = blk.parent;
       }
-      trail.push(`${dbId.slice(0, 8)}→${parent?.type || 'none'}`);
+      trail.push(`${dbId.slice(0, 8)}→${hops.join('>') || parent?.type || 'none'}`);
     } catch (_) { trail.push(`${dbId.slice(0, 8)}→err`); }
   }
-  throw new Error(`No page parent found (${trail.join(', ')}) — POST again with {"parentPageId":"<notion page id>"}`);
+  // Nothing resolved — surface the pages this integration CAN see so the
+  // caller can re-POST with an explicit parentPageId.
+  let pages = [];
+  try {
+    const res = await fetch('https://api.notion.com/v1/search', {
+      method: 'POST', headers: notionHeaders(),
+      body: JSON.stringify({ filter: { value: 'page', property: 'object' }, page_size: 30 }),
+    });
+    if (res.ok) {
+      pages = ((await res.json()).results || []).map((p) => ({
+        id: p.id,
+        title: (p.properties?.title?.title || []).map((t) => t.plain_text).join('') || '(untitled)',
+        parentType: p.parent?.type,
+      }));
+    }
+  } catch (_) {}
+  const err = new Error(`No page parent found (${trail.join(', ')}) — POST again with {"parentPageId":"<notion page id>"}`);
+  err.pages = pages;
+  throw err;
 }
 
 export const handler = async (event, context) => {
@@ -149,6 +170,6 @@ export const handler = async (event, context) => {
         : 'All volunteer DBs already provisioned.',
     });
   } catch (err) {
-    return jsonResp(502, { error: err.message });
+    return jsonResp(502, { error: err.message, ...(err.pages ? { pages: err.pages } : {}) });
   }
 };
