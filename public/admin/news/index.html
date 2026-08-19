@@ -78,6 +78,29 @@
   .photo-note { border: 1px dashed #d1d5db; border-radius: 7px; padding: 10px 12px; font-size: 11.5px; color: #6b7280; line-height: 1.55; }
   .form-actions { display: flex; gap: 8px; margin-top: 18px; align-items: center; flex-wrap: wrap; }
 
+  /* Template chooser */
+  .tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; max-width: 840px; }
+  .tpl-card { background: white; border: 1.5px solid #e2e8f0; border-radius: 11px; padding: 14px; cursor: pointer; transition: border-color .15s, box-shadow .15s; display: flex; flex-direction: column; }
+  .tpl-card:hover { border-color: #15a06e; box-shadow: 0 3px 10px rgba(15,124,96,.09); }
+  .tpl-emoji { font-size: 1.7rem; line-height: 1; margin-bottom: 8px; }
+  .tpl-name { font-size: 13.5px; font-weight: 800; color: #143d2e; }
+  .tpl-badge { align-self: flex-start; font-size: 9.5px; font-weight: 800; border-radius: 9px; padding: 2px 8px; margin: 6px 0 8px; text-transform: uppercase; letter-spacing: .03em; }
+  .tpl-badge.rich { background: #c9f0dd; color: #0f5c48; }
+  .tpl-badge.light { background: #e0edff; color: #1e40af; }
+  .tpl-blurb { font-size: 11.5px; color: #6b7280; line-height: 1.5; }
+
+  /* Composer sections */
+  .cs-block { border-top: 1px dashed #e5e7eb; margin-top: 16px; padding-top: 12px; }
+  .cs-block:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+  .cs-photo-row { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+  .cs-thumb { max-width: 130px; max-height: 96px; border-radius: 7px; border: 1px solid #d1d5db; object-fit: cover; }
+  .cs-gallery-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .cs-gallery-thumbs .gt { position: relative; }
+  .cs-gallery-thumbs img { width: 84px; height: 64px; object-fit: cover; border-radius: 6px; border: 1px solid #d1d5db; }
+  .cs-gallery-thumbs .gt-x { position: absolute; top: -7px; right: -7px; background: #b91c1c; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; line-height: 1; cursor: pointer; }
+  .back-link { background: none; border: none; color: #1d6fb8; font-size: 11.5px; cursor: pointer; padding: 0; margin-bottom: 12px; }
+  .back-link:hover { text-decoration: underline; }
+
   .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
   .f-chip { font-size: 11px; border: 1px solid #d1d5db; background: white; color: #4b5563; border-radius: 12px; padding: 4px 12px; cursor: pointer; }
   .f-chip.on { background: #0f5c48; border-color: #0f5c48; color: white; font-weight: 700; }
@@ -123,7 +146,7 @@
   <div class="layout">
     <div class="sidebar">
       <button class="s-item on" data-panel="stories" onclick="showPanel('stories')">📋 Stories</button>
-      <button class="s-item" data-panel="write" onclick="newStory()">✍️ Write a story</button>
+      <button class="s-item" data-panel="compose" onclick="startCompose()">✍️ Write a story</button>
       <button class="s-item" data-panel="share" onclick="showPanel('share')">🔗 Share existing</button>
       <button class="s-item" data-panel="help" onclick="showPanel('help')">💡 Help</button>
     </div>
@@ -172,6 +195,38 @@
         </div>
       </div>
 
+      <!-- ── Compose (template chooser + rich composer) ──────────── -->
+      <div class="panel" id="panel-compose">
+        <h1>Write a story</h1>
+        <p class="sub" id="compose-sub">Pick a layout to start. Three are built for lots of photos; two are quick with a photo or two.</p>
+
+        <!-- Step 1: choose a template -->
+        <div id="tpl-chooser" class="tpl-grid"></div>
+
+        <!-- Step 2: fill it in -->
+        <div id="tpl-composer" style="display:none;">
+          <button class="back-link" onclick="backToChooser()">← choose a different layout</button>
+          <div class="form-card">
+            <label for="c-headline">Headline</label>
+            <input type="text" id="c-headline" maxlength="200" placeholder="e.g. Smiths Lake Community Day" />
+
+            <label for="c-summary">One-line summary <span class="hint">(shows on the news card &amp; article intro)</span></label>
+            <textarea id="c-summary" maxlength="500" style="min-height:60px;" placeholder="A sentence or two that sums up the story."></textarea>
+
+            <label for="c-date">Date it appears <span class="hint">(stories show newest first)</span></label>
+            <input type="date" id="c-date" style="max-width:200px;" />
+
+            <div id="compose-sections"></div>
+
+            <div class="form-actions">
+              <button class="btn btn-green" onclick="saveComposed(true)">Save &amp; put in feed</button>
+              <button class="btn btn-ghost" onclick="saveComposed(false)">Save as draft</button>
+              <span class="status-msg" id="compose-status"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── Share existing ──────────────────────────────────────── -->
       <div class="panel" id="panel-share">
         <h1>Share something already on the website</h1>
@@ -191,7 +246,7 @@
         <p class="sub">The 60-second guide.</p>
         <div class="help-card">
           <h2>To publish a news story</h2>
-          1. Click <b>Write a story</b> — headline, story, date. 2. <b>Save &amp; put in feed</b>. 3. Back on <b>Stories</b>, press <b>Publish to website</b>. Done — live in ~3 minutes.
+          1. Click <b>Write a story</b> and pick a <b>layout</b> — three are built for lots of photos (Photo Story, Event Recap &amp; Gallery, Photo Essay); two are quick with a photo or two (Announcement, Simple Update). 2. Fill in the headline, a one-line summary, and each section — add photos where you like. 3. <b>Save &amp; put in feed</b>, then on <b>Stories</b> press <b>Publish to website</b>. Live in ~3 minutes.
           <h2>To share something already on the website</h2>
           Use <b>Share existing</b>, click the item (a project, a group, a history page…), confirm, publish. It appears in the feed with today's date and links to its page.
           <h2>To take a story down</h2>
@@ -541,6 +596,246 @@
     } catch (e) {
       status.textContent = '⚠️ ' + e.message; status.className = 'status-msg err';
     }
+  }
+
+  // ══ Rich story composer (template-driven) ═════════════════════
+  // Each template is a list of sections. A section renders a form field AND
+  // maps to page-body blocks written by /api/news-body. 3 are photo-rich,
+  // 2 are quick (1–2 photos).
+  const TEMPLATES = [
+    { id:'photo-story', emoji:'📸', name:'Photo Story', tag:'rich',
+      blurb:'A lead photo, then your story flowing past three or four more photos. Great for events and days out.',
+      sections:[
+        { key:'lead', type:'photo', label:'Lead photo' },
+        { key:'intro', type:'text', label:'Opening — set the scene' },
+        { key:'p1', type:'photo', label:'Photo' },
+        { key:'t1', type:'text', label:'More of the story' },
+        { key:'p2', type:'photo', label:'Photo' },
+        { key:'t2', type:'text', label:'More of the story' },
+        { key:'p3', type:'photo', label:'Photo (optional)' },
+        { key:'t3', type:'text', label:'Closing (optional)' },
+      ] },
+    { id:'event-recap', emoji:'🎉', name:'Event Recap & Gallery', tag:'rich',
+      blurb:'Intro, a big lead photo, the write-up, then a photo gallery grid. Perfect for community days.',
+      sections:[
+        { key:'intro', type:'text', label:'What happened' },
+        { key:'lead', type:'photo', label:'Lead photo' },
+        { key:'body', type:'text', label:'The write-up' },
+        { key:'gallery', type:'gallery', label:'Photo gallery — add several' },
+        { key:'close', type:'text', label:'Closing / thanks (optional)' },
+      ] },
+    { id:'photo-essay', emoji:'🖼️', name:'Photo Essay', tag:'rich',
+      blurb:'A series of photos, each with a caption and a few words. Up to five picture-and-text stops.',
+      sections:[
+        { key:'intro', type:'text', label:'Introduction (optional)' },
+        { key:'s1', type:'captioned', label:'Photo 1' },
+        { key:'s2', type:'captioned', label:'Photo 2' },
+        { key:'s3', type:'captioned', label:'Photo 3' },
+        { key:'s4', type:'captioned', label:'Photo 4 (optional)' },
+        { key:'s5', type:'captioned', label:'Photo 5 (optional)' },
+      ] },
+    { id:'announcement', emoji:'📣', name:'Announcement', tag:'light',
+      blurb:'A clear notice with one main photo and an optional second. For notices, dates and updates.',
+      sections:[
+        { key:'lead', type:'photo', label:'Main photo' },
+        { key:'body', type:'text', label:'The announcement' },
+        { key:'p2', type:'photo', label:'Second photo (optional)' },
+      ] },
+    { id:'simple', emoji:'✏️', name:'Simple Update', tag:'light',
+      blurb:'Just words and an optional photo or two. The quickest way to post.',
+      sections:[
+        { key:'body', type:'text', label:'Your update' },
+        { key:'p1', type:'photo', label:'Photo (optional)' },
+        { key:'p2', type:'photo', label:'Another photo (optional)' },
+      ] },
+  ];
+
+  let composeTpl = null;
+  let composePhotos = {};   // section key -> pending photo { dataBase64, contentType, filename, dataUrl, url? }
+  let composeGallery = {};  // section key -> [ pending, ... ]
+
+  function startCompose() {
+    composeTpl = null; composePhotos = {}; composeGallery = {};
+    document.getElementById('tpl-composer').style.display = 'none';
+    document.getElementById('tpl-chooser').style.display = '';
+    document.getElementById('compose-status').textContent = '';
+    renderTemplateChooser();
+    showPanel('compose');
+  }
+  function backToChooser() {
+    document.getElementById('tpl-composer').style.display = 'none';
+    document.getElementById('tpl-chooser').style.display = '';
+  }
+  function renderTemplateChooser() {
+    const el = document.getElementById('tpl-chooser'); el.innerHTML = '';
+    TEMPLATES.forEach(t => {
+      const c = document.createElement('div'); c.className = 'tpl-card'; c.onclick = () => chooseTemplate(t.id);
+      const badge = t.tag === 'rich' ? '<span class="tpl-badge rich">Photo-rich</span>' : '<span class="tpl-badge light">1–2 photos</span>';
+      c.innerHTML = '<div class="tpl-emoji">' + t.emoji + '</div><div class="tpl-name"></div>' + badge + '<div class="tpl-blurb"></div>';
+      c.querySelector('.tpl-name').textContent = t.name;
+      c.querySelector('.tpl-blurb').textContent = t.blurb;
+      el.appendChild(c);
+    });
+  }
+  function chooseTemplate(id) {
+    composeTpl = TEMPLATES.find(t => t.id === id);
+    composePhotos = {}; composeGallery = {};
+    document.getElementById('c-headline').value = '';
+    document.getElementById('c-summary').value = '';
+    document.getElementById('c-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('compose-status').textContent = '';
+    renderComposer();
+    document.getElementById('tpl-chooser').style.display = 'none';
+    document.getElementById('tpl-composer').style.display = '';
+  }
+  function renderComposer() {
+    const host = document.getElementById('compose-sections'); host.innerHTML = '';
+    composeTpl.sections.forEach(sec => {
+      const b = document.createElement('div'); b.className = 'cs-block';
+      if (sec.type === 'text') {
+        b.innerHTML = '<label>' + sec.label + '</label><textarea id="cs-' + sec.key + '" maxlength="4000" placeholder="Each blank line becomes a new paragraph."></textarea>';
+      } else if (sec.type === 'photo') {
+        b.innerHTML = '<label>' + sec.label + ' <span class="hint">(JPG or PNG)</span></label>' +
+          '<div class="cs-photo-row"><input type="file" accept="image/jpeg,image/png,image/webp" onchange="onComposePhoto(\'' + sec.key + '\', event)" />' +
+          '<div id="csp-' + sec.key + '"></div></div>';
+      } else if (sec.type === 'captioned') {
+        b.innerHTML = '<label>' + sec.label + ' <span class="hint">(photo optional)</span></label>' +
+          '<div class="cs-photo-row"><input type="file" accept="image/jpeg,image/png,image/webp" onchange="onComposePhoto(\'' + sec.key + '\', event)" />' +
+          '<div id="csp-' + sec.key + '"></div></div>' +
+          '<input type="text" id="csc-' + sec.key + '" maxlength="200" placeholder="Caption (optional)" style="margin-top:6px;" />' +
+          '<textarea id="cs-' + sec.key + '" maxlength="2000" style="min-height:80px; margin-top:6px;" placeholder="A few words about this photo (optional)."></textarea>';
+      } else if (sec.type === 'gallery') {
+        b.innerHTML = '<label>' + sec.label + ' <span class="hint">(pick several at once — they lay out in a grid)</span></label>' +
+          '<input type="file" accept="image/jpeg,image/png,image/webp" multiple onchange="onComposeGallery(\'' + sec.key + '\', event)" />' +
+          '<div class="cs-gallery-thumbs" id="csg-' + sec.key + '"></div>';
+      }
+      host.appendChild(b);
+    });
+  }
+
+  // Downscale a File to a JPEG pending object (≤1600px, q0.82) — keeps payloads small.
+  function fileToPending(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Could not read file'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Could not load image'));
+        img.onload = () => {
+          const MAX = 1600; let { width, height } = img;
+          if (width > MAX || height > MAX) { const s = Math.min(MAX / width, MAX / height); width = Math.round(width * s); height = Math.round(height * s); }
+          const cv = document.createElement('canvas'); cv.width = width; cv.height = height;
+          cv.getContext('2d').drawImage(img, 0, 0, width, height);
+          const dataUrl = cv.toDataURL('image/jpeg', 0.82);
+          resolve({ dataBase64: dataUrl.split(',')[1], contentType: 'image/jpeg', filename: (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', dataUrl });
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function onComposePhoto(key, ev) {
+    const file = ev.target.files && ev.target.files[0]; if (!file) return;
+    try {
+      const pending = await fileToPending(file);
+      composePhotos[key] = pending;
+      document.getElementById('csp-' + key).innerHTML =
+        '<img class="cs-thumb" src="' + pending.dataUrl + '" alt="" /> <button type="button" class="btn btn-ghost" onclick="clearComposePhoto(\'' + key + '\')">Remove</button>';
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
+  function clearComposePhoto(key) {
+    delete composePhotos[key];
+    const wrap = document.getElementById('csp-' + key);
+    const input = wrap.parentElement.querySelector('input[type=file]');
+    if (input) input.value = '';
+    wrap.innerHTML = '';
+  }
+  async function onComposeGallery(key, ev) {
+    const files = Array.from(ev.target.files || []); if (!files.length) return;
+    composeGallery[key] = composeGallery[key] || [];
+    for (const f of files) { try { composeGallery[key].push(await fileToPending(f)); } catch (e) { /* skip bad file */ } }
+    ev.target.value = '';
+    renderGalleryThumbs(key);
+  }
+  function renderGalleryThumbs(key) {
+    const host = document.getElementById('csg-' + key); host.innerHTML = '';
+    (composeGallery[key] || []).forEach((p, idx) => {
+      const d = document.createElement('div'); d.className = 'gt';
+      d.innerHTML = '<img src="' + p.dataUrl + '" alt="" /><button type="button" class="gt-x" title="Remove">×</button>';
+      d.querySelector('.gt-x').onclick = () => { composeGallery[key].splice(idx, 1); renderGalleryThumbs(key); };
+      host.appendChild(d);
+    });
+  }
+
+  async function saveComposed(live) {
+    const status = document.getElementById('compose-status');
+    const title = document.getElementById('c-headline').value.trim();
+    if (!title) { status.textContent = 'A headline is needed first'; status.className = 'status-msg err'; return; }
+    const summary = document.getElementById('c-summary').value.trim();
+    const date = document.getElementById('c-date').value || new Date().toISOString().slice(0, 10);
+    status.textContent = 'Saving…'; status.className = 'status-msg';
+    try {
+      // 1) Create the page — title + summary (Description) + date + live flag → pageId.
+      const r = await fetch('/api/news-save', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, title, description: summary, publishDate: date, live }),
+      });
+      const data = await r.json(); if (!r.ok) throw new Error(data.error || 'Could not save');
+      const pageId = data.pageId;
+
+      // 2) Upload every photo (section order) to Blobs → absolute URL (Notion needs absolute).
+      const uploads = [];
+      composeTpl.sections.forEach(sec => {
+        if ((sec.type === 'photo' || sec.type === 'captioned') && composePhotos[sec.key]) uploads.push(composePhotos[sec.key]);
+        if (sec.type === 'gallery') (composeGallery[sec.key] || []).forEach(p => uploads.push(p));
+      });
+      let done = 0;
+      for (const p of uploads) {
+        if (p.url) { done++; continue; }
+        status.textContent = 'Uploading photo ' + (done + 1) + ' of ' + uploads.length + '…';
+        const up = await fetch('/api/news-image', {
+          method: 'POST', headers: await authHeaders(),
+          body: JSON.stringify({ village: VILLAGE, storyKey: pageId, dataBase64: p.dataBase64, contentType: p.contentType, filename: p.filename }),
+        });
+        const ud = await up.json(); if (!up.ok) throw new Error(ud.error || 'Photo upload failed');
+        p.url = location.origin + ud.url; // absolute URL for Notion external image blocks
+        done++;
+      }
+
+      // 3) Assemble the ordered body blocks (+ pick a hero photo for the feed card).
+      const blocks = []; let heroUrl = null;
+      composeTpl.sections.forEach(sec => {
+        if (sec.type === 'text') {
+          const v = (document.getElementById('cs-' + sec.key)?.value || '').trim();
+          if (v) blocks.push({ type: 'paragraphs', text: v });
+        } else if (sec.type === 'photo') {
+          const p = composePhotos[sec.key];
+          if (p && p.url) { blocks.push({ type: 'image', url: p.url }); heroUrl = heroUrl || p.url; }
+        } else if (sec.type === 'captioned') {
+          const p = composePhotos[sec.key];
+          const cap = (document.getElementById('csc-' + sec.key)?.value || '').trim();
+          const v = (document.getElementById('cs-' + sec.key)?.value || '').trim();
+          if (p && p.url) { blocks.push({ type: 'image', url: p.url, caption: cap || undefined }); heroUrl = heroUrl || p.url; }
+          if (v) blocks.push({ type: 'paragraphs', text: v });
+        } else if (sec.type === 'gallery') {
+          const urls = (composeGallery[sec.key] || []).map(p => p.url).filter(Boolean);
+          if (urls.length) { blocks.push({ type: 'gallery', urls }); heroUrl = heroUrl || urls[0]; }
+        }
+      });
+
+      // 4) Write the page body (and the hero image for the feed card).
+      status.textContent = 'Laying out the story…';
+      const rb = await fetch('/api/news-body', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, pageId, heroUrl, blocks }),
+      });
+      const bd = await rb.json(); if (!rb.ok) throw new Error(bd.error || 'Could not lay out the story');
+
+      status.textContent = live ? '✅ Saved — press Publish on the Stories page to put it live' : '✅ Draft saved';
+      status.className = 'status-msg ok';
+      loadStories();
+    } catch (e) { status.textContent = '⚠️ ' + e.message; status.className = 'status-msg err'; }
   }
 
   // ── Share existing ─────────────────────────────────────────────
