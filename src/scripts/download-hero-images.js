@@ -240,19 +240,29 @@ async function downloadPageContentImages() {
     const manifest = {};
     let downloaded = 0, skipped = 0;
 
-    for (const page of dbResponse.results) {
-      // Fetch all blocks for this page
-      let blocks = [];
+    // Recursively collect every block under a parent, descending into blocks
+    // with children (column_list/column layouts hold their images as children).
+    async function collectBlocks(parentId) {
+      const out = [];
       let cursor = undefined;
       do {
         const blockResponse = await notion.blocks.children.list({
-          block_id: page.id,
+          block_id: parentId,
           start_cursor: cursor,
           page_size: 100,
         });
-        blocks.push(...blockResponse.results);
+        for (const b of blockResponse.results) {
+          out.push(b);
+          if (b.has_children) out.push(...await collectBlocks(b.id));
+        }
         cursor = blockResponse.has_more ? blockResponse.next_cursor : undefined;
       } while (cursor);
+      return out;
+    }
+
+    for (const page of dbResponse.results) {
+      // Fetch all blocks for this page (including nested column children)
+      const blocks = await collectBlocks(page.id);
 
       // Download only Notion-hosted file images (these have expiring S3 URLs)
       for (const block of blocks) {

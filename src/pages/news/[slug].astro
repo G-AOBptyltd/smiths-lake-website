@@ -10,6 +10,7 @@
  */
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import NotionPageContent from '../../components/NotionPageContent.astro';
 import { fetchDetailPageItems } from '../../lib/notion-detail-pages.js';
 
 // Section → gradient + icon mapping for the hero block
@@ -68,6 +69,21 @@ const dateSource = item.publishDate || item.notionLastEditedTime;
 const pubDate = dateSource
   ? new Date(dateSource).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
   : null;
+
+// Normalise the "related website" link — a Notion URL like "villagefirst.org.au"
+// (no scheme) is otherwise treated as a path and 404s off the current article URL.
+const rawWebsiteUrl = (item.websiteUrl || '').trim();
+const externalUrl = rawWebsiteUrl
+  ? (/^https?:\/\//i.test(rawWebsiteUrl) ? rawWebsiteUrl : `https://${rawWebsiteUrl}`)
+  : null;
+
+// Fallback body for legacy stories with no page-body content: render the
+// plain-text Description, newline-split into paragraphs (matches old behaviour).
+const escapeHtml = (s: string) => s
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const descriptionFallbackHtml = item.description
+  ? item.description.split('\n').filter(Boolean).map((p: string) => `<p>${escapeHtml(p)}</p>`).join('')
+  : '<p>Content coming soon.</p>';
 
 const feedbackUrl = `/feedback/?project=${encodeURIComponent(item.title)}`;
 const pageTitle = `${item.title} | Smiths Lake Village`;
@@ -348,19 +364,15 @@ const pageDescription = item.description ? item.description.substring(0, 160) : 
       <span class="article-meta-item">{readTime} min read</span>
     </div>
 
-    <!-- Body -->
+    <!-- Body — full Notion page content (paragraphs, images, columns);
+         falls back to the plain-text Description for legacy stories. -->
     <div class="article-body">
-      {item.description
-        ? item.description.split('\n').filter(Boolean).map((para: string) => (
-            <p>{para}</p>
-          ))
-        : <p>Content coming soon.</p>
-      }
+      <NotionPageContent pageId={item.id} fallbackHtml={descriptionFallbackHtml} />
     </div>
 
     <!-- External link -->
-    {item.websiteUrl && (
-      <a href={item.websiteUrl} class="article-ext-link" target="_blank" rel="noopener noreferrer">
+    {externalUrl && (
+      <a href={externalUrl} class="article-ext-link" target="_blank" rel="noopener noreferrer">
         Visit related website ↗
       </a>
     )}
