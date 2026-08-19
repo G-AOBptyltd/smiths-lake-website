@@ -103,24 +103,33 @@ function imageBlockToHtml(block: any) {
 }
 
 /**
- * Fetch all blocks from a Notion page
+ * Fetch all blocks from a Notion page (or a parent block), recursing into any
+ * block that has children — column_list/column layouts, toggles, etc. Children
+ * are attached as `block.__children` so blocksToHtml can render nested content.
  */
 async function fetchPageBlocks(pageId) {
   try {
     const blocks = [];
     let cursor = undefined;
-    
+
     do {
       const response = await notion.blocks.children.list({
         block_id: pageId,
         start_cursor: cursor,
         page_size: 100,
       });
-      
+
       blocks.push(...response.results);
       cursor = response.has_more ? response.next_cursor : undefined;
     } while (cursor);
-    
+
+    // Recurse into nested blocks (columns hold their images/text as children).
+    for (const block of blocks) {
+      if (block.has_children) {
+        block.__children = await fetchPageBlocks(block.id);
+      }
+    }
+
     return blocks;
   } catch (error) {
     console.error(`Failed to fetch blocks for page ${pageId}:`, error.message);
@@ -200,7 +209,16 @@ function blocksToHtml(blocks: any[]) {
         htmlParts.push(imageBlockToHtml(block));
         break;
       }
-      
+
+      case 'column_list': {
+        const columns = (block.__children || [])
+          .filter(c => c.type === 'column')
+          .map(col => `<div class="notion-column">${blocksToHtml(col.__children || [])}</div>`)
+          .join('');
+        if (columns) htmlParts.push(`<div class="notion-columns">${columns}</div>`);
+        break;
+      }
+
       case 'divider': {
         htmlParts.push('<hr>');
         break;
@@ -385,6 +403,26 @@ try {
     flex: 1;
   }
   
+  .notion-page-content .notion-columns {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+  }
+
+  .notion-page-content .notion-column {
+    flex: 1 1 240px;
+    min-width: 0;
+  }
+
+  .notion-page-content .notion-column .notion-image {
+    margin: 0 0 1rem;
+  }
+
+  @media (max-width: 600px) {
+    .notion-page-content .notion-columns { flex-direction: column; gap: 0; }
+  }
+
   .notion-page-content .notion-image {
     margin: 1.5rem 0;
     text-align: center;
