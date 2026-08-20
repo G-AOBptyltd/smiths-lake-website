@@ -157,6 +157,11 @@
   to = "/.netlify/functions/news-lifecycle"
   status = 200
 
+[[redirects]]
+  from = "/api/news-fetch"
+  to = "/.netlify/functions/news-fetch"
+  status = 200
+
 # Live Water Level — MHL Site-209465 proxy (Smiths Lake / Tarbuck Bay)
 [[redirects]]
   from = "/api/water-level"
