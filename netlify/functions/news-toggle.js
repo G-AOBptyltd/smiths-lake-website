@@ -44,6 +44,46 @@ export const handler = async (event, context) => {
   const properties = { 'Show in News Feed': { checkbox: enable } };
   if (enable) {
     properties['Publish Date'] = { date: { start: body.publishDate || new Date().toISOString().slice(0, 10) } };
+
+    // When enabling for feed, verify page has content (description or body blocks)
+    try {
+      const pageRes = await fetch(`https://api.notion.com/v1/pages/${body.pageId}`, {
+        headers: {
+          Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
+          'Notion-Version': NOTION_VERSION,
+        },
+      });
+      if (pageRes.ok) {
+        const pageData = await pageRes.json();
+        const desc = (pageData.properties?.Description?.rich_text || [])
+          .map(rt => rt.text?.content || '')
+          .join('')
+          .trim();
+
+        // Check if page has body blocks (excluding title blocks)
+        let hasBodyContent = false;
+        if (desc) hasBodyContent = true;
+        else {
+          const blocksRes = await fetch(`https://api.notion.com/v1/blocks/${body.pageId}/children?page_size=1`, {
+            headers: {
+              Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
+              'Notion-Version': NOTION_VERSION,
+            },
+          });
+          if (blocksRes.ok) {
+            const blocksData = await blocksRes.json();
+            hasBodyContent = (blocksData.results || []).length > 0;
+          }
+        }
+
+        if (!hasBodyContent) {
+          return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Stories must have content before publishing. Add a summary or use "Write a story" to add a rich body.' }) };
+        }
+      }
+    } catch (err) {
+      // If we can't verify, allow the toggle (fail-open) but log the issue
+      console.warn('Could not verify page content:', err.message);
+    }
   }
 
   try {

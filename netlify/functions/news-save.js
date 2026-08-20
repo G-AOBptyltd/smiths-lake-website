@@ -65,6 +65,11 @@ export const handler = async (event, context) => {
   const live = !!body.live;
   const publishDate = body.publishDate || new Date().toISOString().slice(0, 10);
 
+  // Enforce: published stories must have at least a description or page body
+  if (live && !description) {
+    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Published stories must have content. Add a summary or use "Write a story" to add a rich body.' }) };
+  }
+
   const properties = {
     'Title': { title: [{ text: { content: title.slice(0, 200) } }] },
     'Description': { rich_text: description
