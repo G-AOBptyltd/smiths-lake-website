@@ -670,26 +670,7 @@
       if (!r.ok) throw new Error(data.error || 'Could not save');
       editingId = data.pageId;
 
-      // 1b) Save formatted content to the page body (so links and formatting render properly)
-      const editorHtml = editorDiv.innerHTML;
-      if (editorHtml.trim()) {
-        const blocks = editorHtmlToBlocks(editorHtml);
-        status.textContent = 'Saving formatted content…';
-        const bodyReq = await fetch('/api/news-body', {
-          method: 'POST', headers: await authHeaders(),
-          body: JSON.stringify({
-            village: VILLAGE,
-            pageId: editingId,
-            blocks,
-          }),
-        });
-        if (!bodyReq.ok) {
-          const bodyErr = await bodyReq.json();
-          throw new Error(bodyErr.error || 'Could not save formatted content');
-        }
-      }
-
-      // 2) If a new photo was picked, upload it to Blobs, then write its URL back.
+      // If a new photo was picked, upload it to Blobs, then write its URL back.
       if (pendingPhoto) {
         status.textContent = 'Uploading photo…';
         const up = await fetch('/api/news-image', {
