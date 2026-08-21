@@ -174,7 +174,43 @@
           <input type="text" id="f-headline" maxlength="200" placeholder="e.g. Winter Markets Return to the Community Hall" />
 
           <label for="f-body">Your story</label>
-          <textarea id="f-body" maxlength="2000" placeholder="What's happening, when, where, and who to contact…"></textarea>
+          <div id="editor-toolbar" style="display:flex; gap:6px; margin-bottom:8px; padding:8px; background:#f9fafb; border-radius:6px; border:1px solid #e5e7eb;">
+            <button type="button" class="toolbar-btn" id="btn-bold" title="Bold" onclick="editorFormat('bold')">
+              <strong style="font-size:1.1em;">B</strong>
+            </button>
+            <button type="button" class="toolbar-btn" id="btn-italic" title="Italic" onclick="editorFormat('italic')">
+              <em style="font-size:1.1em;">I</em>
+            </button>
+            <div style="width:1px; background:#d1d5db;"></div>
+            <button type="button" class="toolbar-btn" id="btn-link" title="Add link" onclick="editorShowLinkDialog()">
+              🔗 Link
+            </button>
+          </div>
+          <style>
+            .toolbar-btn {
+              background: white; border: 1px solid #d1d5db; border-radius: 5px; padding: 6px 12px;
+              font-size: 13px; font-weight: 600; color: #4b5563; cursor: pointer; font-family: inherit;
+              transition: all 0.15s;
+            }
+            .toolbar-btn:hover { background: #f0fdf6; border-color: #15a06e; }
+            .toolbar-btn.active { background: #15a06e; color: white; border-color: #15a06e; }
+            #editor-content {
+              border: 1px solid #d1d5db; border-radius: 7px; padding: 11px; font-size: 13px;
+              font-family: inherit; line-height: 1.6; color: #374151; min-height: 150px;
+              resize: vertical; overflow: auto; word-wrap: break-word;
+            }
+            #editor-content:focus { outline: 2px solid #15a06e; border-color: #15a06e; }
+            #editor-content[data-empty]:before { content: attr(data-empty); color: #9ca3af; }
+            .link-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000;
+              background: white; border: 1px solid #d1d5db; border-radius: 12px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); min-width: 380px; }
+            .link-dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 999; }
+            .link-dialog input { width: 100%; padding: 8px; margin: 8px 0; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; box-sizing: border-box; font-family: inherit; }
+            .link-dialog-actions { display: flex; gap: 8px; margin-top: 16px; }
+            .link-dialog-actions button { flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; cursor: pointer; font-weight: 600; font-family: inherit; }
+            .link-dialog-actions .link-ok { background: #15a06e; color: white; border-color: #15a06e; }
+            .link-dialog-actions .link-cancel { background: white; color: #4b5563; }
+          </style>
+          <div id="editor-content" contenteditable="true" placeholder="What's happening, when, where, and who to contact…"></div>
 
           <label for="f-date">Date it appears <span class="hint">(stories show newest first)</span></label>
           <input type="date" id="f-date" style="max-width:200px;" />
@@ -461,12 +497,69 @@
     } catch (e) { alert('⚠️ ' + e.message); }
   }
 
+  // ── Rich text editor helpers ──────────────────────────────────
+  let editorSelection = null; // Track current selection for formatting
+  function editorFormat(type) {
+    document.execCommand(type, false, null);
+    document.getElementById('editor-content').focus();
+  }
+
+  function editorShowLinkDialog() {
+    const overlay = document.createElement('div');
+    overlay.className = 'link-dialog-overlay';
+    overlay.onclick = () => { overlay.remove(); dialog.remove(); document.getElementById('editor-content').focus(); };
+
+    const dialog = document.createElement('div');
+    dialog.className = 'link-dialog';
+    const selection = window.getSelection();
+    const selectedText = selection.toString() || '';
+    dialog.innerHTML = `
+      <h3 style="margin: 0 0 12px; font-size: 15px; color: #1f2937;">Add link</h3>
+      <label style="display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 4px;">Link text</label>
+      <input id="link-text" type="text" value="${selectedText.slice(0, 100)}" placeholder="e.g. Take the survey" />
+      <label style="display: block; font-size: 12px; font-weight: 600; color: #6b7280; margin: 12px 0 4px;">URL</label>
+      <input id="link-url" type="text" placeholder="https://example.com/survey" />
+      <div class="link-dialog-actions">
+        <button class="link-ok" onclick="editorInsertLink()">Add link</button>
+        <button class="link-cancel" onclick="this.closest('.link-dialog').remove(); this.closest('.link-dialog-overlay').remove(); document.getElementById('editor-content').focus();">Cancel</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    document.body.appendChild(dialog);
+    document.getElementById('link-url').focus();
+    document.getElementById('link-url').onkeydown = (e) => { if (e.key === 'Enter') editorInsertLink(); };
+  }
+
+  function editorInsertLink() {
+    const text = document.getElementById('link-text').value.trim();
+    const url = document.getElementById('link-url').value.trim();
+    if (!text || !url) { alert('Please enter both link text and URL'); return; }
+    const selection = window.getSelection();
+    if (selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const link = document.createElement('a');
+    link.href = url;
+    link.textContent = text;
+    link.style.color = '#1d6fb8';
+    link.style.textDecoration = 'underline';
+    range.deleteContents();
+    range.insertNode(link);
+    range.setStartAfter(link);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    document.querySelectorAll('.link-dialog, .link-dialog-overlay').forEach(el => el.remove());
+    document.getElementById('editor-content').focus();
+  }
+
   // ── Write / edit ───────────────────────────────────────────────
   function newStory() {
     editingId = null;
     document.getElementById('write-title').textContent = 'Write a story';
     document.getElementById('f-headline').value = '';
-    document.getElementById('f-body').value = '';
+    document.getElementById('editor-content').innerHTML = '';
     document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
     document.getElementById('save-status').textContent = '';
     clearPhoto();
@@ -478,7 +571,7 @@
     editingId = s.id;
     document.getElementById('write-title').textContent = 'Edit story';
     document.getElementById('f-headline').value = s.title;
-    document.getElementById('f-body').value = s.description || '';
+    document.getElementById('editor-content').innerHTML = s.description || '';
     document.getElementById('f-date').value = s.publishDate || new Date().toISOString().slice(0, 10);
     document.getElementById('save-status').textContent = '';
     clearPhoto();
@@ -536,6 +629,21 @@
     reader.readAsDataURL(file);
   }
 
+  function editorHtmlToBlocks(html) {
+    if (!html || !html.trim()) return [];
+
+    // Replace <br> with newline markers, split by blank lines, and preserve HTML (including links)
+    const normalized = html.replace(/<br\s*\/?>/gi, '\n').replace(/<div><\/div>/gi, '\n\n');
+
+    // Split by double newlines or paragraph boundaries
+    const paragraphs = normalized.split(/\n\n+/).filter(p => p.trim());
+
+    return paragraphs.map(p => ({
+      type: 'paragraphs',
+      text: p.replace(/\n/g, ' ').trim(), // Preserve HTML tags (links) but join lines
+    }));
+  }
+
   async function saveStory(live) {
     const status = document.getElementById('save-status');
     const title = document.getElementById('f-headline').value.trim();
@@ -543,13 +651,17 @@
     status.textContent = 'Saving…'; status.className = 'status-msg';
     try {
       // 1) Save the text fields (creates the page if new, so we get a pageId).
+      // Extract the description from editor content (as plain text for the Description property)
+      const editorDiv = document.getElementById('editor-content');
+      const description = editorDiv.innerText.trim().substring(0, 2000);
+
       const r = await fetch('/api/news-save', {
         method: 'POST', headers: await authHeaders(),
         body: JSON.stringify({
           village: VILLAGE,
           pageId: editingId || undefined,
           title,
-          description: document.getElementById('f-body').value,
+          description,
           publishDate: document.getElementById('f-date').value,
           live,
         }),
@@ -557,6 +669,25 @@
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'Could not save');
       editingId = data.pageId;
+
+      // 1b) Save formatted content to the page body (so links and formatting render properly)
+      const editorHtml = editorDiv.innerHTML;
+      if (editorHtml.trim()) {
+        const blocks = editorHtmlToBlocks(editorHtml);
+        status.textContent = 'Saving formatted content…';
+        const bodyReq = await fetch('/api/news-body', {
+          method: 'POST', headers: await authHeaders(),
+          body: JSON.stringify({
+            village: VILLAGE,
+            pageId: editingId,
+            blocks,
+          }),
+        });
+        if (!bodyReq.ok) {
+          const bodyErr = await bodyReq.json();
+          throw new Error(bodyErr.error || 'Could not save formatted content');
+        }
+      }
 
       // 2) If a new photo was picked, upload it to Blobs, then write its URL back.
       if (pendingPhoto) {
@@ -579,7 +710,7 @@
             village: VILLAGE,
             pageId: editingId,
             title,
-            description: document.getElementById('f-body').value,
+            description,
             publishDate: document.getElementById('f-date').value,
             live,
             imageUrl: upData.url,

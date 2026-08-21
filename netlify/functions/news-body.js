@@ -46,8 +46,72 @@ function richText(text) {
   return [{ type: 'text', text: { content: String(text).slice(0, NOTION_TEXT_LIMIT) } }];
 }
 
+// Parse HTML with links and convert to Notion rich_text array
+function htmlToRichText(html) {
+  if (!html || typeof html !== 'string') return richText('');
+
+  const richTextArray = [];
+
+  // Extract plain text (without HTML tags)
+  const plainText = html.replace(/<[^>]*>/g, '').slice(0, NOTION_TEXT_LIMIT);
+
+  // If HTML contains links, parse them and build rich_text accordingly
+  if (html.includes('<a')) {
+    const linkRegex = /<a[^>]*href=["']([^"']*)["'][^>]*>([^<]*)<\/a>/g;
+    const segments = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = linkRegex.exec(html)) !== null) {
+      const [fullMatch, url, linkText] = match;
+      const startIndex = match.index;
+
+      // Add text before link
+      if (startIndex > lastIndex) {
+        const beforeText = html.substring(lastIndex, startIndex).replace(/<[^>]*>/g, '');
+        if (beforeText) {
+          segments.push({ type: 'text', content: beforeText });
+        }
+      }
+
+      // Add link
+      segments.push({ type: 'link', content: linkText, url });
+
+      lastIndex = match.index + fullMatch.length;
+    }
+
+    // Add remaining text after last link
+    if (lastIndex < html.length) {
+      const afterText = html.substring(lastIndex).replace(/<[^>]*>/g, '');
+      if (afterText) {
+        segments.push({ type: 'text', content: afterText });
+      }
+    }
+
+    // Convert segments to Notion rich_text
+    segments.forEach((seg) => {
+      if (seg.type === 'text') {
+        richTextArray.push({ type: 'text', text: { content: seg.content.slice(0, NOTION_TEXT_LIMIT) } });
+      } else if (seg.type === 'link') {
+        richTextArray.push({
+          type: 'text',
+          text: { content: seg.content.slice(0, NOTION_TEXT_LIMIT) },
+          href: seg.url,
+        });
+      }
+    });
+
+    return richTextArray.length > 0 ? richTextArray : richText(plainText);
+  }
+
+  // Fallback: return plain text
+  return richText(plainText);
+}
+
 function paragraphBlock(text) {
-  return { object: 'block', type: 'paragraph', paragraph: { rich_text: richText(text) } };
+  // Support both plain text and HTML with links
+  const richTextContent = (typeof text === 'string' && text.includes('<a')) ? htmlToRichText(text) : richText(text);
+  return { object: 'block', type: 'paragraph', paragraph: { rich_text: richTextContent } };
 }
 
 function headingBlock(text) {
