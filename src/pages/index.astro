@@ -568,10 +568,15 @@ const sections = [
             const a = document.createElement('a');
             a.href = '/supporters/';
             a.className = 'ticker-item';
+            // Astro scopes the <style> block, so its .ticker-* rules never reach
+            // these JS-created nodes — inline the visible styles so the shout-out
+            // matches the native ticker items (otherwise the headline renders in
+            // the same navy as the ticker background and looks blank).
+            a.style.cssText = 'display:inline-flex;align-items:center;gap:0.6rem;padding:0.8rem 0;text-decoration:none;';
             a.innerHTML =
-              '<span class="ticker-cat" style="color:#f5a623;">SUPPORTER</span>' +
-              '<span class="ticker-hed">🎉 Thanks ' + String(s.name).replace(/[<>&]/g, '') + '!</span>' +
-              '<span class="ticker-sep" aria-hidden="true">◆</span>';
+              '<span class="ticker-cat" style="color:#f5a623;font-size:0.66rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;">SUPPORTER</span>' +
+              '<span class="ticker-hed" style="color:#fff;font-size:0.9rem;font-weight:600;">🎉 Thanks ' + String(s.name).replace(/[<>&]/g, '') + '!</span>' +
+              '<span class="ticker-sep" aria-hidden="true" style="color:rgba(255,255,255,0.3);font-size:0.6rem;margin:0 1.4rem;">◆</span>';
             group.insertBefore(a, group.firstChild);
           });
         });
