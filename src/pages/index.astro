@@ -57,6 +57,23 @@ try {
     .slice(0, 3);
 } catch (e) { /* news strip is optional — never break the homepage */ }
 
+// The news ticker sits on a dark navy (#1B365D) band. Section accent colours
+// that are themselves dark — Project Hub / Services are navy (#1B365D), same as
+// the band — render an invisible category label. Lift any too-dark accent toward
+// white just for the ticker, so every category stays readable without changing
+// the section colours used elsewhere on light backgrounds.
+function tickerCatColour(section) {
+  const hex = getSectionColour(section);
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex);
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b; // 0..255
+  if (lum >= 90) return hex; // already bright enough on navy
+  const lift = (c) => Math.round(c + (255 - c) * 0.55);
+  return `rgb(${lift(r)}, ${lift(g)}, ${lift(b)})`;
+}
+
 // Use Notion hero image if available, otherwise fall back to existing local image
 const heroImage = sectionHeroManifest['home'] || '/images/hero-smiths-lake.jpg';
 const heroTitle = sectionSettings?.heroTitle || 'Welcome to Smiths Lake Village';
@@ -151,7 +168,7 @@ const sections = [
             <div class="ticker-group" aria-hidden={copy === 1 ? 'true' : undefined}>
               {latestNews.map((item) => (
                 <a href={item._url} class="ticker-item" tabindex={copy === 1 ? -1 : undefined}>
-                  <span class="ticker-cat" style={`color: ${getSectionColour(item.section)};`}>
+                  <span class="ticker-cat" style={`color: ${tickerCatColour(item.section)};`}>
                     {getSectionDisplayName(item.section)}
                   </span>
                   <span class="ticker-hed">{item.title}</span>
