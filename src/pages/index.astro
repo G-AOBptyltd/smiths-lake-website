@@ -57,6 +57,23 @@ try {
     .slice(0, 3);
 } catch (e) { /* news strip is optional — never break the homepage */ }
 
+// The news ticker sits on a dark navy (#1B365D) band. Section accent colours
+// that are themselves dark — Project Hub / Services are navy (#1B365D), same as
+// the band — render an invisible category label. Lift any too-dark accent toward
+// white just for the ticker, so every category stays readable without changing
+// the section colours used elsewhere on light backgrounds.
+function tickerCatColour(section) {
+  const hex = getSectionColour(section);
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex);
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b; // 0..255
+  if (lum >= 90) return hex; // already bright enough on navy
+  const lift = (c) => Math.round(c + (255 - c) * 0.55);
+  return `rgb(${lift(r)}, ${lift(g)}, ${lift(b)})`;
+}
+
 // Use Notion hero image if available, otherwise fall back to existing local image
 const heroImage = sectionHeroManifest['home'] || '/images/hero-smiths-lake.jpg';
 const heroTitle = sectionSettings?.heroTitle || 'Welcome to Smiths Lake Village';
@@ -151,7 +168,7 @@ const sections = [
             <div class="ticker-group" aria-hidden={copy === 1 ? 'true' : undefined}>
               {latestNews.map((item) => (
                 <a href={item._url} class="ticker-item" tabindex={copy === 1 ? -1 : undefined}>
-                  <span class="ticker-cat" style={`color: ${getSectionColour(item.section)};`}>
+                  <span class="ticker-cat" style={`color: ${tickerCatColour(item.section)};`}>
                     {getSectionDisplayName(item.section)}
                   </span>
                   <span class="ticker-hed">{item.title}</span>
@@ -168,6 +185,38 @@ const sections = [
       <a href="/news/" class="ticker-all">All news →</a>
     </section>
   )}
+
+  <!-- News & Services Banner -->
+  <section class="news-banner-section">
+    <div class="container">
+      <div class="news-banner">
+        <div class="news-banner-icon" aria-hidden="true">📰</div>
+        <div class="news-banner-body">
+          <p class="news-banner-label">Stay informed</p>
+          <h2 class="news-banner-heading">Village News</h2>
+          <p class="news-banner-text">The latest news and updates from across the community — published by the community, for the community.</p>
+        </div>
+        <div class="news-banner-action">
+          <a href="/news/" class="news-banner-btn">See what's happening →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Who's supporting us this month — live supporters card -->
+  <section class="supporters-banner-section">
+    <div class="container">
+      <a href="/supporters/" class="supporters-banner" id="supporters-banner" aria-label="See our community supporters">
+        <div class="sb-icon" aria-hidden="true">🏆</div>
+        <div class="sb-body">
+          <p class="sb-label">Community heroes</p>
+          <h2 class="sb-heading">Who's supporting us this month</h2>
+          <p class="sb-text" id="sb-names">Cheers to the locals and businesses backing Smiths Lake.</p>
+        </div>
+        <div class="sb-action"><span class="sb-btn">See the board →</span></div>
+      </a>
+    </div>
+  </section>
 
   <!-- Main Sections Grid -->
   <section class="section bg-off-white" aria-labelledby="explore-heading">
@@ -188,38 +237,6 @@ const sections = [
           );
         })}
       </div>
-    </div>
-  </section>
-  
-  <!-- News & Services Banner -->
-  <section class="news-banner-section">
-    <div class="container">
-      <div class="news-banner">
-        <div class="news-banner-icon" aria-hidden="true">📰</div>
-        <div class="news-banner-body">
-          <p class="news-banner-label">Stay informed</p>
-          <h2 class="news-banner-heading">Village News</h2>
-          <p class="news-banner-text">The latest news and updates from across the community — published by the community, for the community.</p>
-        </div>
-        <div class="news-banner-action">
-          <a href="/news/" class="news-banner-btn">See what's happening →</a>
-        </div>
-      </div>
-    </div>
-  </section>
-  
-  <!-- Who's supporting us this month — live supporters card -->
-  <section class="supporters-banner-section">
-    <div class="container">
-      <a href="/supporters/" class="supporters-banner" id="supporters-banner" aria-label="See our community supporters">
-        <div class="sb-icon" aria-hidden="true">🏆</div>
-        <div class="sb-body">
-          <p class="sb-label">Community heroes</p>
-          <h2 class="sb-heading">Who's supporting us this month</h2>
-          <p class="sb-text" id="sb-names">Cheers to the locals and businesses backing Smiths Lake.</p>
-        </div>
-        <div class="sb-action"><span class="sb-btn">See the board →</span></div>
-      </a>
     </div>
   </section>
 
