@@ -196,6 +196,29 @@ async function clearPageBody(pageId) {
   }
 }
 
+// Count the real content blocks on a page — mirrors NotionPageContent.astro's
+// filter (empty paragraphs don't count). Used by the News Desk to warn when the
+// simple "Edit story" form is opened on a story that already has a rich page
+// body (whose text the summary form can't change).
+async function countBodyBlocks(pageId) {
+  let cursor;
+  let count = 0;
+  do {
+    const url = new URL(`https://api.notion.com/v1/blocks/${pageId}/children`);
+    url.searchParams.set('page_size', '100');
+    if (cursor) url.searchParams.set('start_cursor', cursor);
+    const res = await fetch(url, { headers: notionHeaders() });
+    if (!res.ok) break; // best-effort: a fresh page simply has no children
+    const data = await res.json();
+    for (const blk of data.results || []) {
+      if (blk.type === 'paragraph' && !(blk.paragraph?.rich_text || []).length) continue;
+      count++;
+    }
+    cursor = data.has_more ? data.next_cursor : undefined;
+  } while (cursor);
+  return count;
+}
+
 async function appendBlocks(pageId, blocks) {
   // Notion accepts ≤100 children per append call.
   for (let i = 0; i < blocks.length; i += 100) {
@@ -213,7 +236,24 @@ async function appendBlocks(pageId, blocks) {
 }
 
 export const handler = async (event, context) => {
-  if (event.httpMethod !== 'POST') return json(405, { error: 'POST only' });
+  // GET — report whether a story already has a rich page body, so the News Desk
+  // can warn before someone edits its text in the summary-only form.
+  if (event.httpMethod === 'GET') {
+    const village = event.queryStringParameters?.village || 'Smiths Lake';
+    const auth = requireRole(context, { village, anyOf: ['admin', 'steward'] });
+    if (!auth.ok) return json(auth.status, { error: auth.error });
+    const pageId = (event.queryStringParameters?.pageId || '').trim();
+    if (!pageId) return json(400, { error: 'A pageId is required' });
+    try {
+      const blockCount = await countBodyBlocks(pageId);
+      return json(200, { blockCount, hasRichBody: blockCount > 0 });
+    } catch (err) {
+      // Fail-open — never block editing just because the check errored.
+      return json(200, { blockCount: 0, hasRichBody: false, warning: err.message });
+    }
+  }
+
+  if (event.httpMethod !== 'POST') return json(405, { error: 'POST or GET only' });
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'Invalid JSON' }); }

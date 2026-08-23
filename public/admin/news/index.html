@@ -169,6 +169,10 @@
       <div class="panel" id="panel-write">
         <h1 id="write-title">Write a story</h1>
         <p class="sub">Plain words are perfect. Each blank line becomes a new paragraph on the website.</p>
+        <div id="rich-body-warning" style="display:none; margin:0 0 14px; padding:12px 14px; background:#fef3c7; border:1px solid #f59e0b; border-radius:8px; color:#92400e; font-size:13px; line-height:1.55;">
+          <strong>Heads up — this story has a full photo layout.</strong><br>
+          Changes to the <em>headline</em>, <em>date</em> and <em>photo</em> here <strong>will</strong> appear on the website. But the words you type in “Your story” below <strong>won’t</strong> replace the article text — this story’s page was built with the rich photo composer, and the website shows that instead of this summary. To change the story text, edit the story’s page in Notion (or ask an admin to rebuild it).
+        </div>
         <div class="form-card">
           <label for="f-headline">Headline</label>
           <input type="text" id="f-headline" maxlength="200" placeholder="e.g. Winter Markets Return to the Community Hall" />
@@ -562,8 +566,23 @@
     document.getElementById('editor-content').innerHTML = '';
     document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
     document.getElementById('save-status').textContent = '';
+    document.getElementById('rich-body-warning').style.display = 'none';
     clearPhoto();
     showPanel('write');
+  }
+
+  // Warn if the story being edited already has a rich page body: the summary
+  // form only writes the Description, which the website ignores when a body
+  // exists — so its "Your story" text would silently not appear.
+  async function checkRichBody(pageId) {
+    const warn = document.getElementById('rich-body-warning');
+    warn.style.display = 'none';
+    if (!pageId) return;
+    try {
+      const r = await fetch('/api/news-body?village=' + encodeURIComponent(VILLAGE) + '&pageId=' + encodeURIComponent(pageId), { headers: await authHeaders() });
+      const d = await r.json();
+      if (r.ok && d.hasRichBody) warn.style.display = 'block';
+    } catch (e) { /* fail-open — no warning if the check errors */ }
   }
 
   function editStory(i) {
@@ -582,6 +601,7 @@
       document.getElementById('photo-preview-wrap').style.display = 'block';
       document.getElementById('photo-note').textContent = 'Current photo shown. Choose a new file to replace it.';
     }
+    checkRichBody(s.id);
     showPanel('write');
   }
 
