@@ -235,6 +235,18 @@
   to = "/.netlify/functions/ad-admin"
   status = 200
 
+# Grant Portal API
+[[redirects]]
+  from = "/api/grant-admin"
+  to = "/.netlify/functions/grant-admin"
+  status = 200
+
+# Village Profile API
+[[redirects]]
+  from = "/api/profile-admin"
+  to = "/.netlify/functions/profile-admin"
+  status = 200
+
 # Events & ticketing API
 [[redirects]]
   from = "/api/event-list"

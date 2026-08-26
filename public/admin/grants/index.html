@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Grant Portal — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; color: #1e293b; font-size: 13px; }
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; font-family: inherit; }
+  .village-select option { color: #1f2937; }
+
+  .wrap { max-width: 900px; margin: 0 auto; padding: 1.4rem 1rem 3rem; }
+  .ph { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+  .ph-title { font-size: 1.05rem; font-weight: 700; color: #143d2e; }
+  .ph-sub { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+  .ph-acts { margin-left: auto; display: flex; gap: 8px; }
+  .btn { padding: 6px 13px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
+  .btn-g { background: #0f8f80; color: #fff; }
+  .btn-g:hover { background: #0c7568; }
+  .btn-s { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+  .btn-r { background: #fee2e2; color: #dc2626; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center; }
+  .stat .n { font-size: 20px; font-weight: 900; color: #143d2e; }
+  .stat .l { font-size: 10.5px; color: #6b7280; font-weight: 600; margin-top: 3px; }
+
+  .grp-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #64748b; margin: 16px 0 8px; }
+  .g-row { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .g-row:hover { border-color: #0f8f80; }
+  .g-name { font-weight: 700; color: #0f172a; }
+  .g-meta { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .g-amt { margin-left: auto; text-align: right; }
+  .g-amt .a { font-weight: 800; color: #143d2e; }
+  .g-amt .l { font-size: 10px; color: #9ca3af; }
+  .pill { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+  .st-Researching { background: #f1f5f9; color: #475569; }
+  .st-Drafting { background: #fef3c7; color: #92400e; }
+  .st-Submitted { background: #dbeafe; color: #1d4ed8; }
+  .st-Successful { background: #dcfce7; color: #166534; }
+  .st-Unsuccessful { background: #fee2e2; color: #b91c1c; }
+  .st-Withdrawn { background: #f3f4f6; color: #6b7280; }
+
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; }
+  .f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .f-f { margin-bottom: 4px; }
+  .f-l { font-size: 10px; font-weight: 700; color: #374151; margin-bottom: 3px; }
+  .f-i { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 5px; padding: 7px 9px; font-size: 12px; background: #fff; outline: none; font-family: inherit; color: #1e293b; }
+  .f-i:focus { border-color: #0f8f80; }
+  textarea.f-i { resize: vertical; }
+  .form-acts { display: flex; gap: 8px; margin-top: 14px; align-items: center; }
+  #form-msg { font-size: 11px; font-weight: 600; }
+  #form-msg.ok { color: #16a34a; } #form-msg.err { color: #dc2626; }
+
+  .empty { text-align: center; padding: 36px 16px; color: #9ca3af; }
+  .note { font-size: 11.5px; color: #6b7280; margin-top: 14px; line-height: 1.5; }
+  .vf-toast { position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 12px; opacity: 0; transition: opacity .3s; z-index: 999; }
+  .vf-toast.show { opacity: 1; }
+
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; text-align: center; padding: 1rem; }
+  .auth-btn { background: #15795f; color: #fff; border: none; border-radius: 8px; padding: .75rem 2rem; font-size: .95rem; font-weight: 700; cursor: pointer; }
+  @media (max-width: 640px) { .f-grid { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">🏆</div>
+  <h1 style="font-size:1.2rem;color:#143d2e;">Grant Portal</h1>
+  <p style="font-size:.85rem;color:#6b7280;max-width:360px;">Track every grant application from research to outcome. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand">🏆 VillageFirst · Grant Portal</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="wrap">
+
+    <!-- PIPELINE -->
+    <div id="panel-list">
+      <div class="ph">
+        <div><div class="ph-title">Grant pipeline</div><div class="ph-sub" id="list-sub">Every application, research to outcome</div></div>
+        <div class="ph-acts"><button class="btn btn-g" onclick="newGrant()">+ New application</button></div>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div id="pipeline"><div class="empty">Loading…</div></div>
+      <div class="note">Statuses flow <b>Researching → Drafting → Submitted → Successful / Unsuccessful</b> (or Withdrawn).
+      Submitted and outcome dates stamp automatically the first time a stage is reached. Link an application to a
+      Co-contribution project by name to keep the funding story joined up.</div>
+    </div>
+
+    <!-- EDITOR -->
+    <div id="panel-edit" style="display:none;">
+      <div class="ph">
+        <div><div class="ph-title" id="edit-title">New application</div><div class="ph-sub">The application record — dates, amounts and ownership</div></div>
+        <div class="ph-acts"><button class="btn btn-s" onclick="showList()">← Back to pipeline</button></div>
+      </div>
+      <div class="card">
+        <div class="f-grid">
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Grant name *</div><input class="f-i" id="g-name" placeholder="e.g. Foreshore Accessibility Upgrade — round 2"></div>
+          <div class="f-f"><div class="f-l">Funder</div><input class="f-i" id="g-funder" placeholder="e.g. NSW Government / FRRR / MidCoast Council"></div>
+          <div class="f-f"><div class="f-l">Program</div><input class="f-i" id="g-program" placeholder="e.g. Community Building Partnership"></div>
+          <div class="f-f"><div class="f-l">Amount requested ($)</div><input class="f-i" id="g-req" type="number" min="0" step="1"></div>
+          <div class="f-f"><div class="f-l">Amount awarded ($)</div><input class="f-i" id="g-awd" type="number" min="0" step="1"></div>
+          <div class="f-f"><div class="f-l">Application due</div><input class="f-i" id="g-due" type="date"></div>
+          <div class="f-f"><div class="f-l">Submitted</div><input class="f-i" id="g-sub" type="date"></div>
+          <div class="f-f"><div class="f-l">Outcome date</div><input class="f-i" id="g-out" type="date"></div>
+          <div class="f-f"><div class="f-l">Linked project <span style="font-weight:400;color:#9ca3af;">(Co-contribution project name)</span></div><input class="f-i" id="g-proj" placeholder="e.g. recreation-reserve"></div>
+          <div class="f-f"><div class="f-l">Owner</div><input class="f-i" id="g-owner" placeholder="Who is driving this application"></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Notes</div><textarea class="f-i" id="g-notes" rows="3" placeholder="Eligibility notes, evidence to gather, contacts, conditions…"></textarea></div>
+        </div>
+        <div class="form-acts">
+          <button class="btn btn-g" id="save-btn" onclick="saveGrant()">Save application</button>
+          <select class="f-i" id="g-status" style="max-width:160px;display:none;" onchange="setGrantStatus(this.value)"></select>
+          <button class="btn btn-r" id="del-btn" style="display:none;" onclick="deleteGrant()">Delete</button>
+          <span id="form-msg"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="vf-toast" id="toast"></div>
+
+<script>
+  const STATUSES = ['Researching', 'Drafting', 'Submitted', 'Successful', 'Unsuccessful', 'Withdrawn'];
+  let currentUser = null, grants = [], editId = '';
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', () => { location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+  function escHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3500); }
+  const fmt$ = n => (n == null ? '—' : '$' + Number(n).toLocaleString('en-AU'));
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+    loadVillages();
+    loadGrants();
+  }
+
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const d = await r.json();
+      const villages = (d.villages || []).filter(v => v.status === 'live');
+      if (!villages.length) return;
+      if (!villages.some(v => v.name === VILLAGE)) VILLAGE = villages[0].name;
+      sel.innerHTML = villages.map(v => `<option value="${escHtml(v.name)}" ${v.name === VILLAGE ? 'selected' : ''}>${escHtml(v.name)}</option>`).join('');
+    } catch (e) {}
+    sel.onchange = () => { VILLAGE = sel.value; localStorage.setItem('vf_active_village', VILLAGE); showList(); loadGrants(); };
+  }
+
+  async function loadGrants() {
+    document.getElementById('list-sub').textContent = VILLAGE + ' — every application, research to outcome';
+    try {
+      const r = await fetch('/api/grant-admin?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not load grants');
+      grants = d.grants || [];
+      renderPipeline();
+    } catch (e) {
+      document.getElementById('pipeline').innerHTML = '<div class="empty">⚠️ ' + escHtml(e.message) + '</div>';
+    }
+  }
+
+  function renderPipeline() {
+    const open = grants.filter(g => ['Researching', 'Drafting', 'Submitted'].includes(g.status));
+    const won = grants.filter(g => g.status === 'Successful');
+    const requested = open.reduce((s, g) => s + (g.amountRequested || 0), 0);
+    const awarded = won.reduce((s, g) => s + (g.amountAwarded ?? g.amountRequested ?? 0), 0);
+    document.getElementById('stats').innerHTML =
+      '<div class="stat"><div class="n">' + open.length + '</div><div class="l">In progress</div></div>' +
+      '<div class="stat"><div class="n">' + fmt$(requested) + '</div><div class="l">Being sought</div></div>' +
+      '<div class="stat"><div class="n">' + won.length + '</div><div class="l">Grants won</div></div>' +
+      '<div class="stat"><div class="n">' + fmt$(awarded) + '</div><div class="l">Awarded</div></div>';
+
+    const el = document.getElementById('pipeline');
+    if (!grants.length) { el.innerHTML = '<div class="empty">No applications yet — start one with “+ New application”.</div>'; return; }
+    el.innerHTML = STATUSES.map(st => {
+      const rows = grants.filter(g => g.status === st);
+      if (!rows.length) return '';
+      return '<div class="grp-title">' + st + ' (' + rows.length + ')</div>' + rows.map(g => {
+        const due = g.dueDate ? 'Due ' + new Date(g.dueDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No due date';
+        const meta = [g.funder, g.program, due].filter(Boolean).join(' · ');
+        const amt = g.status === 'Successful' ? fmt$(g.amountAwarded ?? g.amountRequested) : fmt$(g.amountRequested);
+        const amtLbl = g.status === 'Successful' ? 'awarded' : 'requested';
+        return '<div class="g-row" onclick="openGrant(\'' + g.id + '\')">' +
+          '<div><div class="g-name">' + escHtml(g.name) + '</div><div class="g-meta">' + escHtml(meta) + (g.project ? ' · 📑 ' + escHtml(g.project) : '') + '</div></div>' +
+          '<div class="g-amt"><div class="a">' + amt + '</div><div class="l">' + amtLbl + '</div></div>' +
+          '<span class="pill st-' + g.status + '">' + g.status + '</span>' +
+        '</div>';
+      }).join('');
+    }).join('');
+  }
+
+  function showList() { document.getElementById('panel-edit').style.display = 'none'; document.getElementById('panel-list').style.display = 'block'; }
+  function showEdit() { document.getElementById('panel-list').style.display = 'none'; document.getElementById('panel-edit').style.display = 'block'; }
+
+  function newGrant() {
+    editId = '';
+    ['g-name','g-funder','g-program','g-req','g-awd','g-due','g-sub','g-out','g-proj','g-owner','g-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('edit-title').textContent = 'New application';
+    document.getElementById('g-status').style.display = 'none';
+    document.getElementById('del-btn').style.display = 'none';
+    document.getElementById('form-msg').textContent = '';
+    showEdit();
+  }
+
+  function openGrant(id) {
+    const g = grants.find(x => x.id === id);
+    if (!g) return;
+    editId = id;
+    document.getElementById('g-name').value = g.name;
+    document.getElementById('g-funder').value = g.funder;
+    document.getElementById('g-program').value = g.program;
+    document.getElementById('g-req').value = g.amountRequested ?? '';
+    document.getElementById('g-awd').value = g.amountAwarded ?? '';
+    document.getElementById('g-due').value = g.dueDate;
+    document.getElementById('g-sub').value = g.submittedDate;
+    document.getElementById('g-out').value = g.outcomeDate;
+    document.getElementById('g-proj').value = g.project;
+    document.getElementById('g-owner').value = g.owner;
+    document.getElementById('g-notes').value = g.notes;
+    document.getElementById('edit-title').textContent = g.name;
+    const st = document.getElementById('g-status');
+    st.innerHTML = STATUSES.map(s => '<option ' + (s === g.status ? 'selected' : '') + '>' + s + '</option>').join('');
+    st.style.display = '';
+    document.getElementById('del-btn').style.display = '';
+    document.getElementById('form-msg').textContent = '';
+    showEdit();
+  }
+
+  async function call(payload, okMsg) {
+    const msg = document.getElementById('form-msg');
+    try {
+      const r = await fetch('/api/grant-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, ...payload }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Request failed');
+      if (okMsg) { msg.textContent = okMsg; msg.className = 'ok'; }
+      return d;
+    } catch (e) { msg.textContent = '⚠️ ' + e.message; msg.className = 'err'; return null; }
+  }
+
+  async function saveGrant() {
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true;
+    const d = await call({
+      action: 'save', pageId: editId || undefined,
+      name: document.getElementById('g-name').value,
+      funder: document.getElementById('g-funder').value,
+      program: document.getElementById('g-program').value,
+      amountRequested: document.getElementById('g-req').value,
+      amountAwarded: document.getElementById('g-awd').value,
+      dueDate: document.getElementById('g-due').value,
+      submittedDate: document.getElementById('g-sub').value,
+      outcomeDate: document.getElementById('g-out').value,
+      project: document.getElementById('g-proj').value,
+      owner: document.getElementById('g-owner').value,
+      notes: document.getElementById('g-notes').value,
+    }, 'Saved ✓');
+    btn.disabled = false;
+    if (d) { editId = d.pageId; await loadGrants(); openGrant(editId); }
+  }
+
+  async function setGrantStatus(status) {
+    const d = await call({ action: 'status', pageId: editId, status }, 'Status: ' + status + ' ✓');
+    if (d) { await loadGrants(); openGrant(editId); }
+  }
+
+  async function deleteGrant() {
+    const g = grants.find(x => x.id === editId);
+    if (!confirm('Delete "' + (g ? g.name : 'this application') + '"?\n\nIt moves to Notion trash (recoverable). Consider Withdrawn instead to keep the record.')) return;
+    const d = await call({ action: 'delete', pageId: editId });
+    if (d) { showToast('🗑 Application deleted'); showList(); loadGrants(); }
+  }
+</script>
+</body>
+</html>
