@@ -479,8 +479,16 @@
       const active = s.ok ? fmt(s.active) : '—';
       const responses = (s.ok && s.haveResp) ? fmt(s.responses) : '—';
       const vPkg = (v.package || 'complete');
-      const modsOff = (v.disabledModules || []).length;
-      const modsOn = TOOLS.filter(function(t) { return t.moduleToggle && inPackage(t, v.name); }).length - modsOff;
+      // "Module consoles" = the switchable admin modules (grants, profile,
+      // surveys…). The marketed "16 community modules" also counts the
+      // website & CMS, project hub, service stewards and playbooks, which
+      // aren't on/off consoles here — hence the different number.
+      const toggleable = TOOLS.filter(function(t) { return t.moduleToggle && inPackage(t, v.name); });
+      const disabledHere = (v.disabledModules || []).filter(function(id) { return toggleable.some(function(t) { return t.id === id; }); });
+      const modsOn = toggleable.length - disabledHere.length;
+      const modNames = toggleable.map(function(t) {
+        return t.icon + ' ' + t.name + (disabledHere.indexOf(t.id) > -1 ? ' (off)' : '');
+      }).join('\n');
       const pkgControl = superUser
         ? '<select class="f-i" style="max-width:150px;font-size:11px;padding:3px 6px;" title="Village1st package" onchange="setVillagePackage(' + jsArg(v.name) + ', this.value)">' +
             PKG_ORDER.map(function(p) { return '<option value="' + p + '" ' + (p === vPkg ? 'selected' : '') + '>' + PKG_LABEL[p] + ' package</option>'; }).join('') +
@@ -508,7 +516,7 @@
         '<div class="vstats">' + stat('Active surveys', active) + stat('Total surveys', total) + stat('Responses', responses) + '</div>' +
         bar +
         '<div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">' + pkgControl +
-          '<span style="font-size:10.5px;color:#6b7280;font-weight:600;">Modules on: ' + modsOn + (modsOff ? ' · off: ' + modsOff : '') + '</span></div>' +
+          '<span style="font-size:10.5px;color:#6b7280;font-weight:600;cursor:help;text-decoration:underline dotted;" title="' + escHtml(modNames) + '">Module consoles on: ' + modsOn + '/' + toggleable.length + (disabledHere.length ? ' · ' + disabledHere.length + ' off' : '') + '</span></div>' +
         '<div class="vcard-foot">' +
           '<button class="btn btn-s btn-sm" onclick="openVillage(' + jsArg(v.name) + ')">Open modules →</button>' +
           '<div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">' + lifecycle + '</div>' +
