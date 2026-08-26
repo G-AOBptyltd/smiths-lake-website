@@ -57,6 +57,14 @@ export const handler = async (event, context) => {
         // Village1st package (foundation | interactive | complete).
         // Absent = 'complete' (fail-open for pre-package villages).
         package: (p.properties['Package']?.select?.name || 'complete').toLowerCase(),
+        // Role → visible-module-ids matrix (visibility only; endpoints keep
+        // their own auth floors). Absent/invalid = null = portal defaults.
+        moduleAccess: (() => {
+          try {
+            const j = (p.properties['Module Access']?.rich_text || []).map(t => t.plain_text).join('');
+            return j ? JSON.parse(j) : null;
+          } catch (_) { return null; }
+        })(),
       })).filter(v => v.name);
     } else {
       // VF Villages unreadable — fail open to the survey tags so the admin still loads.

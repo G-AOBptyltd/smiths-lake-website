@@ -14,7 +14,13 @@
  *    use). A disabled module's tile is hidden from that village's admins in
  *    the Village Admin portal. Fail-open: absent property = all modules on.
  *
- * 3. Package level (super-admin) — body: { village?, package: 'foundation'|'interactive'|'complete' }
+ * 3. Module-access matrix (super-admin) — body: { village?, access: { admin: [ids], treasurer: [ids], steward: [ids], viewer: [ids] } }
+ *    Which role levels SEE which module tiles in the Village Admin portal
+ *    ("Module Access" rich_text JSON; created on first use). Visibility only —
+ *    every endpoint keeps its own requireRole floor regardless of the matrix.
+ *    Absent = the portal's built-in defaults.
+ *
+ * 4. Package level (super-admin) — body: { village?, package: 'foundation'|'interactive'|'complete' }
  *    Sets the village's Village1st package ("Package" select; created on
  *    first use). The package is the baseline for which modules a village
  *    gets (see village1st.com.au). Absent = 'complete' (fail-open — matches
@@ -30,6 +36,10 @@ const TOGGLABLE = ['events', 'bookings'];
 const MODULES = ['surveys', 'news', 'contrib', 'cocon', 'grants', 'profile', 'services', 'members', 'events', 'ads', 'volunteers', 'bookings'];
 // Village1st service levels (village1st.com.au): Foundation | Interactive | Complete.
 const PACKAGES = ['foundation', 'interactive', 'complete'];
+// Role levels the access matrix can configure (visibility only).
+const MATRIX_ROLES = ['admin', 'treasurer', 'steward', 'viewer'];
+// Tiles the matrix may reference: the toggleable modules plus the two utilities.
+const MATRIX_MODULES = [...MODULES, 'publish', 'playbook'];
 
 function nh() {
   return { Authorization: `Bearer ${process.env.NOTION_API_KEY}`, 'Notion-Version': NOTION_VERSION, 'Content-Type': 'application/json' };
@@ -67,14 +77,48 @@ export const handler = async (event, context) => {
   const module = String(body.module || '');
   const isEnabledToggle = 'enabled' in body;
   const isPackageSet = 'package' in body;
+  const isAccessSet = 'access' in body;
 
-  // Module on/off + package are platform decisions → super-admin. Public page → village admin.
-  const auth = (isEnabledToggle || isPackageSet)
+  // Module on/off + package + access matrix are platform decisions → super-admin. Public page → village admin.
+  const auth = (isEnabledToggle || isPackageSet || isAccessSet)
     ? requireRole(context, { anyOf: ['super-admin'] })
     : requireRole(context, { village, anyOf: ['admin'] });
   if (!auth.ok) return resp(auth.status, { error: auth.error });
 
   try {
+    // ── Module-access matrix (super-admin) ──────────────────────────
+    if (isAccessSet) {
+      const access = body.access;
+      if (!access || typeof access !== 'object' || Array.isArray(access)) return resp(400, { error: 'access must be an object of role → module ids' });
+      const clean = {};
+      for (const role of MATRIX_ROLES) {
+        const ids = access[role];
+        if (ids === undefined) continue;
+        if (!Array.isArray(ids)) return resp(400, { error: `access.${role} must be an array` });
+        clean[role] = [...new Set(ids.filter((m) => MATRIX_MODULES.includes(m)))];
+      }
+      const row = await getVillageRow(village);
+      if (!row) return resp(404, { error: `${village} is not in the Villages registry` });
+
+      const json = JSON.stringify(clean);
+      const setAccess = () => fetch(`https://api.notion.com/v1/pages/${row.id}`, {
+        method: 'PATCH', headers: nh(),
+        body: JSON.stringify({ properties: { 'Module Access': { rich_text: [{ text: { content: json.slice(0, 1900) } }] } } }),
+      });
+      let u = await setAccess();
+      if (!u.ok && u.status === 400) {
+        // Property doesn't exist yet — add it to the registry schema and retry once.
+        const s = await fetch(`https://api.notion.com/v1/databases/${VILLAGES_DB_ID}`, {
+          method: 'PATCH', headers: nh(),
+          body: JSON.stringify({ properties: { 'Module Access': { rich_text: {} } } }),
+        });
+        if (!s.ok) throw new Error(`Notion schema update responded ${s.status}`);
+        u = await setAccess();
+      }
+      if (!u.ok) throw new Error(`Notion responded ${u.status}`);
+      return resp(200, { ok: true, moduleAccess: clean });
+    }
+
     // ── Package level (super-admin) ─────────────────────────────────
     if (isPackageSet) {
       const pkg = String(body.package || '').toLowerCase();
