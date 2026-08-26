@@ -71,7 +71,29 @@
       }
       bar.appendChild(a);
     });
+    bar.appendChild(buildVillageChip());
     return bar;
+  }
+
+  // ── Active-village chip ───────────────────────────────────────────
+  // Display-only: shows the shared vf_active_village context so every admin
+  // page states which village it's acting on. Change the village with the
+  // page's own picker (or the Village Admin portal).
+  function activeVillage() {
+    try { return localStorage.getItem('vf_active_village') || 'Smiths Lake'; }
+    catch (e) { return 'Smiths Lake'; }
+  }
+  function buildVillageChip() {
+    var chip = document.createElement('span');
+    chip.id = 'vf-nav-village';
+    chip.title = 'The active village — everything on this page acts on it. Change it with the village picker on the page, or in the Village Admin portal.';
+    chip.style.cssText = 'margin-left:auto;font-size:11.5px;font-weight:800;color:#0f5c48;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:14px;padding:4px 12px;white-space:nowrap;';
+    chip.textContent = '📍 ' + activeVillage();
+    return chip;
+  }
+  function refreshVillageChip() {
+    var chip = document.getElementById('vf-nav-village');
+    if (chip) chip.textContent = '📍 ' + activeVillage();
   }
 
   function insertBar() {
@@ -115,6 +137,11 @@
       if (old) old.replaceWith(buildBar());
       openPlaybookIfRequested();
     });
+    // Keep the chip current: 'storage' covers other tabs; the interval covers
+    // this page's own village picker writing localStorage (storage events
+    // don't fire in the tab that made the change).
+    window.addEventListener('storage', refreshVillageChip);
+    setInterval(refreshVillageChip, 2000);
   }
 
   if (document.readyState === 'loading') {
