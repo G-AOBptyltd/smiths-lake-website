@@ -186,6 +186,18 @@
       </div>
       <div id="access-content"><div style="padding:16px;color:#9ca3af;font-size:12px;">Loading users…</div></div>
       <div class="info-box">Invites are emailed via Netlify Identity. New users appear here once they accept. Roles take effect on their next sign-in.</div>
+
+      <div class="ph" style="margin-top:1.6rem;">
+        <div><div class="ph-title">Module visibility by role</div><div class="ph-sub" id="matrix-sub">Which role levels see which modules in this village</div></div>
+        <div class="ph-acts" id="matrix-acts" style="display:none;gap:8px;">
+          <button class="btn btn-s" onclick="resetAccessMatrix()">Reset to defaults</button>
+          <button class="btn btn-g" id="matrix-save" onclick="saveAccessMatrix()">Save matrix</button>
+        </div>
+      </div>
+      <div id="access-matrix" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:6px 14px 14px;overflow-x:auto;"></div>
+      <div class="note">The matrix controls which module tiles each role level <b>sees</b> in this village.
+      It cannot grant data access beyond a module's own permissions — the server checks those on every request
+      regardless of the matrix. Unticked = hidden from that role. Super-admins always see everything.</div>
     </div>
 
   </div>
@@ -306,11 +318,27 @@
     } catch (e) { showToast('⚠️ ' + e.message); }
   }
 
+  // ── Module-access matrix (visibility only — endpoints keep their own auth) ──
+  const MATRIX_ROLES = ['admin', 'treasurer', 'steward', 'viewer'];
+  const MATRIX_ROLE_LABEL = { admin: 'Village Admin', treasurer: 'Treasurer', steward: 'Steward', viewer: 'Viewer' };
+  function accessMatrix(vName) {
+    const v = villageRec(vName);
+    return (v && v.moduleAccess && typeof v.moduleAccess === 'object') ? v.moduleAccess : null;
+  }
+  // A role sees a tile per the village's matrix; roles absent from the matrix
+  // (or no matrix at all) fall back to the tool's built-in defaults.
+  function roleCanSee(roleName, tool) {
+    const m = accessMatrix();
+    if (m && Array.isArray(m[roleName])) return m[roleName].includes(tool.id);
+    return tool.roles.includes(roleName);
+  }
+
   function canSee(tool) {
     const roles = userRoles();
     if (roles.includes('super-admin')) return true;
     if (roles.length === 0) return true; // email-allowlist bridge users: server still enforces
-    return tool.roles.some(function(r) {
+    return MATRIX_ROLES.some(function(r) {
+      if (!roleCanSee(r, tool)) return false;
       return roles.includes(r) || roles.some(function(role) { return role.endsWith(':' + r); });
     });
   }
@@ -392,7 +420,7 @@
       localStorage.setItem('vf_active_village', sel.value);
       renderTiles();
       buildRoleOptions();
-      if (currentTab === 'access') loadAccess();
+      if (currentTab === 'access') { loadAccess(); renderAccessMatrix(); }
     };
   }
 
@@ -652,6 +680,62 @@
       else showToast('⚠️ ' + (data.error || 'Could not remove'));
     } catch (_) { showToast('⚠️ Network error'); }
   }
+  // ── Module-visibility matrix UI ────────────────────────────────────
+  function renderAccessMatrix() {
+    const box = document.getElementById('access-matrix');
+    if (!box) return;
+    const superUser = isSuper();
+    document.getElementById('matrix-acts').style.display = superUser ? 'flex' : 'none';
+    document.getElementById('matrix-sub').textContent = 'Which role levels see which modules in ' + activeVillage();
+    const head = '<tr><th style="text-align:left;padding:8px 10px;font-size:10.5px;color:#6b7280;">Module</th>' +
+      MATRIX_ROLES.map(function(r) {
+        return '<th style="padding:8px 10px;font-size:10.5px;color:#6b7280;white-space:nowrap;">' + MATRIX_ROLE_LABEL[r] + '</th>';
+      }).join('') + '</tr>';
+    const rows = TOOLS.map(function(tool) {
+      const cells = MATRIX_ROLES.map(function(r) {
+        return '<td style="text-align:center;padding:6px 10px;">' +
+          '<input type="checkbox" data-mod="' + tool.id + '" data-role="' + r + '" ' +
+          (roleCanSee(r, tool) ? 'checked' : '') + (superUser ? '' : ' disabled') +
+          ' style="transform:scale(1.15);accent-color:#0f8f80;cursor:' + (superUser ? 'pointer' : 'default') + ';">' +
+        '</td>';
+      }).join('');
+      return '<tr style="border-top:1px solid #f1f5f9;">' +
+        '<td style="padding:6px 10px;font-size:12px;font-weight:600;color:#0f172a;white-space:nowrap;">' + tool.icon + ' ' + escHtml(tool.name) + '</td>' +
+        cells + '</tr>';
+    }).join('');
+    box.innerHTML = '<table style="border-collapse:collapse;width:100%;min-width:520px;">' + head + rows + '</table>';
+  }
+  function collectMatrix() {
+    const m = {};
+    MATRIX_ROLES.forEach(function(r) { m[r] = []; });
+    document.querySelectorAll('#access-matrix input[type=checkbox]').forEach(function(c) {
+      if (c.checked) m[c.dataset.role].push(c.dataset.mod);
+    });
+    return m;
+  }
+  async function saveAccessMatrix(matrix) {
+    const btn = document.getElementById('matrix-save');
+    if (btn) btn.disabled = true;
+    try {
+      const res = await fetch('/api/village-modules', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: activeVillage(), access: matrix || collectMatrix() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Could not save the matrix');
+      const v = villageRec();
+      if (v) v.moduleAccess = data.moduleAccess;
+      showToast('✅ Module visibility saved for ' + activeVillage());
+      renderAccessMatrix();
+      renderTiles();
+    } catch (e) { showToast('⚠️ ' + e.message); }
+    if (btn) btn.disabled = false;
+  }
+  function resetAccessMatrix() {
+    if (!confirm('Reset ' + activeVillage() + ' to the default module visibility?')) return;
+    saveAccessMatrix({});   // empty matrix = every role falls back to the built-in defaults
+  }
+
   async function inviteUser() {
     const email = document.getElementById('invite-email').value.trim();
     const role = document.getElementById('invite-role') ? document.getElementById('invite-role').value : '';
@@ -674,7 +758,7 @@
       if (tab) tab.classList.toggle('on', t === id);
     });
     if (id === 'villages') renderAllVillages();
-    if (id === 'access') { buildRoleOptions(); loadAccess(); }
+    if (id === 'access') { buildRoleOptions(); loadAccess(); renderAccessMatrix(); }
     if (history.replaceState) history.replaceState(null, '', id === 'modules' ? location.pathname : '#' + id);
   }
   function openHashTab() {
