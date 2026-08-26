@@ -51,6 +51,12 @@ export const handler = async (event, context) => {
         // Gated modules (events/bookings) whose PUBLIC pages this village has
         // switched on via the admin-hub toggle.
         publicModules: (p.properties['Public Modules']?.multi_select || []).map(o => o.name),
+        // Modules a super-admin has switched OFF for this village (portal
+        // tile ids). Absent property = empty = every module on (fail-open).
+        disabledModules: (p.properties['Disabled Modules']?.multi_select || []).map(o => o.name),
+        // Village1st package (foundation | interactive | complete).
+        // Absent = 'complete' (fail-open for pre-package villages).
+        package: (p.properties['Package']?.select?.name || 'complete').toLowerCase(),
       })).filter(v => v.name);
     } else {
       // VF Villages unreadable — fail open to the survey tags so the admin still loads.

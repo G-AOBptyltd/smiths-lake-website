@@ -193,7 +193,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="topbar">
     <div class="topbar-brand">🏘️ VillageFirst · Surveys</div>
     <select class="village-chip" id="village-switch" style="cursor:pointer;" onchange="setVillage(this.value)"><option>📍 Smiths Lake</option></select>
-    <button class="village-chip" id="add-village-btn" style="cursor:pointer;display:none;margin-left:6px;" title="Add a village" onclick="addVillage()">＋ Village</button>
     <div class="topbar-sp"></div>
     <span class="topbar-user" id="user-email"></span>
     <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
@@ -210,9 +209,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="s-item" onclick="showPanel('results',this);loadResults()">📈 Results</div>
       <hr class="s-divider">
       <div class="s-sec">Village</div>
-      <div class="s-item" id="nav-villages" style="display:none;" onclick="showPanel('villages',this);renderAllVillages()">🏘️ All Villages</div>
+      <!-- Village administration (All Villages, lifecycle, access) moved to the Village Admin portal -->
+      <a class="s-item" id="nav-villages" style="display:none;text-decoration:none;" href="/admin/#villages" title="Opens the Village Admin portal">🏘️ All Villages ↗</a>
+      <a class="s-item" style="text-decoration:none;" href="/admin/#access" title="Opens the Village Admin portal">👥 Access ↗</a>
       <div class="s-item" onclick="showPanel('settings',this);loadSettings()">⚙️ Settings</div>
-      <div class="s-item" onclick="showPanel('access',this);loadAccess()">👥 Access</div>
       <hr class="s-divider">
       <div class="s-sec">Help</div>
       <div class="s-item" onclick="showPanel('playbook',this)">📖 Playbook</div>
@@ -580,24 +580,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         </div>
       </div>
 
-      <!-- ALL VILLAGES -->
-      <div class="panel" id="panel-villages">
-        <div class="ph">
-          <div><div class="ph-title">All Villages</div><div class="ph-sub">Manage every village's lifecycle from one place</div></div>
-          <div class="ph-acts"><button class="btn btn-g" onclick="addVillage()">+ Village</button></div>
-        </div>
-        <div class="pb"><div id="villages-table"><div style="padding:20px;color:#9ca3af;font-size:11px;">Loading…</div></div></div>
-      </div>
-
-      <!-- SETTINGS -->
+      <!-- SETTINGS (survey-only — village settings live in the Village Admin portal) -->
       <div class="panel" id="panel-settings">
-        <div class="ph"><div><div class="ph-title">Settings</div></div></div>
+        <div class="ph"><div><div class="ph-title">Survey Settings</div><div class="ph-sub">Defaults for this survey console</div></div></div>
         <div class="pb">
           <div class="set-grid">
-            <div class="set-card"><div class="set-title">🏘️ Village Profile</div>
-              <div class="f-f"><div class="f-l">Village name</div><input class="f-i" id="set-village-name" value="Smiths Lake" readonly style="background:#f9fafb;"></div>
-              <div class="f-f"><div class="f-l">Site URL</div><input class="f-i" value="villagefirst.org.au" readonly style="background:#f9fafb;"></div>
-            </div>
             <div class="set-card"><div class="set-title">⚙️ New-survey defaults <span style="font-weight:400;color:#9ca3af;font-size:10px;">(applied when you create a survey)</span></div>
               <div class="f-f"><div class="f-l">Default results visibility</div>
                 <select class="f-i" id="set-default-vis">
@@ -618,34 +605,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </div>
               <button class="btn btn-g" onclick="saveSettings()">Save defaults</button>
             </div>
-            <div class="set-card"><div class="set-title">🚦 Village Lifecycle</div>
-              <div id="village-lifecycle"><div class="info-box">Loading…</div></div>
-            </div>
-            <div class="set-card"><div class="set-title">ℹ️ Admin Info</div>
-              <div class="info-box">Survey credentials and API keys are managed in Netlify environment variables. Contact AOB (support@agilityops.com.au) to change them.</div>
+            <div class="set-card"><div class="set-title">🏘️ Village administration</div>
+              <div style="font-size:11px;color:#475569;line-height:1.6;margin-bottom:10px;">Village profile, lifecycle (suspend / archive), module switches and admin access now live in the <b>Village Admin portal</b>.</div>
+              <a class="btn btn-g" style="text-decoration:none;display:inline-block;" href="/admin/">Open Village Admin →</a>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- ACCESS -->
-      <div class="panel" id="panel-access">
-        <div class="ph"><div><div class="ph-title">Access &amp; Permissions</div><div class="ph-sub">Manage who can administer surveys</div></div></div>
-        <div class="pb">
-          <div id="invite-row" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:14px;">
-            <div style="flex:2;min-width:200px;"><div class="f-l">Invite by email</div><input class="f-i" id="invite-email" placeholder="name@example.com"></div>
-            <div style="flex:1;min-width:150px;"><div class="f-l">Role</div>
-              <select class="f-i" id="invite-role">
-                <option value="smithslake:steward">Survey Steward</option>
-                <option value="smithslake:admin">Village Admin</option>
-                <option value="smithslake:viewer">Committee Viewer</option>
-                <option value="super-admin">Super Admin</option>
-              </select>
-            </div>
-            <button class="btn btn-g" onclick="inviteUser()">Send invite</button>
-          </div>
-          <div id="access-content"><div style="padding:16px;color:#9ca3af;font-size:12px;">Loading users…</div></div>
-          <div class="info-box" style="margin-top:12px;">Invites are emailed via Netlify Identity. New users appear here once they accept. Roles take effect on their next sign-in.</div>
         </div>
       </div>
 
@@ -753,7 +717,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <section class="pb-mod" id="pb-overview">
                 <div class="pb-mh"><div class="pb-num">1</div><div><h2>How VillageFirst Surveys works</h2><div class="mt">The big picture in one minute</div></div></div>
                 <p class="pb-intro">VillageFirst Surveys has three faces that share one design. You <b>build &amp; manage</b> here in the admin; residents <b>respond</b> on a public survey link; anyone can <b>view results</b> on a public results page.</p>
-                <div class="pb-step"><div class="pb-sn">1</div><div class="sb"><b>Admin (this app)</b> — create surveys, set who can respond, open/close them, watch results, manage villages. Sign-in required.</div></div>
+                <div class="pb-step"><div class="pb-sn">1</div><div class="sb"><b>Admin (this app)</b> — create surveys, set who can respond, open/close them, watch results. Sign-in required. (Villages themselves are managed in the <b>Village Admin portal</b>.)</div></div>
                 <div class="pb-step"><div class="pb-sn">2</div><div class="sb"><b>The survey link</b> — a public page residents fill in (no login). Each survey has its own shareable link.</div></div>
                 <div class="pb-step"><div class="pb-sn">3</div><div class="sb"><b>The results page</b> — a public, charted results page (and a per-village "All results" hub). You control whether each survey's results are public.</div></div>
                 <div class="pb-call"><b>Behind the scenes:</b> survey settings live in Notion, responses land in a Google Sheet, and results are charted live — but you never touch any of that. It's all driven from this admin.</div>
@@ -983,8 +947,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <section class="pb-mod" id="pb-villages">
                 <div class="pb-mh"><div class="pb-num">10</div><div><h2>Working across villages</h2><div class="mt">One platform, many communities</div></div></div>
                 <div class="pb-step"><div class="pb-sn">1</div><div class="sb"><b>Switch village</b> with the picker in the top bar — everything (dashboard, results, surveys) scopes to that village.</div></div>
-                <div class="pb-step"><div class="pb-sn">2</div><div class="sb"><b>All Villages</b> (super-admin) shows a rollup: per-village active surveys, totals, responses and participation, plus lifecycle controls.</div></div>
-                <div class="pb-step"><div class="pb-sn">3</div><div class="sb"><b>Add a village</b> with <b>+ Village</b>. Lifecycle: <b>Live → Suspend</b> (pauses all its surveys) <b>→ Archive</b> (also removes public access) <b>→ Delete</b> (archived &amp; empty only, with typed confirmation).</div></div>
+                <div class="pb-step"><div class="pb-sn">2</div><div class="sb"><b>All Villages</b> (super-admin) now lives in the <a href="/admin/#villages"><b>Village Admin portal</b></a> — a rollup of per-village surveys, responses and participation, plus lifecycle controls and per-village module switches.</div></div>
+                <div class="pb-step"><div class="pb-sn">3</div><div class="sb"><b>Add a village</b> with <b>+ Village</b> in the Village Admin portal. Lifecycle: <b>Live → Suspend</b> (pauses all its surveys) <b>→ Archive</b> (also removes public access) <b>→ Delete</b> (archived &amp; empty only, with typed confirmation).</div></div>
               </section>
 
               <section class="pb-mod" id="pb-access">
@@ -996,7 +960,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   <div class="pb-role"><div class="re">👀</div><div><div class="rn">Committee Viewer</div><div class="rd">Read-only results, including committee-only surveys.</div></div></div>
                   <div class="pb-role"><div class="re">🙋</div><div><div class="rn">Respondent (public)</div><div class="rd">Completes surveys via the link — no login, self-declared respondent type.</div></div></div>
                 </div>
-                <div class="pb-call"><b>Invites:</b> add people by email in <b>Access</b>; roles take effect on their next sign-in. New accounts are approved by AOB.</div>
+                <div class="pb-call"><b>Invites:</b> add people by email in the <a href="/admin/#access"><b>Village Admin portal → Access</b></a>; roles take effect on their next sign-in. New accounts are approved by AOB.</div>
               </section>
 
               <section class="pb-mod" id="pb-tips">
@@ -1083,8 +1047,6 @@ netlifyIdentity.on('logout', () => { currentUser=null; document.getElementById('
 // ── Active village (multi-village) ───────────────────────────────────────────
 let activeVillage = localStorage.getItem('vf_active_village') || 'Smiths Lake';
 let villagesData = [];   // [{name,status}]
-const STATUS_BADGE = { live:'🟢 Live', suspended:'⏸️ Suspended', archived:'🗄️ Archived' };
-function villageStatusOf(name){ const v = villagesData.find(x => x.name === name); return (v && v.status) || 'live'; }
 function monthYear(){ return new Date().toLocaleDateString('en-AU',{month:'long',year:'numeric'}); }
 async function loadVillages() {
   try {
@@ -1108,197 +1070,25 @@ async function loadVillages() {
       }).join('');
       sel.value = activeVillage;   // keep the control in sync with state
     }
-    const ab = document.getElementById('add-village-btn'); if (ab) ab.style.display = 'inline-block';
+    // "All Villages" is now a link into the Village Admin portal — shown to
+    // super-admins (and anyone who can already see several villages).
     const nv = document.getElementById('nav-villages');
     const isSuper = currentUser && currentUser.app_metadata && (currentUser.app_metadata.roles||[]).includes('super-admin');
-    if (nv) nv.style.display = (isSuper || villages.length > 1) ? 'block' : 'none';
+    if (nv) nv.style.display = (isSuper || villages.length > 1) ? 'flex' : 'none';
     applyVillageLabels();
-    renderVillageLifecycle();
   } catch(_) {}
 }
 function applyVillageLabels() {
   const sub = document.getElementById('dash-sub'); if (sub) sub.textContent = activeVillage + ' · ' + monthYear();
-  const sv = document.getElementById('set-village-name'); if (sv) sv.value = activeVillage;
 }
-// ── Village lifecycle (super-admin): Live · Suspended · Archived · Delete ──────
-function renderVillageLifecycle() {
-  const box = document.getElementById('village-lifecycle');
-  if (!box) return;
-  const status = villageStatusOf(activeVillage);
-  const isSuper = currentUser && currentUser.app_metadata && (currentUser.app_metadata.roles||[]).includes('super-admin');
-  if (!isSuper) { box.innerHTML = '<div class="info-box">Lifecycle changes are restricted to super-admins.</div>'; return; }
-  const b = (s,label,cls) => `<button class="btn ${cls}" ${status===s?'disabled':''} onclick="setVillageStatus('${s}')">${label}</button>`;
-  box.innerHTML =
-    `<div style="margin-bottom:10px;">Current status: <strong>${STATUS_BADGE[status]||status}</strong></div>` +
-    `<div style="display:flex;gap:8px;flex-wrap:wrap;">` +
-      b('live','Set Live','btn-g') +
-      b('suspended','Suspend','btn-o') +
-      b('archived','Archive','btn-o') +
-    `</div>` +
-    `<div style="font-size:12px;color:#64748b;margin-top:8px;">Suspend pauses every survey in this village. Archive also removes public access (still visible to you here).</div>` +
-    `<hr style="border:none;border-top:1px solid #e2e8f0;margin:14px 0;">` +
-    `<button class="btn btn-r" ${status==='archived'?'':'disabled'} onclick="deleteVillage()">Delete village…</button>` +
-    `<div style="font-size:12px;color:#64748b;margin-top:6px;">${status==='archived'?'Permanent. Requires double-confirmation.':'Archive the village first to enable deletion.'}</div>`;
-}
-async function setVillageStatus(status, village) {
-  village = village || activeVillage;
-  const labels = { live:'set Live', suspended:'Suspend', archived:'Archive' };
-  if (!confirm(`${labels[status]||status} "${village}"?` + (status==='suspended'?'\n\nAll surveys in this village will be paused.':status==='archived'?'\n\nAll surveys stop and public access is removed.':''))) return;
-  try {
-    const res = await fetch('/api/village-status', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ village, status }) });
-    const data = await res.json();
-    if (res.ok && data.success) { showToast('✅ Village ' + status); await loadVillages(); if (currentPanel==='villages') renderAllVillages(); }
-    else showToast('⚠️ ' + (data.error || 'Could not update village'));
-  } catch(_) { showToast('⚠️ Network error'); }
-}
-async function deleteVillage(village) {
-  village = village || activeVillage;
-  if (villageStatusOf(village) !== 'archived') { showToast('⚠️ Archive the village first'); return; }
-  if (!confirm(`Delete "${village}"? This cannot be undone.`)) return;
-  const typed = (prompt(`Type the village name to confirm deletion:\n${village}`) || '').trim();
-  if (typed !== village) { showToast('⚠️ Name did not match — delete cancelled'); return; }
-  try {
-    const res = await fetch('/api/village-remove', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ village }) });
-    const data = await res.json();
-    if (res.ok && data.success) {
-      showToast('✅ Village deleted');
-      if (activeVillage === village) { localStorage.removeItem('vf_active_village'); activeVillage='Smiths Lake'; }
-      await loadVillages();
-      if (currentPanel==='villages') renderAllVillages(); else setVillage(activeVillage);
-    }
-    else showToast('⚠️ ' + (data.error || 'Could not delete village'));
-  } catch(_) { showToast('⚠️ Network error'); }
-}
-// ── All Villages rollup ──────────────────────────────────────────────────────
-// Map a village lifecycle status → a shared .pill modifier class + label.
-function villagePill(st) {
-  switch (st) {
-    case 'live':       return { cls:'live',   label:'Live' };
-    case 'suspended':  return { cls:'paused', label:'Suspended' };
-    case 'archived':   return { cls:'closed', label:'Archived' };
-    case 'onboarding': return { cls:'draft',  label:'Onboarding' };
-    default:           return { cls:'draft',  label:(st||'—') };
-  }
-}
-async function renderAllVillages() {
-  const box = document.getElementById('villages-table');
-  if (!box) return;
-  const isSuper = currentUser && currentUser.app_metadata && (currentUser.app_metadata.roles||[]).includes('super-admin');
-  if (!villagesData.length) await loadVillages();
-  // Fetch surveys per village in parallel (best-effort) — ONE call per village.
-  // Reused to derive total surveys, active surveys, and total responses.
-  const stats = {};
-  await Promise.all(villagesData.map(async v => {
-    try {
-      const r = await fetch('/api/survey-list?village=' + encodeURIComponent(v.name));
-      const list = r.ok ? ((await r.json()).surveys || []) : null;
-      if (!list) { stats[v.name] = { ok:false }; return; }
-      let active = 0, responses = 0, haveResp = false;
-      list.forEach(s => {
-        if (s && s.active) active++;
-        if (s && typeof s.responseCount === 'number') { responses += s.responseCount; haveResp = true; }
-      });
-      stats[v.name] = { ok:true, total:list.length, active, responses, haveResp };
-    } catch(_) { stats[v.name] = { ok:false }; }
-  }));
-
-  // ── Platform KPI strip (sums across all villages) ──
-  let kVillages = villagesData.length, kActive = 0, kTotal = 0, kResp = 0, kAnyResp = false;
-  villagesData.forEach(v => {
-    const s = stats[v.name];
-    if (s && s.ok) { kActive += s.active; kTotal += s.total; kResp += s.responses; if (s.haveResp) kAnyResp = true; }
-  });
-  const fmt = n => n.toLocaleString('en-AU');
-  const kpis =
-    `<div class="grid g4" style="margin-bottom:18px;">
-       <div class="kpi k1"><div class="n">${fmt(kVillages)}</div><div class="l">Villages</div></div>
-       <div class="kpi k2"><div class="n">${fmt(kActive)}</div><div class="l">Active surveys</div></div>
-       <div class="kpi k3"><div class="n">${fmt(kTotal)}</div><div class="l">Total surveys</div></div>
-       <div class="kpi k4"><div class="n">${kAnyResp ? fmt(kResp) : '—'}</div><div class="l">Total responses</div></div>
-     </div>`;
-
-  // ── Per-village cards ──
-  const cards = villagesData.map(v => {
-    const st = v.status || 'live';
-    const isActive = v.name === activeVillage;
-    const p = villagePill(st);
-    const s = stats[v.name] || { ok:false };
-    const total     = s.ok ? s.total : '—';
-    const active    = s.ok ? s.active : '—';
-    const responses = (s.ok && s.haveResp) ? s.responses : '—';
-    // Participation bar: share of this village's surveys that are currently active.
-    const pct = (s.ok && s.total > 0) ? Math.round((s.active / s.total) * 100) : 0;
-    const bar = s.ok ? (
-      `<div style="margin-top:14px;">
-         <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);font-weight:600;margin-bottom:5px;">
-           <span>Surveys live</span><span>${pct}%</span></div>
-         <div style="height:7px;background:#f1f6f3;border-radius:6px;overflow:hidden;">
-           <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:6px;"></div></div>
-       </div>`
-    ) : '';
-    const stat = (label, val) =>
-      `<div style="flex:1;min-width:0;">
-         <div style="font-size:19px;font-weight:900;line-height:1;letter-spacing:-.01em;">${typeof val==='number'?fmt(val):val}</div>
-         <div style="font-size:10.5px;color:var(--muted);font-weight:600;margin-top:4px;">${label}</div>
-       </div>`;
-    const lifecycle = isSuper ? (
-      `<button class="btn btn-g" style="font-size:10px;padding:3px 8px;" ${st==='live'?'disabled':''} onclick="setVillageStatus('live',${jsArg(v.name)})">Live</button> ` +
-      `<button class="btn btn-o" style="font-size:10px;padding:3px 8px;" ${st==='suspended'?'disabled':''} onclick="setVillageStatus('suspended',${jsArg(v.name)})">Suspend</button> ` +
-      `<button class="btn btn-o" style="font-size:10px;padding:3px 8px;" ${st==='archived'?'disabled':''} onclick="setVillageStatus('archived',${jsArg(v.name)})">Archive</button> ` +
-      `<button class="btn btn-r" style="font-size:10px;padding:3px 8px;" ${st==='archived'?'':'disabled'} onclick="deleteVillage(${jsArg(v.name)})">Delete</button>`
-    ) : '<span style="color:#9ca3af;font-size:11px;">View only</span>';
-    return `<div class="card" style="display:flex;flex-direction:column;">
-      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:15.5px;font-weight:800;line-height:1.25;">${escHtml(v.name)}${isActive?' <span style="font-size:10px;color:var(--accent);font-weight:800;">• current</span>':''}</div>
-        </div>
-        <span class="pill ${p.cls}">${escHtml(p.label)}</span>
-      </div>
-      <div style="display:flex;gap:12px;">${stat('Active surveys',active)}${stat('Total surveys',total)}${stat('Responses',responses)}</div>
-      ${bar}
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:16px;padding-top:14px;">
-        <button class="btn btn-s" style="font-size:10px;padding:3px 8px;" onclick="switchToVillage(${jsArg(v.name)})">Open</button>
-        <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">${lifecycle}</div>
-      </div>
-    </div>`;
-  }).join('');
-
-  box.innerHTML =
-    `<div class="vfr-root">
-       ${kpis}
-       <div class="grid g3">${cards}</div>
-       ${isSuper ? '<div style="font-size:12px;color:var(--muted);margin-top:14px;">Suspend pauses every survey in a village. Archive also removes public access (still visible here). Delete needs the village archived with no surveys, plus typed confirmation.</div>' : ''}
-     </div>`;
-}
-function switchToVillage(name) { setVillage(name); const nav=document.querySelector('.sidebar .s-item'); showPanel('dashboard', null); document.querySelectorAll('.sidebar .s-item').forEach(e=>e.classList.remove('on')); if(nav)nav.classList.add('on'); }
 function setVillage(v) {
   activeVillage = v;
   localStorage.setItem('vf_active_village', v);
   const sel = document.getElementById('village-switch'); if (sel) sel.value = v;  // keep control in sync
   projectsCache = null; resultsSurveys = null;   // re-scope cached lists
   applyVillageLabels();
-  renderVillageLifecycle();
   loadDashboard();
 }
-async function addVillage() {
-  const name = (prompt('New village name:') || '').trim();
-  if (!name) return;
-  try {
-    const res = await fetch('/api/village-add', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ village: name }) });
-    const data = await res.json();
-    if (res.ok && data.success) {
-      showToast('✅ Village added');
-      await loadVillages();
-      // Only switch to the new village if it actually came back in the list —
-      // avoids stranding the UI on a village the backend hasn't registered.
-      if (villagesData.some(v => v.name === name)) setVillage(name);
-      else { showToast('⚠️ Added, but not yet listed — refreshing'); setTimeout(loadVillages, 1500); }
-      if (currentPanel === 'villages') renderAllVillages();
-    }
-    else showToast('⚠️ ' + (data.error || 'Could not add village'));
-  } catch(_) { showToast('⚠️ Network error'); }
-}
-
 function showApp() {
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app').style.display='flex';
@@ -1727,73 +1517,6 @@ function onProjectPick() {
   bd.projName = opt ? (opt.dataset.name || '') : '';
 }
 
-// ── Access management (in-app, super-admin) ──────────────────────────────────
-const ROLE_OPTS = [
-  { v:'', l:'No role' },
-  { v:'smithslake:steward', l:'Survey Steward' },
-  { v:'smithslake:admin', l:'Village Admin' },
-  { v:'smithslake:viewer', l:'Committee Viewer' },
-  { v:'super-admin', l:'Super Admin' },
-];
-function roleLabel(roles){
-  const r=(roles||[])[0]||'';
-  if(r==='super-admin') return 'Super Admin';
-  if(r.endsWith(':admin')) return 'Village Admin';
-  if(r.endsWith(':steward')) return 'Survey Steward';
-  if(r.endsWith(':viewer')) return 'Committee Viewer';
-  return 'No role';
-}
-async function loadAccess() {
-  const el = document.getElementById('access-content');
-  el.innerHTML = '<div style="padding:16px;color:#9ca3af;font-size:12px;">Loading users…</div>';
-  try {
-    const res = await fetch('/api/identity-admin', { headers: await authHeaders() });
-    if (res.status === 503) { el.innerHTML = '<div class="info-box">In-app user management needs Netlify Identity\'s admin context. If this persists, manage users in Netlify → Identity.</div>'; return; }
-    if (!res.ok) { el.innerHTML = '<div class="info-box">Could not load users ('+res.status+').</div>'; return; }
-    const { users } = await res.json();
-    if (!users || !users.length) { el.innerHTML = '<div style="padding:16px;color:#9ca3af;font-size:12px;">No users yet. Invite someone above.</div>'; return; }
-    el.innerHTML = users.map(u => {
-      const cur = (u.roles||[])[0] || '';
-      const opts = ROLE_OPTS.map(o => `<option value="${o.v}" ${o.v===cur?'selected':''}>${o.l}</option>`).join('');
-      return `<div class="acc-row" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9;">
-        <div style="font-size:16px;">👤</div>
-        <div class="acc-info" style="flex:1;"><div class="acc-name">${escHtml(u.email)}</div><div class="acc-scope" style="font-size:11px;color:#9ca3af;">${roleLabel(u.roles)}${u.confirmed?'':' · invited (pending)'}</div></div>
-        <select class="f-i" style="max-width:170px;font-size:12px;" onchange="setUserRole('${u.id}',this.value)">${opts}</select>
-        <button class="btn btn-s" style="font-size:11px;padding:3px 8px;color:#dc2626;margin-left:8px;" title="Remove access" onclick="removeUser('${u.id}', ${jsArg(u.email)})">Remove</button>
-      </div>`;
-    }).join('');
-  } catch (e) { el.innerHTML = '<div class="info-box">Could not load users.</div>'; }
-}
-async function setUserRole(userId, role) {
-  try {
-    const res = await fetch('/api/identity-admin', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ action:'setrole', userId, role }) });
-    const data = await res.json();
-    if (res.ok && data.success) showToast('✅ Role updated (applies on their next sign-in)');
-    else showToast('⚠️ '+(data.error||'Could not update role'));
-  } catch(_) { showToast('⚠️ Network error'); }
-}
-async function removeUser(userId, email) {
-  if (email && currentUser && email.toLowerCase() === (currentUser.email||'').toLowerCase()) { showToast("You can't remove your own access."); return; }
-  if (!confirm(`Remove ${email}?\n\nThey lose all admin access (and any pending invite is cancelled). You can re-invite them later.`)) return;
-  try {
-    const res = await fetch('/api/identity-admin', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ action:'delete', userId }) });
-    const data = await res.json();
-    if (res.ok && data.success) { showToast('Access removed'); loadAccess(); }
-    else showToast('⚠️ ' + (data.error || 'Could not remove'));
-  } catch(_) { showToast('⚠️ Network error'); }
-}
-
-async function inviteUser() {
-  const email = document.getElementById('invite-email').value.trim();
-  const role = document.getElementById('invite-role')?.value || '';
-  if (!email) { showToast('Enter an email to invite.'); return; }
-  try {
-    const res = await fetch('/api/identity-admin', { method:'POST', headers: await authHeaders(), body: JSON.stringify({ action:'invite', email, role }) });
-    const data = await res.json();
-    if (res.ok && data.success) { showToast('✅ '+(data.message||'Invitation sent')); document.getElementById('invite-email').value=''; loadAccess(); }
-    else showToast('⚠️ '+(data.error||'Invite failed'));
-  } catch(_) { showToast('⚠️ Network error'); }
-}
 
 // ── Settings: new-survey defaults (stored locally) ───────────────────────────
 function getSettings(){ try{ return JSON.parse(localStorage.getItem('vf_admin_settings')||'{}'); }catch(_){ return {}; } }

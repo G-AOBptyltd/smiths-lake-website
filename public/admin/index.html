@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Admin — VillageFirst</title>
+<title>Village Admin — VillageFirst</title>
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <script src="/admin/admin-nav.js" defer></script>
 <style>
@@ -18,8 +18,18 @@
   .topbar-logout:hover { color: white; border-color: rgba(255,255,255,.5); }
   .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; font-family: inherit; }
   .village-select option { color: #1f2937; }
+  .add-village-btn { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; cursor: pointer; font-family: inherit; }
+  .add-village-btn:hover { color: #fff; border-color: rgba(255,255,255,.5); }
 
-  .wrap { max-width: 760px; margin: 0 auto; padding: 2.25rem 1rem 3rem; }
+  /* Portal tabs */
+  .tabs { display: flex; gap: 6px; padding: 10px 16px 0; max-width: 980px; margin: 0 auto; flex-wrap: wrap; }
+  .tab { font-size: 12px; font-weight: 600; color: #4b5563; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 5px 14px; cursor: pointer; }
+  .tab:hover { background: #f0fdf6; }
+  .tab.on { background: #0f5c48; color: #fff; border-color: #0f5c48; font-weight: 700; }
+
+  .wrap { max-width: 980px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  .panel { display: none; }
+  .panel.on { display: block; }
   .greeting { font-size: 1.15rem; font-weight: 700; color: #143d2e; margin-bottom: 0.3rem; }
   .greeting-sub { font-size: 0.85rem; color: #6b7280; margin-bottom: 1.5rem; }
 
@@ -35,11 +45,70 @@
   .tile-desc { font-size: 0.78rem; color: #6b7280; line-height: 1.5; }
   .tile.is-soon { opacity: 0.6; border-style: dashed; pointer-events: none; }
   .tile.is-soon .tile-name { color: #6b7280; }
+  .tile.is-disabled { opacity: 0.55; border-style: dashed; background: #fafaf9; }
   .soon-chip { display: inline-block; font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #92400E; background: #FEF3C7; border-radius: 8px; padding: 2px 8px; margin-top: 0.4rem; }
-  .pub-chip { display: inline-block; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 8px; padding: 3px 9px; margin-top: 0.45rem; cursor: pointer; border: 1.5px solid; font-family: inherit; }
+  .pub-chip { display: inline-block; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 8px; padding: 3px 9px; margin-top: 0.45rem; cursor: pointer; border: 1.5px solid; font-family: inherit; margin-right: 5px; }
   .pub-chip.is-on { color: #0f5c48; background: #e7f6ee; border-color: #15a06e; }
   .pub-chip.is-off { color: #6b7280; background: #f3f4f6; border-color: #d1d5db; }
   .pub-chip:hover { filter: brightness(0.96); }
+  .mod-chip { display: inline-block; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; border-radius: 8px; padding: 3px 9px; margin-top: 0.45rem; cursor: pointer; border: 1.5px solid; font-family: inherit; margin-right: 5px; }
+  .mod-chip.is-on { color: #1e40af; background: #eff6ff; border-color: #93c5fd; }
+  .mod-chip.is-off { color: #92400e; background: #fef3c7; border-color: #fcd34d; }
+  .mod-chip:hover { filter: brightness(0.96); }
+
+  /* All Villages */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+  .kpi { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; text-align: center; }
+  .kpi .n { font-size: 24px; font-weight: 900; color: #143d2e; }
+  .kpi .l { font-size: 11px; color: #6b7280; margin-top: 3px; font-weight: 600; }
+  .vcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+  .vcard { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.1rem; display: flex; flex-direction: column; }
+  .vcard-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+  .vcard-name { flex: 1; font-size: 15px; font-weight: 800; color: #143d2e; line-height: 1.25; }
+  .vcard-cur { font-size: 10px; color: #0f8f80; font-weight: 800; }
+  .pill { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+  .pill.live { background: #dcfce7; color: #166534; }
+  .pill.paused { background: #fef3c7; color: #92400e; }
+  .pill.closed { background: #f1f5f9; color: #64748b; }
+  .pill.draft { background: #f1f5f9; color: #64748b; }
+  .vstats { display: flex; gap: 12px; }
+  .vstat { flex: 1; min-width: 0; }
+  .vstat .n { font-size: 19px; font-weight: 900; line-height: 1; color: #0f172a; }
+  .vstat .l { font-size: 10.5px; color: #6b7280; font-weight: 600; margin-top: 4px; }
+  .vbar-wrap { margin-top: 14px; }
+  .vbar-lbls { display: flex; justify-content: space-between; font-size: 10.5px; color: #6b7280; font-weight: 600; margin-bottom: 5px; }
+  .vbar { height: 7px; background: #f1f6f3; border-radius: 6px; overflow: hidden; }
+  .vbar-fill { height: 100%; background: #0f8f80; border-radius: 6px; }
+  .vcard-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 1px solid #eef2f0; margin-top: 16px; padding-top: 13px; }
+  .btn { padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
+  .btn-g { background: #0f8f80; color: #fff; }
+  .btn-g:hover { background: #0c7568; }
+  .btn-s { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+  .btn-s:hover { background: #e2e8f0; }
+  .btn-o { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+  .btn-o:hover { background: #ffedd5; }
+  .btn-r { background: #dc2626; color: #fff; }
+  .btn-r:hover { background: #b91c1c; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-sm { font-size: 10px; padding: 3px 8px; }
+  .ph { display: flex; align-items: center; margin-bottom: 1rem; gap: 10px; }
+  .ph-title { font-size: 1.05rem; font-weight: 700; color: #143d2e; }
+  .ph-sub { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+  .ph-acts { margin-left: auto; }
+  .info-box { padding: 10px 12px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; font-size: 11px; color: #92400e; margin-top: 14px; line-height: 1.5; }
+  .note { font-size: 11.5px; color: #6b7280; margin-top: 14px; line-height: 1.5; }
+
+  /* Access */
+  .invite-row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 13px; margin-bottom: 14px; }
+  .f-l { font-size: 10px; font-weight: 700; color: #374151; margin-bottom: 3px; }
+  .f-i { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 5px; padding: 7px 9px; font-size: 12px; color: #1e293b; background: #fff; outline: none; font-family: inherit; }
+  .f-i:focus { border-color: #0f8f80; }
+  .acc-row { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 13px; margin-bottom: 7px; }
+  .acc-name { font-size: 12px; font-weight: 700; color: #0f172a; }
+  .acc-scope { font-size: 11px; color: #9ca3af; }
+
+  .vf-toast { position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 12px; opacity: 0; transition: opacity .3s; z-index: 999; max-width: 360px; }
+  .vf-toast.show { opacity: 1; }
 
   .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; padding: 1rem; text-align: center; }
   .auth-screen h1 { font-size: 1.2rem; color: #143d2e; }
@@ -54,62 +123,144 @@
 
 <div id="auth-screen" class="auth-screen">
   <div style="font-size:2.4rem;">🏘️</div>
-  <h1>VillageFirst Admin</h1>
-  <p>One place for everything village admins do — surveys, news, publishing, and more. Sign in to continue.</p>
+  <h1>VillageFirst Village Admin</h1>
+  <p>One place for everything village admins do — every module, every village. Sign in to continue.</p>
   <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
   <div class="site-link"><a href="/">← back to villagefirst.org.au</a></div>
 </div>
 
 <div id="app" style="display:none;">
   <div class="topbar">
-    <div class="topbar-brand">🏘️ VillageFirst · Admin</div>
+    <div class="topbar-brand">🏘️ VillageFirst · Village Admin</div>
     <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <button class="add-village-btn" id="add-village-btn" style="display:none;" title="Add a village" onclick="addVillage()">＋ Village</button>
     <div class="topbar-sp"></div>
     <span class="topbar-user" id="user-email"></span>
     <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
   </div>
+
+  <div class="tabs">
+    <button class="tab on" id="tab-modules" onclick="showTab('modules')">🧩 Modules</button>
+    <button class="tab" id="tab-villages" style="display:none;" onclick="showTab('villages')">🏘️ All Villages</button>
+    <button class="tab" id="tab-access" onclick="showTab('access')">👥 Access &amp; roles</button>
+  </div>
+
   <div class="wrap">
-    <div class="greeting" id="greeting">G'day</div>
-    <div class="greeting-sub">What are you working on today?</div>
-    <div class="tiles" id="tiles"></div>
+
+    <!-- MODULES (per-village control-plane) -->
+    <div class="panel on" id="panel-modules">
+      <div class="greeting" id="greeting">G'day</div>
+      <div class="greeting-sub" id="modules-sub">What are you working on today?</div>
+      <div class="tiles" id="tiles"></div>
+      <div class="note" id="modules-note" style="display:none;">
+        The village's <b>package</b> (Foundation · Interactive · Complete — set on the All Villages tab) is the baseline for
+        which modules it gets. <b>Module ON/OFF</b> (super-admin) switches an in-package module on/off for this village — off
+        modules are hidden from that village's admins. <b>Public page ON/OFF</b> controls the module's resident-facing website
+        page only; the admin console keeps working either way.
+      </div>
+    </div>
+
+    <!-- ALL VILLAGES (super-admin) -->
+    <div class="panel" id="panel-villages">
+      <div class="ph">
+        <div><div class="ph-title">All Villages</div><div class="ph-sub">Manage every village's lifecycle and modules from one place</div></div>
+        <div class="ph-acts"><button class="btn btn-g" onclick="addVillage()">+ Village</button></div>
+      </div>
+      <div id="villages-table"><div style="padding:20px;color:#9ca3af;font-size:12px;">Loading…</div></div>
+      <div class="note" id="villages-note" style="display:none;">
+        Suspend pauses every survey in a village. Archive also removes public access (still visible here).
+        Delete needs the village archived, plus typed confirmation.
+      </div>
+      <div class="info-box">Survey credentials and API keys are managed in Netlify environment variables. Contact AOB (support@agilityops.com.au) to change them.</div>
+    </div>
+
+    <!-- ACCESS & ROLES -->
+    <div class="panel" id="panel-access">
+      <div class="ph">
+        <div><div class="ph-title">Access &amp; Permissions</div><div class="ph-sub">Manage who can administer this village's modules</div></div>
+      </div>
+      <div class="invite-row">
+        <div style="flex:2;min-width:200px;"><div class="f-l">Invite by email</div><input class="f-i" id="invite-email" placeholder="name@example.com"></div>
+        <div style="flex:1;min-width:170px;"><div class="f-l">Role</div><select class="f-i" id="invite-role"></select></div>
+        <button class="btn btn-g" onclick="inviteUser()">Send invite</button>
+      </div>
+      <div id="access-content"><div style="padding:16px;color:#9ca3af;font-size:12px;">Loading users…</div></div>
+      <div class="info-box">Invites are emailed via Netlify Identity. New users appear here once they accept. Roles take effect on their next sign-in.</div>
+    </div>
+
   </div>
 </div>
 
+<div class="vf-toast" id="toast"></div>
+
 <script>
-  // ── Tool registry ────────────────────────────────────────────────
-  // To add a tool: add a row here (or move this to the Villages/Tools
+  // ── Module registry ──────────────────────────────────────────────
+  // To add a module: add a row here (or move this to the Villages/Tools
   // Notion registry when the network grows). `roles` = who sees the tile;
   // village-scoped roles ("smithslake:steward") and super-admin both match.
+  // `moduleToggle` = super-admin can switch the module on/off per village
+  // (off = hidden from that village's admins). `publicToggle` = the module's
+  // resident-facing page can be switched on/off per village (server-enforced).
+  // `minPackage` = lowest Village1st package that includes the module.
   const TOOLS = [
-    { id: 'surveys',  icon: '📊', name: 'Surveys',          desc: 'Create surveys, watch results live', href: '/survey-admin/', roles: ['admin', 'steward', 'viewer'] },
-    { id: 'news',     icon: '📰', name: 'News desk',         desc: 'Write stories and publish village news', href: '/admin/news/', roles: ['admin', 'steward'] },
+    { id: 'surveys',  icon: '📊', name: 'Surveys',          desc: 'Create surveys, watch results live', href: '/survey-admin/', roles: ['admin', 'steward', 'viewer'], moduleToggle: true, tierNote: { foundation: 'Basic surveys', interactive: 'Full consultation engine', complete: 'Full consultation engine' } },
+    { id: 'news',     icon: '📰', name: 'News desk',         desc: 'Write stories and publish village news', href: '/admin/news/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'publish',  icon: '🌐', name: 'Publish website',   desc: 'Push the latest Notion content live', href: '/admin/publish-news.html', roles: ['admin', 'steward'] },
     { id: 'playbook', icon: '📖', name: 'Playbooks', desc: 'A guide for every admin job — surveys, news, publishing, access', href: '/admin/playbook/', roles: ['admin', 'steward', 'viewer'] },
-    { id: 'contrib',  icon: '🤝', name: 'Contributions portal', desc: 'Log donations, payments, gifts, time in kind & donated services', href: '/admin/contrib/', roles: ['admin', 'steward'] },
-    { id: 'cocon',    icon: '📑', name: 'Co-contribution & budget', desc: 'Grant co-contribution schedule & project budget — live dashboard + council export', href: '/admin/cocontribution/', roles: ['admin', 'steward'] },
-    { id: 'services', icon: '🏪', name: 'Services directory',  desc: 'Keep every service listing accurate — service stewards manage their own', href: '/admin/services/', roles: ['admin', 'steward'] },
-    { id: 'members',  icon: '🪪', name: 'Membership',          desc: 'Member register — approvals, payments, renewals & member emails', href: '/admin/members/', roles: ['admin'] },
-    { id: 'events',   icon: '🎟️', name: 'Events & ticketing', desc: 'Create events, take registrations, run the door on the night', href: '/admin/events/', roles: ['admin'], publicToggle: true },
-    { id: 'ads',      icon: '📣', name: 'Advertising',        desc: 'Local business placements & sponsorships — dates, tiers & fees', href: '/admin/ads/', roles: ['admin'] },
-    { id: 'volunteers', icon: '🙋', name: 'Volunteer hub',     desc: 'Group rosters, working bees & volunteer hours — stewards see their own groups', href: '/admin/volunteers/', roles: ['admin', 'steward'] },
-    { id: 'bookings', icon: '🏛️', name: 'Facility bookings',  desc: 'Hall hire requests, the booking calendar, fees & bonds', href: '/admin/bookings/', roles: ['admin'], publicToggle: true },
+    { id: 'contrib',  icon: '🤝', name: 'Contributions portal', desc: 'Log donations, payments, gifts, time in kind & donated services', href: '/admin/contrib/', roles: ['admin', 'steward'], moduleToggle: true },
+    { id: 'cocon',    icon: '📑', name: 'Co-contribution & budget', desc: 'Grant co-contribution schedule & project budget — live dashboard + council export', href: '/admin/cocontribution/', roles: ['admin', 'steward'], moduleToggle: true, minPackage: 'complete' },
+    { id: 'services', icon: '🏪', name: 'Services directory',  desc: 'Keep every service listing accurate — service stewards manage their own', href: '/admin/services/', roles: ['admin', 'steward'], moduleToggle: true },
+    { id: 'members',  icon: '🪪', name: 'Membership',          desc: 'Member register — approvals, payments, renewals & member emails', href: '/admin/members/', roles: ['admin'], moduleToggle: true },
+    { id: 'events',   icon: '🎟️', name: 'Events & ticketing', desc: 'Create events, take registrations, run the door on the night', href: '/admin/events/', roles: ['admin'], publicToggle: true, moduleToggle: true },
+    { id: 'ads',      icon: '📣', name: 'Advertising',        desc: 'Local business placements & sponsorships — dates, tiers & fees', href: '/admin/ads/', roles: ['admin'], moduleToggle: true },
+    { id: 'volunteers', icon: '🙋', name: 'Volunteer hub',     desc: 'Group rosters, working bees & volunteer hours — stewards see their own groups', href: '/admin/volunteers/', roles: ['admin', 'steward'], moduleToggle: true },
+    { id: 'bookings', icon: '🏛️', name: 'Facility bookings',  desc: 'Hall hire requests, the booking calendar, fees & bonds', href: '/admin/bookings/', roles: ['admin'], publicToggle: true, moduleToggle: true },
   ];
 
   let currentUser = null;
   let villagesData = [];
+  let currentTab = 'modules';
+
+  // ── Village1st packages (village1st.com.au service levels) ─────────
+  const PKG_ORDER = ['foundation', 'interactive', 'complete'];
+  const PKG_LABEL = { foundation: 'Foundation', interactive: 'Interactive', complete: 'Complete' };
 
   function activeVillage() {
     return document.getElementById('village-select').value || localStorage.getItem('vf_active_village') || 'Smiths Lake';
   }
+  function villageRec(name) {
+    return villagesData.find(function(x) { return x.name === (name || activeVillage()); });
+  }
+  // Same rule as _auth.js villageKey(): "Smiths Lake" → "smithslake"
+  function villageKey(name) { return String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
 
-  function isModulePublic(moduleId) {
-    const v = villagesData.find(function(x) { return x.name === activeVillage(); });
+  function userRoles() {
+    return (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || [];
+  }
+  function isSuper() { return userRoles().includes('super-admin'); }
+
+  function isModulePublic(moduleId, vName) {
+    const v = villageRec(vName);
     return !!(v && Array.isArray(v.publicModules) && v.publicModules.includes(moduleId));
   }
+  function isModuleEnabled(moduleId, vName) {
+    // Fail-open: a module is enabled unless it's explicitly in Disabled Modules.
+    const v = villageRec(vName);
+    return !(v && Array.isArray(v.disabledModules) && v.disabledModules.includes(moduleId));
+  }
+  function villagePackage(vName) {
+    // Fail-open: no package recorded = 'complete' (pre-package villages keep everything).
+    const v = villageRec(vName);
+    return (v && v.package) || 'complete';
+  }
+  function inPackage(tool, vName) {
+    if (!tool.minPackage) return true;
+    return PKG_ORDER.indexOf(villagePackage(vName)) >= PKG_ORDER.indexOf(tool.minPackage);
+  }
 
-  // The "Public page ON/OFF" switch on gated tiles (events, bookings).
-  // OFF = the admin console works fully but the module's public website pages
-  // show a "nearly ready" notice and refuse signups. Server enforces too.
+  // ── Toggles (both call /api/village-modules; server enforces roles) ──
+  // "Public page ON/OFF" — gated tiles (events, bookings). OFF = the module's
+  // public website pages show a "nearly ready" notice and refuse signups.
   async function togglePublic(ev, moduleId, name) {
     ev.preventDefault(); ev.stopPropagation();
     const on = isModulePublic(moduleId);
@@ -118,23 +269,39 @@
       : 'Switch the PUBLIC ' + name + ' page ON for ' + activeVillage() + '? Residents can then see and use it on the website immediately.';
     if (!confirm(msg)) return;
     try {
-      let token = null;
-      try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
       const r = await fetch('/api/village-modules', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) },
+        method: 'POST', headers: await authHeaders(),
         body: JSON.stringify({ village: activeVillage(), module: moduleId, public: !on }),
       });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'Toggle failed');
-      const v = villagesData.find(function(x) { return x.name === activeVillage(); });
+      const v = villageRec();
       if (v) v.publicModules = data.publicModules;
       renderTiles();
-    } catch (e) { alert('⚠️ ' + e.message); }
+    } catch (e) { showToast('⚠️ ' + e.message); }
   }
 
-  function userRoles() {
-    return (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || [];
+  // "Module ON/OFF" — super-admin switches a whole module on/off for a
+  // village. OFF = the tile is hidden from that village's admins (greyed for
+  // super-admins so it can be switched back on).
+  async function toggleModule(ev, moduleId, name) {
+    ev.preventDefault(); ev.stopPropagation();
+    const on = isModuleEnabled(moduleId);
+    const msg = on
+      ? 'Switch the ' + name + ' module OFF for ' + activeVillage() + '? Its tile is hidden from this village\'s admins. Nothing is deleted — switch it back on any time.'
+      : 'Switch the ' + name + ' module ON for ' + activeVillage() + '?';
+    if (!confirm(msg)) return;
+    try {
+      const r = await fetch('/api/village-modules', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: activeVillage(), module: moduleId, enabled: !on }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Toggle failed');
+      const v = villageRec();
+      if (v) v.disabledModules = data.disabledModules;
+      renderTiles();
+    } catch (e) { showToast('⚠️ ' + e.message); }
   }
 
   function canSee(tool) {
@@ -149,12 +316,29 @@
   function renderTiles() {
     const el = document.getElementById('tiles');
     el.innerHTML = '';
+    const superUser = isSuper();
+    const pkg = villagePackage();
     TOOLS.filter(canSee).forEach(function(tool) {
-      const a = document.createElement(tool.soon ? 'div' : 'a');
-      a.className = 'tile' + (tool.soon ? ' is-soon' : '');
-      if (!tool.soon) a.href = tool.href;
+      const inPkg = inPackage(tool);
+      const enabled = (tool.moduleToggle ? isModuleEnabled(tool.id) : true) && inPkg;
+      if (!enabled && !superUser) return;   // hidden for village admins; greyed for super-admin
+      const a = document.createElement((tool.soon || !inPkg) ? 'div' : 'a');
+      a.className = 'tile' + (tool.soon ? ' is-soon' : '') + (!enabled ? ' is-disabled' : '');
+      if (!tool.soon && inPkg) a.href = tool.href;
       let extra = tool.soon ? '<span class="soon-chip">Coming soon</span>' : '';
-      if (tool.publicToggle && !tool.soon) {
+      if (!inPkg) {
+        extra += '<span class="soon-chip" title="This module is part of the ' + PKG_LABEL[tool.minPackage] + ' package — change the village\'s package on the All Villages tab">🔒 ' + PKG_LABEL[tool.minPackage] + ' package</span>';
+      }
+      if (tool.tierNote && tool.tierNote[pkg] && inPkg) {
+        extra += '<span class="soon-chip" style="color:#1e40af;background:#eff6ff;">' + escHtml(tool.tierNote[pkg]) + '</span>';
+      }
+      if (tool.moduleToggle && !tool.soon && inPkg && superUser) {
+        extra += '<button class="mod-chip ' + (enabled ? 'is-on' : 'is-off') + '" ' +
+          'onclick="toggleModule(event, \'' + tool.id + '\', \'' + tool.name + '\')" ' +
+          'title="Switch this module on/off for ' + escHtml(activeVillage()) + ' (super-admin)">' +
+          'Module: ' + (enabled ? 'ON' : 'OFF') + '</button>';
+      }
+      if (tool.publicToggle && !tool.soon && enabled) {
         const on = isModulePublic(tool.id);
         extra += '<button class="pub-chip ' + (on ? 'is-on' : 'is-off') + '" ' +
           'onclick="togglePublic(event, \'' + tool.id + '\', \'' + tool.name + '\')" ' +
@@ -166,29 +350,347 @@
         '<div class="tile-desc">' + tool.desc + '</div>' + extra;
       el.appendChild(a);
     });
+    const sub = document.getElementById('modules-sub');
+    if (sub) sub.textContent = activeVillage() + ' · ' + PKG_LABEL[pkg] + ' package — what are you working on today?';
+    const note = document.getElementById('modules-note');
+    if (note) note.style.display = superUser ? 'block' : 'none';
   }
 
+  // ── Villages (registry + switcher) ─────────────────────────────────
   async function loadVillages() {
     const sel = document.getElementById('village-select');
     let active = localStorage.getItem('vf_active_village') || 'Smiths Lake';
     try {
-      let token = null;
-      try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
-      const r = await fetch('/api/village-list', { headers: token ? { 'Authorization': 'Bearer ' + token } : {} });
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
       const data = await r.json();
-      const villages = (data.villages || []).filter(function(v) { return v.status === 'live'; });
-      if (!villages.length) return;
+      const all = (data.villages || []);
+      if (!all.length) return;
+      villagesData = all;
+      // Switcher lists live villages only; All Villages shows every status.
+      const live = all.filter(function(v) { return v.status === 'live'; });
+      const pick = live.length ? live : all;
+      if (!pick.some(function(v) { return v.name === active; })) active = pick[0].name;
+      localStorage.setItem('vf_active_village', active);
       sel.innerHTML = '';
-      villagesData = villages;
-      villages.forEach(function(v) {
+      pick.forEach(function(v) {
         const o = document.createElement('option');
         o.value = v.name; o.textContent = v.name;
         if (v.name === active) o.selected = true;
         sel.appendChild(o);
       });
-      renderTiles(); // repaint the public ON/OFF chips now flags are known
+      renderTiles(); // repaint chips now flags are known
+      buildRoleOptions();
+      const tv = document.getElementById('tab-villages');
+      if (tv) tv.style.display = (isSuper() || all.length > 1) ? 'inline-block' : 'none';
+      const ab = document.getElementById('add-village-btn');
+      if (ab) ab.style.display = isSuper() ? 'inline-block' : 'none';
+      if (currentTab === 'villages') renderAllVillages();
     } catch (e) { /* keep default */ }
-    sel.onchange = function() { localStorage.setItem('vf_active_village', sel.value); renderTiles(); };
+    sel.onchange = function() {
+      localStorage.setItem('vf_active_village', sel.value);
+      renderTiles();
+      buildRoleOptions();
+      if (currentTab === 'access') loadAccess();
+    };
+  }
+
+  // ── All Villages rollup (lifecycle + KPIs) ─────────────────────────
+  const STATUS_PILL = {
+    live:       { cls: 'live',   label: 'Live' },
+    suspended:  { cls: 'paused', label: 'Suspended' },
+    archived:   { cls: 'closed', label: 'Archived' },
+    onboarding: { cls: 'draft',  label: 'Onboarding' },
+  };
+  function villageStatusOf(name) { const v = villageRec(name); return (v && v.status) || 'live'; }
+
+  async function renderAllVillages() {
+    const box = document.getElementById('villages-table');
+    if (!box) return;
+    const superUser = isSuper();
+    if (!villagesData.length) await loadVillages();
+
+    // Survey stats per village in parallel (best-effort) — ONE call per village.
+    const stats = {};
+    await Promise.all(villagesData.map(async function(v) {
+      try {
+        const r = await fetch('/api/survey-list?village=' + encodeURIComponent(v.name));
+        const list = r.ok ? ((await r.json()).surveys || []) : null;
+        if (!list) { stats[v.name] = { ok: false }; return; }
+        let active = 0, responses = 0, haveResp = false;
+        list.forEach(function(s) {
+          if (s && s.active) active++;
+          if (s && typeof s.responseCount === 'number') { responses += s.responseCount; haveResp = true; }
+        });
+        stats[v.name] = { ok: true, total: list.length, active: active, responses: responses, haveResp: haveResp };
+      } catch (_) { stats[v.name] = { ok: false }; }
+    }));
+
+    // Platform KPI strip (sums across all villages)
+    let kActive = 0, kTotal = 0, kResp = 0, kAnyResp = false;
+    villagesData.forEach(function(v) {
+      const s = stats[v.name];
+      if (s && s.ok) { kActive += s.active; kTotal += s.total; kResp += s.responses; if (s.haveResp) kAnyResp = true; }
+    });
+    const fmt = function(n) { return n.toLocaleString('en-AU'); };
+    const kpis =
+      '<div class="kpis">' +
+        '<div class="kpi"><div class="n">' + fmt(villagesData.length) + '</div><div class="l">Villages</div></div>' +
+        '<div class="kpi"><div class="n">' + fmt(kActive) + '</div><div class="l">Active surveys</div></div>' +
+        '<div class="kpi"><div class="n">' + fmt(kTotal) + '</div><div class="l">Total surveys</div></div>' +
+        '<div class="kpi"><div class="n">' + (kAnyResp ? fmt(kResp) : '—') + '</div><div class="l">Total responses</div></div>' +
+      '</div>';
+
+    const cards = villagesData.map(function(v) {
+      const st = v.status || 'live';
+      const isActive = v.name === activeVillage();
+      const p = STATUS_PILL[st] || { cls: 'draft', label: st || '—' };
+      const s = stats[v.name] || { ok: false };
+      const total = s.ok ? fmt(s.total) : '—';
+      const active = s.ok ? fmt(s.active) : '—';
+      const responses = (s.ok && s.haveResp) ? fmt(s.responses) : '—';
+      const vPkg = (v.package || 'complete');
+      const modsOff = (v.disabledModules || []).length;
+      const modsOn = TOOLS.filter(function(t) { return t.moduleToggle && inPackage(t, v.name); }).length - modsOff;
+      const pkgControl = superUser
+        ? '<select class="f-i" style="max-width:150px;font-size:11px;padding:3px 6px;" title="Village1st package" onchange="setVillagePackage(' + jsArg(v.name) + ', this.value)">' +
+            PKG_ORDER.map(function(p) { return '<option value="' + p + '" ' + (p === vPkg ? 'selected' : '') + '>' + PKG_LABEL[p] + ' package</option>'; }).join('') +
+          '</select>'
+        : '<span style="font-size:10.5px;color:#6b7280;font-weight:600;">' + PKG_LABEL[vPkg] + ' package</span>';
+      const pct = (s.ok && s.total > 0) ? Math.round((s.active / s.total) * 100) : 0;
+      const bar = s.ok
+        ? '<div class="vbar-wrap"><div class="vbar-lbls"><span>Surveys live</span><span>' + pct + '%</span></div>' +
+          '<div class="vbar"><div class="vbar-fill" style="width:' + pct + '%;"></div></div></div>'
+        : '';
+      const stat = function(label, val) {
+        return '<div class="vstat"><div class="n">' + val + '</div><div class="l">' + label + '</div></div>';
+      };
+      const lifecycle = superUser
+        ? '<button class="btn btn-g btn-sm" ' + (st === 'live' ? 'disabled' : '') + ' onclick="setVillageStatus(\'live\',' + jsArg(v.name) + ')">Live</button> ' +
+          '<button class="btn btn-o btn-sm" ' + (st === 'suspended' ? 'disabled' : '') + ' onclick="setVillageStatus(\'suspended\',' + jsArg(v.name) + ')">Suspend</button> ' +
+          '<button class="btn btn-o btn-sm" ' + (st === 'archived' ? 'disabled' : '') + ' onclick="setVillageStatus(\'archived\',' + jsArg(v.name) + ')">Archive</button> ' +
+          '<button class="btn btn-r btn-sm" ' + (st === 'archived' ? '' : 'disabled') + ' onclick="deleteVillage(' + jsArg(v.name) + ')">Delete</button>'
+        : '<span style="color:#9ca3af;font-size:11px;">View only</span>';
+      return '<div class="vcard">' +
+        '<div class="vcard-head">' +
+          '<div class="vcard-name">' + escHtml(v.name) + (isActive ? ' <span class="vcard-cur">• current</span>' : '') + '</div>' +
+          '<span class="pill ' + p.cls + '">' + escHtml(p.label) + '</span>' +
+        '</div>' +
+        '<div class="vstats">' + stat('Active surveys', active) + stat('Total surveys', total) + stat('Responses', responses) + '</div>' +
+        bar +
+        '<div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">' + pkgControl +
+          '<span style="font-size:10.5px;color:#6b7280;font-weight:600;">Modules on: ' + modsOn + (modsOff ? ' · off: ' + modsOff : '') + '</span></div>' +
+        '<div class="vcard-foot">' +
+          '<button class="btn btn-s btn-sm" onclick="openVillage(' + jsArg(v.name) + ')">Open modules →</button>' +
+          '<div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">' + lifecycle + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    box.innerHTML = kpis + '<div class="vcards">' + cards + '</div>';
+    const note = document.getElementById('villages-note');
+    if (note) note.style.display = superUser ? 'block' : 'none';
+  }
+
+  function openVillage(name) {
+    localStorage.setItem('vf_active_village', name);
+    const sel = document.getElementById('village-select');
+    // If the village isn't in the (live-only) switcher, add it so context is visible.
+    if (sel && ![].slice.call(sel.options).some(function(o) { return o.value === name; })) {
+      const o = document.createElement('option'); o.value = name; o.textContent = name; sel.appendChild(o);
+    }
+    if (sel) sel.value = name;
+    renderTiles();
+    buildRoleOptions();
+    showTab('modules');
+  }
+
+  // ── Village lifecycle (super-admin, server-enforced) ───────────────
+  async function setVillageStatus(status, village) {
+    village = village || activeVillage();
+    const labels = { live: 'set Live', suspended: 'Suspend', archived: 'Archive' };
+    if (!confirm((labels[status] || status) + ' "' + village + '"?' +
+      (status === 'suspended' ? '\n\nAll surveys in this village will be paused.' :
+       status === 'archived' ? '\n\nAll surveys stop and public access is removed.' : ''))) return;
+    try {
+      const res = await fetch('/api/village-status', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: village, status: status }) });
+      const data = await res.json();
+      if (res.ok && data.success) { showToast('✅ Village ' + status); await loadVillages(); renderAllVillages(); }
+      else showToast('⚠️ ' + (data.error || 'Could not update village'));
+    } catch (_) { showToast('⚠️ Network error'); }
+  }
+
+  async function deleteVillage(village) {
+    village = village || activeVillage();
+    if (villageStatusOf(village) !== 'archived') { showToast('⚠️ Archive the village first'); return; }
+    if (!confirm('Delete "' + village + '"? This cannot be undone.')) return;
+    const typed = (prompt('Type the village name to confirm deletion:\n' + village) || '').trim();
+    if (typed !== village) { showToast('⚠️ Name did not match — delete cancelled'); return; }
+    try {
+      const res = await fetch('/api/village-remove', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: village }) });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('✅ Village deleted');
+        if (activeVillage() === village) localStorage.removeItem('vf_active_village');
+        await loadVillages();
+        renderAllVillages();
+      }
+      else showToast('⚠️ ' + (data.error || 'Could not delete village'));
+    } catch (_) { showToast('⚠️ Network error'); }
+  }
+
+  async function setVillagePackage(village, pkg) {
+    if (!confirm('Set ' + village + ' to the ' + PKG_LABEL[pkg] + ' package?\n\nModules outside the package are locked for that village\'s admins (nothing is deleted).')) {
+      renderAllVillages();   // reset the select to the stored value
+      return;
+    }
+    try {
+      const res = await fetch('/api/village-modules', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: village, package: pkg }) });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        const v = villageRec(village);
+        if (v) v.package = data.package;
+        showToast('✅ ' + village + ' → ' + PKG_LABEL[pkg] + ' package');
+        renderAllVillages();
+        renderTiles();
+      }
+      else { showToast('⚠️ ' + (data.error || 'Could not set package')); renderAllVillages(); }
+    } catch (_) { showToast('⚠️ Network error'); renderAllVillages(); }
+  }
+
+  async function addVillage() {
+    const name = (prompt('New village name:') || '').trim();
+    if (!name) return;
+    try {
+      const res = await fetch('/api/village-add', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: name }) });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('✅ Village added');
+        await loadVillages();
+        if (villagesData.some(function(v) { return v.name === name; })) openVillage(name);
+        if (currentTab === 'villages') renderAllVillages();
+      }
+      else showToast('⚠️ ' + (data.error || 'Could not add village'));
+    } catch (_) { showToast('⚠️ Network error'); }
+  }
+
+  // ── Access & roles (moved from Survey Admin; now village-aware) ────
+  function buildRoleOptions() {
+    const sel = document.getElementById('invite-role');
+    if (!sel) return;
+    const key = villageKey(activeVillage());
+    sel.innerHTML =
+      '<option value="' + key + ':steward">Steward — ' + escHtml(activeVillage()) + '</option>' +
+      '<option value="' + key + ':admin">Village Admin — ' + escHtml(activeVillage()) + '</option>' +
+      '<option value="' + key + ':viewer">Committee Viewer — ' + escHtml(activeVillage()) + '</option>' +
+      (isSuper() ? '<option value="super-admin">Super Admin (all villages)</option>' : '');
+  }
+  function roleOptionsFor(current) {
+    const key = villageKey(activeVillage());
+    const opts = [
+      { v: '', l: 'No role' },
+      { v: key + ':steward', l: 'Steward' },
+      { v: key + ':admin', l: 'Village Admin' },
+      { v: key + ':viewer', l: 'Committee Viewer' },
+      { v: 'super-admin', l: 'Super Admin' },
+    ];
+    // Preserve a role from another village so the dropdown doesn't misreport it.
+    if (current && !opts.some(function(o) { return o.v === current; })) opts.splice(1, 0, { v: current, l: current });
+    return opts;
+  }
+  function roleLabel(roles) {
+    const r = (roles || [])[0] || '';
+    if (r === 'super-admin') return 'Super Admin';
+    if (r.endsWith(':admin')) return 'Village Admin (' + r.split(':')[0] + ')';
+    if (r.endsWith(':steward')) return 'Steward (' + r.split(':')[0] + ')';
+    if (r.endsWith(':viewer')) return 'Committee Viewer (' + r.split(':')[0] + ')';
+    return r ? r : 'No role';
+  }
+  async function loadAccess() {
+    const el = document.getElementById('access-content');
+    el.innerHTML = '<div style="padding:16px;color:#9ca3af;font-size:12px;">Loading users…</div>';
+    try {
+      const res = await fetch('/api/identity-admin', { headers: await authHeaders() });
+      if (res.status === 503) { el.innerHTML = '<div class="info-box">In-app user management needs Netlify Identity\'s admin context. If this persists, manage users in Netlify → Identity.</div>'; return; }
+      if (!res.ok) { el.innerHTML = '<div class="info-box">Could not load users (' + res.status + ').</div>'; return; }
+      const data = await res.json();
+      const users = data.users || [];
+      if (!users.length) { el.innerHTML = '<div style="padding:16px;color:#9ca3af;font-size:12px;">No users yet. Invite someone above.</div>'; return; }
+      el.innerHTML = users.map(function(u) {
+        const cur = (u.roles || [])[0] || '';
+        const opts = roleOptionsFor(cur).map(function(o) {
+          return '<option value="' + o.v + '" ' + (o.v === cur ? 'selected' : '') + '>' + o.l + '</option>';
+        }).join('');
+        return '<div class="acc-row">' +
+          '<div style="font-size:16px;">👤</div>' +
+          '<div style="flex:1;"><div class="acc-name">' + escHtml(u.email) + '</div><div class="acc-scope">' + escHtml(roleLabel(u.roles)) + (u.confirmed ? '' : ' · invited (pending)') + '</div></div>' +
+          '<select class="f-i" style="max-width:190px;font-size:12px;" onchange="setUserRole(\'' + u.id + '\',this.value)">' + opts + '</select>' +
+          '<button class="btn btn-s btn-sm" style="color:#dc2626;margin-left:8px;" title="Remove access" onclick="removeUser(\'' + u.id + '\', ' + jsArg(u.email) + ')">Remove</button>' +
+        '</div>';
+      }).join('');
+    } catch (e) { el.innerHTML = '<div class="info-box">Could not load users.</div>'; }
+  }
+  async function setUserRole(userId, role) {
+    try {
+      const res = await fetch('/api/identity-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ action: 'setrole', userId: userId, role: role }) });
+      const data = await res.json();
+      if (res.ok && data.success) showToast('✅ Role updated (applies on their next sign-in)');
+      else showToast('⚠️ ' + (data.error || 'Could not update role'));
+    } catch (_) { showToast('⚠️ Network error'); }
+  }
+  async function removeUser(userId, email) {
+    if (email && currentUser && email.toLowerCase() === (currentUser.email || '').toLowerCase()) { showToast("You can't remove your own access."); return; }
+    if (!confirm('Remove ' + email + '?\n\nThey lose all admin access (and any pending invite is cancelled). You can re-invite them later.')) return;
+    try {
+      const res = await fetch('/api/identity-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ action: 'delete', userId: userId }) });
+      const data = await res.json();
+      if (res.ok && data.success) { showToast('Access removed'); loadAccess(); }
+      else showToast('⚠️ ' + (data.error || 'Could not remove'));
+    } catch (_) { showToast('⚠️ Network error'); }
+  }
+  async function inviteUser() {
+    const email = document.getElementById('invite-email').value.trim();
+    const role = document.getElementById('invite-role') ? document.getElementById('invite-role').value : '';
+    if (!email) { showToast('Enter an email to invite.'); return; }
+    try {
+      const res = await fetch('/api/identity-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ action: 'invite', email: email, role: role }) });
+      const data = await res.json();
+      if (res.ok && data.success) { showToast('✅ ' + (data.message || 'Invitation sent')); document.getElementById('invite-email').value = ''; loadAccess(); }
+      else showToast('⚠️ ' + (data.error || 'Invite failed'));
+    } catch (_) { showToast('⚠️ Network error'); }
+  }
+
+  // ── Tabs (with #villages / #access deep links) ─────────────────────
+  function showTab(id) {
+    currentTab = id;
+    ['modules', 'villages', 'access'].forEach(function(t) {
+      const p = document.getElementById('panel-' + t);
+      const tab = document.getElementById('tab-' + t);
+      if (p) p.classList.toggle('on', t === id);
+      if (tab) tab.classList.toggle('on', t === id);
+    });
+    if (id === 'villages') renderAllVillages();
+    if (id === 'access') { buildRoleOptions(); loadAccess(); }
+    if (history.replaceState) history.replaceState(null, '', id === 'modules' ? location.pathname : '#' + id);
+  }
+  function openHashTab() {
+    const h = (location.hash || '').replace('#', '');
+    if (h === 'villages' || h === 'access') showTab(h);
+  }
+
+  // ── Auth & boot ────────────────────────────────────────────────────
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    return Object.assign({ 'Content-Type': 'application/json' }, token ? { 'Authorization': 'Bearer ' + token } : {});
+  }
+
+  function escHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  // Safe single-quoted JS string literal for use inside a double-quoted onclick="" attribute.
+  function jsArg(s) { return "'" + String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + "'"; }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show'); setTimeout(function() { t.classList.remove('show'); }, 4000);
   }
 
   function showApp() {
@@ -199,6 +701,8 @@
     const name = (currentUser && (currentUser.user_metadata && currentUser.user_metadata.full_name)) || '';
     document.getElementById('greeting').textContent = name ? ('G\'day ' + name.split(' ')[0]) : 'G\'day';
     renderTiles();
+    buildRoleOptions();
+    openHashTab();
   }
 
   netlifyIdentity.on('init', function(u) { if (u) { currentUser = u; showApp(); } });
@@ -208,6 +712,7 @@
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
   });
+  window.addEventListener('hashchange', openHashTab);
 </script>
 </body>
 </html>
