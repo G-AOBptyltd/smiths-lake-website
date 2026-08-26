@@ -60,7 +60,7 @@ export const handler = async (event, context) => {
   const projectSlug = event.queryStringParameters?.project || '';
   const table = event.queryStringParameters?.table || 'both';
 
-  const auth = requireRole(context, { village, anyOf: ['admin', 'steward'] });
+  const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer'] });
   if (!auth.ok) return jsonErr(auth.status, auth.error);
   if (!projectSlug) return jsonErr(400, 'Missing project slug');
   if (!PROJECTS_DB || !SCHEDULE_DB || !BUDGET_DB) return jsonErr(503, 'Co-Contribution databases not configured');

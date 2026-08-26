@@ -44,7 +44,7 @@ export const handler = async (event, context) => {
   }
 
   const village = event.queryStringParameters?.village || 'Smiths Lake';
-  const auth = requireRole(context, { village, anyOf: ['admin', 'steward'] });
+  const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer'] });
   if (!auth.ok) {
     return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };
   }

@@ -207,8 +207,8 @@
     { id: 'news',     icon: '📰', name: 'News desk',         desc: 'Write stories and publish village news', href: '/admin/news/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'publish',  icon: '🌐', name: 'Publish website',   desc: 'Push the latest Notion content live', href: '/admin/publish-news.html', roles: ['admin', 'steward'] },
     { id: 'playbook', icon: '📖', name: 'Playbooks', desc: 'A guide for every admin job — surveys, news, publishing, access', href: '/admin/playbook/', roles: ['admin', 'steward', 'viewer'] },
-    { id: 'contrib',  icon: '🤝', name: 'Contributions portal', desc: 'Log donations, payments, gifts, time in kind & donated services', href: '/admin/contrib/', roles: ['admin', 'steward'], moduleToggle: true },
-    { id: 'cocon',    icon: '📑', name: 'Co-contribution & budget', desc: 'Grant co-contribution schedule & project budget — live dashboard + council export', href: '/admin/cocontribution/', roles: ['admin', 'steward'], moduleToggle: true, minPackage: 'complete' },
+    { id: 'contrib',  icon: '🤝', name: 'Contributions portal', desc: 'Log donations, payments, gifts, time in kind & donated services', href: '/admin/contrib/', roles: ['admin', 'treasurer'], moduleToggle: true },
+    { id: 'cocon',    icon: '📑', name: 'Co-contribution & budget', desc: 'Grant co-contribution schedule & project budget — live dashboard + council export', href: '/admin/cocontribution/', roles: ['admin', 'treasurer'], moduleToggle: true, minPackage: 'complete' },
     { id: 'services', icon: '🏪', name: 'Services directory',  desc: 'Keep every service listing accurate — service stewards manage their own', href: '/admin/services/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'members',  icon: '🪪', name: 'Membership',          desc: 'Member register — approvals, payments, renewals & member emails', href: '/admin/members/', roles: ['admin'], moduleToggle: true },
     { id: 'events',   icon: '🎟️', name: 'Events & ticketing', desc: 'Create events, take registrations, run the door on the night', href: '/admin/events/', roles: ['admin'], publicToggle: true, moduleToggle: true },
@@ -580,6 +580,7 @@
     const key = villageKey(activeVillage());
     sel.innerHTML =
       '<option value="' + key + ':steward">Steward — ' + escHtml(activeVillage()) + '</option>' +
+      '<option value="' + key + ':treasurer">Village Treasurer — ' + escHtml(activeVillage()) + '</option>' +
       '<option value="' + key + ':admin">Village Admin — ' + escHtml(activeVillage()) + '</option>' +
       '<option value="' + key + ':viewer">Committee Viewer — ' + escHtml(activeVillage()) + '</option>' +
       (isSuper() ? '<option value="super-admin">Super Admin (all villages)</option>' : '');
@@ -589,6 +590,7 @@
     const opts = [
       { v: '', l: 'No role' },
       { v: key + ':steward', l: 'Steward' },
+      { v: key + ':treasurer', l: 'Village Treasurer' },
       { v: key + ':admin', l: 'Village Admin' },
       { v: key + ':viewer', l: 'Committee Viewer' },
       { v: 'super-admin', l: 'Super Admin' },
@@ -601,6 +603,7 @@
     const r = (roles || [])[0] || '';
     if (r === 'super-admin') return 'Super Admin';
     if (r.endsWith(':admin')) return 'Village Admin (' + r.split(':')[0] + ')';
+    if (r.endsWith(':treasurer')) return 'Village Treasurer (' + r.split(':')[0] + ')';
     if (r.endsWith(':steward')) return 'Steward (' + r.split(':')[0] + ')';
     if (r.endsWith(':viewer')) return 'Committee Viewer (' + r.split(':')[0] + ')';
     return r ? r : 'No role';

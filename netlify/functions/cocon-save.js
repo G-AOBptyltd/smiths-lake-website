@@ -113,7 +113,7 @@ export const handler = async (event, context) => {
     return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'entity must be project | schedule | budget' }) };
   }
 
-  const auth = requireRole(context, { village, anyOf: ['admin', 'steward'] });
+  const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer'] });
   if (!auth.ok) {
     return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };
   }
@@ -129,7 +129,7 @@ export const handler = async (event, context) => {
 
   // The grant-request figure is sensitive — only a village admin may write it.
   if (entity === 'project' && body.grantRequestAmount !== undefined && body.grantRequestAmount !== '') {
-    const adminOnly = requireRole(context, { village, anyOf: ['admin'] });
+    const adminOnly = requireRole(context, { village, anyOf: ['admin', 'treasurer'] });
     if (!adminOnly.ok) {
       return { statusCode: 403, headers: corsHeaders(), body: JSON.stringify({ error: 'Only a Village Admin can set the grant request amount' }) };
     }

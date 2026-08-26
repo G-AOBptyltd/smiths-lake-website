@@ -273,12 +273,20 @@
     const vKey = VILLAGE.toLowerCase().replace(/[^a-z0-9]+/g, '');
     return roles.includes(vKey + ':admin');
   }
+  // Finance roles: the grant figure is set by the admin or the treasurer
+  // (mirrors cocon-save.js). Deleting stays admin-only.
+  function isFinanceRole() {
+    if (isVillageAdmin()) return true;
+    const roles = (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || [];
+    const vKey = VILLAGE.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    return roles.includes(vKey + ':treasurer');
+  }
 
   function showApp() {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('user-email').textContent = currentUser?.email || '';
-    if (!isVillageAdmin()) {
+    if (!isFinanceRole()) {
       document.getElementById('pr-grant').disabled = true;
       document.getElementById('pr-lock').style.display = 'block';
     }
@@ -540,7 +548,7 @@
       name, slug, grantProgram: document.getElementById('pr-program').value.trim(),
       status: document.getElementById('pr-status').value, notes: document.getElementById('pr-notes').value.trim(),
     };
-    if (isVillageAdmin()) payload.grantRequestAmount = document.getElementById('pr-grant').value;
+    if (isFinanceRole()) payload.grantRequestAmount = document.getElementById('pr-grant').value;
     try {
       const r = await fetch('/api/cocon-save', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(payload) });
       const d = await r.json();
