@@ -80,6 +80,11 @@
   .vbar { height: 7px; background: #f1f6f3; border-radius: 6px; overflow: hidden; }
   .vbar-fill { height: 100%; background: #0f8f80; border-radius: 6px; }
   .vcard-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; border-top: 1px solid #eef2f0; margin-top: 16px; padding-top: 13px; }
+  .mchips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+  .mchip { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; border: 1px solid; white-space: nowrap; }
+  .mchip.on { color: #0f5c48; background: #e7f6ee; border-color: #b7e4cf; }
+  .mchip.off { color: #9ca3af; background: #f3f4f6; border-color: #e5e7eb; text-decoration: line-through; }
+  .mchip.locked { color: #92400e; background: #fef3c7; border-color: #fde68a; }
   .btn { padding: 5px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
   .btn-g { background: #0f8f80; color: #fff; }
   .btn-g:hover { background: #0c7568; }
@@ -221,7 +226,9 @@
     { id: 'playbook', icon: '📖', name: 'Playbooks', desc: 'A guide for every admin job — surveys, news, publishing, access', href: '/admin/playbook/', roles: ['admin', 'steward', 'viewer'] },
     { id: 'contrib',  icon: '🤝', name: 'Contributions portal', desc: 'Log donations, payments, gifts, time in kind & donated services', href: '/admin/contrib/', roles: ['admin', 'treasurer'], moduleToggle: true },
     { id: 'cocon',    icon: '📑', name: 'Co-contribution & budget', desc: 'Grant co-contribution schedule & project budget — live dashboard + council export', href: '/admin/cocontribution/', roles: ['admin', 'treasurer'], moduleToggle: true, minPackage: 'complete' },
-    { id: 'grants',   icon: '🏆', name: 'Grant Portal', desc: 'Track every grant application — research to outcome, amounts & deadlines', href: '/admin/grants/', roles: ['admin', 'treasurer'], moduleToggle: true, minPackage: 'complete' },
+    // Grant Portal is deliberately in EVERY package: a Foundation village
+    // uses the grant pipeline to win the funding that pays for Complete.
+    { id: 'grants',   icon: '🏆', name: 'Grant Portal', desc: 'Track every grant application — research to outcome, amounts & deadlines', href: '/admin/grants/', roles: ['admin', 'treasurer'], moduleToggle: true },
     { id: 'profile',  icon: '📇', name: 'Village profile', desc: 'The community resilience profile — snapshot, hazards, facilities & the action register', href: '/admin/profile/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'services', icon: '🏪', name: 'Services directory',  desc: 'Keep every service listing accurate — service stewards manage their own', href: '/admin/services/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'members',  icon: '🪪', name: 'Membership',          desc: 'Member register — approvals, payments, renewals & member emails', href: '/admin/members/', roles: ['admin'], moduleToggle: true },
@@ -479,8 +486,17 @@
       const active = s.ok ? fmt(s.active) : '—';
       const responses = (s.ok && s.haveResp) ? fmt(s.responses) : '—';
       const vPkg = (v.package || 'complete');
-      const modsOff = (v.disabledModules || []).length;
-      const modsOn = TOOLS.filter(function(t) { return t.moduleToggle && inPackage(t, v.name); }).length - modsOff;
+      // Show the village's modules explicitly — one chip per switchable
+      // module: green = on, struck grey = switched off, amber = locked
+      // out by the package. No counting, no tooltip needed.
+      const disabledHere = v.disabledModules || [];
+      const modChips = TOOLS.filter(function(t) { return t.moduleToggle; }).map(function(t) {
+        const locked = !inPackage(t, v.name);
+        const off = disabledHere.indexOf(t.id) > -1;
+        const cls = locked ? 'locked' : (off ? 'off' : 'on');
+        const suffix = locked ? ' 🔒 ' + PKG_LABEL[t.minPackage] : (off ? ' · off' : '');
+        return '<span class="mchip ' + cls + '">' + t.icon + ' ' + escHtml(t.name) + suffix + '</span>';
+      }).join('');
       const pkgControl = superUser
         ? '<select class="f-i" style="max-width:150px;font-size:11px;padding:3px 6px;" title="Village1st package" onchange="setVillagePackage(' + jsArg(v.name) + ', this.value)">' +
             PKG_ORDER.map(function(p) { return '<option value="' + p + '" ' + (p === vPkg ? 'selected' : '') + '>' + PKG_LABEL[p] + ' package</option>'; }).join('') +
@@ -507,8 +523,8 @@
         '</div>' +
         '<div class="vstats">' + stat('Active surveys', active) + stat('Total surveys', total) + stat('Responses', responses) + '</div>' +
         bar +
-        '<div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">' + pkgControl +
-          '<span style="font-size:10.5px;color:#6b7280;font-weight:600;">Modules on: ' + modsOn + (modsOff ? ' · off: ' + modsOff : '') + '</span></div>' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">' + pkgControl + '</div>' +
+        '<div class="mchips">' + modChips + '</div>' +
         '<div class="vcard-foot">' +
           '<button class="btn btn-s btn-sm" onclick="openVillage(' + jsArg(v.name) + ')">Open modules →</button>' +
           '<div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">' + lifecycle + '</div>' +
