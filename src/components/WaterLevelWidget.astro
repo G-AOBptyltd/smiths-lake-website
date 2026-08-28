@@ -9,16 +9,20 @@
  * Usage:  <WaterLevelWidget />            (defaults: refresh every 90 min)
  *         <WaterLevelWidget refreshMinutes={60} />
  */
+import { village } from '../config/village.js';
+
 interface Props {
   refreshMinutes?: number;
 }
 const { refreshMinutes = 90 } = Astro.props;
-const chartUrl = 'https://mhl.nsw.gov.au/Site-209465';
+const gaugeId = village.waterGaugeId || '209465';
+const station = village.waterStation;
+const chartUrl = `https://mhl.nsw.gov.au/Site-${gaugeId}`;
 ---
 
 <div class="wl-widget" data-water-widget data-refresh={refreshMinutes} data-state="loading">
   <div class="wl-head">
-    <h3 class="wl-title">Smiths Lake — current water level</h3>
+    <h3 class="wl-title">{village.name} — current water level</h3>
     <span class="wl-live" aria-hidden="true"><span class="wl-dot"></span>Live</span>
   </div>
 
@@ -57,13 +61,13 @@ const chartUrl = 'https://mhl.nsw.gov.au/Site-209465';
 
     <p class="wl-fallback" data-wl-fallback hidden>
       Live data is temporarily unavailable. View the current level directly at
-      <a href={chartUrl} target="_blank" rel="noopener noreferrer">mhl.nsw.gov.au/Site-209465</a>.
+      <a href={chartUrl} target="_blank" rel="noopener noreferrer">mhl.nsw.gov.au/Site-{gaugeId}</a>.
     </p>
   </div>
 
   <div class="wl-foot">
     <span class="wl-meta" data-wl-meta>
-      Source: Manly Hydraulics Laboratory · Tarbuck Bay (Site 209465)
+      Source: Manly Hydraulics Laboratory · {station} (Site {gaugeId})
     </span>
     <a class="wl-chart" href={chartUrl} target="_blank" rel="noopener noreferrer">
       Full chart &amp; history ↗
@@ -72,8 +76,8 @@ const chartUrl = 'https://mhl.nsw.gov.au/Site-209465';
 
   <noscript>
     <p class="wl-fallback" style="display:block">
-      View the live Smiths Lake water level at
-      <a href={chartUrl} target="_blank" rel="noopener noreferrer">mhl.nsw.gov.au/Site-209465</a>.
+      View the live {village.name} water level at
+      <a href={chartUrl} target="_blank" rel="noopener noreferrer">mhl.nsw.gov.au/Site-{gaugeId}</a>.
     </p>
   </noscript>
 </div>
@@ -300,7 +304,8 @@ const chartUrl = 'https://mhl.nsw.gov.au/Site-209465';
       meta.textContent =
         (t ? 'Updated ' + t + ' · ' : '') +
         'Source: ' + (d.attribution || 'Manly Hydraulics Laboratory') +
-        ' · ' + (d.station || 'Tarbuck Bay') + ' (Site ' + (d.siteNo || '209465') + ')';
+        ' · ' + (d.station || (import.meta.env.PUBLIC_WATER_STATION || 'Tarbuck Bay')) +
+        ' (Site ' + (d.siteNo || (import.meta.env.PUBLIC_WATER_WIDGET || '209465')) + ')';
     }
   }
 

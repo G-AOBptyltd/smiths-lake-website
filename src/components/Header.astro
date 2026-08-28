@@ -1,5 +1,7 @@
 ---
 // Header component with responsive navigation
+import { village } from '../config/village.js';
+
 const currentPath = Astro.url.pathname;
 
 const navItems = [
@@ -42,7 +44,7 @@ function isActive(href: string): boolean {
 
 <header class="site-header" role="banner">
   <div class="header-container">
-    <a href="/" class="site-logo" aria-label="Smiths Lake Village - Home">
+    <a href="/" class="site-logo" aria-label={`${village.displayName} - Home`}>
       <!-- Lake wave logo -->
       <svg class="logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2" fill="none"/>
@@ -51,8 +53,8 @@ function isActive(href: string): boolean {
         <circle cx="24" cy="14" r="5" fill="#F5A623" opacity="0.6"/>
       </svg>
       <div class="logo-text">
-        <span class="site-title">Smiths Lake Village</span>
-        <span class="site-tagline">A Pacific Palms Community</span>
+        <span class="site-title">{village.displayName}</span>
+        <span class="site-tagline">{village.tagline}</span>
       </div>
     </a>
     
@@ -89,7 +91,7 @@ function isActive(href: string): boolean {
       <div class="nav-backdrop" aria-hidden="true"></div>
       <aside id="nav-drawer" class="nav-drawer" aria-label="Mobile navigation" aria-hidden="true">
         <div class="drawer-header">
-          <span class="drawer-title">Smiths Lake Village</span>
+          <span class="drawer-title">{village.displayName}</span>
           <button class="drawer-close" aria-label="Close menu">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>

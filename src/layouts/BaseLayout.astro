@@ -3,6 +3,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import CookieConsent from '../components/CookieConsent.astro';
 import { getPublicDocuments } from '../lib/notionDocuments';
+import { village, themeOverrideCss } from '../config/village.js';
 import '../styles/global.css';
 
 interface Props {
@@ -13,17 +14,45 @@ interface Props {
   noIndex?: boolean;
 }
 
-const { 
-  title, 
-  description = "Official community website for Smiths Lake Village, Pacific Palms NSW. Your gateway to coastal living in the Great Lakes region.",
+const {
+  title,
+  description = village.siteDescription,
   ogImage = "/images/og-default.jpg",
   canonicalUrl,
   noIndex = false
 } = Astro.props;
 
-const siteTitle = "Smiths Lake Village";
+const siteTitle = village.siteTitle;
 const fullTitle = title === "Home" ? siteTitle : `${title} | ${siteTitle}`;
 const canonical = canonicalUrl || Astro.url.href;
+
+// Village config: theme override CSS ('' by default → nothing emitted),
+// preview mode (noindex + banner), env-gated GA.
+const themeCss = themeOverrideCss();
+const hideFromRobots = noIndex || village.preview;
+const gaEnabled = village.gaId !== 'off';
+// Keep this script byte-identical to the historical inline block when the
+// default GA id is in play (build verifier diffs default builds against main).
+const gaScript = `
+    // Only load GA if cookie consent given
+    if (localStorage.getItem('cookieConsent') === 'accepted') {
+      (function() {
+        var script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://www.googletagmanager.com/gtag/js?id=${village.gaId}';
+        document.head.appendChild(script);
+
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${village.gaId}', {
+          'anonymize_ip': true,
+          'cookie_flags': 'SameSite=None;Secure'
+        });
+        window.gtag = gtag;
+      })();
+    }
+  `;
 
 // STEP 2: Pull footer documents from Notion (safe fallback so builds don't fail)
 let footerDocuments: Array<{
@@ -61,7 +90,7 @@ try {
   <link rel="canonical" href={canonical}>
   
   <!-- Robots -->
-  {noIndex && <meta name="robots" content="noindex, nofollow">}
+  {hideFromRobots && <meta name="robots" content="noindex, nofollow">}
   
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
@@ -92,28 +121,11 @@ try {
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
   
   <title>{fullTitle}</title>
-  
-  <!-- Google Analytics 4 -->
-  <script is:inline>
-    // Only load GA if cookie consent given
-    if (localStorage.getItem('cookieConsent') === 'accepted') {
-      (function() {
-        var script = document.createElement('script');
-        script.async = true;
-        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-YRM5EQC0JM';
-        document.head.appendChild(script);
-        
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-YRM5EQC0JM', {
-          'anonymize_ip': true,
-          'cookie_flags': 'SameSite=None;Secure'
-        });
-        window.gtag = gtag;
-      })();
-    }
-  </script>
+
+  {themeCss && <style is:inline set:html={themeCss}></style>}
+
+  <!-- Google Analytics 4 (env-gated: PUBLIC_GA_MEASUREMENT_ID="off" disables entirely) -->
+  {gaEnabled && <script is:inline set:html={gaScript}></script>}
 </head>
 <body>
   <!-- Identity invite/recovery handler: Netlify Identity links land on the site root with
@@ -140,7 +152,36 @@ try {
   </main>
   
   <Footer documents={footerDocuments} />
-  
+
   <CookieConsent />
+
+  {village.preview && (
+    <div
+      id="preview-banner"
+      role="note"
+      style="position:fixed;bottom:0;left:0;right:0;z-index:2000;background:#1F2937;color:#F9FAFB;font-size:0.8rem;line-height:1.4;padding:0.5rem 2.5rem 0.5rem 1rem;text-align:center;box-shadow:0 -2px 8px rgba(0,0,0,0.25);"
+    >
+      Concept preview — not affiliated with any local organisation. Part of the Village1st platform pilot.
+      <button
+        id="preview-banner-close"
+        aria-label="Dismiss preview notice"
+        style="position:absolute;right:0.5rem;top:50%;transform:translateY(-50%);background:transparent;border:none;color:#F9FAFB;font-size:1.1rem;cursor:pointer;padding:0.25rem 0.5rem;"
+      >&times;</button>
+    </div>
+  )}
+  {village.preview && (
+    <script is:inline>
+      (function () {
+        var b = document.getElementById('preview-banner');
+        var x = document.getElementById('preview-banner-close');
+        if (!b || !x) return;
+        if (sessionStorage.getItem('previewBannerDismissed') === '1') { b.style.display = 'none'; return; }
+        x.addEventListener('click', function () {
+          b.style.display = 'none';
+          try { sessionStorage.setItem('previewBannerDismissed', '1'); } catch (e) {}
+        });
+      })();
+    </script>
+  )}
 </body>
 </html>

@@ -124,7 +124,7 @@ export const handler = async (event) => {
   const paymentMethod = PAYMENT_METHODS.includes(body.paymentMethod) ? body.paymentMethod : PAYMENT_METHODS[0];
   const stayConnected = body.stayConnected === true || body.stayConnected === 'true';
   const note = (body.note || '').trim().slice(0, 2000);
-  const village = (body.village || 'Smiths Lake').slice(0, 100);
+  const village = (body.village || process.env.VILLAGE_NAME || 'Smiths Lake').slice(0, 100);
   const now = new Date();
   const date = now.toISOString().slice(0, 10);
   const year = membershipYear(now);

@@ -112,8 +112,8 @@ export const handler = async (event, context) => {
           body: JSON.stringify({
             parent: { database_id: db.id },
             properties: {
-              'Facility': { title: [{ text: { content: 'Smiths Lake Community Hall' } }] },
-              'Village': { rich_text: rtChunks('Smiths Lake') },
+              'Facility': { title: [{ text: { content: `${process.env.VILLAGE_NAME || 'Smiths Lake'} Community Hall` } }] },
+              'Village': { rich_text: rtChunks(process.env.VILLAGE_NAME || 'Smiths Lake') },
               'Description': { rich_text: rtChunks('The village hall — kitchen, seating and space for meetings, classes, parties and community events.') },
               'Rates': { rich_text: rtChunks('PLACEHOLDER — committee to confirm: hourly $20 · half day $60 · full day $100 · bond $200') },
               'Hourly Rate': { number: 20 },

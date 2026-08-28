@@ -93,7 +93,7 @@ export const handler = async (event) => {
   const phone = (body.phone || '').trim().slice(0, 50);
   const message = (body.message || '').trim().slice(0, 2000);
   const isMember = body.isMember === true || body.isMember === 'true';
-  const village = (body.village || 'Smiths Lake').slice(0, 100);
+  const village = (body.village || process.env.VILLAGE_NAME || 'Smiths Lake').slice(0, 100);
   const fullName = `${firstName} ${lastName}`;
   const today = new Date().toISOString().slice(0, 10);
   const card = { path: cardPath, title: cardTitle };

@@ -1,4 +1,6 @@
 ---
+import { village } from '../config/village.js';
+
 const currentYear = new Date().getFullYear();
 
 type FooterDocument = {
@@ -21,7 +23,7 @@ const footerSections = [
   {
     title: 'Quick Links',
     links: [
-      { href: '/about/', label: 'About Smiths Lake' },
+      { href: '/about/', label: `About ${village.name}` },
       { href: '/services/', label: 'Services & Amenities' },
       { href: '/groups/', label: 'Groups & Activities' },
       { href: '/contact/', label: 'Contact Us' },
@@ -112,7 +114,7 @@ if (!hasKeyDocs) {
     
     <div class="footer-bottom">
       <p class="copyright">
-        © {currentYear} Pacific Palms Community Association (PPCA). All rights reserved.
+        © {currentYear} {village.copyrightEntity}. All rights reserved.
       </p>
       <nav class="footer-legal" aria-label="Legal links">
         <a href="/privacy/">Privacy Policy</a>
@@ -130,8 +132,7 @@ if (!hasKeyDocs) {
     
     <div class="footer-acknowledgement">
       <p>
-        We acknowledge the Worimi people as the traditional custodians of the land on which 
-        Smiths Lake Village is located. We pay our respects to Elders past, present and emerging.
+        {village.acknowledgement}
       </p>
     </div>
   </div>

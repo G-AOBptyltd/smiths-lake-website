@@ -10,11 +10,12 @@
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
+import { village } from '../config/village.js';
 ---
 
 <BaseLayout
   title="What's On"
-  description="Community events at Smiths Lake — see what's coming up and register your spot."
+  description={`Community events at ${village.name} — see what's coming up and register your spot.`}
 >
   <Hero
     title="What's On"
@@ -66,7 +67,7 @@ import Hero from '../components/Hero.astro';
 </style>
 
 <script>
-  const VILLAGE = 'Smiths Lake';
+  const VILLAGE = import.meta.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake';
 
   function esc(s: any) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!)); }
 

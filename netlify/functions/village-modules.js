@@ -73,7 +73,7 @@ export const handler = async (event, context) => {
     return resp(400, { error: 'Invalid JSON' });
   }
 
-  const village = body.village || 'Smiths Lake';
+  const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const module = String(body.module || '');
   const isEnabledToggle = 'enabled' in body;
   const isPackageSet = 'package' in body;

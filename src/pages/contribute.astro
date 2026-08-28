@@ -11,14 +11,15 @@
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
+import { village } from '../config/village.js';
 ---
 
 <BaseLayout
-  title="Support Smiths Lake"
-  description="Donate, pledge or offer your time and skills to help Pacific Palms Community Association improve Smiths Lake Village."
+  title={`Support ${village.name}`}
+  description={`Donate, pledge or offer your time and skills to help ${village.entityName} improve ${village.displayName}.`}
 >
   <Hero
-    title="Support Smiths Lake"
+    title={`Support ${village.name}`}
     subtitle="Every donation, hour and helping hand keeps our community projects moving."
     size="small"
   />
@@ -120,7 +121,7 @@ import Hero from '../components/Hero.astro';
         <div class="pledge-success" id="pledge-success" style="display:none;">
           <div class="success-tick">✓</div>
           <h3>Thank you!</h3>
-          <p>Your pledge has reached the PPCA team and a volunteer will be in touch. We appreciate your support of Smiths Lake.</p>
+          <p>Your pledge has reached the {village.entityShort} team and a volunteer will be in touch. We appreciate your support of {village.name}.</p>
         </div>
       </div>
 
@@ -283,7 +284,7 @@ import Hero from '../components/Hero.astro';
     setStatus('Sending…', false);
 
     const payload = {
-      village: 'Smiths Lake',
+      village: import.meta.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake',
       contributor,
       contact,
       type: String(data.get('ptype') || 'Money'),

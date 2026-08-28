@@ -62,7 +62,7 @@ export const handler = async (event) => {
   // Honeypot — pretend success so bots don't learn.
   if ((body.website || '').trim()) return jsonResp(200, { ok: true });
 
-  if (!(await isModulePublic(body.village || 'Smiths Lake', 'bookings'))) {
+  if (!(await isModulePublic(body.village || process.env.VILLAGE_NAME || 'Smiths Lake', 'bookings'))) {
     return jsonResp(403, { error: 'Online booking is not open yet.' });
   }
 
@@ -87,7 +87,7 @@ export const handler = async (event) => {
   const phone = (body.phone || '').trim().slice(0, 50);
   const attendees = Number(body.attendees);
   const note = (body.note || '').trim().slice(0, 2000);
-  const village = (body.village || 'Smiths Lake').slice(0, 100);
+  const village = (body.village || process.env.VILLAGE_NAME || 'Smiths Lake').slice(0, 100);
   const fullName = `${firstName} ${lastName}`;
   const start = `${date}T${startTime}:00`;
   const end = `${date}T${endTime}:00`;

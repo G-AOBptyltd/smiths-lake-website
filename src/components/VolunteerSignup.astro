@@ -9,13 +9,16 @@
  * Rendered by DetailPage.astro for volunteer-friendly sections only
  * (Environment, Groups & Activities, Emergency & Safety).
  */
+import { village as villageConfig } from '../config/village.js';
+
 interface Props {
   cardPath: string;
   cardTitle: string;
   accentHex?: string;
   village?: string;
 }
-const { cardPath, cardTitle, accentHex = '#15795f', village = 'Smiths Lake' } = Astro.props;
+const { cardPath, cardTitle, accentHex = '#15795f', village = villageConfig.name } = Astro.props;
+const entityShort = villageConfig.entityShort;
 ---
 
 <section class="volunteer-signup" aria-labelledby="volunteer-heading" style={`--vs-accent: ${accentHex}`}>
@@ -60,7 +63,11 @@ const { cardPath, cardTitle, accentHex = '#15795f', village = 'Smiths Lake' } = 
       </div>
       <label class="vs-check">
         <input type="checkbox" name="isMember" />
-        <span>I'm a PPCA member <span class="vs-opt">(not required — just helps the register)</span></span>
+        <span>I'm a {entityShort} member <span class="vs-opt">(not required — just helps the register)</span></span>
+      </label>
+      <label class="vs-check">
+        <input type="checkbox" name="alsoUpdates" />
+        <span>Also send me community updates <span class="vs-opt">(you can unsubscribe anytime)</span></span>
       </label>
 
       <div class="vs-actions">
@@ -77,6 +84,28 @@ const { cardPath, cardTitle, accentHex = '#15795f', village = 'Smiths Lake' } = 
 </section>
 
 <script>
+  /**
+   * Fire-and-forget post to the existing Netlify `newsletter` form so the
+   * Zapier → Mailchimp zap picks the volunteer up without any zap changes.
+   * Field names must stay exactly as the newsletter form defines them
+   * (same pattern as the membership form's Stay-Connected re-post).
+   */
+  function joinStayConnected(first: string, last: string, email: string) {
+    const params = new URLSearchParams({
+      'form-name': 'newsletter',
+      'first-name': first,
+      'last-name': last,
+      'email': email,
+      'resident-type': '',
+      'privacy-consent': 'on',
+    });
+    fetch('/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    }).catch(() => { /* best-effort — never blocks the signup */ });
+  }
+
   const form = document.getElementById('volunteer-form') as HTMLFormElement | null;
   if (form) {
     form.addEventListener('submit', async (e) => {
@@ -84,8 +113,10 @@ const { cardPath, cardTitle, accentHex = '#15795f', village = 'Smiths Lake' } = 
       const status = document.getElementById('vs-status')!;
       const btn = form.querySelector('.vs-submit') as HTMLButtonElement;
       const fd = new FormData(form);
+      const alsoUpdates = fd.get('alsoUpdates') === 'on';
       const payload: Record<string, unknown> = {};
       fd.forEach((v, k) => { payload[k] = v; });
+      delete payload.alsoUpdates; // opt-in handled client-side, not by the API
       payload.isMember = !!fd.get('isMember');
 
       if (!String(payload.firstName || '').trim() || !String(payload.lastName || '').trim()) {
@@ -105,6 +136,13 @@ const { cardPath, cardTitle, accentHex = '#15795f', village = 'Smiths Lake' } = 
         });
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || 'Something went wrong');
+        if (alsoUpdates) {
+          joinStayConnected(
+            String(payload.firstName || '').trim(),
+            String(payload.lastName || '').trim(),
+            String(payload.email || '').trim()
+          );
+        }
         form.hidden = true;
         document.getElementById('vs-done')!.hidden = false;
       } catch (err) {

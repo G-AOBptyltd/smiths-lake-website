@@ -9,15 +9,16 @@
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
+import { village } from '../config/village.js';
 ---
 
 <BaseLayout
   title="Our Supporters"
-  description="Cheers to the people and businesses backing Smiths Lake Village — our community supporters leaderboard."
+  description={`Cheers to the people and businesses backing ${village.displayName} — our community supporters leaderboard.`}
 >
   <Hero
     title="🏆 Our Supporters"
-    subtitle="The legends keeping Smiths Lake moving. Every donation, hour and helping hand counts."
+    subtitle={`The legends keeping ${village.name} moving. Every donation, hour and helping hand counts.`}
     size="small"
   />
 
@@ -162,7 +163,7 @@ import Hero from '../components/Hero.astro';
     }
   }
 
-  fetch('/api/contrib-supporters?village=Smiths%20Lake')
+  fetch('/api/contrib-supporters?village=' + encodeURIComponent(import.meta.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake'))
     .then((r) => r.json())
     .then(render)
     .catch(() => {

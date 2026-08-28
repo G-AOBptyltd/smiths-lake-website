@@ -59,7 +59,7 @@ const pick = (list, v, fallback) => (list.includes(v) ? v : fallback);
 const money = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
 
 function buildProps(entity, body) {
-  const village = body.village || 'Smiths Lake';
+  const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   if (entity === 'schedule') {
     return {
       DB: SCHEDULE_DB,
@@ -134,7 +134,7 @@ export const handler = async (event, context) => {
     return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
 
-  const village = body.village || 'Smiths Lake';
+  const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const entity = body.entity;
   if (!['project', 'schedule', 'budget'].includes(entity)) {
     return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'entity must be project | schedule | budget' }) };

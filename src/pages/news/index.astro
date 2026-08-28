@@ -346,7 +346,7 @@ const listItems = newsItems.filter((i: any) => !featuredSet.has(i));
     const card = document.getElementById('whats-on-card');
     if (!card) return;
     try {
-      const r = await fetch('/api/event-list?village=Smiths%20Lake');
+      const r = await fetch('/api/event-list?village=' + encodeURIComponent(import.meta.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake'));
       const data = await r.json();
       if (!r.ok || data.notPublic) return;
       const next = (data.events || [])[0];

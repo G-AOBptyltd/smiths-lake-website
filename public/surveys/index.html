@@ -32,11 +32,12 @@
 </div>
 <script>
 (async function(){
-  const VILLAGE = 'Smiths Lake';
+  // Static file — no build-time env. Omitting ?village= lets the survey-list
+  // function fall back to its own VILLAGE_NAME env (Smiths Lake by default).
   const listEl = document.getElementById('list');
   function slugify(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');}
   try{
-    const res = await fetch('/api/survey-list?village=' + encodeURIComponent(VILLAGE));
+    const res = await fetch('/api/survey-list');
     const data = await res.json();
     const surveys = (data.surveys || []).filter(s => s.active);  // only live surveys are public
     if(!surveys.length){ listEl.innerHTML = '<div class="state">There are no open surveys right now. Please check back soon.</div>'; return; }

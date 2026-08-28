@@ -11,6 +11,8 @@
  * Usage:  <WaterLevelTicker />
  *         <WaterLevelTicker refreshMinutes={60} href="/environment/#lake-level" />
  */
+import { village } from '../config/village.js';
+
 interface Props {
   refreshMinutes?: number;
   href?: string;
@@ -24,7 +26,7 @@ const { refreshMinutes = 90, href = '/environment/#lake-level' } = Astro.props;
   data-refresh={refreshMinutes}
   data-status="loading"
   href={href}
-  aria-label="Smiths Lake live water level — view full status"
+  aria-label={`${village.name} live water level — view full status`}
 >
   <span class="wlt-ico" aria-hidden="true">🌊</span>
   <span class="wlt-label">Lake level</span>

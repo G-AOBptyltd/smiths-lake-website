@@ -49,7 +49,7 @@ export const handler = async (event, context) => {
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'Invalid JSON' }); }
 
-  const village = body.village || 'Smiths Lake';
+  const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const pageId = body.pageId;
   const action = body.action;
   if (!pageId) return json(400, { error: 'Missing pageId' });

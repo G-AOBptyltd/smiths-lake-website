@@ -1,4 +1,6 @@
 ---
+import { village } from '../config/village.js';
+
 interface QuickInfoItem {
   value: string;
   label: string;
@@ -11,7 +13,7 @@ interface Props {
 const { items } = Astro.props;
 ---
 
-<section class="quick-info" aria-label="Quick facts about Smiths Lake">
+<section class="quick-info" aria-label={`Quick facts about ${village.name}`}>
   <div class="quick-info__container">
     {items.map((item) => (
       <div class="quick-info__item">

@@ -36,7 +36,7 @@ export const handler = async (event, context) => {
     return resp(400, { error: 'Invalid JSON' });
   }
 
-  const village = body.village || 'Smiths Lake';
+  const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const scope = await resolveScope(context, village);
   if (!scope.ok) return resp(scope.status, { error: scope.error });
   if (!body.pageId) return resp(400, { error: 'pageId required' });

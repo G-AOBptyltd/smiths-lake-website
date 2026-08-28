@@ -8,6 +8,7 @@ import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js
 import { getSmartIcon } from '../../lib/icon-matcher.js';
 import { generateSlug } from '../../lib/notion-detail-pages.js';
 import WaterLevelWidget from '../../components/WaterLevelWidget.astro';
+import { village } from '../../config/village.js';
 
 // Fetch section settings (hero image, title, accent colour)
 const sectionSettings = await fetchSectionSettingsBySlug('environment');
@@ -278,18 +279,20 @@ const items = await fetchNotionContent({
     />
 
     <div class="content-section">
-      <section id="lake-level" class="lake-level-section" aria-labelledby="lake-level-heading">
-        <div class="section-header">
-          <h2 id="lake-level-heading">Live Lake Level</h2>
-          <p class="section-intro">
-            When heavy rain arrives, the question every resident and visitor asks is the same:
-            how full is the lake, and is it heading for an opening? Smiths Lake is monitored 24/7 by
-            Manly Hydraulics Laboratory at Tarbuck Bay. The trigger for mechanically opening the
-            sandbar is 2.1 m AHD, adjusted for forecast weather.
-          </p>
-        </div>
-        <WaterLevelWidget refreshMinutes={90} />
-      </section>
+      {village.waterWidgetEnabled && (
+        <section id="lake-level" class="lake-level-section" aria-labelledby="lake-level-heading">
+          <div class="section-header">
+            <h2 id="lake-level-heading">Live Lake Level</h2>
+            <p class="section-intro">
+              When heavy rain arrives, the question every resident and visitor asks is the same:
+              how full is the lake, and is it heading for an opening? Smiths Lake is monitored 24/7 by
+              Manly Hydraulics Laboratory at Tarbuck Bay. The trigger for mechanically opening the
+              sandbar is 2.1 m AHD, adjusted for forecast weather.
+            </p>
+          </div>
+          <WaterLevelWidget refreshMinutes={90} />
+        </section>
+      )}
 
       {items.length > 0 ? (
         <div class="section-group">

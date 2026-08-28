@@ -1,0 +1,9 @@
+{
+  "services": "/images/heroes/services.jpg",
+  "projects": "/images/heroes/projects.jpg",
+  "groups": "/images/heroes/groups.jpg",
+  "about": "/images/heroes/about.jpg",
+  "environment": "/images/heroes/environment.jpg",
+  "history": "/images/heroes/history.jpg",
+  "emergency": "/images/heroes/emergency.jpg"
+}

@@ -87,7 +87,7 @@ export const handler = async (event) => {
   // Honeypot — pretend success so bots don't learn.
   if ((body.website || '').trim()) return jsonResp(200, { ok: true, status: 'Registered' });
 
-  if (!(await isModulePublic(body.village || 'Smiths Lake', 'events'))) {
+  if (!(await isModulePublic(body.village || process.env.VILLAGE_NAME || 'Smiths Lake', 'events'))) {
     return jsonResp(403, { error: 'Event registrations are not open yet.' });
   }
 
@@ -103,7 +103,7 @@ export const handler = async (event) => {
   const seats = Math.min(10, Math.max(1, Math.round(Number(body.seats) || 1)));
   const phone = (body.phone || '').trim().slice(0, 50);
   const message = (body.message || '').trim().slice(0, 1000);
-  const village = (body.village || 'Smiths Lake').slice(0, 100);
+  const village = (body.village || process.env.VILLAGE_NAME || 'Smiths Lake').slice(0, 100);
   const fullName = `${firstName} ${lastName}`;
 
   try {

@@ -71,7 +71,7 @@ export const handler = async (event, context) => {
         surveyName: surveyName || slug,
         slug,
         purpose: (config && config.description) || '',
-        village: village || 'Smiths Lake',
+        village: village || process.env.VILLAGE_NAME || 'Smiths Lake',
         template,
         openDate,
         closeDate,

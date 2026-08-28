@@ -30,14 +30,22 @@ if (!fs.existsSync(CACHE_DIR)) {
 }
 
 /**
+ * Village config (build/server-side module — use process.env, not
+ * import.meta.env, because this file also has to work outside Vite).
+ * Defaults MUST stay the exact historical Smiths Lake strings.
+ */
+const VILLAGE_NAME = process.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake';
+const VILLAGE_DISPLAY = process.env.PUBLIC_VILLAGE_DISPLAY_NAME || 'Smiths Lake Village';
+
+/**
  * Default section settings (used as fallback when Notion is unavailable)
  */
 const DEFAULT_SECTIONS = {
   home: {
     sectionName: 'Home',
     slug: 'home',
-    heroTitle: 'Welcome to Smiths Lake Village',
-    heroSubtitle: 'A vibrant coastal community in the heart of Pacific Palms, NSW. Discover our pristine lake, native bushland, and welcoming neighbourhood.',
+    heroTitle: process.env.PUBLIC_HERO_TITLE || `Welcome to ${VILLAGE_DISPLAY}`,
+    heroSubtitle: process.env.PUBLIC_HERO_SUBTITLE || 'A vibrant coastal community in the heart of Pacific Palms, NSW. Discover our pristine lake, native bushland, and welcoming neighbourhood.',
     accentColour: 'Navy Blue',
     accentHex: '#1B365D',
     overlayOpacity: 50,
@@ -47,7 +55,7 @@ const DEFAULT_SECTIONS = {
     sectionName: 'About',
     slug: 'about',
     heroTitle: 'About Us',
-    heroSubtitle: 'Discover what makes Smiths Lake Village a special place to live, work and visit.',
+    heroSubtitle: `Discover what makes ${VILLAGE_DISPLAY} a special place to live, work and visit.`,
     accentColour: 'Golden Orange',
     accentHex: '#F5A623',
     overlayOpacity: 50,
@@ -77,7 +85,7 @@ const DEFAULT_SECTIONS = {
     sectionName: 'Services',
     slug: 'services',
     heroTitle: 'Services & Amenities',
-    heroSubtitle: 'Facilities, amenities, and community projects in Smiths Lake Village.',
+    heroSubtitle: `Facilities, amenities, and community projects in ${VILLAGE_DISPLAY}.`,
     accentColour: 'Navy Blue',
     accentHex: '#1B365D',
     overlayOpacity: 50,
@@ -107,7 +115,7 @@ const DEFAULT_SECTIONS = {
     sectionName: 'Emergency & Safety',
     slug: 'emergency',
     heroTitle: 'Emergency & Safety',
-    heroSubtitle: 'Emergency services, evacuation plans, and safety information for the Smiths Lake community.',
+    heroSubtitle: `Emergency services, evacuation plans, and safety information for the ${VILLAGE_NAME} community.`,
     accentColour: 'Red',
     accentHex: '#DC2626',
     overlayOpacity: 50,

@@ -18,7 +18,7 @@ export const handler = async (event) => {
     return { statusCode: 405, body: JSON.stringify({ error: 'POST only' }) };
   }
 
-  let village = 'Smiths Lake';
+  let village = process.env.VILLAGE_NAME || 'Smiths Lake';
   try {
     const body = JSON.parse(event.body || '{}');
     if (body.village) village = body.village;
@@ -29,7 +29,7 @@ export const handler = async (event) => {
     const rec = await getVillageRecord(village);
     hookUrl = rec.newsBuildHook;
   } catch (_) { /* fall through to env */ }
-  if (!hookUrl && village === 'Smiths Lake') hookUrl = process.env.NEWS_BUILD_HOOK_URL;
+  if (!hookUrl && village === (process.env.VILLAGE_NAME || 'Smiths Lake')) hookUrl = process.env.NEWS_BUILD_HOOK_URL;
 
   if (!hookUrl) {
     return {

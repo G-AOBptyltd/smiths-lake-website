@@ -15,7 +15,7 @@ export const handler = async (event) => {
   if (event.httpMethod !== 'GET') return jsonResp(405, { error: 'GET only' });
   if (!ADS_DB_ID) return notProvisioned();
 
-  const village = event.queryStringParameters?.village || 'Smiths Lake';
+  const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
 
   try {
     const ads = (await queryAll(ADS_DB_ID, { property: 'Village', rich_text: { equals: village } }))

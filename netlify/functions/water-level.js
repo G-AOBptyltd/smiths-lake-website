@@ -34,7 +34,11 @@
  * ("check mhl.nsw.gov.au/Site-209465 directly") rather than an error.
  */
 
-const SITE_NO = process.env.MHL_SITE_NO || '209465';
+// Gauge site: MHL_SITE_NO wins; else the per-village PUBLIC_WATER_WIDGET value
+// (a gauge id, or 'off' — the widget never calls this endpoint when off);
+// else the Smiths Lake default.
+const PUBLIC_GAUGE = process.env.PUBLIC_WATER_WIDGET;
+const SITE_NO = process.env.MHL_SITE_NO || (PUBLIC_GAUGE && PUBLIC_GAUGE !== 'off' ? PUBLIC_GAUGE : '209465');
 const USERNAME = process.env.MHL_USERNAME || 'publicwww';
 const SOURCE_URL =
   process.env.MHL_API_URL ||
@@ -48,7 +52,7 @@ const WATCH_AT = Number(process.env.SMITHS_LAKE_WATCH_AT || '1.7');
 const NEAR_AT = Number(process.env.SMITHS_LAKE_NEAR_AT || '1.95');
 
 const CHART_URL = `https://mhl.nsw.gov.au/Site-${SITE_NO}`;
-const STATION = 'Tarbuck Bay';
+const STATION = process.env.PUBLIC_WATER_STATION || 'Tarbuck Bay';
 const ATTRIBUTION = 'Manly Hydraulics Laboratory';
 
 const STATUS_LABELS = {

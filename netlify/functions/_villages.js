@@ -30,10 +30,10 @@ export async function getVillageRecord(village) {
     contentDbId: process.env.NOTION_CONTENT_DB_ID || '2cad508adfc1809d8438c8f3a5dd8d42',
     newsBuildHook: process.env.NEWS_BUILD_HOOK_URL || null,
   };
-  if (!village || village === 'Smiths Lake') {
+  if (!village || village === (process.env.VILLAGE_NAME || 'Smiths Lake')) {
     // Try the registry but never fail the default village
     try {
-      const rec = await queryVillage(village || 'Smiths Lake');
+      const rec = await queryVillage(village || process.env.VILLAGE_NAME || 'Smiths Lake');
       if (rec) return { ...fallback, ...rec, contentDbId: rec.contentDbId || fallback.contentDbId, newsBuildHook: rec.newsBuildHook || fallback.newsBuildHook };
     } catch (_) {}
     return fallback;
@@ -73,7 +73,7 @@ const PUBLICLY_GATED = ['events', 'bookings'];
 export async function isModulePublic(village, module) {
   if (!PUBLICLY_GATED.includes(module)) return true;
   try {
-    const rec = await queryVillage(village || 'Smiths Lake');
+    const rec = await queryVillage(village || process.env.VILLAGE_NAME || 'Smiths Lake');
     return !!rec && Array.isArray(rec.publicModules) && rec.publicModules.includes(module);
   } catch (_) { return false; } // gated modules fail closed
 }

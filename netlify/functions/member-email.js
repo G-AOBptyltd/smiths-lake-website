@@ -89,7 +89,7 @@ export const handler = async (event, context) => {
     return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
 
-  const village = body.village || 'Smiths Lake';
+  const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const auth = requireRole(context, { village, anyOf: ['admin'] });
   if (!auth.ok) {
     return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };

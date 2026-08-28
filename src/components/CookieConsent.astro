@@ -164,22 +164,27 @@
     }
   }
   
+  // GA4 id from the village config: "off" = never load GA (previews / other villages
+  // must not pollute Smiths Lake analytics). NOTE: historical code sent gtag('config')
+  // to placeholder 'G-XXXXXXXXXX'; it now uses the real (env-driven) id.
+  const GA_ID = import.meta.env.PUBLIC_GA_MEASUREMENT_ID || 'G-YRM5EQC0JM';
+
   acceptBtn?.addEventListener('click', () => {
     localStorage.setItem('cookieConsent', 'accepted');
     hideBanner();
-    
+
     // Load Google Analytics
-    if (typeof window.gtag === 'undefined') {
+    if (GA_ID !== 'off' && typeof window.gtag === 'undefined') {
       const script = document.createElement('script');
       script.async = true;
-      script.src = 'https://www.googletagmanager.com/gtag/js?id=G-YRM5EQC0JM';
+      script.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
       document.head.appendChild(script);
-      
+
       window.dataLayer = window.dataLayer || [];
       function gtag(...args: any[]){(window.dataLayer as any[]).push(args);}
       (window as any).gtag = gtag;
       gtag('js', new Date());
-      gtag('config', 'G-XXXXXXXXXX', {
+      gtag('config', GA_ID, {
         'anonymize_ip': true
       });
     }

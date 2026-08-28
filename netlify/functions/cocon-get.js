@@ -110,7 +110,7 @@ export const handler = async (event, context) => {
     return { statusCode: 405, headers: corsHeaders(), body: JSON.stringify({ error: 'GET only' }) };
   }
 
-  const village = event.queryStringParameters?.village || 'Smiths Lake';
+  const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const projectSlug = event.queryStringParameters?.project || '';
 
   const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer'] });

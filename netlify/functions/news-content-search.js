@@ -32,7 +32,7 @@ export const handler = async (event, context) => {
   }
 
   const params = event.queryStringParameters || {};
-  const village = params.village || 'Smiths Lake';
+  const village = params.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const auth = requireRole(context, { village, anyOf: ['admin', 'steward'] });
   if (!auth.ok) {
     return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };

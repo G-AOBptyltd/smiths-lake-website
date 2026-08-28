@@ -10,11 +10,13 @@
  * variants: "band" (full-width strip, homepage) · "sidebar" (compact card).
  * Tier order: Major Sponsor (highlighted) → Sponsor → Supporter.
  */
+import { village as villageConfig } from '../config/village.js';
+
 interface Props {
   village?: string;
   variant?: 'band' | 'sidebar';
 }
-const { village = 'Smiths Lake', variant = 'band' } = Astro.props;
+const { village = villageConfig.name, variant = 'band' } = Astro.props;
 const stripId = `sponsor-strip-${variant}`;
 ---
 

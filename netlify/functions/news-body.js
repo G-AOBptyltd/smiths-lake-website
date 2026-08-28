@@ -239,7 +239,7 @@ export const handler = async (event, context) => {
   // GET — report whether a story already has a rich page body, so the News Desk
   // can warn before someone edits its text in the summary-only form.
   if (event.httpMethod === 'GET') {
-    const village = event.queryStringParameters?.village || 'Smiths Lake';
+    const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
     const auth = requireRole(context, { village, anyOf: ['admin', 'steward'] });
     if (!auth.ok) return json(auth.status, { error: auth.error });
     const pageId = (event.queryStringParameters?.pageId || '').trim();
@@ -258,7 +258,7 @@ export const handler = async (event, context) => {
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch { return json(400, { error: 'Invalid JSON' }); }
 
-  const village = body.village || 'Smiths Lake';
+  const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const auth = requireRole(context, { village, anyOf: ['admin', 'steward'] });
   if (!auth.ok) return json(auth.status, { error: auth.error });
 

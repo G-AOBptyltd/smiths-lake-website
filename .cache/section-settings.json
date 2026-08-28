@@ -1,0 +1,152 @@
+{
+  "timestamp": "2026-08-28T23:58:35.408Z",
+  "data": {
+    "home": {
+      "sectionName": "Home",
+      "slug": "home",
+      "heroTitle": "Welcome to Smiths Lake Village",
+      "heroSubtitle": "A vibrant coastal community in the heart of Pacific Palms, NSW. Discover our pristine lake, native bushland, and welcoming neighbourhood.",
+      "accentColour": "Navy Blue",
+      "accentHex": "#1B365D",
+      "overlayOpacity": 0,
+      "heroImage": null,
+      "id": "311d508a-dfc1-8138-9981-d057f6534eb6",
+      "heroImageFiles": [],
+      "status": "Active",
+      "priorityOrder": 999
+    },
+    "about": {
+      "sectionName": "About",
+      "slug": "about",
+      "heroTitle": "About Us",
+      "heroSubtitle": "Discover what makes Smiths Lake Village a special place to live, work and visit.",
+      "accentColour": "Sky Blue",
+      "accentHex": "#F5A623",
+      "overlayOpacity": 15,
+      "heroImage": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/f559d320-a46a-4f78-83c6-bd58fbe93805/Beach1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=b64b192710e0fc6f99b0d66947810f636c51dc3e4adfbd2a91ce5ba588ea3979&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+      "id": "311d508a-dfc1-81a1-a1a5-d8b2119fde4b",
+      "heroImageFiles": [
+        {
+          "name": "Beach1.jpg",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/f559d320-a46a-4f78-83c6-bd58fbe93805/Beach1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=b64b192710e0fc6f99b0d66947810f636c51dc3e4adfbd2a91ce5ba588ea3979&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
+        }
+      ],
+      "status": "Active",
+      "priorityOrder": 1
+    },
+    "projects": {
+      "sectionName": "Project Hub",
+      "slug": "projects",
+      "heroTitle": "Have Your Say",
+      "heroSubtitle": "Browse past and current projects, view plans and documents, and share your views.  Your feedback helps shape decisions that affect our community. ",
+      "accentColour": "Golden Orange",
+      "accentHex": "#1B365D",
+      "overlayOpacity": 15,
+      "heroImage": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/36717432-2a62-44d8-8628-424cf92c595f/Whoota1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=ec2573c78e0c22b3f69d1d7bbe9ba7d679598e61c757a18a63d12ec3b3adda6a&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+      "id": "311d508a-dfc1-8184-9a11-ff3b388075a9",
+      "heroImageFiles": [
+        {
+          "name": "Whoota1.jpg",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/36717432-2a62-44d8-8628-424cf92c595f/Whoota1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=ec2573c78e0c22b3f69d1d7bbe9ba7d679598e61c757a18a63d12ec3b3adda6a&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
+        }
+      ],
+      "status": "Active",
+      "priorityOrder": 2
+    },
+    "environment": {
+      "sectionName": "Environment & Sustainability",
+      "slug": "environment",
+      "heroTitle": "Environment & Sustainability",
+      "heroSubtitle": "Lake and land monitoring, management, conservation, and environmental programs, accessing and protecting our natural assets.",
+      "accentColour": "Green",
+      "accentHex": "#93c2a4",
+      "overlayOpacity": 20,
+      "heroImage": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/4fdb0160-73d1-42ea-8273-8d5589802b34/Beach1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=2119db672ddb53d616a25ac44ded456d15033611597c1abfac1c7f0678ee4054&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+      "id": "311d508a-dfc1-81ac-a43f-cc88f642c38b",
+      "heroImageFiles": [
+        {
+          "name": "Beach1.jpg",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/4fdb0160-73d1-42ea-8273-8d5589802b34/Beach1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=2119db672ddb53d616a25ac44ded456d15033611597c1abfac1c7f0678ee4054&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
+        }
+      ],
+      "status": "Active",
+      "priorityOrder": 3
+    },
+    "services": {
+      "sectionName": "Services",
+      "slug": "services",
+      "heroTitle": "Services & Amenities",
+      "heroSubtitle": "Services, Facilities and Community Amenities, in and around Smiths Lake Village.",
+      "accentColour": "Sky Blue",
+      "accentHex": "#1B365D",
+      "overlayOpacity": 5,
+      "heroImage": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/91158783-2ba9-4b53-9149-e987b3022404/Whoota1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=3df249fcc070e78e5ac27c5c58b884b1556256562457382a5db68da6c635a3d6&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+      "id": "311d508a-dfc1-815d-9dd0-f518c9dc26c9",
+      "heroImageFiles": [
+        {
+          "name": "Whoota1.jpg",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/91158783-2ba9-4b53-9149-e987b3022404/Whoota1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=3df249fcc070e78e5ac27c5c58b884b1556256562457382a5db68da6c635a3d6&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
+        }
+      ],
+      "status": "Active",
+      "priorityOrder": 4
+    },
+    "groups": {
+      "sectionName": "Groups & Activities",
+      "slug": "groups",
+      "heroTitle": "Groups & Activities",
+      "heroSubtitle": "Find, view and join community activities, teams, clubs, groups, and volunteering. Together we make community.",
+      "accentColour": "Sky Blue",
+      "accentHex": "#5B9BD5",
+      "overlayOpacity": 15,
+      "heroImage": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/c4204cff-ade3-4e16-b421-7f4fb7c82427/Seal1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=0c0e31a3250193ba4753e0f6643c1b6b162da5a206275a4558104c245ebad454&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+      "id": "311d508a-dfc1-8185-a2ed-cf7d2a0e2e48",
+      "heroImageFiles": [
+        {
+          "name": "Seal1.jpg",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/c4204cff-ade3-4e16-b421-7f4fb7c82427/Seal1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=0c0e31a3250193ba4753e0f6643c1b6b162da5a206275a4558104c245ebad454&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
+        }
+      ],
+      "status": "Active",
+      "priorityOrder": 5
+    },
+    "history": {
+      "sectionName": "History & Culture",
+      "slug": "history",
+      "heroTitle": "History & Culture",
+      "heroSubtitle": "Discover the stories that shaped our community — from the Worimi people's connection to country through to modern village life.",
+      "accentColour": null,
+      "accentHex": "#1B365D",
+      "overlayOpacity": 0,
+      "heroImage": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/47dfd687-cf95-4203-8464-6bfecab173f6/Seal1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=b98d00bd0756a5100ecc5814d1177d28515b626a4d7b6b067a1c0181ae9dc989&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+      "id": "311d508a-dfc1-81ba-a95a-e282d6130040",
+      "heroImageFiles": [
+        {
+          "name": "Seal1.jpg",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/47dfd687-cf95-4203-8464-6bfecab173f6/Seal1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=b98d00bd0756a5100ecc5814d1177d28515b626a4d7b6b067a1c0181ae9dc989&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
+        }
+      ],
+      "status": "Active",
+      "priorityOrder": 6
+    },
+    "emergency": {
+      "sectionName": "Emergency & Safety",
+      "slug": "emergency",
+      "heroTitle": "Emergency & Safety",
+      "heroSubtitle": "Emergency Services, Safety Information, Evacuation Advice, for the Smiths Lake community.",
+      "accentColour": "Red",
+      "accentHex": "#d15858",
+      "overlayOpacity": 10,
+      "heroImage": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/eab8289b-7797-42a0-ad4e-b3d23138cef9/Whoota1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=e66959de82693e05e337be40a6db0030cb9a73fa67d6d6029133312fbcfab36d&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject",
+      "id": "311d508a-dfc1-81d9-8b42-c59250d7da47",
+      "heroImageFiles": [
+        {
+          "name": "Whoota1.jpg",
+          "url": "https://prod-files-secure.s3.us-west-2.amazonaws.com/f4ed508a-dfc1-812d-a4ed-00035a95a1b7/eab8289b-7797-42a0-ad4e-b3d23138cef9/Whoota1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAZI2LB466QKISGDHD%2F20260828%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260828T235835Z&X-Amz-Expires=3600&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEI7%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLXdlc3QtMiJGMEQCIFANvkC6T7pWvOVnOLWKbFY9ulh9PYRGZ2n9zPiKtSwGAiALUXCg2ki3dW14yfdMwJVqeHVQBRwtnK3u87I1WLLhCyr%2FAwhXEAAaDDYzNzQyMzE4MzgwNSIM%2BQrrfg77gKCdz3EoKtwDQCojl6Kj%2Fgy3gk2igYGtDZcNPr4VuahPdBoUKORlfE89VKDjy5w5oKx4YR9OHu%2Fnm4XG46ZnkY2cP84X6U7k7R1mRp562g0kr%2B3gOh2VWTurcyxTZnBkmXz9vpJ5zehaO4D5Ad7tkXKLMv7Vm0xDEGJNxnG59yn82PYUX8PqeO4Bcb8lBJN7evZcXgM4qqQcysLmMQnmsx1qStDN1lPt2YuR5rJ3X6Eil2GbdvfS7aQ9D1ANCyVApQYoDiu9mkMmbYNjLuuMU03CotTNQaSg2zgXpADPlXz4rPqiF9eBI%2BdRBP7fvqho8mD%2BASgEV6zn2MzOb91j0Zi3Y49rQiBFatQjn4e75zTthx4UE5hxFPzzKYB7uErfY%2BzWgjbAhXSxLDI%2BEVzr1kD2YDkUbNM%2FVZ4fpFvO415kiaroQHqvgS4GSrxAT%2FggQNlJ6JwQA1wvsP2y1lFILkNIuto0vzSn1rCQ5%2F%2BX2%2FGSM0L2focDvGDIczfeHhDQ%2FBDK0D%2B4iBod0w%2FnAYVY3IWHTyLIBrpv9t%2BU5VDZJLKLvfilTFpHMQKRGytUy2VQJ2%2Fodz8Z1CxeAsfm%2FVtufbZA%2FhvQFQd%2BA9lqV%2Fn8ojheaQoWfd2y%2BHX44ZmVGX1KT%2FFSJnEw44PI1AY6pgEq3gjdhUwUhIh%2FZJvwxuoa0gK3Ab8xZGHfdKWtML7PwYUqWf5yKxiC8%2Byzu3XxBoIPfuosGy0UwOoQE6itoYnRs5S1IjK7ARHlfoegVEgFdkq85WpxXv7drY0MEdyEILUXiA%2BDG0NXkW1OwjeMuiP%2FypGjzQ7s2M197DI7j8V265tTjYxAgFFo7lfTXeXldynPgzwDkVuV%2Bltk8Ai%2B414H0bd7lqGu&X-Amz-Signature=e66959de82693e05e337be40a6db0030cb9a73fa67d6d6029133312fbcfab36d&X-Amz-SignedHeaders=host&x-amz-checksum-mode=ENABLED&x-id=GetObject"
+        }
+      ],
+      "status": "Active",
+      "priorityOrder": 7
+    }
+  }
+}

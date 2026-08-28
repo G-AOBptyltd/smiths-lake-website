@@ -99,7 +99,7 @@ export const handler = async (event) => {
     return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'That name looks too long.' }) };
   }
 
-  const village = (body.village || 'Smiths Lake').slice(0, 100);
+  const village = (body.village || process.env.VILLAGE_NAME || 'Smiths Lake').slice(0, 100);
   const type = PUBLIC_TYPES.includes(body.type) ? body.type : 'Money';
   const note = (body.note || '').trim().slice(0, 2000);
   const contact = (body.contact || '').trim().slice(0, 200);

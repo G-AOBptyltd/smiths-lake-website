@@ -23,7 +23,7 @@ export const handler = async (event, context) => {
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch { return jsonResp(400, { error: 'Invalid JSON' }); }
-  const village = body.village || 'Smiths Lake';
+  const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const cardPath = normPath(body.cardPath);
   const cardTitle = (body.cardTitle || cardPath || '').toString().slice(0, 200);
   const wanted = new Set((Array.isArray(body.projectSlugs) ? body.projectSlugs : []).map(String));

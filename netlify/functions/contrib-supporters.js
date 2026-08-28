@@ -48,7 +48,7 @@ export const handler = async (event) => {
     return { statusCode: 405, headers: corsHeaders(), body: JSON.stringify({ error: 'GET only' }) };
   }
 
-  const village = event.queryStringParameters?.village || 'Smiths Lake';
+  const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const monthPrefix = new Date().toISOString().slice(0, 7); // YYYY-MM
   const monthLabel = new Date().toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
 

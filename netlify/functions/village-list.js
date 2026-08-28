@@ -78,13 +78,13 @@ export const handler = async (event, context) => {
       const scoped = villages.filter(v => keys.has(villageKey(v.name)));
       if (scoped.length) villages = scoped;
     }
-    if (!villages.length) villages = [{ name: 'Smiths Lake', status: 'live' }];
+    if (!villages.length) villages = [{ name: process.env.VILLAGE_NAME || 'Smiths Lake', status: 'live' }];
     return resp(200, warning ? { villages, warning } : { villages });
   } catch (e) {
     console.error('village-list error:', e);
     // Last-resort fail-open so the switcher never blanks the whole admin.
     let villages = await villagesFromSurveys();
-    if (!villages.length) villages = [{ name: 'Smiths Lake', status: 'live' }];
+    if (!villages.length) villages = [{ name: process.env.VILLAGE_NAME || 'Smiths Lake', status: 'live' }];
     return resp(200, { villages, warning: 'villages-list-error' });
   }
 };

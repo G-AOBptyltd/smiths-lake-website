@@ -56,7 +56,7 @@ async function queryAll(dbId, filter, extra = {}) {
 export const handler = async (event, context) => {
   if (event.httpMethod !== 'GET') return jsonErr(405, 'GET only');
 
-  const village = event.queryStringParameters?.village || 'Smiths Lake';
+  const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const projectSlug = event.queryStringParameters?.project || '';
   const table = event.queryStringParameters?.table || 'both';
 

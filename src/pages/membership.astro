@@ -13,14 +13,15 @@
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
+import { village } from '../config/village.js';
 ---
 
 <BaseLayout
   title="Become a Member"
-  description="Join Pacific Palms Community Association (PPCA) — membership supports local projects and gives you a voice in Smiths Lake community decisions."
+  description={`Join ${village.entityName} (${village.entityShort}) — membership supports local projects and gives you a voice in ${village.name} community decisions.`}
 >
   <Hero
-    title="Become a PPCA Member"
+    title={`Become a ${village.entityShort} Member`}
     subtitle="Join your community association — have your say and help local projects happen."
     size="small"
   />
@@ -420,7 +421,7 @@ import Hero from '../components/Hero.astro';
     const stayConnected = data.get('stayConnected') === 'on';
 
     const payload = {
-      village: 'Smiths Lake',
+      village: import.meta.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake',
       firstName,
       lastName,
       email,

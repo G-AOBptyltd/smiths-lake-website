@@ -17,7 +17,7 @@ export const handler = async (event) => {
   if (event.httpMethod !== 'GET') return jsonResp(405, { error: 'GET only' });
   if (!FACILITIES_DB_ID || !BOOKINGS_DB_ID) return notProvisioned();
 
-  const village = event.queryStringParameters?.village || 'Smiths Lake';
+  const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   if (!(await isModulePublic(village, 'bookings'))) return jsonResp(200, { facilities: [], slots: [], notPublic: true });
 
   try {

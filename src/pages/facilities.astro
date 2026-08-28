@@ -12,11 +12,12 @@
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
+import { village } from '../config/village.js';
 ---
 
 <BaseLayout
   title="Hire the Hall"
-  description="Book the Smiths Lake Community Hall for meetings, classes, parties and community events — check availability and request a booking online."
+  description={`Book the ${village.name} Community Hall for meetings, classes, parties and community events — check availability and request a booking online.`}
 >
   <Hero
     title="Hire the Community Hall"
@@ -179,7 +180,7 @@ import Hero from '../components/Hero.astro';
 </style>
 
 <script>
-  const VILLAGE = 'Smiths Lake';
+  const VILLAGE = import.meta.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake';
   let facilities: any[] = [];
   let slots: any[] = [];
   let facilityId = '';

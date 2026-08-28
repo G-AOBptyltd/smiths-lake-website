@@ -130,7 +130,7 @@ async function getGrant(dbId, pageId) {
 export const handler = async (event, context) => {
   // ── LIST ──
   if (event.httpMethod === 'GET') {
-    const village = event.queryStringParameters?.village || 'Smiths Lake';
+    const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
     // pm may READ the grant pipeline (to link grants to projects); editing a
     // grant still requires admin/treasurer (POST below).
     const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer', 'pm'] });
@@ -166,7 +166,7 @@ export const handler = async (event, context) => {
     return jsonResp(400, { error: 'Invalid JSON' });
   }
 
-  const village = body.village || 'Smiths Lake';
+  const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer'] });
   if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
   const stamp = { 'Last Updated By': { rich_text: rtChunks(`${auth.user.email || 'admin'} · ${new Date().toISOString().slice(0, 10)}`) } };

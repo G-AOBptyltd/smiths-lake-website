@@ -10,6 +10,7 @@ import SponsorStrip from '../components/SponsorStrip.astro';
 import { fetchSectionSettingsBySlug } from '../lib/notion-section-settings.js';
 import { fetchNotionContent } from '../lib/notion-unified.js';
 import { generateSlug, resolveItemUrl, getSectionColour, getSectionDisplayName } from '../lib/notion-detail-pages.js';
+import { village } from '../config/village.js';
 
 // Fetch home section settings (hero image, title, subtitle)
 const sectionSettings = await fetchSectionSettingsBySlug('home');
@@ -75,16 +76,16 @@ function tickerCatColour(section) {
 }
 
 // Use Notion hero image if available, otherwise fall back to existing local image
-const heroImage = sectionHeroManifest['home'] || '/images/hero-smiths-lake.jpg';
-const heroTitle = sectionSettings?.heroTitle || 'Welcome to Smiths Lake Village';
-const heroSubtitle = sectionSettings?.heroSubtitle || 'A vibrant coastal community in the heart of Pacific Palms, NSW. Discover our pristine lake, native bushland, and welcoming neighbourhood.';
+const heroImage = sectionHeroManifest['home'] || village.heroImage;
+const heroTitle = sectionSettings?.heroTitle || village.heroTitle;
+const heroSubtitle = sectionSettings?.heroSubtitle || village.heroSubtitle;
 const overlayOpacity = sectionSettings?.overlayOpacity ?? 50;
 
 const quickInfoItems = [
   { value: '~1,300', label: 'Permanent Residents' },
   { value: 'Great Lakes', label: 'NSW Region' },
   { value: 'MidCoast', label: 'Local Council' },
-  { value: 'PPCA', label: 'Community Association' },
+  { value: village.entityShort, label: 'Community Association' },
 ];
 
 // Sections reordered to match new navigation menu
@@ -148,12 +149,14 @@ const sections = [
   
   <QuickInfo items={quickInfoItems} />
 
-  <!-- Live Smiths Lake water level — slim ticker linking to the Environment page -->
-  <section class="lake-ticker-section" aria-label="Smiths Lake live water level" style="padding: 1.75rem 0; background: var(--color-off-white);">
-    <div class="container">
-      <WaterLevelTicker refreshMinutes={90} />
-    </div>
-  </section>
+  <!-- Live water level — slim ticker linking to the Environment page (env-gated: PUBLIC_WATER_WIDGET="off" hides it) -->
+  {village.waterWidgetEnabled && (
+    <section class="lake-ticker-section" aria-label={`${village.name} live water level`} style="padding: 1.75rem 0; background: var(--color-off-white);">
+      <div class="container">
+        <WaterLevelTicker refreshMinutes={90} />
+      </div>
+    </section>
+  )}
 
   <!-- Latest from the Village — rolling news ticker (auto-feeds from the news system) -->
   {latestNews.length > 0 && (
@@ -211,7 +214,7 @@ const sections = [
         <div class="sb-body">
           <p class="sb-label">Community heroes</p>
           <h2 class="sb-heading">Who's supporting us this month</h2>
-          <p class="sb-text" id="sb-names">Cheers to the locals and businesses backing Smiths Lake.</p>
+          <p class="sb-text" id="sb-names">Cheers to the locals and businesses backing {village.name}.</p>
         </div>
         <div class="sb-action"><span class="sb-btn">See the board →</span></div>
       </a>
@@ -246,7 +249,7 @@ const sections = [
       <div class="cta-content">
         <h2 class="cta-title">Join Your Community</h2>
         <p class="cta-text">
-          Become a PPCA member, or sign up free for community updates, events, and important announcements.
+          Become a {village.entityShort} member, or sign up free for community updates, events, and important announcements.
         </p>
         <a href="/membership/" class="btn btn--primary btn--lg">Membership &amp; Updates</a>
       </div>
@@ -558,7 +561,9 @@ const sections = [
 
   setTickerSpeed();
 
-  fetch('/api/contrib-supporters?village=Smiths%20Lake')
+  const VILLAGE = import.meta.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake';
+
+  fetch('/api/contrib-supporters?village=' + encodeURIComponent(VILLAGE))
     .then((r) => r.json())
     .then((data) => {
       const supporters = (data && data.thisMonth) || [];
@@ -573,7 +578,7 @@ const sections = [
           if (extra > 0) txt += ` and ${extra} more`;
           names.textContent = `🎉 ${txt} — thank you!`;
         } else {
-          names.textContent = 'Be the first to support Smiths Lake this month — tap to find out how.';
+          names.textContent = 'Be the first to support ' + VILLAGE + ' this month — tap to find out how.';
         }
       }
 

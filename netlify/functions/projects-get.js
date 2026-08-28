@@ -27,7 +27,7 @@ import {
 export const handler = async (event, context) => {
   if (event.httpMethod !== 'GET') return jsonResp(405, { error: 'GET only' });
 
-  const village = event.queryStringParameters?.village || 'Smiths Lake';
+  const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const slug = event.queryStringParameters?.project || '';
 
   const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer', 'pm'] });

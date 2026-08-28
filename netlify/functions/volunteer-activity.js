@@ -56,7 +56,7 @@ export const handler = async (event, context) => {
 
   if (event.httpMethod === 'GET') {
     const params = event.queryStringParameters || {};
-    const village = params.village || 'Smiths Lake';
+    const village = params.village || process.env.VILLAGE_NAME || 'Smiths Lake';
     const scope = await resolveScope(context, village);
     if (!scope.ok) return jsonResp(scope.status, { error: scope.error });
     try {
@@ -80,7 +80,7 @@ export const handler = async (event, context) => {
     return jsonResp(400, { error: 'Invalid JSON' });
   }
 
-  const village = body.village || 'Smiths Lake';
+  const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const scope = await resolveScope(context, village);
   if (!scope.ok) return jsonResp(scope.status, { error: scope.error });
   const stamp = { 'Last Updated By': { rich_text: rtChunks(`${scope.user.email || 'admin'} · ${new Date().toISOString().slice(0, 10)}`) } };

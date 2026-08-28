@@ -22,6 +22,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import NotionPageContent from './NotionPageContent.astro';
 import VolunteerSignup from './VolunteerSignup.astro';
+import { village } from '../config/village.js';
 
 interface MetadataItem {
   label: string;
@@ -122,7 +123,7 @@ const showVolunteerSignup = VOLUNTEER_SECTION_PATHS.includes(item.sectionPath) &
 
 // Page metadata
 const pageTitle = `${item.title} | ${item.sectionDisplay}`;
-const pageDescription = item.description || `${item.title} - ${item.sectionDisplay} at Smiths Lake Village.`;
+const pageDescription = item.description || `${item.title} - ${item.sectionDisplay} at ${village.displayName}.`;
 ---
 
 <main class="detail-page" id="main-content">

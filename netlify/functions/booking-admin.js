@@ -24,7 +24,7 @@ export const handler = async (event, context) => {
   if (!BOOKINGS_DB_ID || !FACILITIES_DB_ID) return notProvisioned();
 
   if (event.httpMethod === 'GET') {
-    const village = event.queryStringParameters?.village || 'Smiths Lake';
+    const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
     const auth = requireRole(context, { village, anyOf: ['admin'] });
     if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
     try {
@@ -49,7 +49,7 @@ export const handler = async (event, context) => {
     return jsonResp(400, { error: 'Invalid JSON' });
   }
 
-  const village = body.village || 'Smiths Lake';
+  const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const auth = requireRole(context, { village, anyOf: ['admin'] });
   if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
 

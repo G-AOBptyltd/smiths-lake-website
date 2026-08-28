@@ -57,7 +57,7 @@ export function parseService(page) {
 export const handler = async (event, context) => {
   if (event.httpMethod !== 'GET') return resp(405, { error: 'GET only' });
 
-  const village = event.queryStringParameters?.village || 'Smiths Lake';
+  const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const scope = await resolveScope(context, village);
   if (!scope.ok) return resp(scope.status, { error: scope.error });
 

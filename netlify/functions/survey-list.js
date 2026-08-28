@@ -15,7 +15,7 @@ export const handler = async (event) => {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  const village = event.queryStringParameters?.village || 'Smiths Lake';
+  const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
 
   try {
     const res = await fetch(`https://api.notion.com/v1/databases/${DB_ID}/query`, {
