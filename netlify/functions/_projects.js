@@ -83,10 +83,18 @@ export function parseProject(page) {
     execSummary: rt(p['Exec Summary']),
     description: rt(p.Description),
     lead: rt(p.Lead),
-    // Two-way link to the public Project Hub content card.
-    hubSlug: rt(p['Hub Slug']),
+    // Two-way link to the public Project Hub content card(s). Stored as a JSON
+    // array in the "Hub Slug" field; a legacy bare slug is read as a 1-item list.
+    hubSlugs: parseHubSlugs(p['Hub Slug']),
     publishToHub: p['Publish to Hub']?.checkbox === true,
   };
+}
+
+export function parseHubSlugs(prop) {
+  const raw = rt(prop).trim();
+  if (!raw) return [];
+  try { const v = JSON.parse(raw); if (Array.isArray(v)) return v.map(String).filter(Boolean); } catch (_) { /* legacy single slug */ }
+  return [raw];
 }
 
 export function parseSchedule(page) {

@@ -112,8 +112,14 @@ function buildProps(entity, body) {
   if (body.hourRate !== undefined && body.hourRate !== '') {
     properties['Volunteer Hour Rate'] = { number: money(body.hourRate) };
   }
-  // Two-way link to the public Project Hub content card.
-  if (body.hubSlug !== undefined) properties['Hub Slug'] = text(body.hubSlug);
+  // Two-way link to the public Project Hub content card(s) — a JSON array of
+  // slugs stored in the "Hub Slug" field (legacy single hubSlug still accepted).
+  if (body.hubSlugs !== undefined) {
+    const arr = Array.isArray(body.hubSlugs) ? body.hubSlugs.map(String).filter(Boolean) : [];
+    properties['Hub Slug'] = text(arr.length ? JSON.stringify(arr) : '');
+  } else if (body.hubSlug !== undefined) {
+    properties['Hub Slug'] = text(body.hubSlug ? JSON.stringify([String(body.hubSlug)]) : '');
+  }
   if (body.publishToHub !== undefined) properties['Publish to Hub'] = { checkbox: body.publishToHub === true || body.publishToHub === 'true' };
   return { DB: PROJECTS_DB, properties };
 }

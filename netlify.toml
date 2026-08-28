@@ -89,6 +89,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/project-link-group"
+  to = "/.netlify/functions/project-link-group"
+  status = 200
+
+[[redirects]]
   from = "/api/identity-admin"
   to = "/.netlify/functions/identity-admin"
   status = 200
