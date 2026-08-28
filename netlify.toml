@@ -71,6 +71,23 @@
   to = "/.netlify/functions/project-list"
   status = 200
 
+# Projects system of record (distinct from project-list above, which serves
+# Project Hub content items to the survey builder).
+[[redirects]]
+  from = "/api/projects-list"
+  to = "/.netlify/functions/projects-list"
+  status = 200
+
+[[redirects]]
+  from = "/api/projects-get"
+  to = "/.netlify/functions/projects-get"
+  status = 200
+
+[[redirects]]
+  from = "/api/projects-report"
+  to = "/.netlify/functions/projects-report"
+  status = 200
+
 [[redirects]]
   from = "/api/identity-admin"
   to = "/.netlify/functions/identity-admin"

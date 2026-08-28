@@ -20,6 +20,7 @@
  */
 
 import { requireRole } from './_auth.js';
+import { ensureProjectSchema } from './_projects.js';
 
 const NOTION_VERSION = '2022-06-28';
 const PROJECTS_DB = process.env.NOTION_COCON_PROJECTS_DB_ID || '';
@@ -47,6 +48,13 @@ function notionHeaders() {
 }
 const title = (s) => ({ title: [{ text: { content: String(s || '').slice(0, 200) } }] });
 const text = (s) => ({ rich_text: s ? [{ text: { content: String(s).slice(0, 2000) } }] : [] });
+// Chunked rich_text for values that can exceed Notion's 2000-char-per-item cap
+// (exec narrative, the linked-groups JSON blob).
+const rtChunks = (s) => {
+  const out = []; s = String(s || '');
+  for (let i = 0; i < s.length && out.length < 90; i += 1900) out.push({ text: { content: s.slice(i, i + 1900) } });
+  return { rich_text: out };
+};
 const pick = (list, v, fallback) => (list.includes(v) ? v : fallback);
 const money = (v) => { const n = Number(v); return Number.isFinite(n) ? n : null; };
 
@@ -84,17 +92,30 @@ function buildProps(entity, body) {
     };
   }
   // project
-  return {
-    DB: PROJECTS_DB,
-    properties: {
-      'Name': title(body.name),
-      'Slug': text(body.slug),
-      'Village': text(village),
-      'Grant Program': text(body.grantProgram),
-      'Notes / Rate Card': text(body.notes),
-      'Status': { select: { name: pick(PROJECT_STATUS, body.status, 'Draft') } },
-    },
+  const properties = {
+    'Name': title(body.name),
+    'Slug': text(body.slug),
+    'Village': text(village),
+    'Grant Program': text(body.grantProgram),
+    'Notes / Rate Card': text(body.notes),
+    'Status': { select: { name: pick(PROJECT_STATUS, body.status, 'Draft') } },
   };
+  // New Projects-SoR fields — only written when the caller supplies them, so the
+  // existing Co-Contribution page (which doesn't send them) never blanks them.
+  if (body.description !== undefined) properties['Description'] = rtChunks(body.description);
+  if (body.lead !== undefined) properties['Lead'] = text(body.lead);
+  if (body.execSummary !== undefined) properties['Exec Summary'] = rtChunks(body.execSummary);
+  if (body.volunteerGroups !== undefined) {
+    const groups = Array.isArray(body.volunteerGroups) ? body.volunteerGroups : [];
+    properties['Volunteer Groups'] = rtChunks(JSON.stringify(groups));
+  }
+  if (body.hourRate !== undefined && body.hourRate !== '') {
+    properties['Volunteer Hour Rate'] = { number: money(body.hourRate) };
+  }
+  // Two-way link to the public Project Hub content card.
+  if (body.hubSlug !== undefined) properties['Hub Slug'] = text(body.hubSlug);
+  if (body.publishToHub !== undefined) properties['Publish to Hub'] = { checkbox: body.publishToHub === true || body.publishToHub === 'true' };
+  return { DB: PROJECTS_DB, properties };
 }
 
 export const handler = async (event, context) => {
@@ -113,7 +134,9 @@ export const handler = async (event, context) => {
     return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'entity must be project | schedule | budget' }) };
   }
 
-  const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer'] });
+  // Project Managers may manage projects, budgets and schedule lines; the
+  // grant-request figure stays gated to admin/treasurer below.
+  const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer', 'pm'] });
   if (!auth.ok) {
     return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };
   }
@@ -121,6 +144,9 @@ export const handler = async (event, context) => {
   if (!(body.name || '').trim()) {
     return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'A name is required' }) };
   }
+
+  // Make sure the new project-level columns exist before we write to them.
+  if (entity === 'project') await ensureProjectSchema();
 
   const { DB, properties } = buildProps(entity, body);
   if (!DB) {
