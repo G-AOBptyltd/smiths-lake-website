@@ -229,6 +229,9 @@
     // Grant Portal is deliberately in EVERY package: a Foundation village
     // uses the grant pipeline to win the funding that pays for Complete.
     { id: 'grants',   icon: '🏆', name: 'Grant Portal', desc: 'Track every grant application — research to outcome, amounts & deadlines', href: '/admin/grants/', roles: ['admin', 'treasurer'], moduleToggle: true },
+    // Projects = the system-of-record spine: each project ties together its budget,
+    // grants, volunteer groups (and their hours) and contributions, with reports.
+    { id: 'projects', icon: '🗂️', name: 'Projects', desc: 'The project system of record — budgets, grants, volunteers & hours in one place, with steering-committee reports', href: '/admin/projects/', roles: ['admin', 'treasurer', 'pm'], moduleToggle: true },
     { id: 'profile',  icon: '📇', name: 'Village profile', desc: 'The community resilience profile — snapshot, hazards, facilities & the action register', href: '/admin/profile/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'services', icon: '🏪', name: 'Services directory',  desc: 'Keep every service listing accurate — service stewards manage their own', href: '/admin/services/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'members',  icon: '🪪', name: 'Membership',          desc: 'Member register — approvals, payments, renewals & member emails', href: '/admin/members/', roles: ['admin'], moduleToggle: true },
@@ -326,8 +329,8 @@
   }
 
   // ── Module-access matrix (visibility only — endpoints keep their own auth) ──
-  const MATRIX_ROLES = ['admin', 'treasurer', 'steward', 'viewer'];
-  const MATRIX_ROLE_LABEL = { admin: 'Village Admin', treasurer: 'Treasurer', steward: 'Steward', viewer: 'Viewer' };
+  const MATRIX_ROLES = ['admin', 'treasurer', 'pm', 'steward', 'viewer'];
+  const MATRIX_ROLE_LABEL = { admin: 'Village Admin', treasurer: 'Treasurer', pm: 'Project Manager', steward: 'Steward', viewer: 'Viewer' };
   function accessMatrix(vName) {
     const v = villageRec(vName);
     return (v && v.moduleAccess && typeof v.moduleAccess === 'object') ? v.moduleAccess : null;
@@ -626,6 +629,7 @@
     const key = villageKey(activeVillage());
     sel.innerHTML =
       '<option value="' + key + ':steward">Steward — ' + escHtml(activeVillage()) + '</option>' +
+      '<option value="' + key + ':pm">Project Manager — ' + escHtml(activeVillage()) + '</option>' +
       '<option value="' + key + ':treasurer">Village Treasurer — ' + escHtml(activeVillage()) + '</option>' +
       '<option value="' + key + ':admin">Village Admin — ' + escHtml(activeVillage()) + '</option>' +
       '<option value="' + key + ':viewer">Committee Viewer — ' + escHtml(activeVillage()) + '</option>' +
@@ -636,6 +640,7 @@
     const opts = [
       { v: '', l: 'No role' },
       { v: key + ':steward', l: 'Steward' },
+      { v: key + ':pm', l: 'Project Manager' },
       { v: key + ':treasurer', l: 'Village Treasurer' },
       { v: key + ':admin', l: 'Village Admin' },
       { v: key + ':viewer', l: 'Committee Viewer' },
@@ -650,6 +655,7 @@
     if (r === 'super-admin') return 'Super Admin';
     if (r.endsWith(':admin')) return 'Village Admin (' + r.split(':')[0] + ')';
     if (r.endsWith(':treasurer')) return 'Village Treasurer (' + r.split(':')[0] + ')';
+    if (r.endsWith(':pm')) return 'Project Manager (' + r.split(':')[0] + ')';
     if (r.endsWith(':steward')) return 'Steward (' + r.split(':')[0] + ')';
     if (r.endsWith(':viewer')) return 'Committee Viewer (' + r.split(':')[0] + ')';
     return r ? r : 'No role';

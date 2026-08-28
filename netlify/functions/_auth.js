@@ -12,8 +12,13 @@
  * Role naming:
  *   - "super-admin"            → full access, all villages
  *   - "<village>:admin"        → Village Admin    (e.g. "smithslake:admin")
- *   - "<village>:steward"      → Survey Steward
+ *   - "<village>:treasurer"    → Village Treasurer (finance modules)
+ *   - "<village>:pm"           → Village Project Manager (manages projects; money read-only)
+ *   - "<village>:steward"      → Survey / group Steward
  *   - "<village>:viewer"       → Committee Viewer
+ *
+ * Role matching below is generic — any "<village>:<name>" role works; the names
+ * above are the ones the admin console assigns and gates on.
  *
  * Migration bridge: a user whose VERIFIED email (from the JWT, not a header)
  * is listed in SURVEY_ADMIN_EMAILS is treated as an admin until roles are
