@@ -343,7 +343,7 @@
           </div>
           <div class="f-f"><div class="f-l">Lead</div><input class="f-i" id="e-lead" maxlength="200" placeholder="Who is driving this project"></div>
           <div class="f-f"><div class="f-l">Grant program</div><input class="f-i" id="e-program" maxlength="200" placeholder="e.g. NSW Community Participation Stream"></div>
-          <div class="f-f" id="e-grant-wrap"><div class="f-l">Grant request amount ($) <span class="f-hint">(Village Admin only)</span></div><input class="f-i" id="e-grant" type="number" min="0" step="1"></div>
+          <div class="f-f" id="e-grant-wrap"><div class="f-l">Grant request amount ($) <span class="f-hint">(Admin/Treasurer only)</span></div><input class="f-i" id="e-grant" type="number" min="0" step="1"></div>
           <div class="f-f"><div class="f-l">Volunteer hour rate ($)</div><input class="f-i" id="e-rate" type="number" min="0" step="0.01" placeholder="e.g. 45"></div>
           <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Description</div><textarea class="f-i" id="e-desc" maxlength="2000" placeholder="What the project is and its objectives."></textarea></div>
           <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Notes / rate card</div><textarea class="f-i" id="e-notes" maxlength="2000" placeholder="Volunteer labour rates, methodology, contacts, conditions…"></textarea></div>
@@ -424,14 +424,22 @@
     if (roles.includes('super-admin')) return true;
     return roles.some(function(r) { return r.endsWith(':admin'); });
   }
+  // The server allows Admin OR Treasurer to set the grant-request amount (PMs
+  // are read-only on money). Mirror that in the UI so a treasurer sees the field.
+  function canSetGrant() {
+    const roles = userRoles();
+    if (roles.includes('super-admin')) return true;
+    return roles.some(function(r) { return r.endsWith(':admin') || r.endsWith(':treasurer'); });
+  }
 
   // ── Boot ───────────────────────────────────────────────────────
   function showApp() {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('user-email').textContent = (currentUser && currentUser.email) || '';
-    // Hide the sensitive grant-request field for non-admins where we can tell.
-    if (!isVillageAdmin()) {
+    // Hide the sensitive grant-request field from anyone who can't set it
+    // (PMs, stewards) — Admins and Treasurers keep it.
+    if (!canSetGrant()) {
       const w = document.getElementById('e-grant-wrap');
       if (w) w.style.display = 'none';
     }
@@ -870,7 +878,7 @@
       const r = await fetch('/api/cocon-save', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(payload) });
       const d = await r.json();
       if (!r.ok) {
-        if (r.status === 403) throw new Error('You do not have permission to set the grant request amount — a Village Admin must set it. Clear that field to save the rest.');
+        if (r.status === 403) throw new Error('You do not have permission to set the grant request amount — an Admin or Treasurer must set it. Clear that field to save the rest.');
         throw new Error(d.error || 'Save failed');
       }
       setMsg('e-msg', 'Saved ✓', 'ok');
