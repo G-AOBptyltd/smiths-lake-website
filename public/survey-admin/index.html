@@ -208,14 +208,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="s-sec">Analyse</div>
       <div class="s-item" onclick="showPanel('results',this);loadResults()">📈 Results</div>
       <hr class="s-divider">
-      <div class="s-sec">Village</div>
-      <!-- Village administration (All Villages, lifecycle, access) moved to the Village Admin portal -->
-      <a class="s-item" id="nav-villages" style="display:none;text-decoration:none;" href="/admin/#villages" title="Opens the Village Admin portal">🏘️ All Villages ↗</a>
-      <a class="s-item" style="text-decoration:none;" href="/admin/#access" title="Opens the Village Admin portal">👥 Access ↗</a>
+      <div class="s-sec">Settings</div>
+      <!-- All Villages, lifecycle and Access now live in the Village Admin portal (top nav → Admin home). -->
       <div class="s-item" onclick="showPanel('settings',this);loadSettings()">⚙️ Settings</div>
       <hr class="s-divider">
       <div class="s-sec">Help</div>
-      <div class="s-item" onclick="showPanel('playbook',this)">📖 Playbook</div>
+      <div class="s-item" onclick="showPanel('playbook',this)">📖 Survey guide</div>
     </div>
 
     <!-- Main -->
@@ -1070,11 +1068,7 @@ async function loadVillages() {
       }).join('');
       sel.value = activeVillage;   // keep the control in sync with state
     }
-    // "All Villages" is now a link into the Village Admin portal — shown to
-    // super-admins (and anyone who can already see several villages).
-    const nv = document.getElementById('nav-villages');
-    const isSuper = currentUser && currentUser.app_metadata && (currentUser.app_metadata.roles||[]).includes('super-admin');
-    if (nv) nv.style.display = (isSuper || villages.length > 1) ? 'flex' : 'none';
+    // All Villages / Access now live in the Village Admin portal (top nav).
     applyVillageLabels();
   } catch(_) {}
 }
