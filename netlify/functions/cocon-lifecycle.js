@@ -57,19 +57,19 @@ export const handler = async (event, context) => {
   try {
     switch (action) {
       case 'archive': {
-        const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer'] });
+        const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer', 'pm'] });
         if (!auth.ok) return json(auth.status, { error: auth.error });
         await patchPage(pageId, { properties: { 'Archived': { checkbox: true } } });
         return json(200, { ok: true, state: 'archived' });
       }
       case 'restore': {
-        const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer'] });
+        const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer', 'pm'] });
         if (!auth.ok) return json(auth.status, { error: auth.error });
         await patchPage(pageId, { properties: { 'Archived': { checkbox: false } } });
         return json(200, { ok: true, state: 'restored' });
       }
       case 'reorder': {
-        const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer'] });
+        const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer', 'pm'] });
         if (!auth.ok) return json(auth.status, { error: auth.error });
         await patchPage(pageId, { properties: { 'Order': { number: Number(body.order) || 0 } } });
         return json(200, { ok: true, state: 'reordered' });

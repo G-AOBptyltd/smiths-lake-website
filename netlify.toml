@@ -94,6 +94,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/project-link-grant"
+  to = "/.netlify/functions/project-link-grant"
+  status = 200
+
+[[redirects]]
   from = "/api/identity-admin"
   to = "/.netlify/functions/identity-admin"
   status = 200

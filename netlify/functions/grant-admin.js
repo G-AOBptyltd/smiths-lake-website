@@ -131,7 +131,9 @@ export const handler = async (event, context) => {
   // ── LIST ──
   if (event.httpMethod === 'GET') {
     const village = event.queryStringParameters?.village || 'Smiths Lake';
-    const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer'] });
+    // pm may READ the grant pipeline (to link grants to projects); editing a
+    // grant still requires admin/treasurer (POST below).
+    const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer', 'pm'] });
     if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
     try {
       const dbId = await grantsDbId();
