@@ -120,8 +120,8 @@ try {
        a #invite_token / #recovery_token hash. Bounce those to the /admin/ hub, which loads the
        Identity widget to complete set-password and then routes each person (steward, admin) to
        the right place. Any page already under /admin/ or /survey-admin/ has its own widget, so
-       leave those alone. -->
-  <script>
+       leave those alone. Inline so it runs synchronously before anything else. -->
+  <script is:inline>
     (function () {
       var h = window.location.hash || '';
       var p = window.location.pathname || '';
