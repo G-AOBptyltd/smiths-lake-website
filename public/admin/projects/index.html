@@ -1007,13 +1007,17 @@
       village: VILLAGE, entity: 'project', pageId: detail.project.id,
       name: detail.project.name, slug: detail.project.slug, status: detail.project.status || 'Draft',
     }, patch);
+    // Remember which tab we're on so the reload doesn't bounce back to Overview.
+    const activeEl = document.querySelector('.tab.on');
+    const activeTab = activeEl ? activeEl.getAttribute('data-tab') : 'overview';
     setMsg(msgId, 'Saving…', '');
     try {
       const r = await fetch('/api/cocon-save', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(payload) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || (r.status === 403 ? 'Not permitted for your role.' : 'Save failed'));
-      setMsg(msgId, okMsg || 'Saved ✓', 'ok');
       await openProject(currentSlug);
+      if (activeTab && activeTab !== 'overview') showTab(activeTab);
+      setMsg(msgId, okMsg || 'Saved ✓', 'ok');
       return true;
     } catch (e) { setMsg(msgId, e.message, 'err'); return false; }
   }

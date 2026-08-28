@@ -884,9 +884,11 @@
   // The distinct set of {path,title} across every volunteer's cards is the
   // list of GROUPS (same source the roster's card filter uses).
   function volunteerGroups() {
-    const seen = new Map();
-    volunteers.forEach(v => (v.cards || []).forEach(c => { if (c.path && !seen.has(c.path)) seen.set(c.path, { path: c.path, title: c.title || c.path }); }));
-    return [...seen.values()].sort((a, b) => a.title.localeCompare(b.title));
+    // Every linkable group = the full card catalogue (all published cards in the
+    // volunteer sections that a steward could run), not only cards that already
+    // have volunteers. allKnownCards() unions the catalogue with cards seen on
+    // volunteers/activities (covers renamed/unpublished cards).
+    return allKnownCards().slice().sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   }
 
   // A group (cardPath) is linked to a project when the project's

@@ -244,11 +244,39 @@ export async function aggregateVolunteers(village, groups) {
   } catch (_) { return empty; }
 }
 
+// Every published card in the volunteer sections IS a linkable volunteer group
+// (a steward can be assigned any of these), independent of whether anyone has
+// volunteered yet. Card path = <sectionPath>/<slug(title)>, matching DetailPage.
+const CONTENT_DB_ID = process.env.NOTION_CONTENT_DB_ID || '2cad508adfc1809d8438c8f3a5dd8d42';
+const VOLUNTEER_SECTIONS = ['Environment & Sustainability', 'Groups & Activities', 'Emergency & Safety'];
+const SECTION_TO_PATH = { 'Environment & Sustainability': 'environment', 'Groups & Activities': 'groups', 'Emergency & Safety': 'emergency' };
+function cardSlug(title) {
+  return String(title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 100);
+}
+async function volunteerSectionCards() {
+  try {
+    const rows = await vfQueryAll(CONTENT_DB_ID, {
+      and: [
+        { property: 'Status on Web', select: { equals: 'Published' } },
+        { or: VOLUNTEER_SECTIONS.map((s) => ({ property: 'Section', select: { equals: s } })) },
+      ],
+    });
+    return rows.map((pg) => {
+      const p = pg.properties || {};
+      const title = p.Title?.title?.[0]?.plain_text || '';
+      const base = SECTION_TO_PATH[p.Section?.select?.name || ''];
+      if (!title || !base) return null;
+      return { path: `${base}/${cardSlug(title)}`, title };
+    }).filter(Boolean);
+  } catch (_) { return []; }
+}
+
 /**
- * Distinct volunteer GROUPS (content cards) for a village — the {path,title}
- * set drawn from VF Volunteers' linked cards and VF Activities. PII-free, so it
- * can back the Projects group-picker for roles (pm/treasurer) that can't read
- * the volunteer roster. Fail-open to [].
+ * Every linkable volunteer GROUP (content card) for a village. Primary source is
+ * the published cards in the volunteer sections (Environment / Groups / Emergency)
+ * so the whole catalogue is selectable even before anyone volunteers; augmented
+ * with any card seen on VF Volunteers / VF Activities (covers renamed/unpublished
+ * cards that still carry history). PII-free. Fail-open to [].
  */
 export async function listGroups(village) {
   const map = new Map();
@@ -258,10 +286,12 @@ export async function listGroups(village) {
     if (!map.has(key)) map.set(key, { path, title: title || path });
   };
   try {
-    const [volRows, actRows] = await Promise.all([
+    const [cards, volRows, actRows] = await Promise.all([
+      volunteerSectionCards(),
       VOLUNTEERS_DB_ID ? vfQueryAll(VOLUNTEERS_DB_ID, { property: 'Village', rich_text: { equals: village } }) : Promise.resolve([]),
       ACTIVITIES_DB_ID ? vfQueryAll(ACTIVITIES_DB_ID, { property: 'Village', rich_text: { equals: village } }) : Promise.resolve([]),
     ]);
+    cards.forEach((c) => add(c.path, c.title));
     volRows.map(parseVolunteer).forEach((v) => (v.cards || []).forEach((c) => add(c.path, c.title)));
     actRows.map(parseActivity).forEach((a) => add(a.cardPath, a.cardTitle));
   } catch (_) { /* fail-open */ }
