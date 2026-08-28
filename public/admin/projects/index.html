@@ -247,24 +247,69 @@
       <!-- Budget -->
       <div class="tabpanel" id="tab-budget">
         <table class="tbl" id="bud-table"><tbody><tr><td class="empty">No budget items.</td></tr></tbody></table>
+        <div class="card" id="bud-form-card" style="margin-top:16px;">
+          <h3 id="bud-form-title">＋ Add budget line</h3>
+          <div class="f-grid">
+            <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Name *</div><input class="f-i" id="bud-name" maxlength="200" placeholder="e.g. Detailed design"></div>
+            <div class="f-f"><div class="f-l">Phase</div><input class="f-i" id="bud-phase" maxlength="120" placeholder="e.g. Stage 1"></div>
+            <div class="f-f"><div class="f-l">Amount ($)</div><input class="f-i" id="bud-amount" type="number" min="0" step="1" placeholder="0"></div>
+          </div>
+          <div class="form-acts">
+            <button class="btn btn-g" id="bud-save" onclick="saveBudgetLine()">Add line</button>
+            <button class="btn btn-s" id="bud-cancel" onclick="resetBudgetForm()" style="display:none;">Cancel edit</button>
+            <label style="font-size:11px;color:#6b7280;font-weight:600;display:flex;align-items:center;gap:5px;margin-left:6px;"><input type="checkbox" id="bud-show-arch" onchange="renderBudget()"> Show archived</label>
+            <span class="msg" id="bud-msg"></span>
+          </div>
+        </div>
         <div class="form-acts" style="margin-top:14px;">
-          <a class="btn btn-s" href="/admin/cocontribution/">Edit budget in Co-contribution →</a>
+          <a class="link-btn" href="/admin/cocontribution/">Open in Co-contribution →</a>
         </div>
       </div>
 
       <!-- Schedule -->
       <div class="tabpanel" id="tab-schedule">
         <table class="tbl" id="sch-table"><tbody><tr><td class="empty">No schedule items.</td></tr></tbody></table>
+        <div class="card" id="sch-form-card" style="margin-top:16px;">
+          <h3 id="sch-form-title">＋ Add co-contribution line</h3>
+          <div class="f-grid">
+            <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Name *</div><input class="f-i" id="sch-name" maxlength="200" placeholder="e.g. Volunteer labour — working bees"></div>
+            <div class="f-f"><div class="f-l">Party</div>
+              <select class="f-i" id="sch-party"><option value="">—</option><option>Community</option><option>External</option></select>
+            </div>
+            <div class="f-f"><div class="f-l">Type</div>
+              <select class="f-i" id="sch-type"><option value="">—</option><option>Cash — Prior Investment</option><option>Cash — Fundraising</option><option>WIK — Community Labour</option><option>WIK — Volunteer Labour</option><option>WIK — Equipment</option><option>WIK — Materials</option></select>
+            </div>
+            <div class="f-f"><div class="f-l">Value ($)</div><input class="f-i" id="sch-value" type="number" min="0" step="1" placeholder="0"></div>
+            <div class="f-f"><div class="f-l">Confirmed</div>
+              <select class="f-i" id="sch-confirmed"><option value="">—</option><option>Yes — actual cost PAID</option><option>Yes — completed</option><option>Estimated</option><option>Committed</option><option>To confirm</option></select>
+            </div>
+            <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Description</div><textarea class="f-i" id="sch-desc" maxlength="1000" placeholder="Optional detail"></textarea></div>
+          </div>
+          <div class="form-acts">
+            <button class="btn btn-g" id="sch-save" onclick="saveScheduleLine()">Add line</button>
+            <button class="btn btn-s" id="sch-cancel" onclick="resetScheduleForm()" style="display:none;">Cancel edit</button>
+            <label style="font-size:11px;color:#6b7280;font-weight:600;display:flex;align-items:center;gap:5px;margin-left:6px;"><input type="checkbox" id="sch-show-arch" onchange="renderSchedule()"> Show archived</label>
+            <span class="msg" id="sch-msg"></span>
+          </div>
+        </div>
         <div class="form-acts" style="margin-top:14px;">
-          <a class="btn btn-s" href="/admin/cocontribution/">Edit schedule in Co-contribution →</a>
+          <a class="link-btn" href="/admin/cocontribution/">Open in Co-contribution →</a>
         </div>
       </div>
 
       <!-- Grants -->
       <div class="tabpanel" id="tab-grants">
-        <div id="gr-list"><div class="empty">No grant applications linked.</div></div>
-        <div class="form-acts" style="margin-top:14px;">
-          <a class="btn btn-s" href="/admin/grants/">Manage grants in Grant Portal →</a>
+        <div class="card">
+          <h3>Linked to this project</h3>
+          <div id="gr-linked"><div class="empty">No grant applications linked.</div></div>
+        </div>
+        <div class="card">
+          <h3>Link an existing grant</h3>
+          <div id="gr-unlinked"><div class="empty">Loading…</div></div>
+          <span class="msg" id="gr-msg" style="display:block;margin-top:8px;"></span>
+        </div>
+        <div class="form-acts" style="margin-top:4px;">
+          <a class="link-btn" href="/admin/grants/">＋ New grant in Grant Portal →</a>
         </div>
       </div>
 
@@ -272,7 +317,17 @@
       <div class="tabpanel" id="tab-volunteers">
         <div id="vol-summary"></div>
         <div class="card">
-          <h3>Linked volunteer groups</h3>
+          <h3>Which volunteer groups feed this project?</h3>
+          <div class="note" style="margin-top:0;margin-bottom:8px;">Tick the community groups whose working-bee hours should count towards this project.</div>
+          <div id="vol-checks"><div class="empty">Loading…</div></div>
+          <div class="form-acts" style="margin-top:12px;">
+            <button class="btn btn-g" id="vol-groups-save" onclick="saveVolGroups()">Save linked groups</button>
+            <a class="link-btn" href="/admin/volunteers/">Open Volunteer hub →</a>
+            <span class="msg" id="vol-groups-msg"></span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Linked groups — hours</h3>
           <div id="vol-groups"><div class="empty">No linked groups yet.</div></div>
         </div>
         <div class="card">
@@ -287,18 +342,6 @@
           <div class="form-acts" style="margin-top:6px;">
             <button class="btn btn-g" id="vol-rate-save" onclick="saveHourRate()">Save rate</button>
             <span class="msg" id="vol-rate-msg"></span>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Edit linked groups</h3>
-          <div class="f-f">
-            <div class="f-l">Volunteer groups <span class="f-hint">(hold Ctrl/Cmd to select more than one)</span></div>
-            <select class="f-i" id="vol-select" multiple></select>
-          </div>
-          <div class="form-acts">
-            <button class="btn btn-g" id="vol-groups-save" onclick="saveVolGroups()">Save linked groups</button>
-            <a class="btn btn-s" href="/admin/volunteers/">Volunteer hub →</a>
-            <span class="msg" id="vol-groups-msg"></span>
           </div>
         </div>
       </div>
@@ -471,7 +514,7 @@
     } catch (e) { /* fall back to the single default option */ }
     sel.onchange = function() {
       VILLAGE = sel.value; localStorage.setItem('vf_active_village', VILLAGE);
-      currentSlug = ''; detail = null;
+      currentSlug = ''; detail = null; allGrants = null;
       showList();
       loadHubCards(); loadGroups(); loadProjects();
     };
@@ -643,6 +686,8 @@
     const stEl = document.getElementById('d-status');
     stEl.textContent = st; stEl.className = 'pill st-' + st;
     document.getElementById('d-sub').textContent = [p.grantProgram, p.lead ? 'Lead: ' + p.lead : ''].filter(Boolean).join(' · ');
+    resetBudgetForm();
+    resetScheduleForm();
     renderOverview();
     renderBudget();
     renderSchedule();
@@ -670,48 +715,229 @@
     fillHubPickers();
   }
 
+  let budEditId = '';   // pageId of the budget line being edited ('' = add mode)
   function renderBudget() {
     const tbl = document.getElementById('bud-table');
-    const rows = (detail.budget || []).filter(function(b) { return !b.archived; });
-    if (!rows.length) { tbl.innerHTML = '<tbody><tr><td class="empty">No budget items.</td></tr></tbody>'; return; }
+    const showArch = !!(document.getElementById('bud-show-arch') && document.getElementById('bud-show-arch').checked);
+    const all = detail.budget || [];
+    const rows = all.filter(function(b) { return showArch || !b.archived; });
+    if (!rows.length) { tbl.innerHTML = '<tbody><tr><td class="empty">No budget items yet — add one below.</td></tr></tbody>'; return; }
     let total = 0;
-    let html = '<thead><tr><th>Name</th><th>Phase</th><th class="num">Amount</th></tr></thead><tbody>';
+    let html = '<thead><tr><th>Name</th><th>Phase</th><th class="num">Amount</th><th></th></tr></thead><tbody>';
     rows.forEach(function(b) {
-      total += Number(b.amount) || 0;
-      html += '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.phase || '') + '</td><td class="num">' + money(b.amount) + '</td></tr>';
+      if (!b.archived) total += Number(b.amount) || 0;
+      const arch = !!b.archived;
+      const style = arch ? ' style="opacity:.55;"' : '';
+      const acts = arch
+        ? '<button class="link-btn" onclick="lifecycleLine(\'budget\',\'' + esc(b.id) + '\',\'restore\')">Restore</button>'
+        : '<button class="link-btn" onclick="editBudgetLine(\'' + esc(b.id) + '\')">Edit</button> · <button class="link-btn" onclick="lifecycleLine(\'budget\',\'' + esc(b.id) + '\',\'archive\')">Archive</button>';
+      html += '<tr' + style + '><td>' + esc(b.name) + (arch ? ' <span class="chip chip-pending">archived</span>' : '') + '</td><td>' + esc(b.phase || '') + '</td><td class="num">' + money(b.amount) + '</td><td class="num">' + acts + '</td></tr>';
     });
-    html += '<tr class="subtotal"><td colspan="2">Budget total</td><td class="num">' + money(total) + '</td></tr></tbody>';
+    html += '<tr class="subtotal"><td colspan="2">Budget total</td><td class="num">' + money(total) + '</td><td></td></tr></tbody>';
     tbl.innerHTML = html;
   }
+  function resetBudgetForm() {
+    budEditId = '';
+    document.getElementById('bud-form-title').textContent = '＋ Add budget line';
+    document.getElementById('bud-save').textContent = 'Add line';
+    document.getElementById('bud-cancel').style.display = 'none';
+    ['bud-name', 'bud-phase', 'bud-amount'].forEach(function(id) { document.getElementById(id).value = ''; });
+    setMsg('bud-msg', '', '');
+  }
+  function editBudgetLine(id) {
+    const b = (detail.budget || []).find(function(x) { return x.id === id; });
+    if (!b) return;
+    budEditId = id;
+    document.getElementById('bud-form-title').textContent = 'Edit budget line';
+    document.getElementById('bud-save').textContent = 'Save changes';
+    document.getElementById('bud-cancel').style.display = '';
+    document.getElementById('bud-name').value = b.name || '';
+    document.getElementById('bud-phase').value = b.phase || '';
+    document.getElementById('bud-amount').value = b.amount != null ? b.amount : '';
+    setMsg('bud-msg', '', '');
+    document.getElementById('bud-name').focus();
+  }
+  async function saveBudgetLine() {
+    const name = document.getElementById('bud-name').value.trim();
+    if (!name) { setMsg('bud-msg', 'Enter a name for the budget line.', 'err'); return; }
+    const payload = {
+      village: VILLAGE, entity: 'budget', name: name,
+      project: detail.project.slug,
+      phase: document.getElementById('bud-phase').value.trim(),
+      amount: Number(document.getElementById('bud-amount').value) || 0,
+    };
+    if (budEditId) payload.pageId = budEditId;
+    const btn = document.getElementById('bud-save'); btn.disabled = true;
+    setMsg('bud-msg', 'Saving…', '');
+    try {
+      const r = await fetch('/api/cocon-save', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(payload) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || (r.status === 403 ? 'Not permitted for your role.' : 'Save failed'));
+      showToast('✅ Budget line saved');
+      resetBudgetForm();
+      await openProject(currentSlug);
+      showTab('budget');
+    } catch (e) { setMsg('bud-msg', e.message, 'err'); }
+    finally { btn.disabled = false; }
+  }
 
+  let schEditId = '';   // pageId of the schedule line being edited ('' = add mode)
   function renderSchedule() {
     const tbl = document.getElementById('sch-table');
-    const rows = (detail.schedule || []).filter(function(s) { return !s.archived; });
+    const showArch = !!(document.getElementById('sch-show-arch') && document.getElementById('sch-show-arch').checked);
+    const all = detail.schedule || [];
+    const rows = all.filter(function(s) { return showArch || !s.archived; });
     const r = detail.rollups || {};
-    if (!rows.length) { tbl.innerHTML = '<tbody><tr><td class="empty">No schedule items.</td></tr></tbody>'; return; }
-    let html = '<thead><tr><th>Name</th><th>Party</th><th>Type</th><th class="num">Value</th><th>Confirmed</th></tr></thead><tbody>';
+    if (!rows.length) { tbl.innerHTML = '<tbody><tr><td class="empty">No schedule items yet — add one below.</td></tr></tbody>'; return; }
+    let html = '<thead><tr><th>Name</th><th>Party</th><th>Type</th><th class="num">Value</th><th>Confirmed</th><th></th></tr></thead><tbody>';
     rows.forEach(function(s) {
       const paid = s.confirmed === 'Yes — actual cost PAID' || s.confirmed === 'Yes — completed';
       const chip = '<span class="chip ' + (paid ? 'chip-paid' : 'chip-pending') + '">' + esc(s.confirmed || '—') + '</span>';
-      html += '<tr><td>' + esc(s.name) + '</td><td>' + esc(s.party || '') + '</td><td>' + esc(s.type || '') + '</td><td class="num">' + money(s.value) + '</td><td>' + chip + '</td></tr>';
+      const arch = !!s.archived;
+      const style = arch ? ' style="opacity:.55;"' : '';
+      const acts = arch
+        ? '<button class="link-btn" onclick="lifecycleLine(\'schedule\',\'' + esc(s.id) + '\',\'restore\')">Restore</button>'
+        : '<button class="link-btn" onclick="editScheduleLine(\'' + esc(s.id) + '\')">Edit</button> · <button class="link-btn" onclick="lifecycleLine(\'schedule\',\'' + esc(s.id) + '\',\'archive\')">Archive</button>';
+      html += '<tr' + style + '><td>' + esc(s.name) + (arch ? ' <span class="chip chip-pending">archived</span>' : '') + '</td><td>' + esc(s.party || '') + '</td><td>' + esc(s.type || '') + '</td><td class="num">' + money(s.value) + '</td><td>' + chip + '</td><td class="num">' + acts + '</td></tr>';
     });
-    html += '<tr class="subtotal"><td colspan="3">Total co-contribution</td><td class="num">' + money(r.totalCoContribution) + '</td><td>' + pct(r.coContributionPct) + '</td></tr></tbody>';
+    html += '<tr class="subtotal"><td colspan="3">Total co-contribution</td><td class="num">' + money(r.totalCoContribution) + '</td><td>' + pct(r.coContributionPct) + '</td><td></td></tr></tbody>';
     tbl.innerHTML = html;
   }
+  function resetScheduleForm() {
+    schEditId = '';
+    document.getElementById('sch-form-title').textContent = '＋ Add co-contribution line';
+    document.getElementById('sch-save').textContent = 'Add line';
+    document.getElementById('sch-cancel').style.display = 'none';
+    ['sch-name', 'sch-value', 'sch-desc'].forEach(function(id) { document.getElementById(id).value = ''; });
+    ['sch-party', 'sch-type', 'sch-confirmed'].forEach(function(id) { document.getElementById(id).value = ''; });
+    setMsg('sch-msg', '', '');
+  }
+  function editScheduleLine(id) {
+    const s = (detail.schedule || []).find(function(x) { return x.id === id; });
+    if (!s) return;
+    schEditId = id;
+    document.getElementById('sch-form-title').textContent = 'Edit co-contribution line';
+    document.getElementById('sch-save').textContent = 'Save changes';
+    document.getElementById('sch-cancel').style.display = '';
+    document.getElementById('sch-name').value = s.name || '';
+    document.getElementById('sch-party').value = s.party || '';
+    document.getElementById('sch-type').value = s.type || '';
+    document.getElementById('sch-value').value = s.value != null ? s.value : '';
+    document.getElementById('sch-confirmed').value = s.confirmed || '';
+    document.getElementById('sch-desc').value = s.description || '';
+    setMsg('sch-msg', '', '');
+    document.getElementById('sch-name').focus();
+  }
+  async function saveScheduleLine() {
+    const name = document.getElementById('sch-name').value.trim();
+    if (!name) { setMsg('sch-msg', 'Enter a name for the line.', 'err'); return; }
+    const payload = {
+      village: VILLAGE, entity: 'schedule', name: name,
+      project: detail.project.slug,
+      party: document.getElementById('sch-party').value,
+      type: document.getElementById('sch-type').value,
+      description: document.getElementById('sch-desc').value.trim(),
+      value: Number(document.getElementById('sch-value').value) || 0,
+      confirmed: document.getElementById('sch-confirmed').value,
+    };
+    if (schEditId) payload.pageId = schEditId;
+    const btn = document.getElementById('sch-save'); btn.disabled = true;
+    setMsg('sch-msg', 'Saving…', '');
+    try {
+      const r = await fetch('/api/cocon-save', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(payload) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || (r.status === 403 ? 'Not permitted for your role.' : 'Save failed'));
+      showToast('✅ Co-contribution line saved');
+      resetScheduleForm();
+      await openProject(currentSlug);
+      showTab('schedule');
+    } catch (e) { setMsg('sch-msg', e.message, 'err'); }
+    finally { btn.disabled = false; }
+  }
+  // Shared archive/restore for budget & schedule lines
+  async function lifecycleLine(entity, pageId, action) {
+    if (action === 'archive' && !confirm('Archive this line? It will stop counting towards totals (you can restore it later).')) return;
+    try {
+      const r = await fetch('/api/cocon-lifecycle', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, pageId: pageId, action: action }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Update failed');
+      showToast(action === 'archive' ? '✅ Line archived' : '✅ Line restored');
+      await openProject(currentSlug);
+      showTab(entity);
+    } catch (e) { showToast('⚠️ ' + e.message); }
+  }
 
+  let allGrants = null;      // cached full village grant list (null = not yet fetched)
+  let allGrantsErr = '';
+  function grantRowHtml(g, actionBtn, extraNote) {
+    const meta = [g.funder, g.program, g.dueDate ? 'Due ' + fmtDate(g.dueDate) : '', extraNote].filter(Boolean).join(' · ');
+    const awarded = g.amountAwarded != null && g.amountAwarded !== '';
+    return '<div class="g-row">' +
+      '<div><div class="g-name">' + esc(g.name) + '</div><div class="g-meta">' + esc(meta) + '</div></div>' +
+      '<div class="g-amt"><div class="a">' + money(awarded ? g.amountAwarded : g.amountRequested) + '</div><div class="l">' + (awarded ? 'awarded' : 'requested') + '</div></div>' +
+      '<span class="pill gt-' + esc(g.status || 'Researching') + '">' + esc(g.status || '—') + '</span>' +
+      (actionBtn ? '<div style="margin-left:8px;">' + actionBtn + '</div>' : '') +
+    '</div>';
+  }
+  // Linked section: from detail.grants (server already scopes these to this project).
   function renderGrants() {
-    const el = document.getElementById('gr-list');
+    const el = document.getElementById('gr-linked');
     const rows = detail.grants || [];
-    if (!rows.length) { el.innerHTML = '<div class="empty">No grant applications linked to this project.</div>'; return; }
-    el.innerHTML = rows.map(function(g) {
-      const meta = [g.funder, g.program, g.dueDate ? 'Due ' + fmtDate(g.dueDate) : ''].filter(Boolean).join(' · ');
-      const awarded = g.amountAwarded != null && g.amountAwarded !== '';
-      return '<div class="g-row">' +
-        '<div><div class="g-name">' + esc(g.name) + '</div><div class="g-meta">' + esc(meta) + '</div></div>' +
-        '<div class="g-amt"><div class="a">' + money(awarded ? g.amountAwarded : g.amountRequested) + '</div><div class="l">' + (awarded ? 'awarded' : 'requested') + '</div></div>' +
-        '<span class="pill gt-' + esc(g.status || 'Researching') + '">' + esc(g.status || '—') + '</span>' +
-      '</div>';
+    if (!rows.length) {
+      el.innerHTML = '<div class="empty">No grant applications linked to this project.</div>';
+    } else {
+      el.innerHTML = rows.map(function(g) {
+        const btn = '<button class="btn btn-s" onclick="linkGrant(\'' + esc(g.id) + '\',\'\')">Unlink</button>';
+        return grantRowHtml(g, btn);
+      }).join('');
+    }
+    renderUnlinkedGrants();
+  }
+  async function loadAllGrants(force) {
+    if (allGrants && !force) return;
+    allGrantsErr = '';
+    try {
+      const r = await fetch('/api/grant-admin?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      if (r.status === 503) { allGrants = []; allGrantsErr = 'The Grant Portal is not set up for this village yet.'; return; }
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not load grants');
+      allGrants = Array.isArray(d.grants) ? d.grants : [];
+    } catch (e) { allGrants = []; allGrantsErr = e.message; }
+  }
+  async function renderUnlinkedGrants() {
+    const el = document.getElementById('gr-unlinked');
+    el.innerHTML = '<div class="empty">Loading…</div>';
+    await loadAllGrants();
+    const slug = detail.project.slug;
+    const linkedIds = {};
+    (detail.grants || []).forEach(function(g) { linkedIds[g.id] = true; });
+    if (allGrantsErr && !(allGrants && allGrants.length)) {
+      el.innerHTML = '<div class="empty">' + esc(allGrantsErr) + '</div>';
+      return;
+    }
+    const others = (allGrants || []).filter(function(g) { return !linkedIds[g.id] && g.project !== slug; });
+    if (!others.length) {
+      el.innerHTML = '<div class="empty">No other grants to link — create one in the Grant Portal.</div>';
+      return;
+    }
+    el.innerHTML = others.map(function(g) {
+      const elsewhere = g.project ? 'currently on: ' + g.project : '';
+      const btn = '<button class="btn btn-g" onclick="linkGrant(\'' + esc(g.id) + '\',\'' + esc(slug).replace(/'/g, "\\'") + '\')">' + (g.project ? 'Move here' : 'Link') + '</button>';
+      return grantRowHtml(g, btn, elsewhere);
     }).join('');
+  }
+  async function linkGrant(grantId, projectSlug) {
+    setMsg('gr-msg', 'Saving…', '');
+    try {
+      const r = await fetch('/api/project-link-grant', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, grantId: grantId, projectSlug: projectSlug }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not update the grant link');
+      setMsg('gr-msg', projectSlug ? 'Grant linked ✓' : 'Grant unlinked ✓', 'ok');
+      showToast(projectSlug ? '✅ Grant linked' : '✅ Grant unlinked');
+      await loadAllGrants(true);
+      await openProject(currentSlug);
+      showTab('grants');
+    } catch (e) { setMsg('gr-msg', e.message, 'err'); }
   }
 
   function renderVolunteers() {
@@ -738,7 +964,40 @@
     const rate = Number(detail.project.hourRate || x.hourRate || 0);
     document.getElementById('vol-rate-note').textContent =
       'Hours are read live from confirmed working bees. Indicative value = ' + (v.totalHours || 0).toLocaleString('en-AU') + ' hrs × ' + money(rate) + ' = ' + money((v.totalHours || 0) * rate) + '.';
-    fillGroupSelect(document.getElementById('vol-select'), detail.project.volunteerGroups || []);
+    renderVolChecks();
+  }
+  // Discoverable checkbox list of volunteer groups, pre-ticked for linked groups.
+  // Preserves any already-linked group not present in availableGroups.
+  function renderVolChecks() {
+    const box = document.getElementById('vol-checks');
+    if (!box) return;
+    const avail = detail.availableGroups || availableGroups || [];
+    const linked = (detail.project.volunteerGroups || []);
+    const seen = {};
+    const items = [];
+    avail.forEach(function(g) {
+      seen[g.path] = true;
+      const on = linked.some(function(l) { return l.path === g.path; });
+      items.push({ path: g.path, title: g.title || g.path, on: on });
+    });
+    linked.forEach(function(l) {
+      if (l.path && !seen[l.path]) items.push({ path: l.path, title: (l.title || l.path) + ' (current)', on: true });
+    });
+    if (!items.length) {
+      box.innerHTML = '<div class="empty">No volunteer groups found yet — groups appear here once people volunteer via the website. <a class="link-btn" href="/admin/volunteers/">Open Volunteer hub →</a></div>';
+      return;
+    }
+    box.innerHTML = items.map(function(o, i) {
+      return '<div class="chk-row">' +
+        '<input type="checkbox" id="volchk-' + i + '" value="' + esc(o.path) + '" data-title="' + esc(o.title) + '"' + (o.on ? ' checked' : '') + '>' +
+        '<label for="volchk-' + i + '">' + esc(o.title) + '</label>' +
+      '</div>';
+    }).join('');
+  }
+  function readVolChecks() {
+    return [].slice.call(document.querySelectorAll('#vol-checks input[type=checkbox]:checked')).map(function(c) {
+      return { path: c.value, title: (c.dataset.title || c.value).replace(/ \(current\)$/, '') };
+    });
   }
 
   // ── Overview saves (exec + hub link) ───────────────────────────
@@ -798,7 +1057,7 @@
   }
   async function saveVolGroups() {
     const btn = document.getElementById('vol-groups-save'); btn.disabled = true;
-    await saveProjectPatch({ volunteerGroups: readGroupSelect(document.getElementById('vol-select')) }, 'vol-groups-msg', 'Linked groups saved ✓');
+    await saveProjectPatch({ volunteerGroups: readVolChecks() }, 'vol-groups-msg', 'Linked groups saved ✓');
     btn.disabled = false;
   }
 
