@@ -8,6 +8,7 @@
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/admin/vendor/qrcode.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; }
   :root {
@@ -199,6 +200,93 @@
   .toast.show { opacity: 1; }
   .foot-links { text-align: center; margin-top: 30px; font-size: 14.5px; }
   .foot-links a { color: var(--soft); }
+
+  /* ── QR sign-up card ──────────────────────────────────────────── */
+  .qr-card {
+    background: white; border: 2px solid var(--line); border-radius: 16px; padding: 22px 18px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04); text-align: center; margin-bottom: 16px;
+  }
+  .qr-card h3 { font-size: 20px; font-weight: 800; color: #143d2e; margin-bottom: 4px; }
+  .qr-card .qr-sub { font-size: 15px; color: var(--soft); margin-bottom: 16px; }
+  .qr-box {
+    display: inline-block; background: white; padding: 14px; border-radius: 14px;
+    border: 2px solid var(--green-pale);
+  }
+  .qr-box img, .qr-box canvas { display: block; }
+  .qr-group { font-size: 18px; font-weight: 800; color: var(--green); margin: 14px 0 4px; }
+  .qr-caption { font-size: 15px; color: var(--soft); margin-bottom: 16px; }
+  .qr-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .qr-actions .full { grid-column: 1 / -1; }
+  .qr-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    border: 2px solid var(--line); border-radius: 12px; background: white; color: #143d2e;
+    font-family: inherit; font-size: 16px; font-weight: 700; padding: 14px 10px; cursor: pointer;
+  }
+  .qr-btn:hover { border-color: var(--green); background: #fbfefc; }
+  .qr-link {
+    font-size: 13.5px; color: var(--soft); word-break: break-all; margin-top: 12px;
+    background: #f4f7f5; border-radius: 8px; padding: 8px 10px;
+  }
+
+  /* ── Richer roster rows ───────────────────────────────────────── */
+  .vol-badges { margin-top: 4px; }
+  .vol-badge {
+    display: inline-block; font-size: 13px; font-weight: 700; border-radius: 999px;
+    padding: 2px 10px; margin: 3px 6px 0 0; vertical-align: middle;
+  }
+  .badge-member { background: var(--green-pale); color: #0f5c48; }
+  .badge-hours { background: #eef3ff; color: #2b4c8c; }
+  .badge-milestone { background: #fff4d6; color: #8a6100; }
+  .vol-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .vol-act {
+    display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+    border: 2px solid var(--line); border-radius: 10px; background: white; color: #143d2e;
+    font-family: inherit; font-size: 15px; font-weight: 700; padding: 9px 14px; cursor: pointer;
+    min-height: 44px;
+  }
+  .vol-act:hover { border-color: var(--green); background: #fbfefc; }
+
+  /* ── Leaderboard / milestones ─────────────────────────────────── */
+  .board-card {
+    background: white; border: 2px solid var(--line); border-radius: 16px; padding: 18px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 18px;
+  }
+  .board-card h3 { font-size: 18px; font-weight: 800; color: #143d2e; margin-bottom: 4px; }
+  .board-sub { font-size: 14.5px; color: var(--soft); margin-bottom: 12px; }
+  .board-row {
+    display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line);
+  }
+  .board-row:first-of-type { border-top: none; }
+  .board-rank { font-size: 22px; width: 30px; text-align: center; flex-shrink: 0; }
+  .board-name { flex: 1; font-size: 17px; font-weight: 700; color: #143d2e; }
+  .board-hrs { font-size: 16px; font-weight: 800; color: var(--green); }
+
+  /* ── Print: posters & sign-in sheet ───────────────────────────── */
+  .print-only { display: none; }
+  @media print {
+    body { background: white; }
+    body > *:not(.print-only) { display: none !important; }
+    .print-only { display: block !important; }
+    .poster {
+      text-align: center; padding: 30mm 18mm; color: #143d2e; font-family: Georgia, 'Times New Roman', serif;
+    }
+    .poster .p-kicker { font-size: 20pt; letter-spacing: 0.15em; text-transform: uppercase; color: #15795f; }
+    .poster h1 { font-size: 46pt; font-weight: 800; margin: 10mm 0 4mm; line-height: 1.1; }
+    .poster .p-group { font-size: 26pt; font-weight: 700; color: #15795f; margin-bottom: 12mm; }
+    .poster .p-qr { display: inline-block; padding: 6mm; border: 3px solid #15795f; border-radius: 6mm; }
+    .poster .p-qr img, .poster .p-qr canvas { width: 70mm !important; height: 70mm !important; }
+    .poster .p-line { font-size: 18pt; margin: 12mm 0 6mm; }
+    .poster .p-url { font-size: 18pt; font-weight: 800; color: #15795f; }
+    .sheet { padding: 12mm; color: #143d2e; font-family: -apple-system, Arial, sans-serif; }
+    .sheet h1 { font-size: 22pt; margin-bottom: 2mm; }
+    .sheet .s-meta { font-size: 13pt; color: #444; margin-bottom: 8mm; }
+    .sheet table { width: 100%; border-collapse: collapse; }
+    .sheet th, .sheet td { border: 1px solid #333; padding: 6mm 4mm; text-align: left; font-size: 12pt; }
+    .sheet th { background: #e7f6ee; font-size: 12pt; }
+    .sheet .c-hours { width: 18mm; }
+    .sheet .c-sign { width: 55mm; }
+    @page { size: A4; margin: 0; }
+  }
 </style>
 </head>
 <body>
@@ -247,6 +335,22 @@
         <span class="task-icon">💚</span>
         <span>Our volunteers &amp; hours<span class="task-sub">Everyone in the group, and where we've worked</span></span>
       </button>
+
+      <!-- ═══ QR SIGN-UP ═══ -->
+      <div class="qr-card" id="qr-card">
+        <h3>🙋 Sign someone up now</h3>
+        <div class="qr-sub">Out and about? Let someone join on the spot.</div>
+        <div class="qr-box" id="qr-box"></div>
+        <div class="qr-group" id="qr-group"></div>
+        <div class="qr-caption" id="qr-caption">Point a phone camera here to join.</div>
+        <div class="qr-actions">
+          <button class="qr-btn" onclick="copySignupLink()">🔗 Copy link</button>
+          <button class="qr-btn" onclick="printPoster()">🖨️ Print poster</button>
+          <a class="qr-btn" id="qr-sms" href="#">💬 Text it</a>
+          <a class="qr-btn" id="qr-wa" href="#" target="_blank" rel="noopener">🟢 WhatsApp</a>
+        </div>
+        <div class="qr-link" id="qr-link"></div>
+      </div>
 
       <p class="hint">Stuck? <a href="/admin/playbook/#volunteers">Read the one-page guide</a>.</p>
       <div class="foot-links" id="admin-foot" style="display:none;"><a href="/admin/volunteers/?console=1">Open the full admin console →</a></div>
@@ -310,11 +414,13 @@
       <div id="who-list"></div>
       <label class="fl" for="extra-name">Someone new turned up? Add their name:</label>
       <div class="who-row add-name" style="border-style:dashed;">
-        <input type="text" id="extra-name" maxlength="200" placeholder="e.g. Joan from Amaroo Drive" style="border:none; padding:6px 2px; font-size:17px;" />
+        <input type="text" id="extra-name" list="known-names" maxlength="200" placeholder="e.g. Joan from Amaroo Drive" style="border:none; padding:6px 2px; font-size:17px;" />
         <button class="hours-btn" style="width:auto; padding:0 16px; font-size:16px;" onclick="addExtra()">Add</button>
       </div>
+      <datalist id="known-names"></datalist>
       <div class="wizard-total" id="who-total">No one ticked yet</div>
       <button class="big-btn big-green" id="save-bee" onclick="finishWizard()">Next → Finish</button>
+      <button class="big-btn big-plain" onclick="printSignInSheet()">🖨️ Print a paper sign-in sheet</button>
     </div>
 
     <!-- ═══ WIZARD 4 — DONE + SHARE ═══ -->
@@ -348,12 +454,16 @@
         <div id="trail-map"></div>
       </div>
       <div style="margin:10px 0 22px;" id="trail-list"></div>
+      <div id="recognition"></div>
       <div class="h2" style="font-size:19px;">💚 The team</div>
       <div style="margin-top:10px;" id="team-list"></div>
     </div>
 
   </div>
 </div>
+
+<!-- ═══ PRINT SURFACES (only shown when printing) ═══ -->
+<div class="print-only" id="print-surface"></div>
 
 <div class="toast" id="toast"></div>
 
@@ -497,7 +607,73 @@
     document.getElementById('vol-group-name').textContent = g.title;
     document.getElementById('trail-title').textContent = 'The ' + shortName(g.title) + ' trail — where we\'ve worked';
     updateCounts();
+    renderQrCard();
     go('s-home');
+  }
+
+  // ── QR sign-up + poster + share ────────────────────────────────
+  function signupUrl() {
+    const path = String((GROUP && GROUP.path) || '').replace(/^\/+|\/+$/g, '');
+    return 'https://villagefirst.org.au/' + (path ? path + '/' : '');
+  }
+
+  function makeQr(el, url, size) {
+    if (!el) return;
+    el.innerHTML = '';
+    try {
+      if (typeof QRCode === 'undefined') { el.textContent = url; return; }
+      new QRCode(el, { text: url, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
+    } catch (e) { el.textContent = url; }
+  }
+
+  function renderQrCard() {
+    if (!GROUP) return;
+    const url = signupUrl();
+    makeQr(document.getElementById('qr-box'), url, 220);
+    document.getElementById('qr-group').textContent = GROUP.title;
+    document.getElementById('qr-caption').textContent = 'Point a phone camera here to join ' + GROUP.title + '.';
+    document.getElementById('qr-link').textContent = url;
+    const msg = 'Join the ' + shortName(GROUP.title) + ' volunteers at Smiths Lake — sign up here: ' + url;
+    const sms = document.getElementById('qr-sms');
+    sms.href = 'sms:?&body=' + encodeURIComponent(msg);
+    const wa = document.getElementById('qr-wa');
+    wa.href = 'https://wa.me/?text=' + encodeURIComponent(msg);
+  }
+
+  function copySignupLink() {
+    const url = signupUrl();
+    const done = () => toast('🔗 Link copied — paste it anywhere');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(() => fallbackCopy(url, done));
+    } else { fallbackCopy(url, done); }
+  }
+  function fallbackCopy(text, done) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta); done();
+    } catch (e) { toast('Copy failed — here it is: ' + text); }
+  }
+
+  function printPoster() {
+    if (!GROUP) return;
+    const url = signupUrl();
+    const surface = document.getElementById('print-surface');
+    surface.innerHTML =
+      '<div class="poster">' +
+        '<div class="p-kicker">Volunteer with us</div>' +
+        '<h1>Lend a hand at Smiths Lake</h1>' +
+        '<div class="p-group">' + esc(GROUP.title) + '</div>' +
+        '<div class="p-qr" id="poster-qr"></div>' +
+        '<div class="p-line">Scan with your phone camera to sign up —<br>no app, no fuss. Everyone welcome.</div>' +
+        '<div class="p-url">villagefirst.org.au</div>' +
+      '</div>';
+    makeQr(document.getElementById('poster-qr'), url, 320);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => { surface.innerHTML = ''; }, 500);
+    }, 120);
   }
 
   function shortName(title) { return title.split(/[—&-]/)[0].trim() || title; }
@@ -692,7 +868,31 @@
       el.appendChild(row);
     });
     if (!names.length) el.innerHTML = '<div class="sub">No volunteers on the list yet — add whoever came below.</div>';
+    // Returning-volunteer autocomplete for the free-text "add someone new" input.
+    const dl = document.getElementById('known-names');
+    if (dl) dl.innerHTML = groupVolunteers().map(v =>
+      '<option value="' + esc(v.name) + '"></option>').join('');
     updateWhoTotal();
+  }
+
+  // Paper fallback: a blank attendance sheet for the working bee.
+  function printSignInSheet() {
+    const surface = document.getElementById('print-surface');
+    const rows = Array.from({ length: 15 }).map(() =>
+      '<tr><td>&nbsp;</td><td>&nbsp;</td><td class="c-hours">&nbsp;</td><td class="c-sign">&nbsp;</td></tr>').join('');
+    surface.innerHTML =
+      '<div class="sheet">' +
+        '<h1>Working bee sign-in</h1>' +
+        '<div class="s-meta">' + esc(GROUP ? GROUP.title : '') + ' · ' + esc(VILLAGE) +
+          ' &nbsp;·&nbsp; Date: ' + fmtDate(beeDate) + '</div>' +
+        '<table><thead><tr>' +
+          '<th>Name</th><th>Phone</th><th class="c-hours">Hours</th><th class="c-sign">Signature</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '</div>';
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => { surface.innerHTML = ''; }, 500);
+    }, 120);
   }
 
   function toggleWho(name) { if (who[name] != null) delete who[name]; else who[name] = 2; renderWho(); }
@@ -832,6 +1032,79 @@
     return (now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1) + '-07-01';
   }
 
+  // Per-volunteer stats across the group's (non-draft) activities:
+  // cumulative hours (matched by volunteerId, else by lowercased name) + last-active date.
+  function volunteerStats() {
+    const acts = groupActivities().filter(a => a.status !== 'Draft');
+    const hours = {}, last = {};
+    acts.forEach(a => (a.attendance || []).forEach(x => {
+      const key = x.volunteerId || (x.name || '').toLowerCase();
+      hours[key] = (hours[key] || 0) + (x.hours || 0);
+      if (a.date && (!last[key] || a.date > last[key])) last[key] = a.date;
+    }));
+    const get = (v) => {
+      const byId = v.id != null ? hours[v.id] : undefined;
+      const byName = hours[(v.name || '').toLowerCase()];
+      const h = Math.round(((byId != null ? byId : (byName || 0))) * 2) / 2;
+      const ld = (v.id != null && last[v.id]) || last[(v.name || '').toLowerCase()] || null;
+      return { hours: h, last: ld };
+    };
+    return { get };
+  }
+
+  // Milestone badge for cumulative hours (gentle, community-spirited).
+  function milestoneBadge(hrs) {
+    if (hrs >= 100) return { emoji: '🏆', label: '100+ hours' };
+    if (hrs >= 50)  return { emoji: '🌟', label: '50+ hours' };
+    if (hrs >= 25)  return { emoji: '🥇', label: '25+ hours' };
+    if (hrs >= 10)  return { emoji: '🌿', label: '10+ hours' };
+    return null;
+  }
+
+  // Recognition: gentle leaderboard (top hours) + fresh-milestone celebration.
+  function renderRecognition(gvols, stats) {
+    const el = document.getElementById('recognition');
+    if (!el) return;
+    const ranked = gvols
+      .map(v => ({ name: v.name, ...stats.get(v) }))
+      .filter(v => v.hours > 0)
+      .sort((a, b) => (b.hours - a.hours) || String(b.last || '').localeCompare(String(a.last || '')));
+    if (!ranked.length) { el.innerHTML = ''; return; }
+
+    const medals = ['🥇', '🥈', '🥉'];
+    const top = ranked.slice(0, 5);
+    const board =
+      '<div class="board-card">' +
+        '<h3>🌻 Hours hall of fame</h3>' +
+        '<div class="board-sub">A gentle thank-you to everyone lending a hand — every hour helps the village.</div>' +
+        top.map((v, i) =>
+          '<div class="board-row">' +
+            '<span class="board-rank">' + (medals[i] || '💚') + '</span>' +
+            '<span class="board-name">' + esc(v.name) + '</span>' +
+            '<span class="board-hrs">' + v.hours + ' hrs</span>' +
+          '</div>').join('') +
+      '</div>';
+
+    // Milestone celebrations (people who've crossed a threshold).
+    const celebrated = ranked
+      .map(v => ({ name: v.name, ms: milestoneBadge(v.hours) }))
+      .filter(v => v.ms);
+    const milestones = celebrated.length
+      ? '<div class="board-card">' +
+          '<h3>🎉 Milestones</h3>' +
+          '<div class="board-sub">Give these folks a wave next time you see them.</div>' +
+          celebrated.map(v =>
+            '<div class="board-row">' +
+              '<span class="board-rank">' + v.ms.emoji + '</span>' +
+              '<span class="board-name">' + esc(v.name) + '</span>' +
+              '<span class="board-hrs">' + v.ms.label + '</span>' +
+            '</div>').join('') +
+        '</div>'
+      : '';
+
+    el.innerHTML = board + milestones;
+  }
+
   function renderVolunteers() {
     const acts = groupActivities().filter(a => a.status !== 'Draft');
     const fy = acts.filter(a => (a.date || '') >= fyStart());
@@ -840,17 +1113,44 @@
       ? 'This year the group has given <b>' + fyHours + ' hours</b> across <b>' + fy.length + ' working ' + (fy.length === 1 ? 'bee' : 'bees') + '</b>. Every hour counts toward the village\'s grant applications. 💪'
       : 'No working bees written down yet this year — after your first one, the hours and the map fill in here. 💪';
 
-    // Per-person hours (matched by volunteerId, falling back to name)
-    const perPerson = {};
-    acts.forEach(a => (a.attendance || []).forEach(x => {
-      const key = x.volunteerId || x.name.toLowerCase();
-      perPerson[key] = (perPerson[key] || 0) + (x.hours || 0);
-    }));
-    document.getElementById('team-list').innerHTML = groupVolunteers().map(v => {
-      const hrs = Math.round(((perPerson[v.id] || perPerson[v.name.toLowerCase()] || 0)) * 2) / 2;
-      const sub = [v.status === 'Applied' ? 'waiting for a yes' : '', v.phone || v.email, hrs ? hrs + ' hrs' : ''].filter(Boolean).join(' · ');
-      return '<div class="vol-row"><div class="vol-main"><div class="vol-name">' + esc(v.name) + '</div>' +
-        '<div class="vol-sub">' + esc(sub) + '</div></div></div>';
+    const stats = volunteerStats();
+    const gvols = groupVolunteers();
+
+    // Recognition: leaderboard (top by hours, most-recent tiebreak) + milestone celebrations.
+    renderRecognition(gvols, stats);
+
+    // Richer roster: contact quick-actions, member + hours badges, last-active, "say thanks".
+    document.getElementById('team-list').innerHTML = gvols.map(v => {
+      const st = stats.get(v);
+      const badges = [];
+      if (v.isMember) badges.push('<span class="vol-badge badge-member">Member</span>');
+      if (st.hours) badges.push('<span class="vol-badge badge-hours">' + st.hours + ' hrs</span>');
+      const ms = milestoneBadge(st.hours);
+      if (ms) badges.push('<span class="vol-badge badge-milestone">' + ms.emoji + ' ' + ms.label + '</span>');
+      const sub = [
+        v.status === 'Applied' ? 'waiting for a yes' : '',
+        'last active: ' + (st.last ? fmtDate(st.last) : '—'),
+      ].filter(Boolean).join(' · ');
+      const nm = esc(v.name);
+      const acts2 = [];
+      if (v.phone) acts2.push('<a class="vol-act" href="tel:' + esc(v.phone) + '">📞 Call</a>');
+      if (v.email) acts2.push('<a class="vol-act" href="mailto:' + esc(v.email) + '">✉️ Email</a>');
+      if (v.phone) acts2.push('<a class="vol-act" href="sms:' + esc(v.phone) + '">💬 Text</a>');
+      if (v.email) {
+        const subj = 'Thank you from ' + shortName(GROUP.title);
+        const body = 'Hi ' + (v.name || '').split(' ')[0] + ',\n\n' +
+          'Just a quick note to say thank you for your help with the ' + shortName(GROUP.title) +
+          ' volunteers here at ' + VILLAGE + '. It genuinely makes a difference to our patch — we\'re grateful to have you.\n\n' +
+          'With thanks,\nThe ' + shortName(GROUP.title) + ' team';
+        acts2.push('<a class="vol-act" href="mailto:' + esc(v.email) +
+          '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body) + '">💚 Say thanks</a>');
+      }
+      return '<div class="vol-row" style="flex-direction:column;align-items:stretch;">' +
+        '<div class="vol-main"><div class="vol-name">' + nm + '</div>' +
+        '<div class="vol-sub">' + esc(sub) + '</div>' +
+        (badges.length ? '<div class="vol-badges">' + badges.join('') + '</div>' : '') + '</div>' +
+        (acts2.length ? '<div class="vol-actions">' + acts2.join('') + '</div>' : '') +
+      '</div>';
     }).join('') || '<div class="sub">No volunteers yet — share your group\'s page with the village!</div>';
 
     // Trail map — artwork mode (the group's own illustrated map) or tile mode.

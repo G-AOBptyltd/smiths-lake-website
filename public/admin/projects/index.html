@@ -230,8 +230,10 @@
           <div class="lock-note">Takes effect on the next website publish.</div>
           <div class="form-acts" style="margin-top:12px;">
             <button class="btn btn-g" id="ov-hub-save" onclick="saveHubLink()">Save link</button>
+            <button class="btn btn-s" id="ov-hub-publish" onclick="publishToHub()">Create / refresh Hub card</button>
             <span class="msg" id="ov-hub-msg"></span>
           </div>
+          <div class="lock-note">"Create / refresh Hub card" makes a <b>draft</b> Project Hub page (hidden until you add photos in Notion and run Publish website).</div>
         </div>
       </div>
 
@@ -743,6 +745,26 @@
       hubSlug: document.getElementById('ov-hub').value,
       publishToHub: document.getElementById('ov-publish').checked,
     }, 'ov-hub-msg', 'Project Hub link saved ✓');
+    btn.disabled = false;
+  }
+  async function publishToHub() {
+    if (!detail || !detail.project) return;
+    const btn = document.getElementById('ov-hub-publish'); btn.disabled = true;
+    const msg = document.getElementById('ov-hub-msg'); msg.textContent = 'Working…';
+    // Persist the current link/checkbox first so the server sees the intent.
+    await saveProjectPatch({
+      hubSlug: document.getElementById('ov-hub').value,
+      publishToHub: document.getElementById('ov-publish').checked,
+    }, 'ov-hub-msg', '');
+    try {
+      const r = await fetch('/api/project-hub-publish', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, projectId: detail.project.id }),
+      });
+      const d = await r.json();
+      msg.textContent = r.ok ? (d.message || 'Done ✓') : ('⚠️ ' + (d.error || 'Could not publish to the hub'));
+      if (r.ok) await openProject(detail.project.slug);
+    } catch (_) { msg.textContent = '⚠️ Network error'; }
     btn.disabled = false;
   }
   async function saveHourRate() {

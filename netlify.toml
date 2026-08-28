@@ -84,8 +84,8 @@
   status = 200
 
 [[redirects]]
-  from = "/api/projects-report"
-  to = "/.netlify/functions/projects-report"
+  from = "/api/project-hub-publish"
+  to = "/.netlify/functions/project-hub-publish"
   status = 200
 
 [[redirects]]
