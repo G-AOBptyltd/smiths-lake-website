@@ -50,6 +50,7 @@
   .p-card-stat { flex: 1; min-width: 0; }
   .p-card-stat .n { font-size: 15px; font-weight: 900; color: #0f172a; line-height: 1; }
   .p-card-stat .l { font-size: 10px; color: #6b7280; font-weight: 600; margin-top: 4px; }
+  .p-card-acts { display: flex; gap: 6px; justify-content: flex-end; margin-top: 11px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
 
   .pill { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
   .st-Draft { background: #f1f5f9; color: #475569; }
@@ -200,6 +201,8 @@
         </div>
         <div class="ph-acts">
           <button class="btn btn-s" onclick="editCurrentProject()">Edit project</button>
+          <button class="btn btn-s" id="d-archive" onclick="archiveCurrentProject()">Archive</button>
+          <button class="btn btn-r" onclick="deleteCurrentProject()">🗑 Delete</button>
           <button class="btn btn-s" onclick="showList()">← All projects</button>
         </div>
       </div>
@@ -495,6 +498,8 @@
   // ── Formatting / helpers ───────────────────────────────────────
   function money(n) { if (n == null || n === '') return '$0'; return '$' + Math.round(Number(n)).toLocaleString('en-AU'); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
+  // Safe single-quoted JS string literal for use inside a double-quoted onclick="".
+  function jsArg(s) { return "'" + String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + "'"; }
   function pct(frac) { return ((Number(frac) || 0) * 100).toFixed(1) + '%'; }
   function fmtDate(d) { if (!d) return ''; const dt = new Date(d); if (isNaN(dt)) return esc(d); return dt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }); }
   function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(function() { t.classList.remove('show'); }, 3500); }
@@ -634,27 +639,89 @@
       el.innerHTML = '<div class="empty">⚠️ ' + esc(e.message) + '</div>';
     }
   }
+  let showArchived = false;
+  function projectCard(p, archived) {
+    const st = p.status || 'Draft';
+    const slug = esc(p.slug).replace(/'/g, "\\'");
+    const pid = esc(p.id).replace(/'/g, "\\'");
+    const nm = jsArg(p.name || 'Untitled');
+    const actions = archived
+      ? '<button class="btn btn-s" onclick="event.stopPropagation();restoreProject(\'' + pid + '\')">♻ Restore</button>' +
+        '<button class="btn btn-r" onclick="event.stopPropagation();deleteProject(\'' + pid + '\',' + nm + ')">🗑 Delete</button>'
+      : '<button class="btn btn-s" onclick="event.stopPropagation();archiveProject(\'' + pid + '\')">Archive</button>' +
+        '<button class="btn btn-r" onclick="event.stopPropagation();deleteProject(\'' + pid + '\',' + nm + ')">🗑</button>';
+    return '<div class="p-card" style="' + (archived ? 'opacity:.6;' : '') + '" onclick="openProject(\'' + slug + '\')">' +
+      '<div class="p-card-head">' +
+        '<div class="p-card-name">' + esc(p.name || 'Untitled') + '</div>' +
+        '<span class="pill st-' + esc(st) + '">' + esc(st) + '</span>' +
+      '</div>' +
+      '<div class="p-card-prog">' + (p.grantProgram ? esc(p.grantProgram) : '<span style="color:#cbd5e1;">No grant program</span>') + '</div>' +
+      '<div class="p-card-stats">' +
+        '<div class="p-card-stat"><div class="n">' + money(p.budgetTotal) + '</div><div class="l">Budget total</div></div>' +
+        '<div class="p-card-stat"><div class="n">' + money(p.grantAwarded) + '</div><div class="l">Grant awarded</div></div>' +
+        '<div class="p-card-stat"><div class="n">' + (p.groupCount || 0) + '</div><div class="l">Vol. groups</div></div>' +
+      '</div>' +
+      '<div class="p-card-acts" onclick="event.stopPropagation();">' + actions + '</div>' +
+    '</div>';
+  }
   function renderList() {
     const el = document.getElementById('p-list');
+    const active = projects.filter(function(p) { return (p.status || 'Draft') !== 'Archived'; });
+    const archived = projects.filter(function(p) { return (p.status || 'Draft') === 'Archived'; });
     if (!projects.length) {
       el.innerHTML = '<div class="empty">No projects yet — create one with “+ New project”.</div>';
       return;
     }
-    el.innerHTML = '<div class="p-cards">' + projects.map(function(p) {
-      const st = p.status || 'Draft';
-      return '<div class="p-card" onclick="openProject(\'' + esc(p.slug).replace(/'/g, "\\'") + '\')">' +
-        '<div class="p-card-head">' +
-          '<div class="p-card-name">' + esc(p.name || 'Untitled') + '</div>' +
-          '<span class="pill st-' + esc(st) + '">' + esc(st) + '</span>' +
-        '</div>' +
-        '<div class="p-card-prog">' + (p.grantProgram ? esc(p.grantProgram) : '<span style="color:#cbd5e1;">No grant program</span>') + '</div>' +
-        '<div class="p-card-stats">' +
-          '<div class="p-card-stat"><div class="n">' + money(p.budgetTotal) + '</div><div class="l">Budget total</div></div>' +
-          '<div class="p-card-stat"><div class="n">' + money(p.grantAwarded) + '</div><div class="l">Grant awarded</div></div>' +
-          '<div class="p-card-stat"><div class="n">' + (p.groupCount || 0) + '</div><div class="l">Vol. groups</div></div>' +
-        '</div>' +
-      '</div>';
-    }).join('') + '</div>';
+    let html = active.length
+      ? '<div class="p-cards">' + active.map(function(p) { return projectCard(p, false); }).join('') + '</div>'
+      : '<div class="empty">No active projects. ' + (archived.length ? 'See archived below.' : 'Create one with “+ New project”.') + '</div>';
+    if (archived.length) {
+      html += '<div style="margin-top:18px;"><button class="btn btn-s" onclick="toggleArchived()">' +
+        (showArchived ? '▾ Hide' : '▸ Show') + ' archived (' + archived.length + ')</button></div>';
+      if (showArchived) {
+        html += '<div class="p-cards" style="margin-top:12px;">' + archived.map(function(p) { return projectCard(p, true); }).join('') + '</div>';
+      }
+    }
+    el.innerHTML = html;
+  }
+  function toggleArchived() { showArchived = !showArchived; renderList(); }
+  async function projectLifecycle(projectId, action) {
+    const r = await fetch('/api/projects-lifecycle', {
+      method: 'POST', headers: await authHeaders(),
+      body: JSON.stringify({ village: VILLAGE, projectId: projectId, action: action }),
+    });
+    const d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || 'Action failed');
+    return d;
+  }
+  async function archiveProject(projectId) {
+    try { await projectLifecycle(projectId, 'archive'); showToast('Project archived'); await loadProjects(); }
+    catch (e) { showToast('⚠️ ' + e.message); }
+  }
+  async function restoreProject(projectId) {
+    try { await projectLifecycle(projectId, 'restore'); showToast('Project restored'); await loadProjects(); }
+    catch (e) { showToast('⚠️ ' + e.message); }
+  }
+  async function deleteProject(projectId, name) {
+    if (!confirm('Delete “' + name + '”?\n\nIt will be moved to Notion trash (recoverable) and removed from the list. Its budget, schedule and grant links stay in Notion. Tip: Archive instead if you just want it out of the way.')) return;
+    try { await projectLifecycle(projectId, 'delete'); showToast('🗑 Project deleted'); await loadProjects(); }
+    catch (e) { showToast('⚠️ ' + (e.message.indexOf('permission') > -1 || e.message.indexOf('Insufficient') > -1 ? 'Only a Village Admin can delete a project.' : e.message)); }
+  }
+  // Drill-in header actions (operate on the open project).
+  async function archiveCurrentProject() {
+    if (!detail || !detail.project) return;
+    const isArch = (detail.project.status || 'Draft') === 'Archived';
+    try {
+      await projectLifecycle(detail.project.id, isArch ? 'restore' : 'archive');
+      showToast(isArch ? 'Project restored' : 'Project archived');
+      if (isArch) { await openProject(currentSlug); } else { showList(); await loadProjects(); }
+    } catch (e) { showToast('⚠️ ' + e.message); }
+  }
+  async function deleteCurrentProject() {
+    if (!detail || !detail.project) return;
+    if (!confirm('Delete “' + (detail.project.name || 'this project') + '”?\n\nIt will be moved to Notion trash (recoverable). Its budget, schedule and grant links stay in Notion. Tip: Archive instead if you just want it out of the way.')) return;
+    try { await projectLifecycle(detail.project.id, 'delete'); showToast('🗑 Project deleted'); showList(); await loadProjects(); }
+    catch (e) { showToast('⚠️ ' + (e.message.indexOf('permission') > -1 || e.message.indexOf('Insufficient') > -1 ? 'Only a Village Admin can delete a project.' : e.message)); }
   }
 
   // ── VIEW 2 — Project drill-in ──────────────────────────────────
@@ -686,6 +753,8 @@
     const stEl = document.getElementById('d-status');
     stEl.textContent = st; stEl.className = 'pill st-' + st;
     document.getElementById('d-sub').textContent = [p.grantProgram, p.lead ? 'Lead: ' + p.lead : ''].filter(Boolean).join(' · ');
+    const archBtn = document.getElementById('d-archive');
+    if (archBtn) archBtn.textContent = (st === 'Archived') ? '♻ Restore' : 'Archive';
     resetBudgetForm();
     resetScheduleForm();
     renderOverview();

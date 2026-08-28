@@ -99,6 +99,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/projects-lifecycle"
+  to = "/.netlify/functions/projects-lifecycle"
+  status = 200
+
+[[redirects]]
   from = "/api/identity-admin"
   to = "/.netlify/functions/identity-admin"
   status = 200
