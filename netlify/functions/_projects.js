@@ -237,6 +237,30 @@ export async function aggregateVolunteers(village, groups) {
 }
 
 /**
+ * Distinct volunteer GROUPS (content cards) for a village — the {path,title}
+ * set drawn from VF Volunteers' linked cards and VF Activities. PII-free, so it
+ * can back the Projects group-picker for roles (pm/treasurer) that can't read
+ * the volunteer roster. Fail-open to [].
+ */
+export async function listGroups(village) {
+  const map = new Map();
+  const add = (path, title) => {
+    const key = normPath(path);
+    if (!key) return;
+    if (!map.has(key)) map.set(key, { path, title: title || path });
+  };
+  try {
+    const [volRows, actRows] = await Promise.all([
+      VOLUNTEERS_DB_ID ? vfQueryAll(VOLUNTEERS_DB_ID, { property: 'Village', rich_text: { equals: village } }) : Promise.resolve([]),
+      ACTIVITIES_DB_ID ? vfQueryAll(ACTIVITIES_DB_ID, { property: 'Village', rich_text: { equals: village } }) : Promise.resolve([]),
+    ]);
+    volRows.map(parseVolunteer).forEach((v) => (v.cards || []).forEach((c) => add(c.path, c.title)));
+    actRows.map(parseActivity).forEach((a) => add(a.cardPath, a.cardTitle));
+  } catch (_) { /* fail-open */ }
+  return [...map.values()].sort((a, b) => a.title.localeCompare(b.title));
+}
+
+/**
  * The exec/steering-committee number set for one project. Combines the cocon
  * rollups (cash/WIK/co-contribution %), grants (requested vs awarded) and the
  * indicative volunteer valuation. Pure — pass in already-fetched pieces.

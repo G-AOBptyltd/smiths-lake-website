@@ -377,7 +377,7 @@
   let detail = null;            // from /api/projects-get { project, schedule, budget, rollups, grants, volunteers, exec }
   let currentSlug = '';
   let hubCards = [];            // from /api/project-list (Project Hub content items)
-  let availableGroups = [];     // [{path,title}] derived from /api/volunteer-roster
+  let availableGroups = [];     // [{path,title}] from projects-list/get (PII-free, pm-readable)
   let editingSlug = '';         // slug of the project being edited (blank = create)
 
   // ── Auth (self-healing dead session — mirrors /admin/index.html) ──
@@ -491,18 +491,13 @@
 
   // ── Volunteer groups (derived from the roster) ────────────────
   async function loadGroups() {
+    // availableGroups comes PII-free from the projects endpoints (which the pm /
+    // treasurer roles can read) — not the volunteer roster, which is admin/steward
+    // only. projects-list and projects-get both return it; grab it from the list.
     try {
-      const r = await fetch('/api/volunteer-roster?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const r = await fetch('/api/projects-list?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
       const d = await r.json();
-      const seen = {};
-      const list = [];
-      (d.volunteers || []).forEach(function(v) {
-        (v.cards || []).forEach(function(c) {
-          if (c && c.path && !seen[c.path]) { seen[c.path] = true; list.push({ path: c.path, title: c.title || c.path }); }
-        });
-      });
-      list.sort(function(a, b) { return (a.title || '').localeCompare(b.title || ''); });
-      availableGroups = list;
+      availableGroups = Array.isArray(d.availableGroups) ? d.availableGroups : [];
     } catch (e) { availableGroups = []; }
   }
   // Build a multi-select from availableGroups, keeping any already-linked group

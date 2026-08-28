@@ -15,7 +15,7 @@
 import { requireRole } from './_auth.js';
 import {
   PROJECTS_DB, BUDGET_DB, jsonResp, queryAll,
-  parseProject, parseBudget, ensureProjectSchema, grantsForProject,
+  parseProject, parseBudget, ensureProjectSchema, grantsForProject, listGroups,
 } from './_projects.js';
 
 export const handler = async (event, context) => {
@@ -63,7 +63,8 @@ export const handler = async (event, context) => {
       groupCount: (p.volunteerGroups || []).length,
     }));
 
-    return jsonResp(200, { projects: out });
+    const availableGroups = await listGroups(village);
+    return jsonResp(200, { projects: out, availableGroups });
   } catch (err) {
     return jsonResp(502, { error: err.message });
   }

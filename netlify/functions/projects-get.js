@@ -21,7 +21,7 @@ import { computeRollups } from './_cocon-calc.js';
 import {
   PROJECTS_DB, SCHEDULE_DB, BUDGET_DB, jsonResp, queryAll,
   parseProject, parseSchedule, parseBudget, ensureProjectSchema,
-  grantsForProject, aggregateVolunteers, execNumbers,
+  grantsForProject, aggregateVolunteers, execNumbers, listGroups,
 } from './_projects.js';
 
 export const handler = async (event, context) => {
@@ -56,13 +56,14 @@ export const handler = async (event, context) => {
     const budget = budgetPages.map(parseBudget).sort((a, b) => a.order - b.order);
     const rollups = computeRollups(schedule, budget, project);
 
-    const [grants, volunteers] = await Promise.all([
+    const [grants, volunteers, availableGroups] = await Promise.all([
       grantsForProject(village, slug),
       aggregateVolunteers(village, project.volunteerGroups),
+      listGroups(village),
     ]);
     const exec = execNumbers(project, rollups, grants, volunteers);
 
-    return jsonResp(200, { project, schedule, budget, rollups, grants, volunteers, exec });
+    return jsonResp(200, { project, schedule, budget, rollups, grants, volunteers, exec, availableGroups });
   } catch (err) {
     return jsonResp(502, { error: err.message });
   }
