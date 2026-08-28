@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Projects — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; color: #1e293b; font-size: 13px; }
+  button { font-family: inherit; }
+
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .topbar-logout:hover { color: #fff; border-color: rgba(255,255,255,.5); }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; font-family: inherit; max-width: 230px; }
+  .village-select option { color: #1f2937; }
+
+  .wrap { max-width: 960px; margin: 0 auto; padding: 1.4rem 1rem 3rem; }
+  .ph { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .ph-title { font-size: 1.05rem; font-weight: 700; color: #143d2e; }
+  .ph-sub { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+  .ph-acts { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { padding: 6px 13px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
+  .btn-g { background: #0f8f80; color: #fff; } .btn-g:hover { background: #0c7568; }
+  .btn-s { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; } .btn-s:hover { background: #e2e8f0; }
+  .btn-r { background: #fee2e2; color: #dc2626; } .btn-r:hover { background: #fecaca; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-lg { padding: 9px 16px; font-size: 12.5px; }
+
+  /* Projects list */
+  .p-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+  .p-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.1rem; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; display: flex; flex-direction: column; }
+  .p-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.08); border-color: #0f8f80; }
+  .p-card-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .p-card-name { flex: 1; font-size: 15px; font-weight: 800; color: #143d2e; line-height: 1.25; }
+  .p-card-prog { font-size: 11.5px; color: #6b7280; margin-bottom: 12px; min-height: 1em; }
+  .p-card-stats { display: flex; gap: 12px; border-top: 1px solid #eef2f0; padding-top: 11px; margin-top: auto; }
+  .p-card-stat { flex: 1; min-width: 0; }
+  .p-card-stat .n { font-size: 15px; font-weight: 900; color: #0f172a; line-height: 1; }
+  .p-card-stat .l { font-size: 10px; color: #6b7280; font-weight: 600; margin-top: 4px; }
+
+  .pill { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+  .st-Draft { background: #f1f5f9; color: #475569; }
+  .st-Active { background: #dcfce7; color: #166534; }
+  .st-Submitted { background: #dbeafe; color: #1d4ed8; }
+  .st-Archived { background: #f3f4f6; color: #6b7280; }
+  .gt-Researching { background: #f1f5f9; color: #475569; }
+  .gt-Drafting { background: #fef3c7; color: #92400e; }
+  .gt-Submitted { background: #dbeafe; color: #1d4ed8; }
+  .gt-Successful { background: #dcfce7; color: #166534; }
+  .gt-Unsuccessful { background: #fee2e2; color: #b91c1c; }
+  .gt-Withdrawn { background: #f3f4f6; color: #6b7280; }
+
+  /* Drill-in tabs */
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab { font-size: 12px; font-weight: 600; color: #4b5563; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 5px 14px; cursor: pointer; }
+  .tab:hover { background: #f0fdf6; }
+  .tab.on { background: #0f5c48; color: #fff; border-color: #0f5c48; font-weight: 700; }
+  .tabpanel { display: none; } .tabpanel.on { display: block; }
+
+  /* Overview number grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .cell { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+  .cell .n { font-size: 1.15rem; font-weight: 800; color: #0f5c48; line-height: 1.1; }
+  .cell .l { font-size: 11px; color: #6b7280; margin-top: 3px; }
+
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+  .card h3 { font-size: 13px; color: #143d2e; margin-bottom: 10px; }
+  .f-f { margin-bottom: 12px; }
+  .f-l { font-size: 10px; font-weight: 700; color: #374151; margin-bottom: 3px; }
+  .f-hint { font-weight: 400; color: #9ca3af; }
+  .f-i { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 5px; padding: 8px 10px; font-size: 12px; background: #fff; outline: none; font-family: inherit; color: #1e293b; }
+  .f-i:focus { border-color: #0f8f80; }
+  textarea.f-i { resize: vertical; min-height: 70px; line-height: 1.6; }
+  select[multiple].f-i { min-height: 120px; }
+  .f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-acts { display: flex; gap: 8px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
+  .msg { font-size: 11.5px; font-weight: 600; min-height: 1.1em; }
+  .msg.ok { color: #16a34a; } .msg.err { color: #dc2626; }
+  .lock-note { font-size: 11.5px; color: #6b7280; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px; padding: 7px 10px; margin-top: 6px; }
+  .warn-note { font-size: 11.5px; color: #92400e; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 7px; padding: 7px 10px; margin-top: 6px; }
+  .chk-row { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0; }
+  .chk-row input { transform: scale(1.15); accent-color: #0f8f80; margin-top: 2px; }
+  .chk-row label { font-size: 12px; color: #374151; font-weight: 600; }
+
+  /* Read tables */
+  .tbl { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; font-size: 12.5px; }
+  .tbl th { background: #eef2f7; text-align: left; padding: 8px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: #6b7280; }
+  .tbl td { padding: 8px 10px; border-top: 1px solid #f1f5f9; vertical-align: top; }
+  .tbl .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tbl tr.subtotal td { background: #f6faf8; font-weight: 700; }
+  .chip { font-size: 9.5px; font-weight: 700; border-radius: 9px; padding: 2px 7px; white-space: nowrap; }
+  .chip-paid { background: #dcfce7; color: #166534; } .chip-pending { background: #fef3c7; color: #92400e; }
+
+  .g-row { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+  .g-name { font-weight: 700; color: #0f172a; }
+  .g-meta { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .g-amt { margin-left: auto; text-align: right; }
+  .g-amt .a { font-weight: 800; color: #143d2e; }
+  .g-amt .l { font-size: 10px; color: #9ca3af; }
+
+  .empty { text-align: center; padding: 32px 16px; color: #9ca3af; }
+  .note { font-size: 11.5px; color: #6b7280; margin-top: 12px; line-height: 1.5; }
+  .link-btn { background: none; border: none; color: #1d6fb8; font-size: 12px; cursor: pointer; padding: 0; font-family: inherit; text-decoration: none; }
+  .link-btn:hover { text-decoration: underline; }
+
+  .vf-toast { position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 12px; opacity: 0; transition: opacity .3s; z-index: 999; max-width: 360px; }
+  .vf-toast.show { opacity: 1; }
+
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; text-align: center; padding: 1rem; }
+  .auth-screen h1 { font-size: 1.2rem; color: #143d2e; }
+  .auth-screen p { font-size: 0.85rem; color: #6b7280; max-width: 380px; }
+  .auth-btn { background: #15795f; color: #fff; border: none; border-radius: 8px; padding: .75rem 2rem; font-size: .95rem; font-weight: 700; cursor: pointer; }
+  .auth-btn:hover { background: #0f5c48; }
+
+  /* Print report document */
+  .report { display: none; }
+  .doc { background: #fff; }
+  .doc .doc-title { font-size: 18px; font-weight: 800; color: #0f4c3a; }
+  .doc .doc-sub { font-size: 12.5px; color: #4b5563; margin-top: 2px; }
+  .doc .doc-meta { font-size: 11px; color: #6b7280; margin-top: 4px; }
+  .doc h2 { font-size: 15px; color: #143d2e; margin: 22px 0 8px; }
+  .doc table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+  .doc th, .doc td { border: 1px solid #d7dee6; padding: 6px 8px; text-align: left; vertical-align: top; }
+  .doc th { background: #eef2f7; font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: #475569; }
+  .doc td.num, .doc th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .doc tr.subtotal td { background: #f6faf8; font-weight: 700; }
+  .doc tr.grand td { background: #e7f6ee; font-weight: 800; color: #0f4c3a; }
+  .doc .kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 8px; }
+  .doc .kv .cell { border: 1px solid #d7dee6; border-radius: 6px; padding: 8px 10px; }
+  .doc .notes { font-size: 12px; color: #334155; line-height: 1.6; margin-top: 8px; white-space: pre-wrap; }
+
+  @media (max-width: 640px) { .f-grid { grid-template-columns: 1fr; } }
+
+  @media print {
+    @page { margin: 14mm; }
+    body { background: #fff; font-size: 11px; }
+    .topbar, #vf-console-nav, .wrap { display: none !important; }
+    .report { display: block !important; }
+    .doc { border: none; padding: 0; }
+    .doc tr { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">🗂️</div>
+  <h1>Projects</h1>
+  <p>The project system of record — budgets, grants, volunteers and hours in one place, with steering-committee reports. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+  <p style="margin-top:1rem;"><a href="/admin/" style="color:#15795f; font-size:0.78rem;">← Admin hub</a></p>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · Projects</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="wrap">
+
+    <!-- VIEW 1 — Projects list -->
+    <div id="view-list">
+      <div class="ph">
+        <div><div class="ph-title">Projects</div><div class="ph-sub" id="list-sub">The project system of record</div></div>
+        <div class="ph-acts"><button class="btn btn-g btn-lg" onclick="newProject()">+ New project</button></div>
+      </div>
+      <div id="p-list"><div class="empty">Loading…</div></div>
+      <div class="note">Each project ties together its budget (Co-contribution), grant applications (Grant Portal), linked
+      volunteer groups and their hours, and produces steering-committee reports. Open a project to see the whole picture.</div>
+    </div>
+
+    <!-- VIEW 2 — Project drill-in -->
+    <div id="view-detail" style="display:none;">
+      <div class="ph">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span class="ph-title" id="d-name">Project</span>
+            <span class="pill" id="d-status"></span>
+          </div>
+          <div class="ph-sub" id="d-sub"></div>
+        </div>
+        <div class="ph-acts">
+          <button class="btn btn-s" onclick="editCurrentProject()">Edit project</button>
+          <button class="btn btn-s" onclick="showList()">← All projects</button>
+        </div>
+      </div>
+
+      <div class="tabs" id="d-tabs">
+        <button class="tab on" data-tab="overview" onclick="showTab('overview')">Overview</button>
+        <button class="tab" data-tab="budget" onclick="showTab('budget')">Budget</button>
+        <button class="tab" data-tab="schedule" onclick="showTab('schedule')">Schedule</button>
+        <button class="tab" data-tab="grants" onclick="showTab('grants')">Grants</button>
+        <button class="tab" data-tab="volunteers" onclick="showTab('volunteers')">Volunteers</button>
+        <button class="tab" data-tab="reports" onclick="showTab('reports')">Reports</button>
+      </div>
+
+      <!-- Overview -->
+      <div class="tabpanel on" id="tab-overview">
+        <div class="grid" id="ov-grid"></div>
+        <div class="card">
+          <h3>Executive summary</h3>
+          <div class="f-f"><textarea class="f-i" id="ov-exec" placeholder="A short narrative for the steering committee — where the project is up to, key wins, what's next."></textarea></div>
+          <div class="form-acts">
+            <button class="btn btn-g" id="ov-exec-save" onclick="saveExec()">Save summary</button>
+            <span class="msg" id="ov-exec-msg"></span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Project Hub link</h3>
+          <div class="f-f">
+            <div class="f-l">Link to an existing Project Hub card <span class="f-hint">(the website's Project Hub content item)</span></div>
+            <select class="f-i" id="ov-hub"></select>
+          </div>
+          <div class="chk-row">
+            <input type="checkbox" id="ov-publish">
+            <label for="ov-publish">Show this project as a Project Hub card on the website (Publish to Hub)</label>
+          </div>
+          <div class="lock-note">Takes effect on the next website publish.</div>
+          <div class="form-acts" style="margin-top:12px;">
+            <button class="btn btn-g" id="ov-hub-save" onclick="saveHubLink()">Save link</button>
+            <span class="msg" id="ov-hub-msg"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Budget -->
+      <div class="tabpanel" id="tab-budget">
+        <table class="tbl" id="bud-table"><tbody><tr><td class="empty">No budget items.</td></tr></tbody></table>
+        <div class="form-acts" style="margin-top:14px;">
+          <a class="btn btn-s" href="/admin/cocontribution/">Edit budget in Co-contribution →</a>
+        </div>
+      </div>
+
+      <!-- Schedule -->
+      <div class="tabpanel" id="tab-schedule">
+        <table class="tbl" id="sch-table"><tbody><tr><td class="empty">No schedule items.</td></tr></tbody></table>
+        <div class="form-acts" style="margin-top:14px;">
+          <a class="btn btn-s" href="/admin/cocontribution/">Edit schedule in Co-contribution →</a>
+        </div>
+      </div>
+
+      <!-- Grants -->
+      <div class="tabpanel" id="tab-grants">
+        <div id="gr-list"><div class="empty">No grant applications linked.</div></div>
+        <div class="form-acts" style="margin-top:14px;">
+          <a class="btn btn-s" href="/admin/grants/">Manage grants in Grant Portal →</a>
+        </div>
+      </div>
+
+      <!-- Volunteers -->
+      <div class="tabpanel" id="tab-volunteers">
+        <div id="vol-summary"></div>
+        <div class="card">
+          <h3>Linked volunteer groups</h3>
+          <div id="vol-groups"><div class="empty">No linked groups yet.</div></div>
+        </div>
+        <div class="card">
+          <h3>Volunteer hour rate</h3>
+          <div class="f-grid">
+            <div class="f-f">
+              <div class="f-l">Indicative hourly rate ($)</div>
+              <input class="f-i" id="vol-rate" type="number" min="0" step="0.01" placeholder="e.g. 45">
+            </div>
+          </div>
+          <div class="note" id="vol-rate-note">Hours are read live from confirmed working bees. Indicative value = hours × rate.</div>
+          <div class="form-acts" style="margin-top:6px;">
+            <button class="btn btn-g" id="vol-rate-save" onclick="saveHourRate()">Save rate</button>
+            <span class="msg" id="vol-rate-msg"></span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Edit linked groups</h3>
+          <div class="f-f">
+            <div class="f-l">Volunteer groups <span class="f-hint">(hold Ctrl/Cmd to select more than one)</span></div>
+            <select class="f-i" id="vol-select" multiple></select>
+          </div>
+          <div class="form-acts">
+            <button class="btn btn-g" id="vol-groups-save" onclick="saveVolGroups()">Save linked groups</button>
+            <a class="btn btn-s" href="/admin/volunteers/">Volunteer hub →</a>
+            <span class="msg" id="vol-groups-msg"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reports -->
+      <div class="tabpanel" id="tab-reports">
+        <div class="card">
+          <h3>Committee reports</h3>
+          <div class="note" style="margin-top:0;">Generate a print-optimised report — use your browser's "Save as PDF" in the print dialog.</div>
+          <div class="form-acts" style="margin-top:14px;">
+            <button class="btn btn-g" onclick="printReport('summary')">🖨 Steering-committee summary</button>
+            <button class="btn btn-g" onclick="printReport('detailed')">🖨 Detailed tracker</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Export data</h3>
+          <div class="note" style="margin-top:0;">Download the underlying line items as CSV.</div>
+          <div class="form-acts" style="margin-top:14px;">
+            <button class="btn btn-s" onclick="downloadCsv('schedule')">⬇ Schedule CSV</button>
+            <button class="btn btn-s" onclick="downloadCsv('budget')">⬇ Budget CSV</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 3 — Project editor -->
+    <div id="view-edit" style="display:none;">
+      <div class="ph">
+        <div><div class="ph-title" id="e-title">New project</div><div class="ph-sub">Create or edit a project record</div></div>
+        <div class="ph-acts"><button class="btn btn-s" id="e-back" onclick="cancelEdit()">← Back</button></div>
+      </div>
+      <div class="card">
+        <div class="f-grid">
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Project name *</div><input class="f-i" id="e-name" maxlength="200" placeholder="e.g. Smiths Lake Recreation Reserve Masterplan" oninput="autoSlug()"></div>
+          <div class="f-f" style="grid-column:1/-1;">
+            <div class="f-l">Slug <span class="f-hint">(url-safe key)</span></div>
+            <input class="f-i" id="e-slug" maxlength="100" placeholder="auto-generated from the name">
+            <div class="warn-note" id="e-slug-warn" style="display:none;">Changing the slug breaks links. Only change it if you know what you're doing.</div>
+          </div>
+          <div class="f-f"><div class="f-l">Status</div>
+            <select class="f-i" id="e-status"><option>Draft</option><option>Active</option><option>Submitted</option><option>Archived</option></select>
+          </div>
+          <div class="f-f"><div class="f-l">Lead</div><input class="f-i" id="e-lead" maxlength="200" placeholder="Who is driving this project"></div>
+          <div class="f-f"><div class="f-l">Grant program</div><input class="f-i" id="e-program" maxlength="200" placeholder="e.g. NSW Community Participation Stream"></div>
+          <div class="f-f" id="e-grant-wrap"><div class="f-l">Grant request amount ($) <span class="f-hint">(Village Admin only)</span></div><input class="f-i" id="e-grant" type="number" min="0" step="1"></div>
+          <div class="f-f"><div class="f-l">Volunteer hour rate ($)</div><input class="f-i" id="e-rate" type="number" min="0" step="0.01" placeholder="e.g. 45"></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Description</div><textarea class="f-i" id="e-desc" maxlength="2000" placeholder="What the project is and its objectives."></textarea></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Notes / rate card</div><textarea class="f-i" id="e-notes" maxlength="2000" placeholder="Volunteer labour rates, methodology, contacts, conditions…"></textarea></div>
+          <div class="f-f" style="grid-column:1/-1;">
+            <div class="f-l">Linked volunteer groups <span class="f-hint">(hold Ctrl/Cmd to select more than one)</span></div>
+            <select class="f-i" id="e-groups" multiple></select>
+          </div>
+          <div class="f-f" style="grid-column:1/-1;">
+            <div class="f-l">Link to a Project Hub card <span class="f-hint">(website content item)</span></div>
+            <select class="f-i" id="e-hub"></select>
+          </div>
+          <div class="f-f" style="grid-column:1/-1;">
+            <div class="chk-row">
+              <input type="checkbox" id="e-publish">
+              <label for="e-publish">Show this project as a Project Hub card on the website (Publish to Hub) — takes effect on the next website publish</label>
+            </div>
+          </div>
+        </div>
+        <div class="form-acts">
+          <button class="btn btn-g btn-lg" id="e-save" onclick="saveProject()">Save project</button>
+          <span class="msg" id="e-msg"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Hidden print report — populated on demand -->
+<div class="report" id="report"></div>
+
+<div class="vf-toast" id="toast"></div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+  let projects = [];            // from /api/projects-list
+  let detail = null;            // from /api/projects-get { project, schedule, budget, rollups, grants, volunteers, exec }
+  let currentSlug = '';
+  let hubCards = [];            // from /api/project-list (Project Hub content items)
+  let availableGroups = [];     // [{path,title}] derived from /api/volunteer-roster
+  let editingSlug = '';         // slug of the project being edited (blank = create)
+
+  // ── Auth (self-healing dead session — mirrors /admin/index.html) ──
+  let recovering = false;
+  function clearDeadSession() {
+    try { Object.keys(localStorage).forEach(function(k) { if (/gotrue|netlify/i.test(k)) localStorage.removeItem(k); }); } catch (_) {}
+  }
+  function recoverFromDeadSession() {
+    if (recovering) return;
+    recovering = true;
+    clearDeadSession();
+    currentUser = null;
+    try { netlifyIdentity.close(); } catch (_) {}
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'flex';
+    try { netlifyIdentity.open('login'); } catch (_) {}
+  }
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); }
+    catch (e) { recoverFromDeadSession(); }
+    return Object.assign({ 'Content-Type': 'application/json' }, token ? { 'Authorization': 'Bearer ' + token } : {});
+  }
+
+  netlifyIdentity.on('init', function(u) { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', function(u) { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', function() { currentUser = null; location.reload(); });
+  netlifyIdentity.on('error', function(err) {
+    const m = ((err && err.json && (err.json.msg || err.json.error_description)) || (err && err.message) || '') + '';
+    if (/user not found|not_?found|404|401|invalid|expired|jwt/i.test(m)) recoverFromDeadSession();
+  });
+
+  // ── Roles ──────────────────────────────────────────────────────
+  function userRoles() { return (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || []; }
+  function isVillageAdmin() {
+    const roles = userRoles();
+    if (roles.includes('super-admin')) return true;
+    return roles.some(function(r) { return r.endsWith(':admin'); });
+  }
+
+  // ── Boot ───────────────────────────────────────────────────────
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = (currentUser && currentUser.email) || '';
+    // Hide the sensitive grant-request field for non-admins where we can tell.
+    if (!isVillageAdmin()) {
+      const w = document.getElementById('e-grant-wrap');
+      if (w) w.style.display = 'none';
+    }
+    loadVillages();
+    loadHubCards();
+    loadGroups();
+    loadProjects();
+  }
+
+  // ── Formatting / helpers ───────────────────────────────────────
+  function money(n) { if (n == null || n === '') return '$0'; return '$' + Math.round(Number(n)).toLocaleString('en-AU'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
+  function pct(frac) { return ((Number(frac) || 0) * 100).toFixed(1) + '%'; }
+  function fmtDate(d) { if (!d) return ''; const dt = new Date(d); if (isNaN(dt)) return esc(d); return dt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }); }
+  function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(function() { t.classList.remove('show'); }, 3500); }
+  function setMsg(id, msg, kind) { const el = document.getElementById(id); if (!el) return; el.textContent = msg; el.className = 'msg' + (kind ? ' ' + kind : ''); }
+
+  // ── Village picker ─────────────────────────────────────────────
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const d = await r.json();
+      const villages = (d.villages || []).filter(function(v) { return v.status === 'live'; });
+      if (villages.length) {
+        if (!villages.some(function(v) { return v.name === VILLAGE; })) VILLAGE = villages[0].name;
+        sel.innerHTML = villages.map(function(v) { return '<option value="' + esc(v.name) + '" ' + (v.name === VILLAGE ? 'selected' : '') + '>' + esc(v.name) + '</option>'; }).join('');
+      }
+    } catch (e) { /* fall back to the single default option */ }
+    sel.onchange = function() {
+      VILLAGE = sel.value; localStorage.setItem('vf_active_village', VILLAGE);
+      currentSlug = ''; detail = null;
+      showList();
+      loadHubCards(); loadGroups(); loadProjects();
+    };
+  }
+
+  // ── Project Hub content cards (for the hubSlug picker) ─────────
+  async function loadHubCards() {
+    try {
+      const r = await fetch('/api/project-list?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const d = await r.json();
+      hubCards = (d.projects || []);
+    } catch (e) { hubCards = []; }
+    fillHubPickers();
+  }
+  function hubOptions(selectedSlug) {
+    let opts = '<option value="">— not linked —</option>';
+    hubCards.forEach(function(c) {
+      opts += '<option value="' + esc(c.slug) + '" ' + (c.slug === selectedSlug ? 'selected' : '') + '>' + esc(c.title || c.slug) + '</option>';
+    });
+    // If a project points at a slug not in the current content list, keep it visible.
+    if (selectedSlug && !hubCards.some(function(c) { return c.slug === selectedSlug; })) {
+      opts += '<option value="' + esc(selectedSlug) + '" selected>' + esc(selectedSlug) + ' (current)</option>';
+    }
+    return opts;
+  }
+  function fillHubPickers() {
+    const ov = document.getElementById('ov-hub');
+    if (ov) ov.innerHTML = hubOptions(detail && detail.project ? detail.project.hubSlug : '');
+    const ed = document.getElementById('e-hub');
+    if (ed) ed.innerHTML = hubOptions(ed.dataset.selected || '');
+  }
+
+  // ── Volunteer groups (derived from the roster) ────────────────
+  async function loadGroups() {
+    try {
+      const r = await fetch('/api/volunteer-roster?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const d = await r.json();
+      const seen = {};
+      const list = [];
+      (d.volunteers || []).forEach(function(v) {
+        (v.cards || []).forEach(function(c) {
+          if (c && c.path && !seen[c.path]) { seen[c.path] = true; list.push({ path: c.path, title: c.title || c.path }); }
+        });
+      });
+      list.sort(function(a, b) { return (a.title || '').localeCompare(b.title || ''); });
+      availableGroups = list;
+    } catch (e) { availableGroups = []; }
+  }
+  // Build a multi-select from availableGroups, keeping any already-linked group
+  // that isn't in the roster (so nothing silently drops).
+  function fillGroupSelect(selectEl, linked) {
+    if (!selectEl) return;
+    const linkedList = (linked || []).slice();
+    const seen = {};
+    const opts = [];
+    availableGroups.forEach(function(g) {
+      seen[g.path] = true;
+      const on = linkedList.some(function(l) { return l.path === g.path; });
+      opts.push({ path: g.path, title: g.title, on: on });
+    });
+    linkedList.forEach(function(l) {
+      if (l.path && !seen[l.path]) opts.push({ path: l.path, title: l.title || l.path, on: true });
+    });
+    selectEl.innerHTML = opts.map(function(o) {
+      return '<option value="' + esc(o.path) + '" data-title="' + esc(o.title) + '" ' + (o.on ? 'selected' : '') + '>' + esc(o.title) + '</option>';
+    }).join('') || '<option disabled>No volunteer groups found for this village</option>';
+  }
+  function readGroupSelect(selectEl) {
+    if (!selectEl) return [];
+    return [].slice.call(selectEl.selectedOptions).map(function(o) { return { path: o.value, title: o.dataset.title || o.value }; });
+  }
+
+  // ── View switching ─────────────────────────────────────────────
+  function showList() {
+    document.getElementById('view-list').style.display = 'block';
+    document.getElementById('view-detail').style.display = 'none';
+    document.getElementById('view-edit').style.display = 'none';
+  }
+  function showDetail() {
+    document.getElementById('view-list').style.display = 'none';
+    document.getElementById('view-detail').style.display = 'block';
+    document.getElementById('view-edit').style.display = 'none';
+  }
+  function showEdit() {
+    document.getElementById('view-list').style.display = 'none';
+    document.getElementById('view-detail').style.display = 'none';
+    document.getElementById('view-edit').style.display = 'block';
+  }
+  function showTab(name) {
+    document.querySelectorAll('#view-detail .tabpanel').forEach(function(p) { p.classList.remove('on'); });
+    const panel = document.getElementById('tab-' + name);
+    if (panel) panel.classList.add('on');
+    document.querySelectorAll('#d-tabs .tab').forEach(function(b) { b.classList.toggle('on', b.dataset.tab === name); });
+  }
+
+  // ── VIEW 1 — Projects list ─────────────────────────────────────
+  async function loadProjects() {
+    document.getElementById('list-sub').textContent = VILLAGE + ' — the project system of record';
+    const el = document.getElementById('p-list');
+    el.innerHTML = '<div class="empty">Loading…</div>';
+    try {
+      const r = await fetch('/api/projects-list?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not load projects');
+      projects = d.projects || [];
+      renderList();
+    } catch (e) {
+      el.innerHTML = '<div class="empty">⚠️ ' + esc(e.message) + '</div>';
+    }
+  }
+  function renderList() {
+    const el = document.getElementById('p-list');
+    if (!projects.length) {
+      el.innerHTML = '<div class="empty">No projects yet — create one with “+ New project”.</div>';
+      return;
+    }
+    el.innerHTML = '<div class="p-cards">' + projects.map(function(p) {
+      const st = p.status || 'Draft';
+      return '<div class="p-card" onclick="openProject(\'' + esc(p.slug).replace(/'/g, "\\'") + '\')">' +
+        '<div class="p-card-head">' +
+          '<div class="p-card-name">' + esc(p.name || 'Untitled') + '</div>' +
+          '<span class="pill st-' + esc(st) + '">' + esc(st) + '</span>' +
+        '</div>' +
+        '<div class="p-card-prog">' + (p.grantProgram ? esc(p.grantProgram) : '<span style="color:#cbd5e1;">No grant program</span>') + '</div>' +
+        '<div class="p-card-stats">' +
+          '<div class="p-card-stat"><div class="n">' + money(p.budgetTotal) + '</div><div class="l">Budget total</div></div>' +
+          '<div class="p-card-stat"><div class="n">' + money(p.grantAwarded) + '</div><div class="l">Grant awarded</div></div>' +
+          '<div class="p-card-stat"><div class="n">' + (p.groupCount || 0) + '</div><div class="l">Vol. groups</div></div>' +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  // ── VIEW 2 — Project drill-in ──────────────────────────────────
+  async function openProject(slug) {
+    currentSlug = slug;
+    showDetail();
+    showTab('overview');
+    document.getElementById('d-name').textContent = 'Loading…';
+    document.getElementById('d-status').textContent = '';
+    document.getElementById('d-status').className = 'pill';
+    document.getElementById('ov-grid').innerHTML = '';
+    try {
+      const r = await fetch('/api/projects-get?village=' + encodeURIComponent(VILLAGE) + '&project=' + encodeURIComponent(slug), { headers: await authHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not load project');
+      detail = d;
+      renderDetail();
+    } catch (e) {
+      document.getElementById('d-name').textContent = 'Project';
+      document.getElementById('ov-grid').innerHTML = '<div class="empty">⚠️ ' + esc(e.message) + '</div>';
+    }
+  }
+
+  function renderDetail() {
+    if (!detail || !detail.project) return;
+    const p = detail.project;
+    const st = p.status || 'Draft';
+    document.getElementById('d-name').textContent = p.name || 'Project';
+    const stEl = document.getElementById('d-status');
+    stEl.textContent = st; stEl.className = 'pill st-' + st;
+    document.getElementById('d-sub').textContent = [p.grantProgram, p.lead ? 'Lead: ' + p.lead : ''].filter(Boolean).join(' · ');
+    renderOverview();
+    renderBudget();
+    renderSchedule();
+    renderGrants();
+    renderVolunteers();
+  }
+
+  function ovCell(n, l) { return '<div class="cell"><div class="n">' + n + '</div><div class="l">' + l + '</div></div>'; }
+  function renderOverview() {
+    const x = detail.exec || {};
+    const grid = document.getElementById('ov-grid');
+    grid.innerHTML =
+      ovCell(money(x.totalProjectValue), 'Total project value') +
+      ovCell(money(x.grantRequest), 'Grant requested') +
+      ovCell(money(x.grantAwarded), 'Grant awarded') +
+      ovCell(money(x.totalCoContribution) + ' <span style="font-size:.7em;color:#6b7280;">· ' + pct(x.coContributionPct) + '</span>', 'Co-contribution total') +
+      ovCell(money(x.cashPaid), 'Cash paid') +
+      ovCell(money(x.cashAnticipated), 'Cash anticipated') +
+      ovCell(money(x.wikPledged), 'WIK pledged') +
+      ovCell(money(x.budgetTotal), 'Budget total') +
+      ovCell((x.volunteerHours || 0).toLocaleString('en-AU') + ' <span style="font-size:.7em;color:#6b7280;">hrs · ' + (x.volunteerCount || 0) + ' vols</span>', 'Volunteer effort') +
+      ovCell(money(x.volunteerValue), 'Volunteer value (indicative)');
+    document.getElementById('ov-exec').value = detail.project.execSummary || '';
+    document.getElementById('ov-publish').checked = !!detail.project.publishToHub;
+    fillHubPickers();
+  }
+
+  function renderBudget() {
+    const tbl = document.getElementById('bud-table');
+    const rows = (detail.budget || []).filter(function(b) { return !b.archived; });
+    if (!rows.length) { tbl.innerHTML = '<tbody><tr><td class="empty">No budget items.</td></tr></tbody>'; return; }
+    let total = 0;
+    let html = '<thead><tr><th>Name</th><th>Phase</th><th class="num">Amount</th></tr></thead><tbody>';
+    rows.forEach(function(b) {
+      total += Number(b.amount) || 0;
+      html += '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.phase || '') + '</td><td class="num">' + money(b.amount) + '</td></tr>';
+    });
+    html += '<tr class="subtotal"><td colspan="2">Budget total</td><td class="num">' + money(total) + '</td></tr></tbody>';
+    tbl.innerHTML = html;
+  }
+
+  function renderSchedule() {
+    const tbl = document.getElementById('sch-table');
+    const rows = (detail.schedule || []).filter(function(s) { return !s.archived; });
+    const r = detail.rollups || {};
+    if (!rows.length) { tbl.innerHTML = '<tbody><tr><td class="empty">No schedule items.</td></tr></tbody>'; return; }
+    let html = '<thead><tr><th>Name</th><th>Party</th><th>Type</th><th class="num">Value</th><th>Confirmed</th></tr></thead><tbody>';
+    rows.forEach(function(s) {
+      const paid = s.confirmed === 'Yes — actual cost PAID' || s.confirmed === 'Yes — completed';
+      const chip = '<span class="chip ' + (paid ? 'chip-paid' : 'chip-pending') + '">' + esc(s.confirmed || '—') + '</span>';
+      html += '<tr><td>' + esc(s.name) + '</td><td>' + esc(s.party || '') + '</td><td>' + esc(s.type || '') + '</td><td class="num">' + money(s.value) + '</td><td>' + chip + '</td></tr>';
+    });
+    html += '<tr class="subtotal"><td colspan="3">Total co-contribution</td><td class="num">' + money(r.totalCoContribution) + '</td><td>' + pct(r.coContributionPct) + '</td></tr></tbody>';
+    tbl.innerHTML = html;
+  }
+
+  function renderGrants() {
+    const el = document.getElementById('gr-list');
+    const rows = detail.grants || [];
+    if (!rows.length) { el.innerHTML = '<div class="empty">No grant applications linked to this project.</div>'; return; }
+    el.innerHTML = rows.map(function(g) {
+      const meta = [g.funder, g.program, g.dueDate ? 'Due ' + fmtDate(g.dueDate) : ''].filter(Boolean).join(' · ');
+      const awarded = g.amountAwarded != null && g.amountAwarded !== '';
+      return '<div class="g-row">' +
+        '<div><div class="g-name">' + esc(g.name) + '</div><div class="g-meta">' + esc(meta) + '</div></div>' +
+        '<div class="g-amt"><div class="a">' + money(awarded ? g.amountAwarded : g.amountRequested) + '</div><div class="l">' + (awarded ? 'awarded' : 'requested') + '</div></div>' +
+        '<span class="pill gt-' + esc(g.status || 'Researching') + '">' + esc(g.status || '—') + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderVolunteers() {
+    const v = detail.volunteers || {};
+    const x = detail.exec || {};
+    document.getElementById('vol-summary').innerHTML =
+      '<div class="grid">' +
+        ovCell((v.totalHours || 0).toLocaleString('en-AU'), 'Total hours') +
+        ovCell((v.volunteerCount || 0), 'Volunteers') +
+        ovCell((v.activityCount || 0), 'Working bees') +
+        ovCell(money(x.volunteerValue), 'Indicative value') +
+      '</div>';
+    const groups = v.byGroup || [];
+    const box = document.getElementById('vol-groups');
+    if (!groups.length) {
+      box.innerHTML = '<div class="empty">No linked groups yet — add some below.</div>';
+    } else {
+      box.innerHTML = '<table class="tbl"><thead><tr><th>Group</th><th class="num">Hours</th><th class="num">Working bees</th><th class="num">Volunteers</th></tr></thead><tbody>' +
+        groups.map(function(g) {
+          return '<tr><td>' + esc(g.title || g.path) + '</td><td class="num">' + (g.hours || 0).toLocaleString('en-AU') + '</td><td class="num">' + (g.activities || 0) + '</td><td class="num">' + (g.volunteers || 0) + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    }
+    document.getElementById('vol-rate').value = (detail.project.hourRate != null ? detail.project.hourRate : (x.hourRate != null ? x.hourRate : ''));
+    const rate = Number(detail.project.hourRate || x.hourRate || 0);
+    document.getElementById('vol-rate-note').textContent =
+      'Hours are read live from confirmed working bees. Indicative value = ' + (v.totalHours || 0).toLocaleString('en-AU') + ' hrs × ' + money(rate) + ' = ' + money((v.totalHours || 0) * rate) + '.';
+    fillGroupSelect(document.getElementById('vol-select'), detail.project.volunteerGroups || []);
+  }
+
+  // ── Overview saves (exec + hub link) ───────────────────────────
+  async function saveProjectPatch(patch, msgId, okMsg) {
+    if (!detail || !detail.project || !detail.project.id) { setMsg(msgId, 'No saved project.', 'err'); return false; }
+    const payload = Object.assign({
+      village: VILLAGE, entity: 'project', pageId: detail.project.id,
+      name: detail.project.name, slug: detail.project.slug, status: detail.project.status || 'Draft',
+    }, patch);
+    setMsg(msgId, 'Saving…', '');
+    try {
+      const r = await fetch('/api/cocon-save', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(payload) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || (r.status === 403 ? 'Not permitted for your role.' : 'Save failed'));
+      setMsg(msgId, okMsg || 'Saved ✓', 'ok');
+      await openProject(currentSlug);
+      return true;
+    } catch (e) { setMsg(msgId, e.message, 'err'); return false; }
+  }
+  async function saveExec() {
+    const btn = document.getElementById('ov-exec-save'); btn.disabled = true;
+    await saveProjectPatch({ execSummary: document.getElementById('ov-exec').value.trim() }, 'ov-exec-msg', 'Summary saved ✓');
+    btn.disabled = false;
+  }
+  async function saveHubLink() {
+    const btn = document.getElementById('ov-hub-save'); btn.disabled = true;
+    await saveProjectPatch({
+      hubSlug: document.getElementById('ov-hub').value,
+      publishToHub: document.getElementById('ov-publish').checked,
+    }, 'ov-hub-msg', 'Project Hub link saved ✓');
+    btn.disabled = false;
+  }
+  async function saveHourRate() {
+    const btn = document.getElementById('vol-rate-save'); btn.disabled = true;
+    await saveProjectPatch({ hourRate: Number(document.getElementById('vol-rate').value) || 0 }, 'vol-rate-msg', 'Rate saved ✓');
+    btn.disabled = false;
+  }
+  async function saveVolGroups() {
+    const btn = document.getElementById('vol-groups-save'); btn.disabled = true;
+    await saveProjectPatch({ volunteerGroups: readGroupSelect(document.getElementById('vol-select')) }, 'vol-groups-msg', 'Linked groups saved ✓');
+    btn.disabled = false;
+  }
+
+  // ── VIEW 3 — Editor ────────────────────────────────────────────
+  function newProject() {
+    editingSlug = '';
+    document.getElementById('e-title').textContent = 'New project';
+    ['e-name', 'e-slug', 'e-lead', 'e-program', 'e-grant', 'e-rate', 'e-desc', 'e-notes'].forEach(function(id) { document.getElementById(id).value = ''; });
+    document.getElementById('e-status').value = 'Draft';
+    document.getElementById('e-slug').readOnly = false;
+    document.getElementById('e-slug-warn').style.display = 'none';
+    document.getElementById('e-publish').checked = false;
+    document.getElementById('e-hub').dataset.selected = '';
+    fillHubPickers();
+    fillGroupSelect(document.getElementById('e-groups'), []);
+    setMsg('e-msg', '', '');
+    document.getElementById('e-back').onclick = cancelEdit;
+    showEdit();
+  }
+  function editCurrentProject() {
+    if (!detail || !detail.project) return;
+    const p = detail.project;
+    editingSlug = p.slug || '';
+    document.getElementById('e-title').textContent = 'Edit ' + (p.name || 'project');
+    document.getElementById('e-name').value = p.name || '';
+    document.getElementById('e-slug').value = p.slug || '';
+    document.getElementById('e-slug').readOnly = false;
+    document.getElementById('e-slug-warn').style.display = 'block';
+    document.getElementById('e-status').value = p.status || 'Draft';
+    document.getElementById('e-lead').value = p.lead || '';
+    document.getElementById('e-program').value = p.grantProgram || '';
+    document.getElementById('e-grant').value = p.grantRequestAmount != null ? p.grantRequestAmount : '';
+    document.getElementById('e-rate').value = p.hourRate != null ? p.hourRate : '';
+    document.getElementById('e-desc').value = p.description || '';
+    document.getElementById('e-notes').value = p.notes || '';
+    document.getElementById('e-publish').checked = !!p.publishToHub;
+    document.getElementById('e-hub').dataset.selected = p.hubSlug || '';
+    fillHubPickers();
+    fillGroupSelect(document.getElementById('e-groups'), p.volunteerGroups || []);
+    setMsg('e-msg', '', '');
+    showEdit();
+  }
+  function cancelEdit() {
+    if (editingSlug && detail && detail.project) showDetail();
+    else showList();
+  }
+  function autoSlug() {
+    if (editingSlug) return; // don't rewrite an existing project's slug automatically
+    const name = document.getElementById('e-name').value;
+    document.getElementById('e-slug').value = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100);
+  }
+  async function saveProject() {
+    const name = document.getElementById('e-name').value.trim();
+    let slug = document.getElementById('e-slug').value.trim();
+    if (!name) { setMsg('e-msg', 'Enter a project name.', 'err'); return; }
+    if (!slug) { slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100); document.getElementById('e-slug').value = slug; }
+    if (!slug) { setMsg('e-msg', 'A slug is required.', 'err'); return; }
+    const btn = document.getElementById('e-save'); btn.disabled = true; setMsg('e-msg', 'Saving…', '');
+    const isEdit = !!editingSlug;
+    const payload = {
+      village: VILLAGE, entity: 'project',
+      name: name, slug: slug, status: document.getElementById('e-status').value,
+      description: document.getElementById('e-desc').value.trim(),
+      lead: document.getElementById('e-lead').value.trim(),
+      grantProgram: document.getElementById('e-program').value.trim(),
+      hourRate: Number(document.getElementById('e-rate').value) || 0,
+      notes: document.getElementById('e-notes').value.trim(),
+      volunteerGroups: readGroupSelect(document.getElementById('e-groups')),
+      hubSlug: document.getElementById('e-hub').value,
+      publishToHub: document.getElementById('e-publish').checked,
+    };
+    if (isEdit && detail && detail.project && detail.project.id) payload.pageId = detail.project.id;
+    // Grant request amount — always send it; the server enforces the admin gate and 403s if not allowed.
+    const grantVal = document.getElementById('e-grant').value;
+    if (grantVal !== '') payload.grantRequestAmount = grantVal;
+    try {
+      const r = await fetch('/api/cocon-save', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(payload) });
+      const d = await r.json();
+      if (!r.ok) {
+        if (r.status === 403) throw new Error('You do not have permission to set the grant request amount — a Village Admin must set it. Clear that field to save the rest.');
+        throw new Error(d.error || 'Save failed');
+      }
+      setMsg('e-msg', 'Saved ✓', 'ok');
+      showToast('✅ Project saved');
+      currentSlug = slug;
+      await loadProjects();
+      await openProject(slug);
+    } catch (e) { setMsg('e-msg', e.message, 'err'); }
+    finally { btn.disabled = false; }
+  }
+
+  // ── CSV export ─────────────────────────────────────────────────
+  async function downloadCsv(table) {
+    if (!currentSlug) { showToast('Open a project first.'); return; }
+    try {
+      const r = await fetch('/api/cocon-export?village=' + encodeURIComponent(VILLAGE) + '&project=' + encodeURIComponent(currentSlug) + '&table=' + table, { headers: await authHeaders() });
+      if (!r.ok) { const d = await r.json().catch(function() { return {}; }); throw new Error(d.error || 'Export failed'); }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = currentSlug + '-' + table + '.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function() { URL.revokeObjectURL(url); }, 2000);
+    } catch (e) { showToast('⚠️ ' + e.message); }
+  }
+
+  // ── Print reports ──────────────────────────────────────────────
+  function printReport(kind) {
+    if (!detail || !detail.project) { showToast('Open a project first.'); return; }
+    buildReport(kind);
+    window.print();
+  }
+  function buildReport(kind) {
+    const p = detail.project, x = detail.exec || {}, r = detail.rollups || {}, v = detail.volunteers || {};
+    const today = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+    const detailed = kind === 'detailed';
+
+    let html =
+      '<div class="doc">' +
+        '<div class="doc-title">' + esc(p.name || 'Project') + '</div>' +
+        '<div class="doc-sub">' + (detailed ? 'Detailed project tracker' : 'Steering-committee summary') + '</div>' +
+        '<div class="doc-meta">' + esc(VILLAGE) + ' · ' + esc(p.status || 'Draft') + (p.grantProgram ? ' · ' + esc(p.grantProgram) : '') + ' · ' + today + '</div>';
+
+    if (p.execSummary) html += '<h2>Executive summary</h2><div class="notes">' + esc(p.execSummary) + '</div>';
+
+    html += '<h2>Funding position</h2><div class="kv">' +
+      kv('Total project value', money(x.totalProjectValue)) +
+      kv('Grant requested', money(x.grantRequest)) +
+      kv('Grant awarded', money(x.grantAwarded)) +
+      kv('Co-contribution total', money(x.totalCoContribution) + ' (' + pct(x.coContributionPct) + ')') +
+      kv('Cash paid', money(x.cashPaid)) +
+      kv('Cash anticipated', money(x.cashAnticipated)) +
+      kv('Works in kind pledged', money(x.wikPledged)) +
+      kv('Budget total', money(x.budgetTotal)) +
+      kv('Volunteer hours', (x.volunteerHours || 0).toLocaleString('en-AU') + ' (' + (x.volunteerCount || 0) + ' volunteers)') +
+      kv('Volunteer value (indicative)', money(x.volunteerValue)) +
+    '</div>';
+
+    // Budget table
+    const budget = (detail.budget || []).filter(function(b) { return !b.archived; });
+    if (budget.length) {
+      let bt = 0;
+      html += '<h2>Project budget</h2><table><thead><tr><th>Item</th><th>Phase</th><th class="num">Amount</th></tr></thead><tbody>';
+      budget.forEach(function(b) { bt += Number(b.amount) || 0; html += '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.phase || '') + '</td><td class="num">' + money(b.amount) + '</td></tr>'; });
+      html += '<tr class="grand"><td colspan="2">Budget total</td><td class="num">' + money(bt) + '</td></tr></tbody></table>';
+    }
+
+    // Co-contribution schedule
+    const sched = (detail.schedule || []).filter(function(s) { return !s.archived; });
+    if (sched.length) {
+      html += '<h2>Co-contribution schedule</h2><table><thead><tr><th>Item</th><th>Party</th><th>Type</th><th class="num">Value</th>' + (detailed ? '<th>Confirmed</th>' : '') + '</tr></thead><tbody>';
+      sched.forEach(function(s) {
+        html += '<tr><td>' + esc(s.name) + (detailed && s.description ? '<div style="color:#6b7280;font-size:10.5px;">' + esc(s.description) + '</div>' : '') + '</td><td>' + esc(s.party || '') + '</td><td>' + esc(s.type || '') + '</td><td class="num">' + money(s.value) + '</td>' + (detailed ? '<td>' + esc(s.confirmed || '') + '</td>' : '') + '</tr>';
+      });
+      html += '<tr class="grand"><td colspan="3">Total co-contribution (' + pct(r.coContributionPct) + ')</td><td class="num">' + money(r.totalCoContribution) + '</td>' + (detailed ? '<td></td>' : '') + '</tbody></table>';
+    }
+
+    // Grants
+    const grants = detail.grants || [];
+    if (grants.length) {
+      html += '<h2>Grant applications</h2><table><thead><tr><th>Grant</th><th>Funder</th><th>Status</th><th class="num">Requested</th><th class="num">Awarded</th>' + (detailed ? '<th>Due</th>' : '') + '</tr></thead><tbody>';
+      grants.forEach(function(g) {
+        html += '<tr><td>' + esc(g.name) + '</td><td>' + esc(g.funder || '') + '</td><td>' + esc(g.status || '') + '</td><td class="num">' + money(g.amountRequested) + '</td><td class="num">' + (g.amountAwarded != null && g.amountAwarded !== '' ? money(g.amountAwarded) : '—') + '</td>' + (detailed ? '<td>' + fmtDate(g.dueDate) + '</td>' : '') + '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+
+    // Volunteers
+    const byGroup = v.byGroup || [];
+    if (byGroup.length || (v.totalHours || 0) > 0) {
+      html += '<h2>Volunteer effort</h2><table><thead><tr><th>Group</th><th class="num">Hours</th><th class="num">Working bees</th><th class="num">Volunteers</th></tr></thead><tbody>';
+      byGroup.forEach(function(g) {
+        html += '<tr><td>' + esc(g.title || g.path) + '</td><td class="num">' + (g.hours || 0).toLocaleString('en-AU') + '</td><td class="num">' + (g.activities || 0) + '</td><td class="num">' + (g.volunteers || 0) + '</td></tr>';
+      });
+      html += '<tr class="grand"><td>Total</td><td class="num">' + (v.totalHours || 0).toLocaleString('en-AU') + '</td><td class="num">' + (v.activityCount || 0) + '</td><td class="num">' + (v.volunteerCount || 0) + '</td></tr></tbody></table>';
+    }
+
+    if (detailed && p.notes) html += '<h2>Notes</h2><div class="notes">' + esc(p.notes) + '</div>';
+
+    html += '</div>';
+    document.getElementById('report').innerHTML = html;
+  }
+  function kv(l, val) { return '<div class="cell"><div style="font-size:10.5px;color:#6b7280;">' + l + '</div><div style="font-weight:800;color:#0f4c3a;font-size:13px;margin-top:2px;">' + val + '</div></div>'; }
+</script>
+</body>
+</html>
