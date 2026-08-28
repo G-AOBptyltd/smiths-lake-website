@@ -69,6 +69,11 @@
       <div class="pb-name">Contributions Playbook</div>
       <div class="pb-desc">Log donations, pledges, time &amp; services, and run the public supporters board.</div>
     </a>
+    <a class="pb-card" href="#projects">
+      <div class="pb-icon">🗂️</div>
+      <div class="pb-name">Projects Playbook</div>
+      <div class="pb-desc">The system of record — tie budgets, grants, volunteers &amp; hours to a project and report to the committee.</div>
+    </a>
     <a class="pb-card" href="#membership">
       <div class="pb-icon">🪪</div>
       <div class="pb-name">Membership Playbook</div>
@@ -237,6 +242,34 @@
     <div class="tip">💡 Member details are personal information — that's why the Membership console is Village Admin only, and why exports should only go to committee members who need them.</div>
   </div>
 
+  <div class="guide" id="projects">
+    <h2>🗂️ Projects Playbook</h2>
+    <div class="g-sub">The system of record that ties a project's money, grants, volunteers and reporting together. Console: <a href="/admin/projects/">Admin → Projects</a></div>
+
+    <h3>The one idea to understand</h3>
+    <p>A <b>project</b> (e.g. "Recreation Reserve Masterplan") is the spine. Hanging off it: the <b>budget</b> and the <b>co-contribution schedule</b> (shared with the Co-contribution console), the <b>grants</b> being sought for it, and the <b>volunteer groups</b> whose confirmed working-bee hours count as in-kind co-contribution. Open a project to see all of it in one place, and print a committee report.</p>
+
+    <h3>Create a project and fill it in</h3>
+    <ol>
+      <li>Open <a href="/admin/projects/">Projects</a> → <b>+ New project</b>. Give it a name (the slug fills in), set the status, and add a description and lead.</li>
+      <li>In the drill-in, use <b>Budget</b> and <b>Schedule</b> (these open the Co-contribution console for detailed line editing) and set the <b>volunteer hour rate</b> used to value volunteer time.</li>
+      <li><b>Link grants</b> from the <a href="/admin/grants/">Grant Portal</a> — pick this project in the grant's "Linked project" dropdown.</li>
+      <li><b>Link volunteer groups</b> on the Volunteers tab (or from the Volunteer hub's "Groups &amp; projects" panel). The project then shows those groups' live confirmed hours and their indicative dollar value.</li>
+    </ol>
+
+    <h3>Show a project on the website (Project Hub)</h3>
+    <ul>
+      <li>Link a project to one or more existing <b>Project Hub</b> cards, or tick <b>"Show as a Project Hub card"</b> and press <b>Create / refresh Hub card</b>. New cards are created as <b>drafts</b> — add photos in Notion, then use <b>Publish website</b> to make them live.</li>
+    </ul>
+
+    <h3>Reports for the committee</h3>
+    <ul>
+      <li>The <b>Reports</b> tab prints a <b>steering-committee summary</b> (headline numbers plus your editable narrative) and a <b>detailed tracker</b>, and exports the schedule and budget to <b>CSV</b>.</li>
+    </ul>
+
+    <div class="tip">💡 Volunteer hours shown on a project are read live from confirmed working bees and valued at the project's hour rate — an <i>indicative</i> co-contribution figure. Formally pushing those hours into the Contributions ledger is a later step, so nothing is double-counted.</div>
+  </div>
+
   <div class="guide" id="volunteers">
     <h2>🙋 Volunteer Hub Playbook</h2>
     <div class="g-sub">Group rosters, working bees and the hours behind grant applications. Group leaders get a simple phone-friendly home at <a href="/admin/volunteers/my/">/admin/volunteers/my/</a> (they land there automatically); Village Admins also have the full <a href="/admin/volunteers/?console=1">console</a>.</div>
@@ -248,6 +281,12 @@
     <ul>
       <li>Group pages on the website (Environment, Groups &amp; Activities, Emergency sections) carry a <b>"Volunteer for this group"</b> form. Signups land in the <b>Roster</b> as <b>Applied</b>, and the group's steward gets an email.</li>
       <li>Press <b>Approve</b> to make them Active. Someone volunteering for a second group is recognised by their email — the new group is simply added to their record.</li>
+    </ul>
+
+    <h3>Sign someone up on the spot (QR code)</h3>
+    <ul>
+      <li>On your group home there's a <b>QR code</b> for your group. Someone says "can I join?" — point their phone camera at it and they land straight on your group's sign-up form. Print the <b>"Join us" poster</b> for the noticeboard, or use <b>Copy link / Text / WhatsApp</b> to share it.</li>
+      <li>The roster shows each volunteer's <b>hours</b>, whether they're a <b>member</b>, and buttons to <b>Call / Email / Text</b> or <b>Say thanks</b>. Milestone badges (10/25/50/100 hrs) and a gentle hours <b>leaderboard</b> celebrate the regulars.</li>
     </ul>
 
     <h3>Recording a working bee (the everyday job)</h3>
@@ -414,6 +453,8 @@
     <ul>
       <li><b>Super Admin</b> — everything, every village (Greg / AOB).</li>
       <li><b>Village Admin</b> — full control of their village: surveys, news desk, publishing, settings, access.</li>
+      <li><b>Village Treasurer</b> — the finance roles: Contributions, Co-contribution &amp; budget, and Grants.</li>
+      <li><b>Village Project Manager (PM)</b> — manages <a href="/admin/projects/">Projects</a>: budgets, schedule, linked grants and volunteer groups, and the steering-committee reports. Money stays read-only — a PM can see the grant-request figure but only a Village Admin can set it, and a PM can't delete.</li>
       <li><b>Survey Steward</b> — runs surveys <i>and</i> the News Desk for their village. The right role for most volunteers.</li>
       <li><b>Community Steward</b> — a steward whose home is the <a href="/admin/volunteers/">Volunteer hub</a>: they run the roster, activities and hours for the specific group card(s) a Village Admin assigns them. Appointed from the Volunteer hub's <b>Stewards</b> tab (not the Surveys console) — the invite and access are wired automatically.</li>
       <li><b>Committee Viewer</b> — read-only: can see results, can't change anything.</li>
@@ -426,7 +467,14 @@
       <li>They accept the emailed invite, set a password, and sign in at <code>/admin/</code>. Roles take effect on their next sign-in.</li>
     </ol>
 
-    <div class="tip">💡 One login works across every console — Surveys, News Desk, Publish — and the village picker follows them between consoles.</div>
+    <h3>Turning modules on or off per role (Super Admin)</h3>
+    <ol>
+      <li>Open <a href="/admin/#access">Admin → Access &amp; roles</a>. The <b>module matrix</b> lists every module down the side and the roles (Village Admin, Treasurer, Project Manager, Steward, Viewer) across the top.</li>
+      <li>Tick a box to let that role see that module; untick to hide it. Super Admin always sees everything. Changes are per village.</li>
+      <li>This controls what each role <i>sees</i> — the server still enforces who can actually edit each thing, so hiding a tile is a tidiness/scoping tool, not the security gate.</li>
+    </ol>
+
+    <div class="tip">💡 One login works across every console — Surveys, News Desk, Projects, Publish — and the village picker follows them between consoles.</div>
   </div>
 
 </div>

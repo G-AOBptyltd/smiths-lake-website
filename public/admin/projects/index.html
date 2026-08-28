@@ -22,6 +22,11 @@
   .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; font-family: inherit; max-width: 230px; }
   .village-select option { color: #1f2937; }
 
+  .modnav { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: #eaf3ef; border-bottom: 1px solid #d4e4dc; padding: 8px 16px; }
+  .modnav a { font-size: 11.5px; font-weight: 600; color: #326b58; background: #fff; border: 1px solid #cfe1d8; border-radius: 16px; padding: 4px 12px; text-decoration: none; white-space: nowrap; }
+  .modnav a:hover { background: #f0fdf6; border-color: #0f8f80; }
+  .modnav a.on { background: #0f5c48; color: #fff; border-color: #0f5c48; font-weight: 700; }
+
   .wrap { max-width: 960px; margin: 0 auto; padding: 1.4rem 1rem 3rem; }
   .ph { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
   .ph-title { font-size: 1.05rem; font-weight: 700; color: #143d2e; }
@@ -142,7 +147,7 @@
   @media print {
     @page { margin: 14mm; }
     body { background: #fff; font-size: 11px; }
-    .topbar, #vf-console-nav, .wrap { display: none !important; }
+    .topbar, .modnav, #vf-console-nav, .wrap { display: none !important; }
     .report { display: block !important; }
     .doc { border: none; padding: 0; }
     .doc tr { page-break-inside: avoid; }
@@ -167,6 +172,8 @@
     <span class="topbar-user" id="user-email"></span>
     <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
   </div>
+
+  <!-- Cross-module nav is injected by the shared /admin/admin-nav.js switcher. -->
 
   <div class="wrap">
 
@@ -220,8 +227,8 @@
         <div class="card">
           <h3>Project Hub link</h3>
           <div class="f-f">
-            <div class="f-l">Link to an existing Project Hub card <span class="f-hint">(the website's Project Hub content item)</span></div>
-            <select class="f-i" id="ov-hub"></select>
+            <div class="f-l">Link to existing Project Hub cards <span class="f-hint">(the website's Project Hub content items — hold Ctrl/Cmd to select more than one)</span></div>
+            <select class="f-i" id="ov-hub" multiple size="5"></select>
           </div>
           <div class="chk-row">
             <input type="checkbox" id="ov-publish">
@@ -345,8 +352,8 @@
             <select class="f-i" id="e-groups" multiple></select>
           </div>
           <div class="f-f" style="grid-column:1/-1;">
-            <div class="f-l">Link to a Project Hub card <span class="f-hint">(website content item)</span></div>
-            <select class="f-i" id="e-hub"></select>
+            <div class="f-l">Link to Project Hub cards <span class="f-hint">(website content items — hold Ctrl/Cmd to select more than one)</span></div>
+            <select class="f-i" id="e-hub" multiple size="5"></select>
           </div>
           <div class="f-f" style="grid-column:1/-1;">
             <div class="chk-row">
@@ -376,7 +383,7 @@
   let projects = [];            // from /api/projects-list
   let detail = null;            // from /api/projects-get { project, schedule, budget, rollups, grants, volunteers, exec }
   let currentSlug = '';
-  let hubCards = [];            // from /api/project-list (Project Hub content items)
+  let hubCards = [];            // from /api/project-list (Project Hub content items; project.hubSlugs = linked slugs)
   let availableGroups = [];     // [{path,title}] from projects-list/get (PII-free, pm-readable)
   let editingSlug = '';         // slug of the project being edited (blank = create)
 
@@ -462,7 +469,7 @@
     };
   }
 
-  // ── Project Hub content cards (for the hubSlug picker) ─────────
+  // ── Project Hub content cards (for the hubSlugs picker) ────────
   async function loadHubCards() {
     try {
       const r = await fetch('/api/project-list?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
@@ -471,22 +478,36 @@
     } catch (e) { hubCards = []; }
     fillHubPickers();
   }
-  function hubOptions(selectedSlug) {
-    let opts = '<option value="">— not linked —</option>';
+  // Build a multi-select from the Project Hub content cards, keeping any already-
+  // linked slug that isn't in the fetched list (so nothing silently drops).
+  function hubOptions(selectedSlugs) {
+    const selected = (selectedSlugs || []).slice();
+    const seen = {};
+    let opts = '';
     hubCards.forEach(function(c) {
-      opts += '<option value="' + esc(c.slug) + '" ' + (c.slug === selectedSlug ? 'selected' : '') + '>' + esc(c.title || c.slug) + '</option>';
+      seen[c.slug] = true;
+      const on = selected.indexOf(c.slug) !== -1;
+      opts += '<option value="' + esc(c.slug) + '" ' + (on ? 'selected' : '') + '>' + esc(c.title || c.slug) + '</option>';
     });
-    // If a project points at a slug not in the current content list, keep it visible.
-    if (selectedSlug && !hubCards.some(function(c) { return c.slug === selectedSlug; })) {
-      opts += '<option value="' + esc(selectedSlug) + '" selected>' + esc(selectedSlug) + ' (current)</option>';
-    }
-    return opts;
+    // Preserve any linked slug not in the current content list.
+    selected.forEach(function(s) {
+      if (s && !seen[s]) opts += '<option value="' + esc(s) + '" selected>' + esc(s) + ' (current)</option>';
+    });
+    return opts || '<option disabled>No Project Hub cards found for this village</option>';
+  }
+  function readHubSelect(selectEl) {
+    if (!selectEl) return [];
+    return [].slice.call(selectEl.selectedOptions).map(function(o) { return o.value; }).filter(Boolean);
   }
   function fillHubPickers() {
     const ov = document.getElementById('ov-hub');
-    if (ov) ov.innerHTML = hubOptions(detail && detail.project ? detail.project.hubSlug : '');
+    if (ov) ov.innerHTML = hubOptions(detail && detail.project ? detail.project.hubSlugs : []);
     const ed = document.getElementById('e-hub');
-    if (ed) ed.innerHTML = hubOptions(ed.dataset.selected || '');
+    if (ed) {
+      let sel = [];
+      try { sel = JSON.parse(ed.dataset.selected || '[]'); } catch (_) { sel = []; }
+      ed.innerHTML = hubOptions(sel);
+    }
   }
 
   // ── Volunteer groups (derived from the roster) ────────────────
@@ -737,7 +758,7 @@
   async function saveHubLink() {
     const btn = document.getElementById('ov-hub-save'); btn.disabled = true;
     await saveProjectPatch({
-      hubSlug: document.getElementById('ov-hub').value,
+      hubSlugs: readHubSelect(document.getElementById('ov-hub')),
       publishToHub: document.getElementById('ov-publish').checked,
     }, 'ov-hub-msg', 'Project Hub link saved ✓');
     btn.disabled = false;
@@ -746,9 +767,9 @@
     if (!detail || !detail.project) return;
     const btn = document.getElementById('ov-hub-publish'); btn.disabled = true;
     const msg = document.getElementById('ov-hub-msg'); msg.textContent = 'Working…';
-    // Persist the current link/checkbox first so the server sees the intent.
+    // Persist the current links/checkbox first so the server sees the intent.
     await saveProjectPatch({
-      hubSlug: document.getElementById('ov-hub').value,
+      hubSlugs: readHubSelect(document.getElementById('ov-hub')),
       publishToHub: document.getElementById('ov-publish').checked,
     }, 'ov-hub-msg', '');
     try {
@@ -782,7 +803,7 @@
     document.getElementById('e-slug').readOnly = false;
     document.getElementById('e-slug-warn').style.display = 'none';
     document.getElementById('e-publish').checked = false;
-    document.getElementById('e-hub').dataset.selected = '';
+    document.getElementById('e-hub').dataset.selected = '[]';
     fillHubPickers();
     fillGroupSelect(document.getElementById('e-groups'), []);
     setMsg('e-msg', '', '');
@@ -806,7 +827,7 @@
     document.getElementById('e-desc').value = p.description || '';
     document.getElementById('e-notes').value = p.notes || '';
     document.getElementById('e-publish').checked = !!p.publishToHub;
-    document.getElementById('e-hub').dataset.selected = p.hubSlug || '';
+    document.getElementById('e-hub').dataset.selected = JSON.stringify(p.hubSlugs || []);
     fillHubPickers();
     fillGroupSelect(document.getElementById('e-groups'), p.volunteerGroups || []);
     setMsg('e-msg', '', '');
@@ -838,7 +859,7 @@
       hourRate: Number(document.getElementById('e-rate').value) || 0,
       notes: document.getElementById('e-notes').value.trim(),
       volunteerGroups: readGroupSelect(document.getElementById('e-groups')),
-      hubSlug: document.getElementById('e-hub').value,
+      hubSlugs: readHubSelect(document.getElementById('e-hub')),
       publishToHub: document.getElementById('e-publish').checked,
     };
     if (isEdit && detail && detail.project && detail.project.id) payload.pageId = detail.project.id;

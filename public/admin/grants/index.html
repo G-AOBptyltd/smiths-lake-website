@@ -121,7 +121,7 @@
           <div class="f-f"><div class="f-l">Application due</div><input class="f-i" id="g-due" type="date"></div>
           <div class="f-f"><div class="f-l">Submitted</div><input class="f-i" id="g-sub" type="date"></div>
           <div class="f-f"><div class="f-l">Outcome date</div><input class="f-i" id="g-out" type="date"></div>
-          <div class="f-f"><div class="f-l">Linked project <span style="font-weight:400;color:#9ca3af;">(Co-contribution project name)</span></div><input class="f-i" id="g-proj" placeholder="e.g. recreation-reserve"></div>
+          <div class="f-f"><div class="f-l">Linked project <span style="font-weight:400;color:#9ca3af;">(pick the project this grant funds)</span></div><select class="f-i" id="g-proj"><option value="">— none —</option></select></div>
           <div class="f-f"><div class="f-l">Owner</div><input class="f-i" id="g-owner" placeholder="Who is driving this application"></div>
           <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Notes</div><textarea class="f-i" id="g-notes" rows="3" placeholder="Eligibility notes, evidence to gather, contacts, conditions…"></textarea></div>
         </div>
@@ -141,7 +141,7 @@
 
 <script>
   const STATUSES = ['Researching', 'Drafting', 'Submitted', 'Successful', 'Unsuccessful', 'Withdrawn'];
-  let currentUser = null, grants = [], editId = '';
+  let currentUser = null, grants = [], projects = [], editId = '';
   let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
 
   netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
@@ -162,7 +162,30 @@
     document.getElementById('app').style.display = 'block';
     document.getElementById('user-email').textContent = currentUser?.email || '';
     loadVillages();
+    loadProjects();
     loadGrants();
+  }
+
+  async function loadProjects() {
+    projects = [];
+    try {
+      const r = await fetch('/api/projects-list?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      if (r.ok) { const d = await r.json(); projects = (d.projects || []); }
+    } catch (e) {}
+    buildProjectOptions();
+  }
+
+  function buildProjectOptions() {
+    const sel = document.getElementById('g-proj');
+    if (!sel) return;
+    const prev = sel.value;
+    const sorted = projects.slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    sel.innerHTML = '<option value="">— none —</option>' +
+      sorted.map(p => '<option value="' + escHtml(p.slug) + '">' + escHtml(p.name) + (p.status ? ' (' + escHtml(p.status) + ')' : '') + '</option>').join('');
+    if (prev && ![...sel.options].some(o => o.value === prev)) {
+      sel.insertAdjacentHTML('beforeend', '<option value="' + escHtml(prev) + '">' + escHtml(prev) + ' (unlinked — pick a project)</option>');
+    }
+    sel.value = prev;
   }
 
   async function loadVillages() {
@@ -175,7 +198,7 @@
       if (!villages.some(v => v.name === VILLAGE)) VILLAGE = villages[0].name;
       sel.innerHTML = villages.map(v => `<option value="${escHtml(v.name)}" ${v.name === VILLAGE ? 'selected' : ''}>${escHtml(v.name)}</option>`).join('');
     } catch (e) {}
-    sel.onchange = () => { VILLAGE = sel.value; localStorage.setItem('vf_active_village', VILLAGE); showList(); loadGrants(); };
+    sel.onchange = () => { VILLAGE = sel.value; localStorage.setItem('vf_active_village', VILLAGE); showList(); loadProjects(); loadGrants(); };
   }
 
   async function loadGrants() {
@@ -246,7 +269,8 @@
     document.getElementById('g-due').value = g.dueDate;
     document.getElementById('g-sub').value = g.submittedDate;
     document.getElementById('g-out').value = g.outcomeDate;
-    document.getElementById('g-proj').value = g.project;
+    document.getElementById('g-proj').value = g.project || '';
+    buildProjectOptions();
     document.getElementById('g-owner').value = g.owner;
     document.getElementById('g-notes').value = g.notes;
     document.getElementById('edit-title').textContent = g.name;

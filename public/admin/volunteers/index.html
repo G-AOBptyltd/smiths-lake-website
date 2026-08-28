@@ -105,6 +105,15 @@
   .auth-screen p { font-size: 0.85rem; color: #6b7280; max-width: 360px; }
   .auth-btn { background: #15795f; color: white; border: none; border-radius: 8px; padding: 0.75rem 2rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
 
+  .grp-row { padding: 14px; border-top: 1px solid #f1f5f9; }
+  .grp-row:first-child { border-top: none; }
+  .grp-head { font-size: 13px; font-weight: 700; color: #1f2937; margin-bottom: 8px; }
+  .grp-projects { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+  .grp-projects label { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 500; font-size: 12.5px; cursor: pointer; }
+  .grp-projects input { width: auto; accent-color: #0f766e; }
+  .grp-pstatus { font-size: 9.5px; font-weight: 700; border-radius: 9px; padding: 1px 7px; margin-left: 4px; background: #e2e8f0; color: #475569; }
+  .grp-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
   .empty { color: #9ca3af; font-size: 12.5px; padding: 16px; text-align: center; }
   @media (max-width: 700px) { .sidebar { width: 120px; } .main { padding: 14px; } }
 </style>
@@ -133,6 +142,7 @@
       <button class="s-item on" data-panel="roster" onclick="showPanel('roster')">🙋 Roster</button>
       <button class="s-item" data-panel="activities" onclick="showPanel('activities')">🛠 Activities</button>
       <button class="s-item" data-panel="stewards" id="nav-stewards" style="display:none;" onclick="showPanel('stewards')">🧭 Stewards</button>
+      <button class="s-item" data-panel="groups" id="nav-groups" style="display:none;" onclick="showPanel('groups')">🗂 Groups &amp; projects</button>
       <button class="s-item" data-panel="help" onclick="showPanel('help')">💡 Help</button>
     </div>
 
@@ -267,6 +277,13 @@
         <div class="ledger" id="stewards"><div class="empty">Loading stewards…</div></div>
       </div>
 
+      <!-- ── Groups & projects (admin only) ──────────────────────── -->
+      <div class="panel" id="panel-groups">
+        <h1>Groups &amp; projects</h1>
+        <p class="sub">Link a volunteer group to the projects it helps deliver. This is the volunteer side of the two-way link — the Projects page links back the other way. Tick the projects each group supports and press Save.</p>
+        <div class="ledger" id="groups"><div class="empty">Loading…</div></div>
+      </div>
+
       <!-- ── Help ────────────────────────────────────────────────── -->
       <div class="panel" id="panel-help">
         <h1>Help</h1>
@@ -295,6 +312,7 @@
   let volunteers = [], activities = [], stewards = [], catalogue = [];
   let scope = { isAdmin: false, cards: [] };
   let openVolunteerId = null, openActivityId = null;
+  let projects = [], groupsLoaded = false;
 
   // Same map + slug algorithm as the website build — keys steward cards to page paths.
   const SECTION_TO_PATH = {
@@ -357,6 +375,7 @@
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
     document.getElementById('panel-' + name).classList.add('on');
     document.querySelectorAll('.s-item').forEach(b => b.classList.toggle('on', b.dataset.panel === name));
+    if (name === 'groups' && !groupsLoaded) loadGroupsPanel();
   }
 
   // ── Data loading ───────────────────────────────────────────────
@@ -380,6 +399,9 @@
       }
 
       document.getElementById('nav-stewards').style.display = scope.isAdmin ? '' : 'none';
+      document.getElementById('nav-groups').style.display = scope.isAdmin ? '' : 'none';
+      groupsLoaded = false;
+      if (document.getElementById('panel-groups').classList.contains('on') && scope.isAdmin) loadGroupsPanel();
       if (scope.isAdmin) loadStewards();
       loadCatalogue();
       buildCardFilters();
@@ -856,6 +878,95 @@
     document.getElementById('s-cards').innerHTML = cardCheckboxes(options, (s.cards || []).map(c => c.path));
     setMsg('s-msg', 'Editing ' + (s.name || s.email) + ' — tick/untick cards and press Appoint steward to save.', '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Groups & projects ──────────────────────────────────────────
+  // The distinct set of {path,title} across every volunteer's cards is the
+  // list of GROUPS (same source the roster's card filter uses).
+  function volunteerGroups() {
+    const seen = new Map();
+    volunteers.forEach(v => (v.cards || []).forEach(c => { if (c.path && !seen.has(c.path)) seen.set(c.path, { path: c.path, title: c.title || c.path }); }));
+    return [...seen.values()].sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  // A group (cardPath) is linked to a project when the project's
+  // volunteerGroups contains a card with the same path (case-insensitive).
+  function projectHasGroup(project, cardPath) {
+    const key = String(cardPath || '').trim().toLowerCase();
+    return (project.volunteerGroups || []).some(g => String(g.path || '').trim().toLowerCase() === key);
+  }
+
+  async function loadGroupsPanel() {
+    const el = document.getElementById('groups');
+    el.innerHTML = '<div class="empty">Loading…</div>';
+    try {
+      const r = await fetch('/api/projects-list?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      if (r.status === 503) {
+        el.innerHTML = '<div class="empty">Projects aren\'t set up for this village yet. <a href="/admin/projects/" style="color:#15795f;">Open the Projects console</a> to add one.</div>';
+        groupsLoaded = true;
+        return;
+      }
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not load projects');
+      projects = data.projects || [];
+      groupsLoaded = true;
+      renderGroups();
+    } catch (e) {
+      el.innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+    }
+  }
+
+  function renderGroups() {
+    const el = document.getElementById('groups');
+    const groups = volunteerGroups();
+    if (!groups.length) {
+      el.innerHTML = '<div class="empty">No volunteer groups yet — groups appear here once people volunteer for a group on the website.</div>';
+      return;
+    }
+    if (!projects.length) {
+      el.innerHTML = '<div class="empty">No projects yet — <a href="/admin/projects/" style="color:#15795f;">create one in the Projects console</a>, then link your groups here.</div>';
+      return;
+    }
+    el.innerHTML = groups.map((g, gi) => {
+      const boxes = projects.map(p =>
+        '<label><input type="checkbox" value="' + esc(p.slug) + '"' + (projectHasGroup(p, g.path) ? ' checked' : '') + ' /> ' +
+        esc(p.name) + (p.status ? '<span class="grp-pstatus">' + esc(p.status) + '</span>' : '') + '</label>').join('');
+      return '<div class="grp-row" data-card="' + esc(g.path) + '" data-idx="' + gi + '">' +
+        '<div class="grp-head">' + esc(g.title) + '</div>' +
+        '<div class="grp-projects" id="grp-projects-' + gi + '">' + boxes + '</div>' +
+        '<div class="grp-actions">' +
+        '<button class="btn btn-green" onclick="saveGroupLinks(' + gi + ')">Save links</button>' +
+        '<span class="status-msg" id="grp-msg-' + gi + '"></span>' +
+        '</div></div>';
+    }).join('');
+  }
+
+  async function saveGroupLinks(gi) {
+    const row = document.querySelector('.grp-row[data-idx="' + gi + '"]');
+    if (!row) return;
+    const group = volunteerGroups()[gi];
+    if (!group) return;
+    const projectSlugs = [...document.querySelectorAll('#grp-projects-' + gi + ' input:checked')].map(i => i.value);
+    const btn = row.querySelector('.btn');
+    btn.disabled = true;
+    setMsg('grp-msg-' + gi, 'Saving…', '');
+    try {
+      const r = await fetch('/api/project-link-group', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, cardPath: group.path, cardTitle: group.title, projectSlugs }),
+      });
+      const data = await r.json();
+      if (!r.ok || !data.ok) throw new Error(data.error || 'Save failed');
+      setMsg('grp-msg-' + gi, 'Saved ✓', 'ok');
+      // Refresh the project list so checkbox state reflects the server truth.
+      const lr = await fetch('/api/projects-list?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      if (lr.ok) { const ld = await lr.json(); projects = ld.projects || projects; renderGroups(); setMsg('grp-msg-' + gi, 'Saved ✓', 'ok'); }
+    } catch (e) {
+      setMsg('grp-msg-' + gi, e.message, 'err');
+    } finally {
+      const b2 = document.querySelector('.grp-row[data-idx="' + gi + '"] .btn');
+      if (b2) b2.disabled = false;
+    }
   }
 
   function setMsg(id, msg, kind) {
