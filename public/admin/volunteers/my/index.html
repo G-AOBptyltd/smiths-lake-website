@@ -389,13 +389,36 @@
   let photoData = null;          // { contentType, dataBase64 }
 
   // ── Auth ───────────────────────────────────────────────────────
+  // If a saved sign-in points at an account that no longer exists (e.g. it was
+  // removed and re-invited), GoTrue answers token refresh with
+  // {code:404,"user not found"}. Clear that dead session so the steward gets a
+  // clean "Sign in" screen instead of a raw error — and it self-heals once.
+  let recovering = false;
+  function clearDeadSession() {
+    try { Object.keys(localStorage).forEach(k => { if (/gotrue|netlify/i.test(k)) localStorage.removeItem(k); }); } catch (_) {}
+  }
+  function recoverFromDeadSession() {
+    if (recovering) return;
+    recovering = true;
+    clearDeadSession();
+    currentUser = null;
+    try { netlifyIdentity.close(); } catch (_) {}
+    const app = document.getElementById('app'); if (app) app.style.display = 'none';
+    const auth = document.getElementById('auth-screen'); if (auth) auth.style.display = '';
+    try { netlifyIdentity.open('login'); } catch (_) {}
+  }
   netlifyIdentity.on('init', u => { if (u) { currentUser = u; boot(); } });
   netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); boot(); });
   netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+  netlifyIdentity.on('error', err => {
+    const m = ((err && err.json && (err.json.msg || err.json.error_description)) || (err && err.message) || '') + '';
+    if (/user not found|not_?found|404|401|invalid|expired|jwt/i.test(m)) recoverFromDeadSession();
+  });
 
   async function authHeaders() {
     let token = null;
-    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); }
+    catch (e) { recoverFromDeadSession(); }
     return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
   }
 

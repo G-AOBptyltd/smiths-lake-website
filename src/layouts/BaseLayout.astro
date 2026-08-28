@@ -116,15 +116,18 @@ try {
   </script>
 </head>
 <body>
-  <!-- Survey admin invite/recovery handler: Netlify Identity links land on the site root with
-       a #invite_token / #recovery_token hash. Bounce those to /survey-admin/ where the Identity
-       widget completes set-password and signs the admin in. -->
+  <!-- Identity invite/recovery handler: Netlify Identity links land on the site root with
+       a #invite_token / #recovery_token hash. Bounce those to the /admin/ hub, which loads the
+       Identity widget to complete set-password and then routes each person (steward, admin) to
+       the right place. Any page already under /admin/ or /survey-admin/ has its own widget, so
+       leave those alone. -->
   <script>
     (function () {
       var h = window.location.hash || '';
+      var p = window.location.pathname || '';
       if ((h.indexOf('invite_token=') > -1 || h.indexOf('recovery_token=') > -1)
-          && window.location.pathname.indexOf('/survey-admin') !== 0) {
-        window.location.replace('/survey-admin/' + h);
+          && p.indexOf('/admin') !== 0 && p.indexOf('/survey-admin') !== 0) {
+        window.location.replace('/admin/' + h);
       }
     })();
   </script>

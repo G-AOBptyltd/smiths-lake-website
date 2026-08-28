@@ -673,7 +673,8 @@
           '<div style="font-size:16px;">👤</div>' +
           '<div style="flex:1;"><div class="acc-name">' + escHtml(u.email) + '</div><div class="acc-scope">' + escHtml(roleLabel(u.roles)) + (u.confirmed ? '' : ' · invited (pending)') + '</div></div>' +
           '<select class="f-i" style="max-width:190px;font-size:12px;" onchange="setUserRole(\'' + u.id + '\',this.value)">' + opts + '</select>' +
-          '<button class="btn btn-s btn-sm" style="color:#dc2626;margin-left:8px;" title="Remove access" onclick="removeUser(\'' + u.id + '\', ' + jsArg(u.email) + ')">Remove</button>' +
+          (u.confirmed ? '' : '<button class="btn btn-s btn-sm" style="margin-left:8px;" title="Resend the invitation email" onclick="resendInvite(\'' + u.id + '\', ' + jsArg(u.email) + ', ' + jsArg(cur) + ')">Resend</button>') +
+          '<button class="btn btn-s btn-sm" style="color:#dc2626;margin-left:8px;" title="Remove access" onclick="removeUser(\'' + u.id + '\', ' + jsArg(u.email) + ', ' + (u.confirmed ? 'true' : 'false') + ')">' + (u.confirmed ? 'Remove' : 'Cancel invite') + '</button>' +
         '</div>';
       }).join('');
     } catch (e) { el.innerHTML = '<div class="info-box">Could not load users.</div>'; }
@@ -686,13 +687,30 @@
       else showToast('⚠️ ' + (data.error || 'Could not update role'));
     } catch (_) { showToast('⚠️ Network error'); }
   }
-  async function removeUser(userId, email) {
-    if (email && currentUser && email.toLowerCase() === (currentUser.email || '').toLowerCase()) { showToast("You can't remove your own access."); return; }
-    if (!confirm('Remove ' + email + '?\n\nThey lose all admin access (and any pending invite is cancelled). You can re-invite them later.')) return;
+  async function resendInvite(userId, email, role) {
+    if (!confirm('Resend the invitation to ' + email + '?\n\nThey get a fresh sign-in link. Ask them to open it on the device they\'ll use, and to set a password when prompted.')) return;
     try {
-      const res = await fetch('/api/identity-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ action: 'delete', userId: userId }) });
+      const res = await fetch('/api/identity-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ action: 'reinvite', userId: userId, email: email, role: role }) });
       const data = await res.json();
-      if (res.ok && data.success) { showToast('Access removed'); loadAccess(); }
+      if (res.ok && data.success) { showToast('✅ Invitation resent to ' + email); loadAccess(); }
+      else showToast('⚠️ ' + (data.error || 'Could not resend the invite'));
+    } catch (_) { showToast('⚠️ Network error'); }
+  }
+  async function removeUser(userId, email, confirmed) {
+    if (email && currentUser && email.toLowerCase() === (currentUser.email || '').toLowerCase()) { showToast("You can't remove your own access."); return; }
+    // Confirmed accounts (someone who has signed in) → 'revoke': strip roles but
+    // keep the login, so their browser session isn't orphaned into a GoTrue
+    // "user not found" 404. Pending invites → 'delete' to cancel the invitation
+    // outright (no accepted account, so nothing to orphan).
+    const action = confirmed ? 'revoke' : 'delete';
+    const msg = confirmed
+      ? 'Remove ' + email + '?\n\nThey lose all admin access but keep their login. You can re-grant a role later.'
+      : 'Cancel the invitation for ' + email + '?';
+    if (!confirm(msg)) return;
+    try {
+      const res = await fetch('/api/identity-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ action: action, userId: userId }) });
+      const data = await res.json();
+      if (res.ok && data.success) { showToast(confirmed ? 'Access removed' : 'Invitation cancelled'); loadAccess(); }
       else showToast('⚠️ ' + (data.error || 'Could not remove'));
     } catch (_) { showToast('⚠️ Network error'); }
   }
@@ -783,9 +801,27 @@
   }
 
   // ── Auth & boot ────────────────────────────────────────────────────
+  // A saved sign-in that points at a removed/re-invited account makes GoTrue
+  // answer token refresh with {code:404,"user not found"}. Clear the dead
+  // session so the user gets a clean "Sign in" instead of a raw error.
+  let recovering = false;
+  function clearDeadSession() {
+    try { Object.keys(localStorage).forEach(function(k) { if (/gotrue|netlify/i.test(k)) localStorage.removeItem(k); }); } catch (_) {}
+  }
+  function recoverFromDeadSession() {
+    if (recovering) return;
+    recovering = true;
+    clearDeadSession();
+    currentUser = null;
+    try { netlifyIdentity.close(); } catch (_) {}
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'flex';
+    try { netlifyIdentity.open('login'); } catch (_) {}
+  }
   async function authHeaders() {
     let token = null;
-    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); }
+    catch (e) { recoverFromDeadSession(); }
     return Object.assign({ 'Content-Type': 'application/json' }, token ? { 'Authorization': 'Bearer ' + token } : {});
   }
 
@@ -816,6 +852,10 @@
     currentUser = null;
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
+  });
+  netlifyIdentity.on('error', function(err) {
+    const m = ((err && err.json && (err.json.msg || err.json.error_description)) || (err && err.message) || '') + '';
+    if (/user not found|not_?found|404|401|invalid|expired|jwt/i.test(m)) recoverFromDeadSession();
   });
   window.addEventListener('hashchange', openHashTab);
 </script>
