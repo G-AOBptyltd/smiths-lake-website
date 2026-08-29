@@ -21,6 +21,8 @@
  *   Until these exist the pledge just saves silently. Email never blocks the pledge.
  */
 
+import { getNotifyRecipients } from './_villages.js';
+
 const NOTION_VERSION = '2022-06-28';
 const CONTRIB_DB_ID = process.env.NOTION_CONTRIB_DB_ID || '6d182a0d4f0c42c2879f13753e355861';
 
@@ -42,7 +44,7 @@ function esc(s) {
  */
 async function notifyPledge(p) {
   const key = process.env.VF_RESEND_API_KEY;
-  const to = (process.env.VF_PLEDGE_NOTIFY_TO || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const to = await getNotifyRecipients(p.village);
   if (!key || !to.length) return; // not configured — stay silent
   const from = process.env.VF_PLEDGE_FROM || 'VillageFirst <noreply@villagefirst.org.au>';
 

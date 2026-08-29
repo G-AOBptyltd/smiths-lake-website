@@ -16,7 +16,7 @@ import {
   RSVPS_DB_ID, EVENTS_DB_ID, notionHeaders, jsonResp, notProvisioned,
   rtChunks, queryAll, parseRsvp, getEvent, seatsTaken,
 } from './_events.js';
-import { isModulePublic } from './_villages.js';
+import { isModulePublic, getNotifyRecipients } from './_villages.js';
 
 function esc(s) {
   return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -35,7 +35,8 @@ async function sendEmails({ ev, fullName, email, seats, waitlisted, village }) {
   if (!key) return;
   const from = process.env.VF_PLEDGE_FROM || 'VillageFirst <noreply@villagefirst.org.au>';
   const orgName = process.env.VF_MEMBER_ORG_NAME || 'Pacific Palms Community Association (PPCA)';
-  const replyTo = (process.env.VF_PLEDGE_NOTIFY_TO || '').split(',').map((s) => s.trim()).filter(Boolean)[0];
+  const committee = await getNotifyRecipients(village);
+  const replyTo = committee[0];
   const when = fmtWhen(ev);
 
   // 1. Confirmation to the registrant.
@@ -60,7 +61,7 @@ async function sendEmails({ ev, fullName, email, seats, waitlisted, village }) {
   } catch (_) { /* best-effort */ }
 
   // 2. Heads-up to the committee.
-  const to = (process.env.VF_PLEDGE_NOTIFY_TO || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const to = committee;
   if (!to.length) return;
   try {
     await fetch('https://api.resend.com/emails', {
