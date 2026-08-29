@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Village Pages — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  /* Framework copied from the News Desk console (public/admin/news/) so every
+     VillageFirst console shares one look. */
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; font-size: 14px; color: #1f2937; }
+  button { font-family: inherit; }
+
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; white-space: nowrap; font-family: inherit; }
+  .village-select option { color: #1f2937; }
+
+  .layout { display: flex; min-height: calc(100vh - 46px); }
+  .sidebar { width: 170px; background: #fff; border-right: 1px solid #e2e8f0; padding: 10px 0; flex-shrink: 0; }
+  .s-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 10px 16px; font-size: 12.5px; color: #4b5563; cursor: pointer; border-left: 3px solid transparent; }
+  .s-item:hover { background: #f0fdf6; }
+  .s-item.on { color: #0f5c48; background: #e7f6ee; border-left-color: #15795f; font-weight: 700; }
+  .main { flex: 1; padding: 20px; max-width: 980px; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+  h1 { font-size: 1.05rem; color: #143d2e; margin-bottom: 2px; }
+  .sub { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 12px; }
+  .story-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+  .story-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+  .story-title { font-size: 13px; font-weight: 700; color: #1f2937; line-height: 1.35; }
+  .chip { font-size: 9.5px; font-weight: 700; border-radius: 9px; padding: 2px 8px; white-space: nowrap; }
+  .chip-live { background: #c9f0dd; color: #0f5c48; }
+  .chip-draft { background: #fde9c0; color: #92400e; }
+  .chip-about { background: #dbeafe; color: #1e40af; }
+  .chip-contact { background: #ede9fe; color: #5b21b6; }
+  .story-meta { font-size: 11px; color: #9ca3af; margin-bottom: 10px; }
+  .story-foot { display: flex; justify-content: space-between; align-items: center; }
+  .link-btn { background: none; border: none; color: #1d6fb8; font-size: 11.5px; cursor: pointer; padding: 0; }
+  .link-btn:hover { text-decoration: underline; }
+
+  .publish-bar { position: sticky; bottom: 0; margin-top: 18px; background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .btn { border: none; border-radius: 7px; padding: 8px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+  .btn-green { background: #15795f; color: white; }
+  .btn-green:hover { background: #0f5c48; }
+  .btn-green:disabled { background: #9ca3af; cursor: wait; }
+  .btn-ghost { background: white; color: #4b5563; border: 1px solid #d1d5db; }
+  .btn-ghost:hover { border-color: #9ca3af; }
+  .bar-note { font-size: 11px; color: #9ca3af; }
+  .bar-note a { color: #15795f; }
+  .status-msg { font-size: 12px; font-weight: 600; min-height: 1.2em; }
+  .status-msg.ok { color: #15803d; } .status-msg.err { color: #b91c1c; }
+
+  .form-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 640px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin: 14px 0 4px; }
+  label:first-child { margin-top: 0; }
+  .hint { font-weight: 400; color: #9ca3af; }
+  input[type=text], textarea { width: 100%; border: 1px solid #d1d5db; border-radius: 7px; padding: 9px 11px; font-size: 13px; font-family: inherit; }
+  input:focus, textarea:focus { outline: 2px solid #15a06e; border-color: #15a06e; }
+  textarea { min-height: 130px; resize: vertical; line-height: 1.6; }
+  .form-actions { display: flex; gap: 8px; margin-top: 18px; align-items: center; flex-wrap: wrap; }
+  .back-link { background: none; border: none; color: #1d6fb8; font-size: 11.5px; cursor: pointer; padding: 0; margin-bottom: 12px; }
+  .back-link:hover { text-decoration: underline; }
+  .warn-box { margin: 0 0 14px; padding: 12px 14px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; color: #92400e; font-size: 12.5px; line-height: 1.55; }
+  .info-note { border: 1px dashed #d1d5db; border-radius: 7px; padding: 10px 12px; font-size: 11.5px; color: #6b7280; line-height: 1.55; margin-top: 8px; }
+  .info-note a { color: #15795f; }
+
+  .help-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; max-width: 640px; font-size: 13px; line-height: 1.7; color: #374151; }
+  .help-card h2 { font-size: 13.5px; color: #143d2e; margin: 14px 0 4px; }
+  .help-card h2:first-child { margin-top: 0; }
+
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; padding: 1rem; text-align: center; }
+  .auth-screen h1 { font-size: 1.2rem; }
+  .auth-screen p { font-size: 0.85rem; color: #6b7280; max-width: 360px; }
+  .auth-btn { background: #15795f; color: white; border: none; border-radius: 8px; padding: 0.75rem 2rem; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+
+  .empty { color: #9ca3af; font-size: 12.5px; padding: 14px 2px; }
+  @media (max-width: 700px) { .sidebar { width: 110px; } .main { padding: 14px; } }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">🏡</div>
+  <h1>VillageFirst Village Pages</h1>
+  <p>Update your village's About Us, Contact and story pages — no Notion needed. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+  <p style="margin-top:1rem;"><a href="/admin/" style="color:#15795f; font-size:0.78rem;">← Admin home</a></p>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · Village Pages</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <button class="s-item on" data-panel="pages" onclick="showPanel('pages')">🏡 Pages</button>
+      <button class="s-item" data-panel="help" onclick="showPanel('help')">💡 Help</button>
+    </div>
+
+    <div class="main">
+
+      <!-- ── Pages list ──────────────────────────────────────────── -->
+      <div class="panel on" id="panel-pages">
+        <h1>Village pages</h1>
+        <p class="sub">The pages behind your website's <b>About Us</b> and <b>Contact</b>. Click Edit, make your changes, save — then publish the website.</p>
+        <div class="cards" id="page-cards"><div class="empty">Loading pages…</div></div>
+        <div class="publish-bar">
+          <span class="bar-note">✏️ Saved changes appear on the website after the next publish — use the
+            <a href="/admin/publish-news.html">Publish website</a> tile when you're done.</span>
+        </div>
+      </div>
+
+      <!-- ── Editor ──────────────────────────────────────────────── -->
+      <div class="panel" id="panel-edit">
+        <button class="back-link" onclick="showPanel('pages')">← back to pages</button>
+        <h1 id="edit-title">Edit page</h1>
+        <p class="sub" id="edit-sub"></p>
+
+        <div class="warn-box" id="complex-body-warning" style="display:none;">
+          <strong>Heads up — this page has a photo layout.</strong><br>
+          Its body was built with pictures or columns, so it can't be edited as plain text here.
+          The <em>title</em> and <em>summary</em> below still save normally; to change the body itself,
+          edit the page in Notion or rebuild it with the News Desk's photo composer.
+        </div>
+
+        <div class="form-card">
+          <label for="f-title">Title <span class="hint">(the heading shown on the website)</span></label>
+          <input type="text" id="f-title" maxlength="200" />
+
+          <label for="f-desc">Summary <span class="hint" id="desc-hint">(shown as the page text when there's no full body below)</span></label>
+          <textarea id="f-desc" maxlength="2000" placeholder="A paragraph or two. Each blank line becomes a new paragraph on the website."></textarea>
+
+          <div id="body-wrap">
+            <label for="f-body">Page body <span class="hint">(optional — when filled in, the website shows this instead of the summary)</span></label>
+            <textarea id="f-body" style="min-height:220px;" placeholder="The full page text. Blank line = new paragraph. Start a line with ## to make it a heading."></textarea>
+            <div class="info-note">Blank line = new paragraph · a line starting with <b>##</b> becomes a heading.
+              Leave this empty to keep the website showing the summary above.</div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-green" id="save-btn" onclick="savePage()">Save changes</button>
+            <span class="status-msg" id="save-status"></span>
+          </div>
+          <div class="info-note">Changes appear on the site after the next publish —
+            <a href="/admin/publish-news.html">open the Publish tile</a> when you're done editing.</div>
+        </div>
+      </div>
+
+      <!-- ── Help ────────────────────────────────────────────────── -->
+      <div class="panel" id="panel-help">
+        <h1>Help</h1>
+        <p class="sub">The 60-second guide.</p>
+        <div class="help-card">
+          <h2>What these pages are</h2>
+          The <b>About Us</b> page on your website is built from the story rows listed here — your village's
+          "our story" page plus companions like the Indigenous heritage page, in their listed order. The
+          <b>Contact</b> page comes from the contact row. Edit them here and the website follows.
+          <h2>To change a page</h2>
+          1. Click <b>Edit</b> on the page. 2. Change the title, summary, or full body text. 3. <b>Save changes</b>.
+          4. When you're done, press <b>Publish</b> on the <a href="/admin/publish-news.html">Publish website</a> tile —
+          the site updates about 3 minutes later.
+          <h2>Summary vs page body</h2>
+          If a page has a <b>body</b>, the website shows the body; otherwise it shows the <b>summary</b>.
+          Pages laid out with photos can't be edited as plain text here — edit those in Notion or via the News Desk.
+          <h2>Something's marked "Hidden"?</h2>
+          Hidden pages exist but don't render on the website (they're not set to Published/Show on Website in Notion).
+          Ask your super admin if one should be live.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+  let pages = [];
+  let editing = null;         // the list item being edited
+  let bodyEditable = false;   // false when the page body has photos/columns
+  let bodyOriginal = '';      // to skip the body write when unchanged
+
+  // pages-list / pages-save are new functions; netlify.toml (the /api alias
+  // registry) is owned by other work, so we call the raw function paths.
+  // news-fetch / news-body are the existing News Desk body machinery, reused.
+  const API = {
+    list: '/.netlify/functions/pages-list',
+    save: '/.netlify/functions/pages-save',
+    fetchBody: '/api/news-fetch',
+    saveBody: '/api/news-body',
+  };
+
+  // ── Auth (same pattern as the News Desk) ───────────────────────
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try {
+      const u = netlifyIdentity.currentUser();
+      if (u) token = await u.jwt();
+    } catch (e) { /* signed out */ }
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+    loadVillages();
+    loadPages();
+  }
+
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const data = await r.json();
+      const villages = (data.villages || []).filter(v => v.status === 'live');
+      if (!villages.length) return;
+      sel.innerHTML = '';
+      villages.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v.name; o.textContent = v.name;
+        if (v.name === VILLAGE) o.selected = true;
+        sel.appendChild(o);
+      });
+      if (![...sel.options].some(o => o.selected)) { sel.options[0].selected = true; VILLAGE = sel.value; }
+    } catch (e) { /* keep default option */ }
+    sel.onchange = () => {
+      VILLAGE = sel.value;
+      localStorage.setItem('vf_active_village', VILLAGE);
+      showPanel('pages');
+      loadPages();
+    };
+  }
+
+  function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+    document.getElementById('panel-' + name).classList.add('on');
+    document.querySelectorAll('.s-item').forEach(b => b.classList.toggle('on', b.dataset.panel === (name === 'edit' ? 'pages' : name)));
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  function fmtEdited(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  // ── List ───────────────────────────────────────────────────────
+  async function loadPages() {
+    const el = document.getElementById('page-cards');
+    el.innerHTML = '<div class="empty">Loading pages…</div>';
+    try {
+      const r = await fetch(API.list + '?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not load');
+      pages = data.items || [];
+      renderPages();
+    } catch (e) {
+      el.innerHTML = '<div class="empty">⚠️ ' + escapeHtml(e.message) + '</div>';
+    }
+  }
+
+  function renderPages() {
+    const el = document.getElementById('page-cards');
+    if (!pages.length) {
+      el.innerHTML = '<div class="empty">No About or Contact pages found for ' + escapeHtml(VILLAGE) +
+        ' — they\'re usually seeded when the village website is set up. Contact your super admin.</div>';
+      return;
+    }
+    el.innerHTML = '';
+    pages.forEach((p, i) => {
+      const kindChip = p.kind === 'contact'
+        ? '<span class="chip chip-contact">Contact page</span>'
+        : '<span class="chip chip-about">About Us</span>';
+      const liveChip = p.visible
+        ? '<span class="chip chip-live">Live on site</span>'
+        : '<span class="chip chip-draft">Hidden</span>';
+      const card = document.createElement('div');
+      card.className = 'story-card';
+      card.innerHTML =
+        '<div class="story-top"><span class="story-title"></span><span>' + kindChip + ' ' + liveChip + '</span></div>' +
+        '<div class="story-meta">' + escapeHtml(p.section || '—') +
+          (p.kind === 'about' ? ' · order ' + (p.priority === 999 ? '—' : p.priority) : '') +
+          ' · edited ' + fmtEdited(p.lastEdited) + '</div>' +
+        '<div class="story-foot"><button class="link-btn" onclick="editPage(' + i + ')">Edit →</button><span></span></div>';
+      card.querySelector('.story-title').textContent = p.title;
+      el.appendChild(card);
+    });
+  }
+
+  // ── Editor ─────────────────────────────────────────────────────
+  // The website (src/lib/notion-about.js) renders a page's BODY blocks and only
+  // falls back to the Description when the body is empty — so the editor mirrors
+  // that: summary (Description property) + optional plain-text body.
+  const TEXT_BLOCKS = ['paragraph', 'heading_1', 'heading_2', 'heading_3', 'bulleted_list_item', 'numbered_list_item', 'quote', 'callout'];
+
+  function blocksToText(blocks) {
+    const out = [];
+    for (const b of blocks) {
+      const rich = b[b.type]?.rich_text;
+      if (!Array.isArray(rich)) continue;
+      const text = rich.map(t => t.plain_text).join('').trim();
+      if (!text) continue;
+      out.push(b.type.startsWith('heading') ? '## ' + text : text);
+    }
+    return out.join('\n\n');
+  }
+
+  function textToBlocks(text) {
+    // Blank-line-separated chunks; "## " lines become headings. This is the
+    // exact payload /api/news-body (the News Desk body writer) accepts.
+    const blocks = [];
+    String(text || '').split(/\n\s*\n/).forEach(chunk => {
+      chunk.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+        if (line.startsWith('## ')) blocks.push({ type: 'heading', text: line.slice(3).trim() });
+        else blocks.push({ type: 'paragraphs', text: line });
+      });
+    });
+    return blocks;
+  }
+
+  async function editPage(i) {
+    const p = pages[i];
+    editing = p;
+    bodyEditable = false;
+    bodyOriginal = '';
+    document.getElementById('edit-title').textContent = 'Edit: ' + p.title;
+    document.getElementById('edit-sub').textContent = p.kind === 'contact'
+      ? 'This is the website\'s Contact page copy.'
+      : 'This page is part of the website\'s About Us story' + (p.priority !== 999 ? ' (position ' + p.priority + ')' : '') + '.';
+    document.getElementById('f-title').value = p.title;
+    document.getElementById('f-desc').value = p.description || '';
+    document.getElementById('desc-hint').textContent = p.kind === 'contact'
+      ? '(shown on the Contact page when there\'s no full body below)'
+      : '(shown as the page text when there\'s no full body below)';
+    document.getElementById('complex-body-warning').style.display = 'none';
+    const bodyWrap = document.getElementById('body-wrap');
+    const bodyTa = document.getElementById('f-body');
+    bodyTa.value = ''; bodyTa.disabled = true;
+    bodyWrap.style.opacity = '0.55';
+    document.getElementById('save-status').textContent = '';
+    showPanel('edit');
+
+    // Load the page body (reuses the News Desk block-fetcher). Plain-text
+    // bodies are editable here; photo/column layouts are locked with a warning.
+    try {
+      const r = await fetch(API.fetchBody + '?pageId=' + encodeURIComponent(p.id), { headers: await authHeaders() });
+      const d = await r.json();
+      const blocks = (d.blocks || []).filter(b => {
+        if (b.type === 'paragraph' && !(b.paragraph?.rich_text || []).some(t => (t.plain_text || '').trim())) return false;
+        return true;
+      });
+      const complex = blocks.some(b => !TEXT_BLOCKS.includes(b.type));
+      if (complex) {
+        document.getElementById('complex-body-warning').style.display = 'block';
+        bodyTa.value = '(photo layout — edit in Notion or the News Desk)';
+        return; // body stays disabled
+      }
+      bodyOriginal = blocksToText(blocks);
+      bodyTa.value = bodyOriginal;
+      bodyTa.disabled = false;
+      bodyEditable = true;
+      bodyWrap.style.opacity = '1';
+    } catch (e) {
+      // Fail-safe: leave the body locked so we can't blindly overwrite it.
+      bodyTa.value = '(could not load the page body — title & summary still save)';
+    }
+  }
+
+  async function savePage() {
+    if (!editing) return;
+    const btn = document.getElementById('save-btn');
+    const status = document.getElementById('save-status');
+    const title = document.getElementById('f-title').value.trim();
+    if (!title) { status.textContent = 'A title is needed'; status.className = 'status-msg err'; return; }
+    const description = document.getElementById('f-desc').value.trim();
+    btn.disabled = true;
+    status.textContent = 'Saving…'; status.className = 'status-msg';
+    try {
+      // 1) Property-only save (Title + Description) — never touches visibility.
+      const r = await fetch(API.save, {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, pageId: editing.id, title, description }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not save');
+
+      // 2) Body (only when editable AND actually changed — an untouched body
+      //    is never rewritten, and an empty unchanged body is never created).
+      if (bodyEditable) {
+        const bodyText = document.getElementById('f-body').value.trim();
+        if (bodyText !== bodyOriginal) {
+          status.textContent = 'Saving page body…';
+          const rb = await fetch(API.saveBody, {
+            method: 'POST', headers: await authHeaders(),
+            body: JSON.stringify({ village: VILLAGE, pageId: editing.id, blocks: textToBlocks(bodyText) }),
+          });
+          const bd = await rb.json();
+          if (!rb.ok) throw new Error(bd.error || 'Could not save the page body');
+          bodyOriginal = bodyText;
+        }
+      }
+
+      status.textContent = '✅ Saved — publish the website when you\'re done editing';
+      status.className = 'status-msg ok';
+      editing.title = title;
+      editing.description = description;
+      renderPages();
+    } catch (e) {
+      status.textContent = '⚠️ ' + e.message; status.className = 'status-msg err';
+    }
+    btn.disabled = false;
+  }
+</script>
+</body>
+</html>

@@ -17,6 +17,7 @@
     { id: 'home',     href: '/admin/',                   label: '⌂ Admin home' },
     { id: 'surveys',  href: '/survey-admin/',            label: '📊 Surveys' },
     { id: 'news',     href: '/admin/news/',              label: '📰 News desk' },
+    { id: 'pages',    href: '/admin/pages/',             label: '🏡 Village pages' },
     { id: 'publish',  href: '/admin/publish-news.html',  label: '🌐 Publish' },
     { id: 'contrib',  href: '/admin/contrib/',           label: '🤝 Contributions' },
     { id: 'cocon',    href: '/admin/cocontribution/',    label: '📑 Co-contribution' },
@@ -37,6 +38,7 @@
     if (p.indexOf('/survey-admin') === 0) return 'surveys';
     if (p.indexOf('/admin/playbook') === 0) return 'playbook';
     if (p.indexOf('/admin/news') === 0) return 'news';
+    if (p.indexOf('/admin/pages') === 0) return 'pages';
     if (p.indexOf('/admin/contrib') === 0) return 'contrib';
     if (p.indexOf('/admin/cocontribution') === 0) return 'cocon';
     if (p.indexOf('/admin/grants') === 0) return 'grants';
