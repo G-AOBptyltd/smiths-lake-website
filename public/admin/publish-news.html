@@ -61,7 +61,9 @@
 
     // Sign-in gate — publishing is admin/steward only, enforced server-side too.
     let currentUser = null;
+    let identityUnavailable = false; // set by the preview-instance probe below
     function reflectAuth() {
+      if (identityUnavailable) return; // notice is showing — don't overwrite it
       if (currentUser) {
         btn.disabled = false;
         if (status.className !== 'ok') status.textContent = '';
@@ -75,6 +77,24 @@
     netlifyIdentity.on('login', (u) => { currentUser = u; netlifyIdentity.close(); reflectAuth(); });
     netlifyIdentity.on('logout', () => { currentUser = null; reflectAuth(); });
     netlifyIdentity.init();
+
+    // Graceful gate for per-village preview instances (no Netlify Identity
+    // provisioned): probe the Identity settings endpoint and, when absent, hide
+    // the publish button and show a styled notice instead of the widget's raw
+    // error. The flagship console passes the probe and is untouched.
+    fetch('/.netlify/identity/settings')
+      .then((r) => { if (!r.ok) throw new Error('identity unavailable'); })
+      .catch(() => {
+        identityUnavailable = true;
+        try { netlifyIdentity.close(); } catch (_) {}
+        try { netlifyIdentity.open = function () {}; } catch (_) {}
+        btn.style.display = 'none';
+        status.className = '';
+        status.innerHTML =
+          '<span style="display:block; background:#fffbeb; border:1px solid #fcd34d; border-radius:10px; padding:0.9rem 1.1rem; color:#92400e; font-weight:400; text-align:left; line-height:1.55;">' +
+            'Admin sign-in isn’t available on this preview instance. Village admin runs on the flagship console until per-village sign-in ships with the platform’s new auth.' +
+          '</span>';
+      });
 
     btn.addEventListener('click', async () => {
       if (!currentUser) { netlifyIdentity.open('login'); return; }

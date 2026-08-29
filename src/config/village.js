@@ -159,7 +159,24 @@ export function themeOverrideCss() {
   const lines = Object.entries(map)
     .filter(([, v]) => v)
     .map(([k, v]) => `${k}: ${v};`);
-  return lines.length ? `:root { ${lines.join(' ')} }` : '';
+  if (!lines.length) return '';
+  // `:root:root` (specificity 0,2,0), NOT plain `:root`: Astro hoists the
+  // bundled-stylesheet <link>s AFTER this inline block in the built <head>, so
+  // global.css's own `:root { --color-navy: #1B365D; … }` (equal specificity,
+  // later in document order) silently re-won the cascade and themed villages
+  // still rendered a navy header/footer/buttons. Doubling the pseudo-class
+  // outranks global.css regardless of order. Emitted only when theme vars are
+  // set, so default builds ship byte-identical.
+  const rules = [`:root:root { ${lines.join(' ')} }`];
+  // Homepage stats band: QuickInfo uses --color-sky (#5B9BD5), which is a
+  // water/info semantic token we deliberately do NOT retheme globally. Restyle
+  // just the band to the village primary-light. Triple class (0,3,0) outranks
+  // the Astro-scoped `.quick-info[data-astro-cid-*]` rule (0,2,0).
+  const bandColour = village.theme.primaryLight || village.theme.primary;
+  if (bandColour) {
+    rules.push(`.quick-info.quick-info.quick-info { background-color: ${bandColour}; }`);
+  }
+  return rules.join(' ');
 }
 
 export default village;

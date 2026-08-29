@@ -433,5 +433,27 @@
     btn.disabled = false;
   }
 </script>
+<script>
+  // Graceful gate for per-village preview instances (no Netlify Identity
+  // provisioned): probe the Identity settings endpoint and, when absent, swap
+  // the sign-in screen for a styled notice and no-op the widget so it can't be
+  // reopened. The flagship console passes the probe and is untouched.
+  fetch('/.netlify/identity/settings')
+    .then(function (r) { if (!r.ok) throw new Error('identity unavailable'); })
+    .catch(function () {
+      try { netlifyIdentity.close(); } catch (_) {}
+      try { netlifyIdentity.open = function () {}; } catch (_) {}
+      var s = document.getElementById('auth-screen');
+      if (!s) return;
+      s.style.display = 'flex';
+      s.innerHTML =
+        '<div style="font-size:2.4rem;">🏡</div>' +
+        '<h1>VillageFirst Village Pages</h1>' +
+        '<p style="background:#fffbeb; border:1px solid #fcd34d; border-radius:10px; padding:0.9rem 1.1rem; color:#92400e; line-height:1.55;">' +
+          'Admin sign-in isn’t available on this preview instance. Village admin runs on the flagship console until per-village sign-in ships with the platform’s new auth.' +
+        '</p>' +
+        '<p style="margin-top:1rem;"><a href="/" style="color:#15795f; font-size:0.78rem;">← back to the village site</a></p>';
+    });
+</script>
 </body>
 </html>

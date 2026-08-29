@@ -69,7 +69,12 @@ try {
 } catch (e) {
   // No manifest — gracefully fall back to colour-only hero
 }
-const hasHeroImage = !!heroImagePath;
+// 'gradient' section-hero style (PUBLIC_SECTION_HERO): skip the manifest photo
+// set entirely and use the existing accent-gradient hero — the manifests can
+// carry Smiths Lake imagery via the shared-content fallback. Default 'photos'
+// keeps historical behaviour byte-identical. (village.js is ALREADY statically
+// imported above, so reading it here is chunk-parity safe.)
+const hasHeroImage = !!heroImagePath && village.sectionHeroStyle !== 'gradient';
 
 // Use pre-parsed document list from notion-detail-pages.js
 const documents = item.parsedDocuments || [];

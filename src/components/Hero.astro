@@ -29,6 +29,38 @@ const {
 const peakAlpha = Math.max(0, Math.min(1, overlayOpacity / 100));
 const midAlpha = peakAlpha * 0.7;
 const endAlpha = peakAlpha * 0.45;
+
+// Per-village treatment. Inline env reads (NOT a village.js import): adding any
+// new static import to this component reshuffles Vite CSS chunk ordering across
+// every page that uses it and breaks the byte-parity invariant (same hazard
+// documented in contact.astro and SectionHero.astro).
+//
+// 'gradient' hero style: only replaces the BUILT-IN Smiths Lake photo — a
+// caller-supplied image (e.g. the homepage's PUBLIC_HERO_IMAGE village photo or
+// a Notion Section Settings hero) is the village's own and is kept.
+const useGradient =
+  (import.meta.env.PUBLIC_SECTION_HERO || 'photos') === 'gradient' &&
+  backgroundImage === '/images/hero-smiths-lake.jpg';
+
+// Overlay tint: historical literals are navy #1B365D → sky #5B9BD5. When a
+// theme primary is set, tint with the village palette instead (primary →
+// primary-light, mirroring SectionHero's lighten fallback). Default build
+// emits the exact historical rgba() strings byte-for-byte.
+function hexChannels(hex: string): [number, number, number] {
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
+const themePrimary = import.meta.env.PUBLIC_THEME_PRIMARY || '';
+const themePrimaryLight = import.meta.env.PUBLIC_THEME_PRIMARY_LIGHT || '';
+const [tintR, tintG, tintB] = themePrimary ? hexChannels(themePrimary) : [27, 54, 93];
+const [endR, endG, endB] = themePrimary
+  ? (themePrimaryLight
+      ? hexChannels(themePrimaryLight)
+      : hexChannels(themePrimary).map((c) => Math.min(255, c + 80)) as [number, number, number])
+  : [91, 155, 213];
 const sizeClasses = {
   small: 'hero--small',
   default: '',
@@ -42,15 +74,32 @@ const cdnSrc = (w: number) => `/.netlify/images?url=${encodeURIComponent(backgro
 const heroSrcset = isLocalImage
   ? [480, 768, 1280, 1920].map((w) => `${cdnSrc(w)} ${w}w`).join(', ')
   : undefined;
+
+// BYTE-PARITY NOTE: in the template below, `</div> <div class="hero-overlay"…`
+// must stay on ONE line joined by a single space. Inside a ternary branch Astro
+// preserves literal whitespace (a newline+indent leaks into the output), while
+// the historical static markup collapsed this gap to exactly one space —
+// verified byte-for-byte against live villagefirst.org.au.
 ---
 <section class={`hero ${sizeClasses[size]}`}>
+  {useGradient ? (
+    <div
+      class="hero-background"
+      style="background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-dark) 100%);"
+    ></div>
+    <div
+      class="hero-overlay"
+      aria-hidden="true"
+      style="left: auto; width: 40%; background: repeating-linear-gradient(-60deg, transparent, transparent 8px, rgba(255, 255, 255, 0.05) 8px, rgba(255, 255, 255, 0.05) 10px);"
+    ></div>
+  ) : (
   <div class="hero-background">
     {videoSrc ? (
-      <video 
-        class="hero-video" 
-        autoplay 
-        muted 
-        loop 
+      <video
+        class="hero-video"
+        autoplay
+        muted
+        loop
         playsinline
         poster={backgroundImage}
       >
@@ -67,9 +116,9 @@ const heroSrcset = isLocalImage
         fetchpriority="high"
       />
     )}
-  </div>
-  <div class="hero-overlay" style={`background: linear-gradient(135deg, rgba(27, 54, 93, ${peakAlpha}) 0%, rgba(27, 54, 93, ${midAlpha}) 50%, rgba(91, 155, 213, ${endAlpha}) 100%);`}></div>
-  
+  </div> <div class="hero-overlay" style={`background: linear-gradient(135deg, rgba(${tintR}, ${tintG}, ${tintB}, ${peakAlpha}) 0%, rgba(${tintR}, ${tintG}, ${tintB}, ${midAlpha}) 50%, rgba(${endR}, ${endG}, ${endB}, ${endAlpha}) 100%);`}></div>
+  )}
+
   <div class="hero-content">
     <h1 class="hero-title">{title}</h1>
     {subtitle && <p class="hero-subtitle">{subtitle}</p>}

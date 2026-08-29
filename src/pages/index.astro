@@ -75,15 +75,33 @@ function tickerCatColour(section) {
   return `rgb(${lift(r)}, ${lift(g)}, ${lift(b)})`;
 }
 
-// Use Notion hero image if available, otherwise fall back to existing local image
-const heroImage = sectionHeroManifest['home'] || village.heroImage;
+// Use Notion hero image if available, otherwise fall back to existing local image.
+// 'gradient' section-hero villages skip the manifest photo entirely (it can carry
+// Smiths Lake imagery via the shared-content fallback — same hazard DetailPage
+// documents): an explicit PUBLIC_HERO_IMAGE village photo is kept, otherwise the
+// built-in default path is passed so Hero.astro renders the palette gradient.
+// Default 'photos' keeps the historical expression byte-identical.
+const heroImage =
+  village.sectionHeroStyle === 'gradient'
+    ? village.heroImage
+    : sectionHeroManifest['home'] || village.heroImage;
 const heroTitle = sectionSettings?.heroTitle || village.heroTitle;
 const heroSubtitle = sectionSettings?.heroSubtitle || village.heroSubtitle;
 const overlayOpacity = sectionSettings?.overlayOpacity ?? 50;
 
+// Stats band — env-gated with exact-current Smiths Lake defaults (default build
+// byte-identical). PUBLIC_STAT_POPULATION deliberately uses ?? rather than ||:
+// a village that sets it to an EMPTY string has no reliable population figure,
+// and the stat is hidden entirely (the band flexes to the remaining items).
+// "MidCoast / Local Council" stays hardcoded — correct for every current village.
+const statPopulation = import.meta.env.PUBLIC_STAT_POPULATION ?? '~1,300';
+const statPopulationLabel =
+  import.meta.env.PUBLIC_STAT_POPULATION_LABEL || 'Permanent Residents';
+const statRegion = import.meta.env.PUBLIC_STAT_REGION || 'Great Lakes';
+
 const quickInfoItems = [
-  { value: '~1,300', label: 'Permanent Residents' },
-  { value: 'Great Lakes', label: 'NSW Region' },
+  ...(statPopulation ? [{ value: statPopulation, label: statPopulationLabel }] : []),
+  { value: statRegion, label: 'NSW Region' },
   { value: 'MidCoast', label: 'Local Council' },
   { value: village.entityShort, label: 'Community Association' },
 ];

@@ -866,5 +866,29 @@
   });
   window.addEventListener('hashchange', openHashTab);
 </script>
+<script>
+  // Graceful gate for per-village preview instances: they have no Netlify
+  // Identity provisioned, so the widget can only surface a raw error. Probe the
+  // Identity settings endpoint; when it's absent, swap the sign-in screen for a
+  // styled notice and no-op the widget so nothing (user click or the dead-
+  // session recovery path) can reopen it. The flagship console passes the probe
+  // and this changes nothing there.
+  fetch('/.netlify/identity/settings')
+    .then(function (r) { if (!r.ok) throw new Error('identity unavailable'); })
+    .catch(function () {
+      try { netlifyIdentity.close(); } catch (_) {}
+      try { netlifyIdentity.open = function () {}; } catch (_) {}
+      var s = document.getElementById('auth-screen');
+      if (!s) return;
+      s.style.display = 'flex';
+      s.innerHTML =
+        '<div style="font-size:2.4rem;">🏘️</div>' +
+        '<h1>VillageFirst Village Admin</h1>' +
+        '<p style="background:#fffbeb; border:1px solid #fcd34d; border-radius:10px; padding:0.9rem 1.1rem; color:#92400e; line-height:1.55;">' +
+          'Admin sign-in isn’t available on this preview instance. Village admin runs on the flagship console until per-village sign-in ships with the platform’s new auth.' +
+        '</p>' +
+        '<div class="site-link"><a href="/">← back to the village site</a></div>';
+    });
+</script>
 </body>
 </html>
