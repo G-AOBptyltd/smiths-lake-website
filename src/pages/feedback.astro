@@ -13,11 +13,19 @@
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
+
+// Per-village strings (env override ?? exact historical Smiths Lake strings —
+// mirrors src/config/village.js). Read inline instead of importing village.js:
+// adding ANY new import to this page can reshuffle Vite's CSS chunk merging
+// and break the byte-parity invariant for default (Smiths Lake) builds — see
+// the warning in src/pages/contact.astro.
+const villageDisplay = import.meta.env.PUBLIC_VILLAGE_DISPLAY_NAME || 'Smiths Lake Village';
+const entityShort = import.meta.env.PUBLIC_ENTITY_SHORT || 'PPCA';
 ---
 
 <BaseLayout
   title="Share Your Comments"
-  description="Share your ideas and suggestions for improving Smiths Lake Village."
+  description={`Share your ideas and suggestions for improving ${villageDisplay}.`}
 >
   <Hero
     title="Share Your Comments"
@@ -34,7 +42,7 @@ import Hero from '../components/Hero.astro';
             📋 Providing feedback on: <strong id="project-name-display"></strong>
           </p>
           <p>
-            Your feedback on this project will be reviewed by the PPCA committee 
+            Your feedback on this project will be reviewed by the {entityShort} committee
             and may influence the final outcomes. All submissions are valued.
           </p>
         </div>
@@ -42,13 +50,13 @@ import Hero from '../components/Hero.astro';
         <!-- General intro - hidden via JS when project parameter exists -->
         <div id="general-intro">
           <p>
-            We want to hear from you! Share your ideas, suggestions, or concerns about 
-            our community. Your feedback helps PPCA understand what matters most to 
+            We want to hear from you! Share your ideas, suggestions, or concerns about
+            our community. Your feedback helps {entityShort} understand what matters most to
             residents and guides our advocacy efforts.
           </p>
           <p>
-            <strong>What happens to your feedback?</strong> All submissions are reviewed 
-            by the PPCA committee. Ideas that align with community priorities may be 
+            <strong>What happens to your feedback?</strong> All submissions are reviewed
+            by the {entityShort} committee. Ideas that align with community priorities may be
             developed into formal submissions to MidCoast Council.
           </p>
         </div>
@@ -186,8 +194,8 @@ import Hero from '../components/Hero.astro';
       <aside class="feedback-note">
         <h2>🔒 Privacy Note</h2>
         <p>
-          Your feedback is stored securely and reviewed only by PPCA committee members. 
-          Anonymous submissions are welcome. We will never share your personal 
+          Your feedback is stored securely and reviewed only by {entityShort} committee members.
+          Anonymous submissions are welcome. We will never share your personal
           information without your consent.
         </p>
         <p>

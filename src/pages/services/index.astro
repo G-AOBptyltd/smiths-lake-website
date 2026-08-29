@@ -32,6 +32,11 @@ try {
   }
 } catch (e) { /* manifest not yet generated */ }
 
+// Per-village display name — inline import.meta.env read with the exact-current
+// default, NOT a village.js import (a new static import can reorder Vite CSS
+// chunks and break byte parity — see the warning in src/pages/contact.astro).
+const villageDisplayName = import.meta.env.PUBLIC_VILLAGE_DISPLAY_NAME || 'Smiths Lake Village';
+
 // ── Local Services directory ──────────────────────────────────────────────────
 const allPublished = await fetchNotionContent({ requireShowOnWebsite: true });
 const serviceItems = allPublished
@@ -44,7 +49,7 @@ const serviceItems = allPublished
 
 <Layout
   title="Local Services"
-  description="Facilities, amenities, and local services directory for Smiths Lake Village residents and visitors."
+  description={`Facilities, amenities, and local services directory for ${villageDisplayName} residents and visitors.`}
 >
 <style>
   .page-wrap { background: #f7f9fc; }

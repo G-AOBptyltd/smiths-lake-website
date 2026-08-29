@@ -35,11 +35,18 @@ const allStatuses = [...new Set(publishedContent.flatMap(item =>
   Array.isArray(item.status) ? item.status : [item.status]
 ).filter(Boolean))].sort();
 const allTypes = [...new Set(publishedContent.map(item => item.recordType).filter(Boolean))].sort();
+
+// Per-village display name (env override ?? exact historical Smiths Lake
+// string — mirrors src/config/village.js). Read inline instead of importing
+// village.js: adding ANY new import to this page can reshuffle Vite's CSS
+// chunk merging and break the byte-parity invariant for default builds — see
+// the warning in src/pages/contact.astro.
+const villageDisplay = import.meta.env.PUBLIC_VILLAGE_DISPLAY_NAME || 'Smiths Lake Village';
 ---
 
-<Layout 
-  title="Site Map & Content Directory" 
-  description="Complete navigation and content directory for Smiths Lake Village community website"
+<Layout
+  title="Site Map & Content Directory"
+  description={`Complete navigation and content directory for ${villageDisplay} community website`}
 >
   <style>
     :root {
@@ -457,7 +464,7 @@ const allTypes = [...new Set(publishedContent.map(item => item.recordType).filte
     <div class="hero-section">
       <h1>Site Map & Content Directory</h1>
       <p>
-        Browse all pages and resources on the Smiths Lake Village website
+        Browse all pages and resources on the {villageDisplay} website
       </p>
     </div>
 

@@ -27,15 +27,27 @@ try {
 const heroImage = sectionHeroManifest['environment'] || null;
 
 // Fetch Environment items
-const items = await fetchNotionContent({ 
+const items = await fetchNotionContent({
   section: 'Environment & Sustainability',
   requireShowOnWebsite: true
 });
+
+// Default (no PUBLIC_VILLAGE_NAME) = Smiths Lake flagship build: keep the
+// historical lake-opening prose byte-for-byte, INCLUDING the embedded
+// newline + indent runs (Astro preserves interior text whitespace in built
+// HTML, so these \n sequences are load-bearing for the parity invariant).
+// Other villages get a short generic line built from config values.
+const isDefaultVillage = !import.meta.env.PUBLIC_VILLAGE_NAME;
+const lakeIntroDetail = isDefaultVillage
+  ? '\n              how full is the lake, and is it heading for an opening? Smiths Lake is monitored 24/7 by\n              Manly Hydraulics Laboratory at Tarbuck Bay. The trigger for mechanically opening the\n              sandbar is 2.1 m AHD, adjusted for forecast weather.\n'
+  : ` how is the water level tracking? Live readings for ${village.name} from the ${village.waterStation} gauge are updated around the clock below.`;
 ---
 
 <Layout
   title="Environment & Sustainability"
-  description="Lake health monitoring, conservation programs, and environmental initiatives"
+  description={isDefaultVillage
+    ? 'Lake health monitoring, conservation programs, and environmental initiatives'
+    : 'Conservation programs and environmental initiatives'}
 >
   <style>
     .environment-page {
@@ -272,7 +284,9 @@ const items = await fetchNotionContent({
     <!-- Hero Section -->
     <SectionHero
       title={sectionSettings?.heroTitle || 'Environment & Sustainability'}
-      subtitle={sectionSettings?.heroSubtitle || 'Lake health monitoring, foreshore management, wildlife conservation, and environmental programs protecting our natural assets.'}
+      subtitle={sectionSettings?.heroSubtitle || (isDefaultVillage
+        ? 'Lake health monitoring, foreshore management, wildlife conservation, and environmental programs protecting our natural assets.'
+        : 'Wildlife conservation and environmental programs protecting our natural assets.')}
       accentHex={sectionSettings?.accentHex || '#16A34A'}
       backgroundImage={heroImage}
       overlayOpacity={sectionSettings?.overlayOpacity ?? 50}
@@ -284,11 +298,7 @@ const items = await fetchNotionContent({
           <div class="section-header">
             <h2 id="lake-level-heading">Live Lake Level</h2>
             <p class="section-intro">
-              When heavy rain arrives, the question every resident and visitor asks is the same:
-              how full is the lake, and is it heading for an opening? Smiths Lake is monitored 24/7 by
-              Manly Hydraulics Laboratory at Tarbuck Bay. The trigger for mechanically opening the
-              sandbar is 2.1 m AHD, adjusted for forecast weather.
-            </p>
+              When heavy rain arrives, the question every resident and visitor asks is the same:{lakeIntroDetail}</p>
           </div>
           <WaterLevelWidget refreshMinutes={90} />
         </section>
@@ -298,7 +308,7 @@ const items = await fetchNotionContent({
         <div class="section-group">
           <div class="section-header">
             <h2>Active Programs</h2>
-            <p class="section-intro">Our ongoing environmental initiatives and conservation efforts to protect and enhance Smiths Lake's natural environment.</p>
+            <p class="section-intro">Our ongoing environmental initiatives and conservation efforts to protect and enhance {village.name}'s natural environment.</p>
           </div>
           <div class="programs-grid">
             {items.map(program => {

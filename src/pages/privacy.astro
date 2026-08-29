@@ -1,22 +1,50 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Per-village strings (env override ?? exact historical Smiths Lake strings —
+// mirrors src/config/village.js). Read inline instead of importing village.js:
+// adding ANY new import to this page can reshuffle Vite's CSS chunk merging
+// and break the byte-parity invariant for default (Smiths Lake) builds — see
+// the warning in src/pages/contact.astro.
+//
+// This is PPCA's privacy policy. For non-default villages (concept previews)
+// we render the same policy text with the village's entity substituted, plus
+// a note that a real village supplies its own policy at onboarding.
+const villageName = import.meta.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake';
+const isDefaultVillage = villageName === 'Smiths Lake';
+const villageDisplay = import.meta.env.PUBLIC_VILLAGE_DISPLAY_NAME || 'Smiths Lake Village';
+const entityName =
+  import.meta.env.PUBLIC_ENTITY_NAME ||
+  (isDefaultVillage ? 'Pacific Palms Community Association' : `${villageName} Community (concept preview)`);
+const entityShort = import.meta.env.PUBLIC_ENTITY_SHORT || (isDefaultVillage ? 'PPCA' : '');
+// "The <entity> (<short>) operates the villagefirst.org.au website." — domain
+// and short-form only apply to the default (Smiths Lake / PPCA) build.
+const entityLine = entityShort ? `${entityName} (${entityShort})` : entityName;
+const siteRef = isDefaultVillage ? 'the villagefirst.org.au' : 'this';
 ---
 
-<BaseLayout 
-  title="Privacy Policy" 
-  description="Privacy policy for the Smiths Lake Village community website."
+<BaseLayout
+  title="Privacy Policy"
+  description={`Privacy policy for the ${villageDisplay} community website.`}
 >
   <section class="section">
     <div class="container container--narrow">
       <h1>Privacy Policy</h1>
       <p class="last-updated">Last updated: December 2025</p>
-      
+      {!isDefaultVillage && (
+        <p class="preview-note">
+          <em>Concept preview: this page shows the platform's standard privacy policy with
+          {villageDisplay} substituted. A real {villageDisplay} website would publish its own
+          privacy policy, supplied by the village at onboarding.</em>
+        </p>
+      )}
+
       <div class="policy-content">
         <h2>Introduction</h2>
         <p>
-          The Pacific Palms Community Association (PPCA) operates the villagefirst.org.au 
-          website. This Privacy Policy explains how we collect, use, and protect your 
-          personal information in accordance with the Australian Privacy Act 1988 and 
+          The {entityLine} operates {siteRef}
+          website. This Privacy Policy explains how we collect, use, and protect your
+          personal information in accordance with the Australian Privacy Act 1988 and
           the Australian Privacy Principles (APPs).
         </p>
         

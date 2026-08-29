@@ -27,7 +27,10 @@
 </div>
 <div class="wrap">
   <h1>Have your say</h1>
-  <p class="sub">Open community surveys for Smiths Lake. Your input helps guide local decisions.</p>
+  <!-- DELIBERATE DEFAULT CHANGE: subtitle was "Open community surveys for Smiths Lake."
+       Static file can't read build env, so the default is now village-neutral; the JS
+       below restores "for <village>" from the survey-list response once it loads. -->
+  <p class="sub" id="subtitle">Open community surveys. Your input helps guide local decisions.</p>
   <div id="list"><div class="state">Loading surveys…</div></div>
 </div>
 <script>
@@ -39,6 +42,13 @@
   try{
     const res = await fetch('/api/survey-list');
     const data = await res.json();
+    // Personalise the subtitle from the response's per-survey village field
+    // (textContent = safe against markup injection from Notion data).
+    const villageName = (data.surveys || []).map(s => s.village).find(Boolean);
+    if (villageName) {
+      document.getElementById('subtitle').textContent =
+        `Open community surveys for ${villageName}. Your input helps guide local decisions.`;
+    }
     const surveys = (data.surveys || []).filter(s => s.active);  // only live surveys are public
     if(!surveys.length){ listEl.innerHTML = '<div class="state">There are no open surveys right now. Please check back soon.</div>'; return; }
     listEl.innerHTML = surveys.map(s => {

@@ -14,6 +14,12 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 import { village } from '../config/village.js';
+
+// Tyro Pay Online is a PPCA (Smiths Lake) merchant arrangement — every other
+// village picks its own payments provider, so Tyro-specific prose is gated:
+// default build keeps the exact current text, other villages get a
+// provider-neutral line.
+const isDefaultVillage = village.name === 'Smiths Lake';
 ---
 
 <BaseLayout
@@ -31,8 +37,8 @@ import { village } from '../config/village.js';
 
       <div class="intro">
         <p>
-          Pacific Palms Community Association (PPCA) is run by volunteers for the people of
-          Smiths Lake and surrounds. Becoming a member supports local projects, events and
+          {village.entityName} ({village.entityShort}) is run by volunteers for the people of
+          {village.name} and surrounds. Becoming a member supports local projects, events and
           advocacy — and gives you a voice at community meetings.
         </p>
       </div>
@@ -51,7 +57,7 @@ import { village } from '../config/village.js';
       <div class="card" id="join">
         <h2>✍️ Apply to join</h2>
         <p>
-          Fill in your details below and your application goes straight to the PPCA team.
+          Fill in your details below and your application goes straight to the {village.entityShort} team.
           You don't pay anything now — choose how you'd like to pay and we'll take it from there.
         </p>
 
@@ -114,7 +120,7 @@ import { village } from '../config/village.js';
             <legend class="form-label form-label--required">How would you like to pay?</legend>
             <div class="type-grid type-grid--pay">
               <label class="type-opt is-sel"><input type="radio" name="paymentMethod" value="Bank transfer" checked /> <span>🏦 Bank transfer</span></label>
-              <label class="type-opt"><input type="radio" name="paymentMethod" value="Cash at meeting" /> <span>💵 Cash at a PPCA meeting</span></label>
+              <label class="type-opt"><input type="radio" name="paymentMethod" value="Cash at meeting" /> <span>💵 Cash at a {village.entityShort} meeting</span></label>
               <label class="type-opt"><input type="radio" name="paymentMethod" value="Notify when online payments open" /> <span>💳 Tell me when I can pay online</span></label>
             </div>
             <p class="form-help">Secure online card payment is coming soon — see <a href="/contribute/">Support Us</a>.</p>
@@ -128,11 +134,11 @@ import { village } from '../config/village.js';
           <div class="declarations">
             <label class="optin-check">
               <input type="checkbox" name="declaration" required />
-              <span>I support the purposes of Pacific Palms Community Association and apply to become a member. <span class="req-mark">*</span></span>
+              <span>I support the purposes of {village.entityName} and apply to become a member. <span class="req-mark">*</span></span>
             </label>
             <label class="optin-check">
               <input type="checkbox" name="privacyConsent" required />
-              <span>I agree to PPCA storing my details to manage my membership. <a href="/privacy/">Privacy Policy</a> <span class="req-mark">*</span></span>
+              <span>I agree to {village.entityShort} storing my details to manage my membership. <a href="/privacy/">Privacy Policy</a> <span class="req-mark">*</span></span>
             </label>
             <label class="optin-check">
               <input type="checkbox" name="stayConnected" checked />
@@ -152,17 +158,17 @@ import { village } from '../config/village.js';
         <div class="join-success" id="join-success" style="display:none;">
           <div class="success-tick">✓</div>
           <h3>Welcome — application received!</h3>
-          <p id="join-success-detail">Your application has reached the PPCA team.</p>
+          <p id="join-success-detail">Your application has reached the {village.entityShort} team.</p>
         </div>
       </div>
 
       <!-- ── Other ways to support ─────────────────────────────────── -->
       <div class="card card--support">
-        <h2>🤝 More ways to support Smiths Lake</h2>
+        <h2>🤝 More ways to support {village.name}</h2>
         <p>
           Not ready to join, or want to do more? You can donate, pledge your time or offer a
           service on our <a href="/contribute/">Support Us</a> page — and when secure online
-          card payments launch with Tyro, you'll be able to pay your membership there too.
+          card payments launch{isDefaultVillage ? ' with Tyro' : ''}, you'll be able to pay your membership there too.
         </p>
       </div>
 
@@ -170,7 +176,7 @@ import { village } from '../config/village.js';
       <div class="card" id="updates">
         <h2>📬 Just want community updates?</h2>
         <p>
-          Not ready to become a member? Sign up free for news about PPCA meetings, community
+          Not ready to become a member? Sign up free for news about {village.entityShort} meetings, community
           events, local projects, emergency preparedness and volunteer opportunities.
           You can unsubscribe anytime.
         </p>
@@ -230,7 +236,7 @@ import { village } from '../config/village.js';
       <aside class="privacy-note">
         <h2>🔒 Your details are safe</h2>
         <p>
-          Your application is stored securely in PPCA's member register and used only to manage
+          Your application is stored securely in {village.entityShort}'s member register and used only to manage
           your membership. We never sell or share your information, and this website never
           handles your card details.
         </p>
@@ -343,6 +349,10 @@ import { village } from '../config/village.js';
 </style>
 
 <script>
+  // Per-village entity short name (env override ?? exact historical Smiths Lake
+  // string — mirrors src/config/village.js; Vite statically replaces PUBLIC_* here).
+  const ENTITY = import.meta.env.PUBLIC_ENTITY_SHORT || 'PPCA';
+
   // Highlight the selected radio card (membership type + payment method).
   const radioOpts = Array.from(document.querySelectorAll('.type-opt'));
   function syncRadios() {
@@ -395,8 +405,8 @@ import { village } from '../config/village.js';
   }
 
   const SUCCESS_BY_PAYMENT: Record<string, string> = {
-    'Bank transfer': 'A PPCA volunteer will email you the bank transfer details shortly.',
-    'Cash at meeting': 'You can pay at the next PPCA meeting — we look forward to seeing you there.',
+    'Bank transfer': `A ${ENTITY} volunteer will email you the bank transfer details shortly.`,
+    'Cash at meeting': `You can pay at the next ${ENTITY} meeting — we look forward to seeing you there.`,
     'Notify when online payments open': "We'll email you as soon as secure online card payment opens.",
   };
 
@@ -452,7 +462,7 @@ import { village } from '../config/village.js';
       const detail = document.getElementById('join-success-detail');
       if (detail) {
         const feeBit = out.fee ? ` Your ${payload.membershipType} membership is $${out.fee} for the ${out.year || 'current'} year.` : '';
-        detail.textContent = `Your application has reached the PPCA team.${feeBit} ${SUCCESS_BY_PAYMENT[paymentMethod] || ''}`;
+        detail.textContent = `Your application has reached the ${ENTITY} team.${feeBit} ${SUCCESS_BY_PAYMENT[paymentMethod] || ''}`;
       }
       if (success) success.style.display = 'block';
     } catch (err) {

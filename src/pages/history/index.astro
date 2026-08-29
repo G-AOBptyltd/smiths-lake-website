@@ -21,6 +21,18 @@ try {
 } catch (e) { /* manifest not yet generated */ }
 const heroImage = sectionHeroManifest['history'] || null;
 
+// Acknowledgement of Country — env override ?? exact historical Smiths Lake
+// text. Inline env read, NOT a village.js import (adding a new static import
+// can reorder Vite CSS chunks and break byte parity — see the warning in
+// src/pages/contact.astro). The \n + indent bytes inside the default (and the
+// wrapping \n) reproduce the historical rendered text node exactly, since
+// Astro preserves interior text whitespace in built HTML. Custodianship
+// differs per village: PUBLIC_ACKNOWLEDGEMENT_TEXT MUST be set for any
+// village whose Traditional Custodians differ or are unverified.
+const acknowledgementText = import.meta.env.PUBLIC_ACKNOWLEDGEMENT_TEXT
+  ? import.meta.env.PUBLIC_ACKNOWLEDGEMENT_TEXT
+  : '\nWe acknowledge the Worimi people as the traditional custodians of the land on which Smiths Lake\n        Village is located. We pay our respects to Elders past, present and emerging.\n';
+
 // Fetch History & Culture items
 const allHistoryItems = await fetchNotionContent({ 
   section: 'History & Culture',
@@ -507,10 +519,7 @@ function getCardDisplayConfig(item) {
 
     <div class="acknowledgement">
       <h2>Acknowledgement of Country</h2>
-      <p>
-        We acknowledge the Worimi people as the traditional custodians of the land on which Smiths Lake
-        Village is located. We pay our respects to Elders past, present and emerging.
-      </p>
+      <p>{acknowledgementText}</p>
     </div>
 
     {timelineItems.length > 0 && (

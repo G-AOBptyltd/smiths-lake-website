@@ -1,11 +1,31 @@
 ---
 // Accessibility Statement Page
 import Layout from '../layouts/BaseLayout.astro';
+
+// Per-village strings (env override ?? exact historical Smiths Lake strings —
+// mirrors src/config/village.js). Read inline instead of importing village.js:
+// adding ANY new import to this page can reshuffle Vite's CSS chunk merging
+// and break the byte-parity invariant for default (Smiths Lake) builds — see
+// the warning in src/pages/contact.astro.
+//
+// This is PPCA's accessibility statement. Non-default villages (concept
+// previews) get the same statement with their entity substituted, plus a note
+// that a real village supplies its own statement at onboarding.
+const villageName = import.meta.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake';
+const isDefaultVillage = villageName === 'Smiths Lake';
+const villageDisplay = import.meta.env.PUBLIC_VILLAGE_DISPLAY_NAME || 'Smiths Lake Village';
+const entityName =
+  import.meta.env.PUBLIC_ENTITY_NAME ||
+  (isDefaultVillage ? 'Pacific Palms Community Association' : `${villageName} Community (concept preview)`);
+const entityShort = import.meta.env.PUBLIC_ENTITY_SHORT || (isDefaultVillage ? 'PPCA' : '');
+// Default build renders "…website (villagefirst.org.au)…" and "…Association (PPCA)."
+const siteDomainParen = isDefaultVillage ? ' (villagefirst.org.au)' : '';
+const statementEntity = entityShort ? `${entityName} (${entityShort})` : entityName;
 ---
 
-<Layout 
-  title="Accessibility Statement" 
-  description="Smiths Lake Village website accessibility commitment and compliance information"
+<Layout
+  title="Accessibility Statement"
+  description={`${villageDisplay} website accessibility commitment and compliance information`}
 >
   <style>
     .accessibility-page {
@@ -179,7 +199,7 @@ import Layout from '../layouts/BaseLayout.astro';
     <div class="page-header">
       <h1>Accessibility Statement</h1>
       <p>
-        The Pacific Palms Community Association is committed to ensuring digital accessibility 
+        The {entityName} is committed to ensuring digital accessibility
         for all community members and visitors.
       </p>
     </div>
@@ -189,10 +209,17 @@ import Layout from '../layouts/BaseLayout.astro';
       <!-- Commitment Section -->
       <div class="content-section">
         <h2>Our Commitment</h2>
+        {!isDefaultVillage && (
+          <p>
+            <em>Concept preview: this page shows the platform's standard accessibility statement
+            with {villageDisplay} substituted. A real {villageDisplay} website would publish its
+            own accessibility statement, supplied by the village at onboarding.</em>
+          </p>
+        )}
         <p>
-          The Smiths Lake Village website (villagefirst.org.au) is designed to be accessible to 
-          people of all abilities, including those using assistive technologies. We are committed 
-          to providing an inclusive digital experience that enables everyone to access community 
+          The {villageDisplay} website{siteDomainParen} is designed to be accessible to
+          people of all abilities, including those using assistive technologies. We are committed
+          to providing an inclusive digital experience that enables everyone to access community
           information, services, and resources.
         </p>
         <div class="compliance-badge">
@@ -366,8 +393,8 @@ import Layout from '../layouts/BaseLayout.astro';
       <div class="content-section">
         <h2>Feedback and Support</h2>
         <p>
-          We welcome feedback on the accessibility of the Smiths Lake Village website. 
-          If you encounter any accessibility barriers or have suggestions for improvement, 
+          We welcome feedback on the accessibility of the {villageDisplay} website.
+          If you encounter any accessibility barriers or have suggestions for improvement,
           please contact us:
         </p>
 
@@ -419,8 +446,8 @@ import Layout from '../layouts/BaseLayout.astro';
           <strong>Next review:</strong> July 2026
         </p>
         <p>
-          This accessibility statement applies to the Smiths Lake Village website 
-          (villagefirst.org.au) operated by the Pacific Palms Community Association (PPCA).
+          This accessibility statement applies to the {villageDisplay} website{siteDomainParen}
+          operated by the {statementEntity}.
         </p>
       </div>
 

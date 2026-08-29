@@ -12,6 +12,12 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
 import { village } from '../config/village.js';
+
+// Tyro Pay Online is a PPCA (Smiths Lake) merchant arrangement — every other
+// village picks its own payments provider. Gate Tyro-specific prose so the
+// default build keeps the exact current text and other villages get a
+// provider-neutral line (never claim Tyro for a village that hasn't chosen it).
+const isDefaultVillage = village.name === 'Smiths Lake';
 ---
 
 <BaseLayout
@@ -29,8 +35,8 @@ import { village } from '../config/village.js';
 
       <div class="intro">
         <p>
-          Pacific Palms Community Association (PPCA) is run by volunteers for the people of
-          Smiths Lake. Your support — whether a donation, a pledge, some volunteer hours or a
+          {village.entityName} ({village.entityShort}) is run by volunteers for the people of
+          {village.name}. Your support — whether a donation, a pledge, some volunteer hours or a
           donated service — goes directly into local projects, events and advocacy.
         </p>
       </div>
@@ -39,13 +45,15 @@ import { village } from '../config/village.js';
       <div class="card card--donate">
         <h2>💳 Memberships &amp; donations online — coming soon</h2>
         <p>
-          PPCA is setting up secure online card payments with Tyro, an Australian
-          payments provider. Soon you'll be able to pay your PPCA membership and
+          {village.entityShort} is setting up secure online card payments with {isDefaultVillage
+            ? `Tyro, an Australian
+          payments provider`
+            : 'a secure Australian payments provider'}. Soon you'll be able to pay your {village.entityShort} membership and
           make donations right here.
         </p>
         <p class="donate-note">
-          In the meantime, you can <a href="/membership/">apply for PPCA membership</a> today,
-          or <a href="#pledge">pledge a donation or offer support</a> below and a PPCA
+          In the meantime, you can <a href="/membership/">apply for {village.entityShort} membership</a> today,
+          or <a href="#pledge">pledge a donation or offer support</a> below and a {village.entityShort}
           volunteer will be in touch.
         </p>
       </div>
@@ -55,7 +63,7 @@ import { village } from '../config/village.js';
         <h2>🤝 Pledge or offer your help</h2>
         <p>
           Not ready to pay online, or want to give in another way? Tell us what you'd like to
-          contribute and a PPCA volunteer will follow up. There's no obligation.
+          contribute and a {village.entityShort} volunteer will follow up. There's no obligation.
         </p>
 
         <form id="pledge-form" class="pledge-form" novalidate>
@@ -105,7 +113,7 @@ import { village } from '../config/village.js';
             </label>
             <div class="form-group" id="display-name-wrap" style="display:none; margin-top:0.75rem;">
               <label class="form-label" for="p-display">How would you like to appear? <span class="hint">(optional)</span></label>
-              <input type="text" id="p-display" name="displayName" class="form-input" maxlength="60" placeholder="e.g. Jane S., or Smiths Lake Bakery" />
+              <input type="text" id="p-display" name="displayName" class="form-input" maxlength="60" placeholder={`e.g. Jane S., or ${village.name} Bakery`} />
             </div>
           </div>
 
@@ -132,7 +140,7 @@ import { village } from '../config/village.js';
           share your information. Your name only appears on our public
           <a href="/supporters/">Supporters board</a> if you tick the box to allow it — otherwise
           you're only ever counted anonymously in our totals. When online card payments launch,
-          they'll be handled securely by Tyro — this website never sees your card details.
+          they'll be handled securely by {isDefaultVillage ? 'Tyro' : 'a secure payments provider'} — this website never sees your card details.
         </p>
         <p><a href="/privacy/">Read our full Privacy Policy</a></p>
       </aside>

@@ -10,8 +10,12 @@ import { fetchAboutContent } from '../../lib/notion-about.js';
 
 // Village-driven About body (PUBLIC_ABOUT_SOURCE="notion"). Default 'builtin'
 // keeps the historical hardcoded Smiths Lake copy byte-identical; when the
-// fetch returns nothing we also fall back to the builtin copy.
+// fetch returns nothing we also fall back to the builtin copy — but ONLY for
+// the default (Smiths Lake) village. Non-default villages without Notion
+// content get a short generic placeholder instead, so Smiths-specific prose
+// (lake facts, PPCA history) never leaks onto another village's site.
 const aboutContent = village.aboutSource === 'notion' ? await fetchAboutContent() : null;
+const isDefaultVillage = village.name === 'Smiths Lake';
 
 // Fetch section settings
 const sectionSettings = await fetchSectionSettingsBySlug('about');
@@ -292,7 +296,7 @@ const documents = await getPublicDocuments('About - Document Library');
             {block.items.map((item) => (item.type === 'h3' ? <h3>{item.text}</h3> : <p>{item.text}</p>))}
           </div>
         ))
-      ) : (
+      ) : isDefaultVillage ? (
       <Fragment><Fragment set:html={'<!-- Location & Overview -->'} />
       <div class="content-block">
         <h2>Smiths Lake Village</h2>
@@ -351,6 +355,15 @@ const documents = await getPublicDocuments('About - Document Library');
           extensive community consultation, it guides our advocacy and development efforts.
         </p>
       </div></Fragment>
+      ) : (
+      <div class="content-block">
+        <h2>{village.displayName}</h2>
+        <p>
+          This page introduces {village.displayName}. Village-specific content — local
+          history, demographics and community plans — is added by the village during
+          onboarding and will appear here once published.
+        </p>
+      </div>
       )}
       
       <!-- Document Library -->
@@ -359,7 +372,7 @@ const documents = await getPublicDocuments('About - Document Library');
           <div class="library-icon">📚</div>
           <div class="library-header-content">
             <h2>Document Library</h2>
-            <p>Access official PPCA documents, community plans, and reference materials. Click any document to view or download.</p>
+            <p>Access official {village.entityShort} documents, community plans, and reference materials. Click any document to view or download.</p>
           </div>
         </div>
 
@@ -396,7 +409,7 @@ const documents = await getPublicDocuments('About - Document Library');
         </div>
         
         <div class="library-footer">
-          Documents are managed by PPCA committee members. Contact the committee for additional information.        
+          Documents are managed by {village.entityShort} committee members. Contact the committee for additional information.
         </div>
       </div>
     </div>

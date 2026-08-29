@@ -21,6 +21,12 @@ try {
 } catch (e) { /* manifest not yet generated */ }
 const heroImage = sectionHeroManifest['emergency'] || null;
 
+// Per-village name for naming-only prose (all safety CONTENT is universal or
+// Notion-driven and untouched). Inline import.meta.env read with the
+// exact-current default, NOT a village.js import (a new static import can
+// reorder Vite CSS chunks and break byte parity — see src/pages/contact.astro).
+const villageName = import.meta.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake';
+
 // Fetch Emergency & Safety items
 const items = await fetchNotionContent({ 
   section: 'Emergency & Safety',
@@ -49,7 +55,7 @@ const categoryEmojis = {
 
 <Layout 
   title="Emergency & Safety"
-  description="Emergency services, evacuation plans, and safety information for Smiths Lake community"
+  description={`Emergency services, evacuation plans, and safety information for ${villageName} community`}
 >
   <style>
     .emergency-page {
@@ -375,7 +381,7 @@ const categoryEmojis = {
     <!-- Hero Section -->
     <SectionHero
       title={sectionSettings?.heroTitle || 'Emergency & Safety'}
-      subtitle={sectionSettings?.heroSubtitle || 'Emergency services, evacuation plans, and safety information for the Smiths Lake community.'}
+      subtitle={sectionSettings?.heroSubtitle || `Emergency services, evacuation plans, and safety information for the ${villageName} community.`}
       accentHex={sectionSettings?.accentHex || '#DC2626'}
       backgroundImage={heroImage}
       overlayOpacity={sectionSettings?.overlayOpacity ?? 50}

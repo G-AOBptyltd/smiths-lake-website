@@ -38,6 +38,11 @@ function trim(text: string, max: number) {
   return text.length > max ? text.substring(0, max) + '…' : text;
 }
 
+// Per-village display name — inline import.meta.env read with the exact-current
+// default, NOT a village.js import (a new static import can reorder Vite CSS
+// chunks and break byte parity — see the warning in src/pages/contact.astro).
+const villageDisplayName = import.meta.env.PUBLIC_VILLAGE_DISPLAY_NAME || 'Smiths Lake Village';
+
 const sectionSettings = await fetchSectionSettingsBySlug('services');
 
 let sectionHeroManifest: Record<string, string> = {};
@@ -73,7 +78,7 @@ const listItems = newsItems.filter((i: any) => !featuredSet.has(i));
 
 <Layout
   title="Village News"
-  description="The latest news and updates from Smiths Lake Village — published by the community, for the community."
+  description={`The latest news and updates from ${villageDisplayName} — published by the community, for the community.`}
 >
 <style>
   .page-wrap { background: #f7f9fc; }
@@ -209,7 +214,7 @@ const listItems = newsItems.filter((i: any) => !featuredSet.has(i));
 <div class="page-wrap">
   <SectionHero
     title="Village News"
-    subtitle="The latest from Smiths Lake Village — published by the community, for the community."
+    subtitle={`The latest from ${villageDisplayName} — published by the community, for the community.`}
     accentHex={sectionSettings?.accentHex || '#1B365D'}
     backgroundImage={heroImage}
     overlayOpacity={sectionSettings?.overlayOpacity ?? 50}

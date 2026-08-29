@@ -22,10 +22,20 @@ try {
 const heroImage = sectionHeroManifest['groups'] || null;
 
 // Fetch all Groups & Activities items
-const items = await fetchNotionContent({ 
+const items = await fetchNotionContent({
   section: 'Groups & Activities',
   requireShowOnWebsite: true
 });
+
+// Per-village intro lead — inline import.meta.env read with the exact-current
+// default, NOT a village.js import: adding a new static import to this page
+// can reorder Vite CSS chunks and break byte parity for default builds (see
+// the warning comments in src/pages/contact.astro). The default's leading \n
+// reproduces the collapsed edge whitespace of the historical text node.
+const isDefaultVillage = !import.meta.env.PUBLIC_VILLAGE_NAME;
+const groupsIntroLead = isDefaultVillage
+  ? '\nSmiths Lake and the Pacific Palms area have'
+  : `\n${import.meta.env.PUBLIC_VILLAGE_NAME} has`;
 
 // Category emoji mapping - FIXED 2026-01-28 to match actual Notion values
 const categoryEmojis = {
@@ -404,8 +414,7 @@ const sections = categoryDefs
     />
 
     <div class="intro-section">
-      <p>
-        Smiths Lake and the Pacific Palms area have a rich community life with groups catering to all interests.
+      <p>{groupsIntroLead} a rich community life with groups catering to all interests.
         Whether you're into sports, arts, gardening, or community service, there's something for everyone.
       </p>
     </div>
