@@ -17,7 +17,7 @@ import {
   BOOKINGS_DB_ID, FACILITIES_DB_ID, notionHeaders, jsonResp, notProvisioned,
   rtChunks, queryAll, parseBooking, getFacility, overlaps, OCCUPYING,
 } from './_bookings.js';
-import { isModulePublic, getNotifyRecipients } from './_villages.js';
+import { isModulePublic, getModuleRecipients } from './_villages.js';
 
 function esc(s) {
   return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -25,9 +25,9 @@ function esc(s) {
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-async function notifyCommittee(b, clash) {
+async function notifyCommittee(b, clash, context) {
   const key = process.env.VF_RESEND_API_KEY;
-  const to = await getNotifyRecipients(b.village);
+  const to = await getModuleRecipients({ village: b.village, module: 'bookings', context });
   if (!key || !to.length) return;
   const from = process.env.VF_PLEDGE_FROM || 'VillageFirst <noreply@villagefirst.org.au>';
   const rows = [
@@ -50,7 +50,7 @@ async function notifyCommittee(b, clash) {
   } catch (_) { /* best-effort */ }
 }
 
-export const handler = async (event) => {
+export const handler = async (event, context) => {
   if (event.httpMethod !== 'POST') return jsonResp(405, { error: 'POST only' });
   if (!BOOKINGS_DB_ID || !FACILITIES_DB_ID) return notProvisioned();
 
@@ -134,7 +134,7 @@ export const handler = async (event) => {
       const detail = await res.text();
       throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
     }
-    await notifyCommittee({ village, facility: facility.name, date, startTime, endTime, fullName, email, phone, purpose, attendees: body.attendees }, clash);
+    await notifyCommittee({ village, facility: facility.name, date, startTime, endTime, fullName, email, phone, purpose, attendees: body.attendees }, clash, context);
     return jsonResp(200, { ok: true });
   } catch (err) {
     return jsonResp(502, { error: 'Sorry — we could not record your request just now. Please try again shortly.' });

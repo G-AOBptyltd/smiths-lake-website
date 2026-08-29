@@ -16,7 +16,7 @@ import {
   RSVPS_DB_ID, EVENTS_DB_ID, notionHeaders, jsonResp, notProvisioned,
   rtChunks, queryAll, parseRsvp, getEvent, seatsTaken,
 } from './_events.js';
-import { isModulePublic, getNotifyRecipients } from './_villages.js';
+import { isModulePublic, getModuleRecipients } from './_villages.js';
 
 function esc(s) {
   return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -30,12 +30,12 @@ function fmtWhen(e) {
   return `${parseInt(day, 10)} ${mon} ${y}${t ? `, ${t}` : ''}`;
 }
 
-async function sendEmails({ ev, fullName, email, seats, waitlisted, village }) {
+async function sendEmails({ ev, fullName, email, seats, waitlisted, village, context }) {
   const key = process.env.VF_RESEND_API_KEY;
   if (!key) return;
   const from = process.env.VF_PLEDGE_FROM || 'VillageFirst <noreply@villagefirst.org.au>';
   const orgName = process.env.VF_MEMBER_ORG_NAME || 'Pacific Palms Community Association (PPCA)';
-  const committee = await getNotifyRecipients(village);
+  const committee = await getModuleRecipients({ village, module: 'events', context });
   const replyTo = committee[0];
   const when = fmtWhen(ev);
 
@@ -76,7 +76,7 @@ async function sendEmails({ ev, fullName, email, seats, waitlisted, village }) {
   } catch (_) { /* best-effort */ }
 }
 
-export const handler = async (event) => {
+export const handler = async (event, context) => {
   if (event.httpMethod !== 'POST') return jsonResp(405, { error: 'POST only' });
   if (!EVENTS_DB_ID || !RSVPS_DB_ID) return notProvisioned();
 
@@ -147,7 +147,7 @@ export const handler = async (event) => {
       const detail = await res.text();
       throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
     }
-    await sendEmails({ ev, fullName, email, seats, waitlisted, village });
+    await sendEmails({ ev, fullName, email, seats, waitlisted, village, context });
     return jsonResp(200, { ok: true, status: waitlisted ? 'Waitlist' : 'Registered', seats });
   } catch (err) {
     return jsonResp(502, { error: 'Sorry — we could not record your registration just now. Please try again shortly.' });

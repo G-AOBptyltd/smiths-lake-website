@@ -12,8 +12,9 @@
  */
 
 import { getVillageRecord } from './_villages.js';
+import { requireRole } from './_auth.js';
 
-export const handler = async (event) => {
+export const handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'POST only' }) };
   }
@@ -23,6 +24,13 @@ export const handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
     if (body.village) village = body.village;
   } catch (_) { /* empty body is fine */ }
+
+  // Publishing rebuilds the live site — gate it to the village's admins/stewards
+  // (server-side, via the verified Identity JWT). Prevents anonymous rebuild abuse.
+  const auth = requireRole(context, { village, anyOf: ['admin', 'steward'] });
+  if (!auth.ok) {
+    return { statusCode: auth.status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: auth.error }) };
+  }
 
   let hookUrl = null;
   try {
