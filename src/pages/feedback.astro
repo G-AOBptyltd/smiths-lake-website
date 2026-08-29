@@ -510,7 +510,7 @@ import Hero from '../components/Hero.astro';
       }
       
       // Update page title
-      document.title = `Feedback: ${projectName} | Smiths Lake Village`;
+      document.title = `Feedback: ${projectName} | ${import.meta.env.PUBLIC_SITE_TITLE || import.meta.env.PUBLIC_VILLAGE_DISPLAY_NAME || 'Smiths Lake Village'}`;
     }
   });
 </script>

@@ -63,7 +63,7 @@ async function notifyPledge(p) {
     <h2 style="color:#15795f;">🤝 New pledge — ${esc(p.village)}</h2>
     <p>Someone just offered to support the community via the website. Details are in the admin ledger too.</p>
     <table style="border-collapse:collapse;font-size:14px;">${rows}</table>
-    <p style="margin-top:16px;"><a href="https://villagefirst.org.au/admin/contrib/">Open the Contributions ledger →</a></p>
+    <p style="margin-top:16px;"><a href="${process.env.URL || 'https://villagefirst.org.au'}/admin/contrib/">Open the Contributions ledger →</a></p>
   </div>`;
 
   try {

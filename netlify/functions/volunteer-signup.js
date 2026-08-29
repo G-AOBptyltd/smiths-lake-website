@@ -56,7 +56,7 @@ async function notifyStewards(v) {
 
   const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2937;">
     <h2 style="color:#15795f;">🙋 New volunteer signup — ${esc(v.cardTitle)}</h2>
-    <p>Someone volunteered via the website. Review them in the <a href="https://villagefirst.org.au/admin/volunteers/">Volunteer hub</a>.</p>
+    <p>Someone volunteered via the website. Review them in the <a href="${process.env.URL || 'https://villagefirst.org.au'}/admin/volunteers/">Volunteer hub</a>.</p>
     <table style="border-collapse:collapse;font-size:14px;">${rows}</table>
   </div>`;
 

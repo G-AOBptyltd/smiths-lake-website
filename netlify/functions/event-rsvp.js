@@ -69,7 +69,7 @@ async function sendEmails({ ev, fullName, email, seats, waitlisted, village }) {
       body: JSON.stringify({
         from, to,
         subject: `RSVP — ${fullName} (${seats}) → ${ev.name}${waitlisted ? ' [waitlist]' : ''}`,
-        html: `<p style="font-family:sans-serif;">${esc(fullName)} (${esc(email)}) registered ${seats} seat${seats > 1 ? 's' : ''} for <b>${esc(ev.name)}</b>${waitlisted ? ' — <b>waitlisted (event full)</b>' : ''}. Door list: <a href="https://villagefirst.org.au/admin/events/">Admin → Events</a>.</p>`,
+        html: `<p style="font-family:sans-serif;">${esc(fullName)} (${esc(email)}) registered ${seats} seat${seats > 1 ? 's' : ''} for <b>${esc(ev.name)}</b>${waitlisted ? ' — <b>waitlisted (event full)</b>' : ''}. Door list: <a href="${process.env.URL || 'https://villagefirst.org.au'}/admin/events/">Admin → Events</a>.</p>`,
       }),
     });
   } catch (_) { /* best-effort */ }

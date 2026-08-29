@@ -15,6 +15,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { fetchProjects, getTotalEngagementCount } from '../../lib/notion-projects.js';
 import { getSmartIcon } from '../../lib/icon-matcher.js';
+import { village } from '../../config/village.js';
 
 // Fetch all projects with error handling
 let allProjects = [];
@@ -41,7 +42,7 @@ const engagementText = totalEngagement > 0
   : 'Join your neighbours in shaping the future of our community';
 
 // Page metadata
-const pageTitle = "Community Projects | Smiths Lake Village";
+const pageTitle = `Community Projects | ${village.siteTitle}`;
 const pageDescription = "Have your say on community projects and development proposals. View open consultations, download documents, and submit feedback on initiatives affecting Smiths Lake Village.";
 ---
 

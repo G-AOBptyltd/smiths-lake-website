@@ -38,7 +38,7 @@ async function notifyCommittee(b, clash) {
   ].map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#6b7280;">${esc(k)}</td><td style="padding:4px 0;font-weight:600;">${esc(v)}</td></tr>`).join('');
   const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2937;">
     <h2 style="color:#15795f;">🏛 New hall booking request — ${esc(b.facility)}</h2>
-    <p>Someone asked to hire the hall via the website. Review it in <a href="https://villagefirst.org.au/admin/bookings/">Admin → Facility bookings</a> — it stays Requested until you confirm.</p>
+    <p>Someone asked to hire the hall via the website. Review it in <a href="${process.env.URL || 'https://villagefirst.org.au'}/admin/bookings/">Admin → Facility bookings</a> — it stays Requested until you confirm.</p>
     <table style="border-collapse:collapse;font-size:14px;">${rows}</table>
   </div>`;
   try {

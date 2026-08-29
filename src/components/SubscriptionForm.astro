@@ -15,6 +15,7 @@
  */
 
 import { fetchProjectsForSubscription } from '../lib/notion-projects.js';
+import { village } from '../config/village.js';
 
 // Props for customization
 interface Props {
@@ -169,7 +170,7 @@ const formId = `subscription-form-${Math.random().toString(36).substr(2, 9)}`;
         </div>
         <div class="form-group">
           <label for={`${formId}-residentType`}>
-            Connection to Smiths Lake
+            Connection to {village.name}
           </label>
           <select id={`${formId}-residentType`} name="residentType">
             <option value="">Select one...</option>
@@ -351,7 +352,7 @@ const formId = `subscription-form-${Math.random().toString(36).substr(2, 9)}`;
             aria-required="true"
           />
           <span class="checkbox-text">
-            I agree to receive email communications from Pacific Palms Community Association. 
+            I agree to receive email communications from {village.entityName}. 
             I understand I can unsubscribe at any time.
           </span>
         </label>

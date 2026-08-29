@@ -71,7 +71,7 @@ async function notifyApplication(m) {
 
   const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2937;">
     <h2 style="color:#15795f;">🪪 New membership application — ${esc(m.village)}</h2>
-    <p>Someone just applied to join PPCA via the website. The application is in the VF Members register with Status = Applied.</p>
+    <p>Someone just applied to join ${process.env.VILLAGE_ENTITY_SHORT || process.env.VILLAGE_NAME || 'PPCA'} via the website. The application is in the VF Members register with Status = Applied.</p>
     <table style="border-collapse:collapse;font-size:14px;">${rows}</table>
   </div>`;
 
@@ -79,7 +79,7 @@ async function notifyApplication(m) {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to, subject: `New PPCA membership application — ${m.fullName}`, html }),
+      body: JSON.stringify({ from, to, subject: `New ${process.env.VILLAGE_ENTITY_SHORT || process.env.VILLAGE_NAME || 'PPCA'} membership application — ${m.fullName}`, html }),
     });
   } catch (_) { /* email is best-effort; never block the application */ }
 }

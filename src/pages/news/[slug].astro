@@ -12,6 +12,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import NotionPageContent from '../../components/NotionPageContent.astro';
 import { fetchDetailPageItems } from '../../lib/notion-detail-pages.js';
+import { village } from '../../config/village.js';
 
 // Section → gradient + icon mapping for the hero block
 const SECTION_HERO_STYLES = {
@@ -86,7 +87,7 @@ const descriptionFallbackHtml = item.description
   : '<p>Content coming soon.</p>';
 
 const feedbackUrl = `/feedback/?project=${encodeURIComponent(item.title)}`;
-const pageTitle = `${item.title} | Smiths Lake Village`;
+const pageTitle = `${item.title} | ${village.siteTitle}`;
 const pageDescription = item.description ? item.description.substring(0, 160) : `${item.title} — Smiths Lake Village community news.`;
 ---
 

@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { village } from '../config/village.js';
 ---
 
-<BaseLayout title="Thank You | Smiths Lake Village">
+<BaseLayout title={`Thank You | ${village.siteTitle}`}>
   <main class="thank-you-page">
     <div class="container">
       <div class="success-card">
