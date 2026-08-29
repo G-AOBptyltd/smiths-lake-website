@@ -102,6 +102,19 @@ export const village = {
     accentDark: import.meta.env.PUBLIC_THEME_ACCENT_DARK || '',     // --color-golden-dark
     accentLight: import.meta.env.PUBLIC_THEME_ACCENT_LIGHT || '',   // --color-golden-light
   },
+
+  /**
+   * Homepage section-card descriptions that name the village, entity or
+   * Traditional Custodians (the History default names the Worimi people —
+   * MUST be overridden for any village whose custodianship differs or is
+   * unverified). Other section cards are village-neutral and stay hardcoded.
+   */
+  sectionAboutDesc:
+    import.meta.env.PUBLIC_SECTION_ABOUT_DESC ||
+    'Learn about Smiths Lake Village, PPCA, our community plans, local demographics, and what makes our coastal community special.',
+  sectionHistoryDesc:
+    import.meta.env.PUBLIC_SECTION_HISTORY_DESC ||
+    "Discover the rich history of Smiths Lake Village, the Worimi people's connection to country, and our local cultural heritage.",
 };
 
 /** CSS override block for BaseLayout — empty string when no theme vars are set. */

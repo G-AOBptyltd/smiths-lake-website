@@ -14,7 +14,12 @@ echo "Applying DB env pack to $SITE_ID"
 while IFS=$'\t' read -r k v; do apply "$k" "$v"; done < <(python3 -c "
 import json,sys
 d=json.load(open('$ENVPACK'))
-for k,v in d['envVars'].items(): print(f'{k}\t{v}')")
+for k,v in d['envVars'].items(): print(f'{k}\t{v}')
+# GOTCHA (29 Aug 2026): the Astro content layer reads the LEGACY alias
+# NOTION_DATABASE_ID, not NOTION_CONTENT_DB_ID — both must point at the
+# village's own content DB or builds pull the flagship's content.
+cid=d['envVars'].get('NOTION_CONTENT_DB_ID')
+if cid: print(f'NOTION_DATABASE_ID\t{cid}')")
 echo "Applying identity vars"
 while IFS=$'\t' read -r k v; do apply "$k" "$v"; done < <(python3 -c "
 import json,sys
