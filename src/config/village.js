@@ -115,6 +115,35 @@ export const village = {
   sectionHistoryDesc:
     import.meta.env.PUBLIC_SECTION_HISTORY_DESC ||
     "Discover the rich history of Smiths Lake Village, the Worimi people's connection to country, and our local cultural heritage.",
+
+  /**
+   * Header logo mark. 'wave' is the historical Smiths Lake lake-wave SVG;
+   * other variants render a different inline SVG icon in the same slot,
+   * coloured by the theme tokens: 'lighthouse' | 'hall' | 'lake' | 'tree'.
+   */
+  logoVariant: import.meta.env.PUBLIC_LOGO_VARIANT || 'wave',
+
+  /**
+   * Section-page hero treatment. 'photos' (default) uses the repo/Notion
+   * hero photo set (Smiths Lake imagery). 'gradient' renders a palette-driven
+   * gradient hero instead — the correct default for villages that don't have
+   * their own photo library yet.
+   */
+  sectionHeroStyle: import.meta.env.PUBLIC_SECTION_HERO || 'photos',
+
+  /**
+   * About-page body source. 'builtin' (default) is the historical hardcoded
+   * Smiths Lake copy; 'notion' renders the village's own About row(s) from
+   * its content DB at build time (falls back to builtin if none found).
+   */
+  aboutSource: import.meta.env.PUBLIC_ABOUT_SOURCE || 'builtin',
+
+  /**
+   * Image attribution line rendered small in the footer when set (empty
+   * default renders nothing). REQUIRED whenever the hero image is a
+   * CC BY / CC BY-SA photo — see public/images/villages/ATTRIBUTIONS.md.
+   */
+  heroCredit: import.meta.env.PUBLIC_HERO_CREDIT || '',
 };
 
 /** CSS override block for BaseLayout — empty string when no theme vars are set. */

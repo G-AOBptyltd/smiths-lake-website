@@ -13,6 +13,7 @@
  * @created February 2026
  */
 
+
 interface Props {
   title: string;
   subtitle?: string;
@@ -69,7 +70,15 @@ const sizeClasses: Record<string, string> = {
   large: 'section-hero--large',
 };
 
-const hasImage = !!backgroundImage;
+// 'gradient' section-hero style: ignore the photo set entirely and render a
+// palette gradient (primary → primary-dark theme tokens) with the stripe
+// overlay. Default 'photos' leaves the historical behaviour untouched.
+// Inline env read (NOT a village.js import): adding any new static import to
+// this component reshuffles Vite CSS chunk ordering across the 7 section pages
+// and breaks the byte-parity invariant (same hazard documented in contact.astro).
+const useGradient = (import.meta.env.PUBLIC_SECTION_HERO || 'photos') === 'gradient';
+
+const hasImage = !!backgroundImage && !useGradient;
 
 // Responsive variants via Netlify Image CDN (local images only)
 const isLocalImage = hasImage && backgroundImage.startsWith('/') && !backgroundImage.startsWith('//');
@@ -79,7 +88,13 @@ const heroSrcset = isLocalImage
 ---
 
 <section class={`section-hero ${sizeClasses[size] || ''}`} data-has-image={hasImage ? 'true' : 'false'}>
-  {hasImage ? (
+  {useGradient ? (
+    <div
+      class="section-hero__gradient"
+      style="background: linear-gradient(135deg, var(--color-navy) 0%, var(--color-navy-dark) 100%);"
+    ></div>
+    <div class="section-hero__stripes" aria-hidden="true"></div>
+  ) : hasImage ? (
     <div class="section-hero__background">
       <img
         src={backgroundImage}

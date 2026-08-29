@@ -5,6 +5,13 @@ import Layout from '../../layouts/BaseLayout.astro';
 import SectionHero from '../../components/SectionHero.astro';
 import { getPublicDocuments } from '../../lib/notionDocuments';
 import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
+import { village } from '../../config/village.js';
+import { fetchAboutContent } from '../../lib/notion-about.js';
+
+// Village-driven About body (PUBLIC_ABOUT_SOURCE="notion"). Default 'builtin'
+// keeps the historical hardcoded Smiths Lake copy byte-identical; when the
+// fetch returns nothing we also fall back to the builtin copy.
+const aboutContent = village.aboutSource === 'notion' ? await fetchAboutContent() : null;
 
 // Fetch section settings
 const sectionSettings = await fetchSectionSettingsBySlug('about');
@@ -23,9 +30,9 @@ const heroImage = sectionHeroManifest['about'] || null;
 const documents = await getPublicDocuments('About - Document Library');
 ---
 
-<Layout 
+<Layout
   title="About Us"
-  description="Discover what makes Smiths Lake Village a special place to live, work and visit"
+  description={`Discover what makes ${village.displayName} a special place to live, work and visit`}
 >
   <style>
     .about-page {
@@ -272,13 +279,21 @@ const documents = await getPublicDocuments('About - Document Library');
     <!-- Hero Section -->
     <SectionHero
       title={sectionSettings?.heroTitle || 'About Us'}
-      subtitle={sectionSettings?.heroSubtitle || 'Discover what makes Smiths Lake Village a special place to live, work and visit.'}
+      subtitle={sectionSettings?.heroSubtitle || `Discover what makes ${village.displayName} a special place to live, work and visit.`}
       accentHex={sectionSettings?.accentHex || '#F5A623'}
       backgroundImage={heroImage}
     />
     
     <div class="content-section">
-      <!-- Location & Overview -->
+      {aboutContent ? (
+        aboutContent.map((block) => (
+          <div class="content-block">
+            <h2>{block.title}</h2>
+            {block.items.map((item) => (item.type === 'h3' ? <h3>{item.text}</h3> : <p>{item.text}</p>))}
+          </div>
+        ))
+      ) : (
+      <Fragment><Fragment set:html={'<!-- Location & Overview -->'} />
       <div class="content-block">
         <h2>Smiths Lake Village</h2>
         <p>
@@ -307,7 +322,7 @@ const documents = await getPublicDocuments('About - Document Library');
         </div>
       </div>
       
-      <!-- Demographics -->
+      <Fragment set:html={'<!-- Demographics -->'} />
       <div class="content-block">
         <h2>Demographics</h2>
         <p>
@@ -316,7 +331,7 @@ const documents = await getPublicDocuments('About - Document Library');
         </p>
       </div>
       
-      <!-- PPCA -->
+      <Fragment set:html={'<!-- PPCA -->'} />
       <div class="content-block">
         <h2>Pacific Palms Community Association (PPCA)</h2>
         <p>The PPCA is the community organisation representing residents of Smiths Lake and other villages in the surrounding Pacific Palms area. Established to give our community a collective voice, we work with MidCoast Council and other stakeholders on matters affecting our neighbourhood.</p>
@@ -328,14 +343,15 @@ const documents = await getPublicDocuments('About - Document Library');
         <p>Our Smiths Lake liaison operates on a volunteer task force model, with residents contributing to short and long-term projects based on their interests and skills.</p>
       </div>
       
-      <!-- Community Plan -->
+      <Fragment set:html={'<!-- Community Plan -->'} />
       <div class="content-block">
         <h2>Community Plan</h2>
         <p>
           Our Community Plan outlines the shared vision and priorities for Smiths Lake Village. Developed through 
           extensive community consultation, it guides our advocacy and development efforts.
         </p>
-      </div>
+      </div></Fragment>
+      )}
       
       <!-- Document Library -->
       <div class="document-library">

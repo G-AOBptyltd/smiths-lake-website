@@ -31,6 +31,13 @@ const drawerIcons: Record<string, string> = {
   emergency: '<path d="M12 3L2.5 20h19L12 3z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/><path d="M12 10v4M12 17v.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
 };
 
+// Logo mark — selected by village.logoVariant (PUBLIC_LOGO_VARIANT).
+// 'wave' (default) is the exact historical Smiths Lake lake-wave SVG.
+// The alternates render in the same slot (same viewBox/size/class, consistent
+// stroke weight) and are coloured by currentColor + the themed --color-golden*
+// custom properties, so a village palette flows through the mark.
+const logoVariant = village.logoVariant;
+
 const drawerItems = navItems.filter((item) => item.icon !== 'emergency');
 const desktopNavItems = navItems.filter((item) => !item.hideOnDesktop);
 
@@ -46,12 +53,45 @@ function isActive(href: string): boolean {
   <div class="header-container">
     <a href="/" class="site-logo" aria-label={`${village.displayName} - Home`}>
       <!-- Lake wave logo -->
-      <svg class="logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2" fill="none"/>
-        <path d="M8 26 Q14 22, 20 26 T32 26 T44 26" stroke="#F5A623" stroke-width="2.5" fill="none"/>
-        <path d="M4 32 Q12 28, 20 32 T36 32 T48 32" stroke="#5B9BD5" stroke-width="2" fill="none"/>
-        <circle cx="24" cy="14" r="5" fill="#F5A623" opacity="0.6"/>
-      </svg>
+      {logoVariant === 'lighthouse' ? (
+        <svg class="logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2" fill="none"/>
+          <path d="M20.5 35 L22 16.5 M27.5 35 L26 16.5 M17.5 35 H30.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21 16.5 H27 M21.8 16.5 V12.5 H26.2 V16.5 M21.8 12.5 L24 9.5 L26.2 12.5" stroke="var(--color-golden)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21.7 21.5 H26.3 M21.2 27.5 H26.8" stroke="var(--color-golden)" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <path d="M17.5 12 L13 9.8 M30.5 12 L35 9.8" stroke="var(--color-golden-light)" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      ) : logoVariant === 'hall' ? (
+        <svg class="logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2" fill="none"/>
+          <path d="M12.5 23.5 L24 13.5 L35.5 23.5" stroke="var(--color-golden)" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M15.5 21.5 V34 M32.5 21.5 V34 M12.5 34 H35.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21.5 34 V27.5 H26.5 V34" stroke="var(--color-golden)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M15.5 25.5 H19 M15.5 29 H19 M29 25.5 H32.5 M29 29 H32.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        </svg>
+      ) : logoVariant === 'lake' ? (
+        <svg class="logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2" fill="none"/>
+          <circle cx="31" cy="13.5" r="4" fill="var(--color-golden)" opacity="0.6"/>
+          <path d="M11 25 H27 M14 25 V29.5 M20 25 V29 M26 25 V28.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M8 31 Q14 28.5, 20 31 T32 31 T44 31" stroke="var(--color-golden)" stroke-width="2.5" fill="none"/>
+          <path d="M10 36 Q16 33.5, 22 36 T34 36" stroke="var(--color-golden-light)" stroke-width="2" fill="none"/>
+        </svg>
+      ) : logoVariant === 'tree' ? (
+        <svg class="logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2" fill="none"/>
+          <path d="M24 36.5 V20 M24 26.5 L18.5 21 M24 29.5 L29.5 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="24" cy="16" r="6.5" stroke="var(--color-golden)" stroke-width="2.5" fill="none"/>
+          <path d="M15 36.5 H33" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      ) : (
+        <svg class="logo-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="2" fill="none"/>
+          <path d="M8 26 Q14 22, 20 26 T32 26 T44 26" stroke="#F5A623" stroke-width="2.5" fill="none"/>
+          <path d="M4 32 Q12 28, 20 32 T36 32 T48 32" stroke="#5B9BD5" stroke-width="2" fill="none"/>
+          <circle cx="24" cy="14" r="5" fill="#F5A623" opacity="0.6"/>
+        </svg>
+      )}
       <div class="logo-text">
         <span class="site-title">{village.displayName}</span>
         <span class="site-tagline">{village.tagline}</span>

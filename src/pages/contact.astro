@@ -1,25 +1,55 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
+
+// Per-village strings (env override ?? exact historical Smiths Lake strings —
+// mirrors src/config/village.js). Read inline instead of importing village.js:
+// adding ANY new import to this page reshuffles Vite's CSS chunk merging and
+// moves this page's scoped <style> in the built head, breaking the byte-parity
+// invariant for default (Smiths Lake) builds.
+const entityName = import.meta.env.PUBLIC_ENTITY_NAME || 'Pacific Palms Community Association';
+const entityShort = import.meta.env.PUBLIC_ENTITY_SHORT || 'PPCA';
+
+// Village-driven contact copy (PUBLIC_ABOUT_SOURCE="notion"): the content DB's
+// Administration & Reference "contact" row supplies the intro paragraphs and
+// public contact email. Default 'builtin' (or an empty fetch) keeps the
+// historical hardcoded copy byte-identical. The lib is loaded via a runtime
+// dynamic import that Vite cannot statically analyse — same chunk-parity reason.
+let contactContent = null;
+if ((import.meta.env.PUBLIC_ABOUT_SOURCE || 'builtin') === 'notion') {
+  try {
+    const path = await import('node:path');
+    const { pathToFileURL } = await import('node:url');
+    const libUrl = pathToFileURL(path.resolve(process.cwd(), 'src/lib/notion-about.js')).href;
+    const mod = await import(/* @vite-ignore */ libUrl);
+    contactContent = await mod.fetchContactContent();
+  } catch (e) {
+    console.warn('contact: notion content unavailable, using builtin copy:', e.message);
+  }
+}
 ---
 
-<BaseLayout 
-  title="Contact Us" 
-  description="Get in touch with the Pacific Palms Community Association (PPCA)."
+<BaseLayout
+  title="Contact Us"
+  description={`Get in touch with the ${entityName} (${entityShort}).`}
 >
-  <Hero 
+  <Hero
     title="Contact Us"
-    subtitle="Get in touch with the PPCA committee."
+    subtitle={`Get in touch with the ${entityShort} committee.`}
     size="small"
   />
   
   <section class="section">
     <div class="container container--narrow">
       <div class="contact-intro text-center">
+        {contactContent ? (
+          contactContent.paragraphs.map((text) => <p>{text}</p>)
+        ) : (
         <p>
           Have a question, suggestion, or want to get involved? We'd love to hear from you. 
           Fill out the form below and a committee member will respond as soon as possible.
         </p>
+        )}
       </div>
       
       <form 
@@ -75,7 +105,7 @@ import Hero from '../components/Hero.astro';
           <select id="subject" name="subject" class="form-select" required>
             <option value="">Please select...</option>
             <option value="general">General Enquiry</option>
-            <option value="membership">PPCA Membership</option>
+            <option value="membership">{entityShort} Membership</option>
             <option value="volunteer">Volunteering</option>
             <option value="website">Website Feedback</option>
             <option value="other">Other</option>
@@ -100,14 +130,25 @@ import Hero from '../components/Hero.astro';
       
       <aside class="contact-info">
         <h2>Other Ways to Reach Us</h2>
-        <p>
+        {contactContent ? (
+          contactContent.contactEmail ? (
+            <p>
+              You can also email us directly at{' '}
+              <a href={`mailto:${contactContent.contactEmail}`}>{contactContent.contactEmail}</a>.
+            </p>
+          ) : (
+            <p>Use the form above and a member of the community team will get back to you.</p>
+          )
+        ) : (
+        <Fragment><p>
           PPCA holds regular community meetings where residents can raise matters 
           directly. Meeting dates are announced on the website and through our community updates.
         </p>
         <p>
           For urgent community matters, please attend a PPCA meeting or contact 
           MidCoast Council directly.
-        </p>
+        </p></Fragment>
+        )}
       </aside>
     </div>
   </section>
