@@ -21,6 +21,7 @@ import {
   VOLUNTEERS_DB_ID, STEWARDS_DB_ID, notionHeaders, jsonResp, notProvisioned,
   rtChunks, queryAll, parseVolunteer, parseSteward, normPath, mergeCard,
 } from './_stewards.js';
+import { getNotifyRecipients } from './_villages.js';
 
 function esc(s) {
   return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -43,7 +44,7 @@ async function notifyStewards(v) {
         .map((s) => s.email);
     }
   } catch (_) { /* fall through to village list */ }
-  if (!to.length) to = (process.env.VF_PLEDGE_NOTIFY_TO || '').split(',').map((s) => s.trim()).filter(Boolean);
+  if (!to.length) to = await getNotifyRecipients(v.village);
   if (!to.length) return;
   const from = process.env.VF_PLEDGE_FROM || 'VillageFirst <noreply@villagefirst.org.au>';
 

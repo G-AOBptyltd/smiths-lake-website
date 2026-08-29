@@ -22,6 +22,8 @@
  *   VF_RESEND_API_KEY / VF_PLEDGE_NOTIFY_TO / VF_PLEDGE_FROM
  */
 
+import { getNotifyRecipients } from './_villages.js';
+
 const NOTION_VERSION = '2022-06-28';
 const MEMBERS_DB_ID = process.env.NOTION_MEMBERS_DB_ID || '494becca311c4d668a0f7f2750c08a74';
 
@@ -53,7 +55,7 @@ function membershipYear(d) {
 /** Notify PPCA of a new application. Env-gated and fail-open like notifyPledge. */
 async function notifyApplication(m) {
   const key = process.env.VF_RESEND_API_KEY;
-  const to = (process.env.VF_PLEDGE_NOTIFY_TO || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const to = await getNotifyRecipients(m.village);
   if (!key || !to.length) return; // not configured — stay silent
   const from = process.env.VF_PLEDGE_FROM || 'VillageFirst <noreply@villagefirst.org.au>';
 

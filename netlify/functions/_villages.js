@@ -59,7 +59,31 @@ async function queryVillage(village) {
     contentDbId: (p.properties['Content DB ID']?.rich_text || []).map(t => t.plain_text).join('').replace(/[^a-f0-9]/gi, '') || null,
     newsBuildHook: p.properties['News Build Hook']?.url || null,
     publicModules: (p.properties['Public Modules']?.multi_select || []).map(o => o.name),
+    notifyEmails: parseEmails((p.properties['Notify Emails']?.rich_text || []).map(t => t.plain_text).join('')),
   };
+}
+
+/** Split a comma/newline/semicolon-separated address blob into clean addresses. */
+function parseEmails(blob) {
+  return String(blob || '').split(/[,\n;]+/).map((s) => s.trim()).filter(Boolean);
+}
+
+/**
+ * getNotifyRecipients(village) — WHO gets a village's admin notifications
+ * (new members, pledges, bookings, events, and unstewarded volunteer signups).
+ *
+ * Per-village by design so one village's committee never sees another's data:
+ * returns the village's own "Notify Emails" from the VF Villages registry, and
+ * ONLY falls back to the global VF_PLEDGE_NOTIFY_TO (platform operators) when a
+ * village has no list of its own. Fail-open to the env list on any Notion error.
+ */
+export async function getNotifyRecipients(village) {
+  const envList = parseEmails(process.env.VF_PLEDGE_NOTIFY_TO);
+  try {
+    const rec = await queryVillage(village || 'Smiths Lake');
+    if (rec && Array.isArray(rec.notifyEmails) && rec.notifyEmails.length) return rec.notifyEmails;
+  } catch (_) { /* fall back to platform operators */ }
+  return envList;
 }
 
 /**
