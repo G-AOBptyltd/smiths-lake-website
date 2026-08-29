@@ -21,13 +21,13 @@ import {
   VOLUNTEERS_DB_ID, STEWARDS_DB_ID, notionHeaders, jsonResp, notProvisioned,
   rtChunks, queryAll, parseVolunteer, parseSteward, normPath, mergeCard,
 } from './_stewards.js';
-import { getNotifyRecipients } from './_villages.js';
+import { getModuleRecipients } from './_villages.js';
 
 function esc(s) {
   return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 
-async function notifyStewards(v) {
+async function notifyStewards(v, context) {
   const key = process.env.VF_RESEND_API_KEY;
   if (!key) return;
   let to = [];
@@ -44,7 +44,7 @@ async function notifyStewards(v) {
         .map((s) => s.email);
     }
   } catch (_) { /* fall through to village list */ }
-  if (!to.length) to = await getNotifyRecipients(v.village);
+  if (!to.length) to = await getModuleRecipients({ village: v.village, module: 'volunteers', context });
   if (!to.length) return;
   const from = process.env.VF_PLEDGE_FROM || 'VillageFirst <noreply@villagefirst.org.au>';
 
@@ -70,7 +70,7 @@ async function notifyStewards(v) {
   } catch (_) { /* best-effort */ }
 }
 
-export const handler = async (event) => {
+export const handler = async (event, context) => {
   if (event.httpMethod !== 'POST') return jsonResp(405, { error: 'POST only' });
   if (!VOLUNTEERS_DB_ID) return notProvisioned();
 
@@ -119,7 +119,7 @@ export const handler = async (event) => {
         } }),
       });
       if (!res.ok) throw new Error(`Notion responded ${res.status}`);
-      await notifyStewards({ fullName: existing.name, cardTitle, cardPath, email, phone, message, village, isExisting: true });
+      await notifyStewards({ fullName: existing.name, cardTitle, cardPath, email, phone, message, village, isExisting: true }, context);
       return jsonResp(200, { ok: true });
     }
 
@@ -145,7 +145,7 @@ export const handler = async (event) => {
       }),
     });
     if (!res.ok) throw new Error(`Notion responded ${res.status}`);
-    await notifyStewards({ fullName, cardTitle, cardPath, email, phone, message, village, isExisting: false });
+    await notifyStewards({ fullName, cardTitle, cardPath, email, phone, message, village, isExisting: false }, context);
     return jsonResp(200, { ok: true });
   } catch (err) {
     return jsonResp(502, { error: 'Sorry — we could not record your signup just now. Please try again shortly.' });

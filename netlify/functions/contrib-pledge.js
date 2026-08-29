@@ -21,7 +21,7 @@
  *   Until these exist the pledge just saves silently. Email never blocks the pledge.
  */
 
-import { getNotifyRecipients } from './_villages.js';
+import { getModuleRecipients } from './_villages.js';
 
 const NOTION_VERSION = '2022-06-28';
 const CONTRIB_DB_ID = process.env.NOTION_CONTRIB_DB_ID || '6d182a0d4f0c42c2879f13753e355861';
@@ -42,9 +42,9 @@ function esc(s) {
  * already saved, so a missing/broken email must never surface to the visitor.
  * Uses a VillageFirst-owned Resend account (separate from any Agility Ops email).
  */
-async function notifyPledge(p) {
+async function notifyPledge(p, context) {
   const key = process.env.VF_RESEND_API_KEY;
-  const to = await getNotifyRecipients(p.village);
+  const to = await getModuleRecipients({ village: p.village, module: 'contrib', context });
   if (!key || !to.length) return; // not configured — stay silent
   const from = process.env.VF_PLEDGE_FROM || 'VillageFirst <noreply@villagefirst.org.au>';
 
@@ -77,7 +77,7 @@ async function notifyPledge(p) {
   } catch (_) { /* email is best-effort; never block the pledge */ }
 }
 
-export const handler = async (event) => {
+export const handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers: corsHeaders(), body: JSON.stringify({ error: 'POST only' }) };
   }
@@ -144,7 +144,7 @@ export const handler = async (event) => {
       throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
     }
     // Best-effort PPCA notification (env-gated, fail-open) — never blocks the pledge.
-    await notifyPledge({ village, contributor, type, amount, hours, note, contact, date, showPublicly });
+    await notifyPledge({ village, contributor, type, amount, hours, note, contact, date, showPublicly }, context);
     return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ ok: true }) };
   } catch (err) {
     return { statusCode: 502, headers: corsHeaders(), body: JSON.stringify({ error: 'Sorry — we could not record that just now. Please try again shortly.' }) };

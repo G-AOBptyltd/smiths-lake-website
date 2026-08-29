@@ -32,6 +32,7 @@
   .note { font-size: 0.75rem; color: #9ca3af; margin-top: 1.5rem; }
   .village-line { display: inline-flex; align-items: center; gap: 6px; background: #ecfdf5; color: #0f5c48; border: 1px solid #a7f3d0; border-radius: 20px; padding: 4px 14px; font-size: 0.85rem; font-weight: 700; margin-top: 0.25rem; }
 </style>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <script src="/admin/admin-nav.js" defer></script>
 </head>
 <body>
@@ -57,14 +58,34 @@
     // Same active-village context as the Village Admin portal and module admins.
     const village = localStorage.getItem('vf_active_village') || 'Smiths Lake';
     document.getElementById('village-name').textContent = village;
+
+    // Sign-in gate — publishing is admin/steward only, enforced server-side too.
+    let currentUser = null;
+    function reflectAuth() {
+      if (currentUser) {
+        btn.disabled = false;
+        if (status.className !== 'ok') status.textContent = '';
+      } else {
+        btn.disabled = false; // enabled, but clicking prompts sign-in
+        status.textContent = 'Please sign in to publish.';
+        status.className = '';
+      }
+    }
+    netlifyIdentity.on('init', (u) => { currentUser = u || null; reflectAuth(); });
+    netlifyIdentity.on('login', (u) => { currentUser = u; netlifyIdentity.close(); reflectAuth(); });
+    netlifyIdentity.on('logout', () => { currentUser = null; reflectAuth(); });
+    netlifyIdentity.init();
+
     btn.addEventListener('click', async () => {
+      if (!currentUser) { netlifyIdentity.open('login'); return; }
       btn.disabled = true;
       status.textContent = 'Starting rebuild for ' + village + '…';
       status.className = '';
       try {
+        const token = await currentUser.jwt();
         const res = await fetch('/.netlify/functions/publish-news', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
           body: JSON.stringify({ village }),
         });
         const data = await res.json();

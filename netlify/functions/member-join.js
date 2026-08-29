@@ -22,7 +22,7 @@
  *   VF_RESEND_API_KEY / VF_PLEDGE_NOTIFY_TO / VF_PLEDGE_FROM
  */
 
-import { getNotifyRecipients } from './_villages.js';
+import { getModuleRecipients } from './_villages.js';
 
 const NOTION_VERSION = '2022-06-28';
 const MEMBERS_DB_ID = process.env.NOTION_MEMBERS_DB_ID || '494becca311c4d668a0f7f2750c08a74';
@@ -53,9 +53,9 @@ function membershipYear(d) {
 }
 
 /** Notify PPCA of a new application. Env-gated and fail-open like notifyPledge. */
-async function notifyApplication(m) {
+async function notifyApplication(m, context) {
   const key = process.env.VF_RESEND_API_KEY;
-  const to = await getNotifyRecipients(m.village);
+  const to = await getModuleRecipients({ village: m.village, module: 'members', context });
   if (!key || !to.length) return; // not configured — stay silent
   const from = process.env.VF_PLEDGE_FROM || 'VillageFirst <noreply@villagefirst.org.au>';
 
@@ -86,7 +86,7 @@ async function notifyApplication(m) {
   } catch (_) { /* email is best-effort; never block the application */ }
 }
 
-export const handler = async (event) => {
+export const handler = async (event, context) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, headers: corsHeaders(), body: JSON.stringify({ error: 'POST only' }) };
   }
@@ -167,7 +167,7 @@ export const handler = async (event) => {
       const detail = await res.text();
       throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
     }
-    await notifyApplication({ fullName, membershipType, fee, year, email, phone, address, paymentMethod, stayConnected, village, date });
+    await notifyApplication({ fullName, membershipType, fee, year, email, phone, address, paymentMethod, stayConnected, village, date }, context);
     return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ ok: true, fee, year, paymentMethod }) };
   } catch (err) {
     return { statusCode: 502, headers: corsHeaders(), body: JSON.stringify({ error: 'Sorry — we could not record your application just now. Please try again shortly.' }) };
