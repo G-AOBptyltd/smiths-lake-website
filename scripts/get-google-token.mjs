@@ -23,6 +23,13 @@ const REDIRECT_URI = 'http://localhost';
 const SCOPES = [
   'https://www.googleapis.com/auth/spreadsheets',
   'https://www.googleapis.com/auth/drive.file',
+  // `drive` lets the Projects Documentation module BROWSE a village's existing
+  // Drive documentation folder (list its contents for the "pick from repository"
+  // picker) and reliably reuse per-project subfolders. Uploading and linking a
+  // document by URL work with just `drive.file`; browsing is the only thing that
+  // needs this broader scope. Re-run this script to add it, then update
+  // GOOGLE_REFRESH_TOKEN in Netlify.
+  'https://www.googleapis.com/auth/drive',
 ].join(' ');
 
 const authUrl =
