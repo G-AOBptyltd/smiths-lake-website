@@ -71,6 +71,38 @@
   .tab.on { background: #0f5c48; color: #fff; border-color: #0f5c48; font-weight: 700; }
   .tabpanel { display: none; } .tabpanel.on { display: block; }
 
+  /* Documentation tab */
+  .link-inline { background: none; border: none; color: #0f5c48; font-weight: 700; cursor: pointer; padding: 0; font-family: inherit; font-size: inherit; text-decoration: underline; }
+  .dropzone { margin-top: 12px; border: 2px dashed #cbd5e1; border-radius: 10px; background: #f8fafc; padding: 26px 16px; text-align: center; color: #475569; transition: border-color .15s, background .15s; }
+  .dropzone.drag { border-color: #0f5c48; background: #f0fdf6; }
+  .dz-icon { font-size: 26px; color: #0f5c48; margin-bottom: 6px; }
+  .dz-hint { font-size: 11px; color: #94a3b8; margin-top: 6px; }
+  .dz-prog { margin-top: 10px; }
+  .dz-bar { height: 7px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 6px; }
+  .dz-bar span { display: block; height: 100%; width: 0; background: #0f5c48; transition: width .2s; }
+  .doc-row { display: flex; align-items: center; gap: 12px; padding: 10px 4px; border-bottom: 1px solid #eef2f7; }
+  .doc-row:last-child { border-bottom: none; }
+  .doc-ic { font-size: 20px; flex: 0 0 auto; }
+  .doc-main { flex: 1 1 auto; min-width: 0; }
+  .doc-name { font-weight: 600; color: #1f2937; word-break: break-word; }
+  .doc-name a { color: inherit; text-decoration: none; }
+  .doc-name a:hover { text-decoration: underline; }
+  .doc-sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .doc-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; padding: 2px 8px; border-radius: 10px; }
+  .doc-tag.Reference { background: #dbeafe; color: #1e40af; }
+  .doc-tag.Evidence { background: #ffedd5; color: #9a3412; }
+  .doc-tag.Report { background: #dcfce7; color: #166534; }
+  .doc-del { background: none; border: none; color: #b91c1c; cursor: pointer; font-size: 14px; padding: 4px 6px; flex: 0 0 auto; }
+  .doc-browser { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 8px; max-height: 280px; overflow: auto; }
+  .db-crumb { font-size: 11px; color: #6b7280; padding: 8px 10px; border-bottom: 1px solid #eef2f7; background: #f8fafc; }
+  .db-crumb button { background: none; border: none; color: #0f5c48; font-weight: 700; cursor: pointer; padding: 0; font-family: inherit; }
+  .db-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+  .db-item:last-child { border-bottom: none; }
+  .db-item:hover { background: #f0fdf6; }
+  .db-item .db-name { flex: 1 1 auto; min-width: 0; word-break: break-word; font-size: 13px; }
+  .db-item .db-act { font-size: 11px; color: #0f5c48; font-weight: 700; flex: 0 0 auto; }
+  .scope-hint { font-size: 12px; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; }
+
   /* Overview number grid */
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; margin-bottom: 18px; }
   .cell { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
@@ -89,7 +121,7 @@
   .f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .form-acts { display: flex; gap: 8px; margin-top: 6px; align-items: center; flex-wrap: wrap; }
   .msg { font-size: 11.5px; font-weight: 600; min-height: 1.1em; }
-  .msg.ok { color: #16a34a; } .msg.err { color: #dc2626; }
+  .msg.ok { color: #16a34a; } .msg.err { color: #dc2626; } .msg.warn { color: #b45309; }
   .lock-note { font-size: 11.5px; color: #6b7280; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px; padding: 7px 10px; margin-top: 6px; }
   .warn-note { font-size: 11.5px; color: #92400e; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 7px; padding: 7px 10px; margin-top: 6px; }
   .chk-row { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0; }
@@ -213,6 +245,7 @@
         <button class="tab" data-tab="schedule" onclick="showTab('schedule')">Schedule</button>
         <button class="tab" data-tab="grants" onclick="showTab('grants')">Grants</button>
         <button class="tab" data-tab="volunteers" onclick="showTab('volunteers')">Volunteers</button>
+        <button class="tab" data-tab="docs" onclick="showTab('docs')">Documentation</button>
         <button class="tab" data-tab="reports" onclick="showTab('reports')">Reports</button>
       </div>
 
@@ -346,6 +379,57 @@
             <button class="btn btn-g" id="vol-rate-save" onclick="saveHourRate()">Save rate</button>
             <span class="msg" id="vol-rate-msg"></span>
           </div>
+        </div>
+      </div>
+
+      <!-- Documentation -->
+      <div class="tabpanel" id="tab-docs">
+        <div class="card">
+          <h3>Add a document</h3>
+          <div class="note" style="margin-top:0;">Documents are stored in this village's Google Drive documentation folder and listed here against the project. Tag each one so the committee knows what it is.</div>
+          <div class="f-f" style="max-width:320px;">
+            <div class="f-l">Purpose</div>
+            <select class="f-i" id="doc-type">
+              <option value="Reference">Reference — make available</option>
+              <option value="Evidence">Evidence — e.g. an invoice, receipt or photo</option>
+            </select>
+          </div>
+          <div class="dropzone" id="doc-drop">
+            <input type="file" id="doc-file" style="display:none;">
+            <div class="dz-inner">
+              <div class="dz-icon">⬆</div>
+              <div><b>Drag &amp; drop</b> a file here, or <button type="button" class="link-inline" onclick="document.getElementById('doc-file').click()">choose a file</button></div>
+              <div class="dz-hint">PDF, image, Office doc… up to 8 MB. Bigger? Upload to Drive and use "Link a document" below.</div>
+            </div>
+            <div class="dz-prog" id="doc-prog" style="display:none;"><div class="dz-bar"><span id="doc-bar"></span></div><div id="doc-prog-msg">Uploading…</div></div>
+          </div>
+          <span class="msg" id="doc-up-msg" style="display:block;margin-top:8px;"></span>
+        </div>
+
+        <div class="card">
+          <h3>Link a document</h3>
+          <div class="note" style="margin-top:0;">Already in Drive? Browse this village's documentation folder, or paste a link.</div>
+          <div class="form-acts" style="margin-top:4px;margin-bottom:10px;">
+            <button class="btn btn-s" id="doc-browse-btn" onclick="openDocBrowser()">📁 Browse Drive folder</button>
+            <a class="link-btn" id="doc-open-root" href="#" target="_blank" rel="noopener" style="display:none;">Open folder in Drive ↗</a>
+          </div>
+          <div id="doc-browser" style="display:none;"></div>
+          <div class="f-grid" style="margin-top:8px;">
+            <div class="f-f" style="grid-column:1/-1;"><div class="f-l">…or paste a Google Drive link</div><input class="f-i" id="doc-link-url" placeholder="https://drive.google.com/file/d/…"></div>
+            <div class="f-f"><div class="f-l">Title</div><input class="f-i" id="doc-link-title" maxlength="200" placeholder="What is this document?"></div>
+            <div class="f-f"><div class="f-l">Purpose</div>
+              <select class="f-i" id="doc-link-type"><option value="Reference">Reference — make available</option><option value="Evidence">Evidence — invoice / receipt / photo</option></select>
+            </div>
+          </div>
+          <div class="form-acts">
+            <button class="btn btn-g" id="doc-link-save" onclick="linkDoc()">Link document</button>
+            <span class="msg" id="doc-link-msg"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Project documents</h3>
+          <div id="doc-list"><div class="empty">Loading…</div></div>
         </div>
       </div>
 
@@ -493,6 +577,7 @@
     loadHubCards();
     loadGroups();
     loadProjects();
+    initDocDropzone();
   }
 
   // ── Formatting / helpers ───────────────────────────────────────
@@ -622,6 +707,209 @@
     const panel = document.getElementById('tab-' + name);
     if (panel) panel.classList.add('on');
     document.querySelectorAll('#d-tabs .tab').forEach(function(b) { b.classList.toggle('on', b.dataset.tab === name); });
+    if (name === 'docs') ensureDocsLoaded();
+  }
+
+  // ── Documentation tab ──────────────────────────────────────────
+  let docs = [];                 // registered docs for the open project
+  let docsLoadedSlug = '';       // slug the current docs list belongs to ('' = stale)
+  let docsDriveOn = false;       // Drive configured for this platform?
+  let docBrowseStack = [];       // [{id,name}] breadcrumb into the Drive folder
+
+  function resetDocs() {
+    docs = []; docsLoadedSlug = ''; docBrowseStack = [];
+    const list = document.getElementById('doc-list');
+    if (list) list.innerHTML = '<div class="empty">Loading…</div>';
+    const br = document.getElementById('doc-browser');
+    if (br) { br.style.display = 'none'; br.innerHTML = ''; }
+    setMsg('doc-up-msg', ''); setMsg('doc-link-msg', '');
+  }
+  function ensureDocsLoaded() {
+    if (!currentSlug) return;
+    if (docsLoadedSlug === currentSlug) return;
+    loadDocs();
+  }
+  async function loadDocs() {
+    const list = document.getElementById('doc-list');
+    list.innerHTML = '<div class="empty">Loading…</div>';
+    try {
+      const r = await fetch('/api/project-docs?village=' + encodeURIComponent(VILLAGE) + '&project=' + encodeURIComponent(currentSlug), { headers: await authHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not load documents');
+      docs = d.docs || [];
+      docsDriveOn = !!d.driveConfigured;
+      docsLoadedSlug = currentSlug;
+      renderDocs();
+      const browseBtn = document.getElementById('doc-browse-btn');
+      if (browseBtn) browseBtn.style.display = docsDriveOn ? '' : 'none';
+      const openRoot = document.getElementById('doc-open-root');
+      if (openRoot) {
+        if (d.docsRootFolderId) { openRoot.href = 'https://drive.google.com/drive/folders/' + encodeURIComponent(d.docsRootFolderId); openRoot.style.display = ''; }
+        else openRoot.style.display = 'none';
+      }
+      if (!d.docsDbReady) setMsg('doc-up-msg', 'Document library is still being set up for this village — try again in a moment.', 'warn');
+    } catch (e) {
+      list.innerHTML = '<div class="empty">⚠️ ' + esc(e.message) + '</div>';
+    }
+  }
+  function docIcon(mime, source) {
+    const m = String(mime || '').toLowerCase();
+    if (m.indexOf('pdf') > -1) return '📕';
+    if (m.indexOf('image') > -1) return '🖼️';
+    if (m.indexOf('sheet') > -1 || m.indexOf('excel') > -1 || m.indexOf('csv') > -1) return '📊';
+    if (m.indexOf('word') > -1 || m.indexOf('document') > -1) return '📝';
+    if (m.indexOf('presentation') > -1 || m.indexOf('powerpoint') > -1) return '📽️';
+    return source === 'Linked' ? '🔗' : '📄';
+  }
+  function fmtSize(n) { if (!n) return ''; if (n < 1024) return n + ' B'; if (n < 1048576) return Math.round(n / 1024) + ' KB'; return (n / 1048576).toFixed(1) + ' MB'; }
+  function renderDocs() {
+    const el = document.getElementById('doc-list');
+    if (!docs.length) { el.innerHTML = '<div class="empty">No documents yet — upload or link one above.</div>'; return; }
+    el.innerHTML = docs.map(function(d) {
+      const meta = [d.source, fmtSize(d.size), d.uploadedBy, d.uploadedAt ? fmtDate(d.uploadedAt) : ''].filter(Boolean).join(' · ');
+      const name = d.url ? '<a href="' + esc(d.url) + '" target="_blank" rel="noopener">' + esc(d.title) + ' ↗</a>' : esc(d.title);
+      return '<div class="doc-row">' +
+        '<div class="doc-ic">' + docIcon(d.mime, d.source) + '</div>' +
+        '<div class="doc-main"><div class="doc-name">' + name + '</div><div class="doc-sub">' + esc(meta) + '</div></div>' +
+        '<span class="doc-tag ' + esc(d.type) + '">' + esc(d.type) + '</span>' +
+        '<button class="doc-del" title="Remove from project" onclick="removeDoc(' + jsArg(d.id) + ',' + jsArg(d.title) + ')">🗑</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Drag-and-drop / file upload — wired once at boot.
+  function initDocDropzone() {
+    const dz = document.getElementById('doc-drop');
+    const input = document.getElementById('doc-file');
+    if (!dz || !input || dz.dataset.init) return;
+    dz.dataset.init = '1';
+    ['dragenter', 'dragover'].forEach(function(ev) { dz.addEventListener(ev, function(e) { e.preventDefault(); dz.classList.add('drag'); }); });
+    ['dragleave', 'dragend', 'drop'].forEach(function(ev) { dz.addEventListener(ev, function(e) { e.preventDefault(); if (ev !== 'dragover') dz.classList.remove('drag'); }); });
+    dz.addEventListener('drop', function(e) { const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) uploadDocFile(f); });
+    input.addEventListener('change', function() { const f = input.files && input.files[0]; if (f) uploadDocFile(f); input.value = ''; });
+  }
+  function readAsBase64(file) {
+    return new Promise(function(resolve, reject) {
+      const fr = new FileReader();
+      fr.onload = function() { const s = String(fr.result || ''); resolve(s.slice(s.indexOf(',') + 1)); };
+      fr.onerror = function() { reject(new Error('Could not read file')); };
+      fr.readAsDataURL(file);
+    });
+  }
+  async function uploadDocFile(file) {
+    if (!currentSlug || !detail || !detail.project) { setMsg('doc-up-msg', 'Open a project first.', 'warn'); return; }
+    if (file.size > 8 * 1024 * 1024) { setMsg('doc-up-msg', '"' + file.name + '" is larger than 8 MB. Upload it to Drive directly and use "Link a document".', 'warn'); return; }
+    const prog = document.getElementById('doc-prog');
+    const bar = document.getElementById('doc-bar');
+    const pmsg = document.getElementById('doc-prog-msg');
+    prog.style.display = 'block'; bar.style.width = '15%'; pmsg.textContent = 'Reading "' + file.name + '"…';
+    setMsg('doc-up-msg', '');
+    try {
+      const dataBase64 = await readAsBase64(file);
+      bar.style.width = '55%'; pmsg.textContent = 'Uploading to Drive…';
+      const r = await fetch('/api/project-docs', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({
+          action: 'upload', village: VILLAGE, project: currentSlug,
+          projectName: detail.project.name || currentSlug,
+          filename: file.name, contentType: file.type || 'application/octet-stream',
+          dataBase64: dataBase64, type: document.getElementById('doc-type').value,
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.error || 'Upload failed');
+      bar.style.width = '100%'; pmsg.textContent = 'Done';
+      docs.unshift(d.doc); renderDocs();
+      showToast('📄 Document added');
+      setTimeout(function() { prog.style.display = 'none'; }, 600);
+    } catch (e) {
+      prog.style.display = 'none';
+      setMsg('doc-up-msg', '⚠️ ' + e.message, 'warn');
+    }
+  }
+
+  // Link an existing Drive file by pasted URL.
+  async function linkDoc() {
+    const url = document.getElementById('doc-link-url').value.trim();
+    const title = document.getElementById('doc-link-title').value.trim();
+    const type = document.getElementById('doc-link-type').value;
+    if (!url) { setMsg('doc-link-msg', 'Paste a Google Drive link first.', 'warn'); return; }
+    const btn = document.getElementById('doc-link-save'); btn.disabled = true;
+    setMsg('doc-link-msg', 'Linking…');
+    try {
+      const doc = await postLink({ driveUrl: url, title: title, type: type });
+      document.getElementById('doc-link-url').value = ''; document.getElementById('doc-link-title').value = '';
+      setMsg('doc-link-msg', '');
+      docs.unshift(doc); renderDocs(); showToast('🔗 Document linked');
+    } catch (e) { setMsg('doc-link-msg', '⚠️ ' + e.message, 'warn'); }
+    finally { btn.disabled = false; }
+  }
+  async function postLink(payload) {
+    const r = await fetch('/api/project-docs', {
+      method: 'POST', headers: await authHeaders(),
+      body: JSON.stringify(Object.assign({ action: 'link', village: VILLAGE, project: currentSlug }, payload)),
+    });
+    const d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || 'Could not link document');
+    return d.doc;
+  }
+
+  // Drive folder browser (progressive — needs the broader Drive scope).
+  async function openDocBrowser(folderId, folderName) {
+    const box = document.getElementById('doc-browser');
+    box.style.display = 'block';
+    box.innerHTML = '<div class="empty" style="padding:14px;">Loading Drive folder…</div>';
+    if (!folderId) docBrowseStack = [];
+    try {
+      const r = await fetch('/api/project-docs', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ action: 'browse', village: VILLAGE, folderId: folderId || undefined }),
+      });
+      const d = await r.json();
+      if (d.scopeError) { box.innerHTML = '<div class="scope-hint" style="margin:10px;">' + esc(d.message) + '</div>'; return; }
+      if (!r.ok || !d.ok) throw new Error(d.error || 'Could not open folder');
+      if (folderId) docBrowseStack.push({ id: folderId, name: folderName || 'folder' });
+      renderBrowser(d.items || [], d.rootId);
+    } catch (e) {
+      box.innerHTML = '<div class="empty" style="padding:14px;">⚠️ ' + esc(e.message) + '</div>';
+    }
+  }
+  function renderBrowser(items, rootId) {
+    const box = document.getElementById('doc-browser');
+    const crumbs = ['<button onclick="browseRoot(' + jsArg(rootId) + ')">📁 Documentation root</button>']
+      .concat(docBrowseStack.map(function(f, i) { return '<span> / </span><button onclick="browseTo(' + i + ',' + jsArg(f.id) + ')">' + esc(f.name) + '</button>'; }))
+      .join('');
+    let rows = items.map(function(it) {
+      if (it.isFolder) {
+        return '<div class="db-item" onclick="openDocBrowser(' + jsArg(it.id) + ',' + jsArg(it.name) + ')"><span>📁</span><span class="db-name">' + esc(it.name) + '</span><span class="db-act">Open ›</span></div>';
+      }
+      return '<div class="db-item"><span>' + docIcon(it.mime, 'Linked') + '</span><span class="db-name">' + esc(it.name) + '</span>' +
+        '<span class="db-act" onclick="linkBrowsed(' + jsArg(it.id) + ',' + jsArg(it.name) + ',' + jsArg(it.mime || '') + ',' + jsArg(it.url || '') + ',' + (it.size || 0) + ')">+ Link</span></div>';
+    }).join('');
+    if (!items.length) rows = '<div class="empty" style="padding:14px;">This folder is empty.</div>';
+    box.innerHTML = '<div class="db-crumb">' + crumbs + '</div>' + rows;
+  }
+  function browseRoot(rootId) { docBrowseStack = []; openDocBrowser(); }
+  function browseTo(index, folderId) { docBrowseStack = docBrowseStack.slice(0, index); openDocBrowser(folderId); }
+  async function linkBrowsed(id, name, mime, url, size) {
+    try {
+      const doc = await postLink({ driveFileId: id, title: name, type: document.getElementById('doc-type').value, mime: mime, url: url, size: size });
+      docs.unshift(doc); renderDocs(); showToast('🔗 Linked "' + name + '"');
+    } catch (e) { showToast('⚠️ ' + e.message); }
+  }
+
+  async function removeDoc(docId, title) {
+    if (!confirm('Remove "' + title + '" from this project?\n\nThe document itself stays in Google Drive — this just unlinks it from the project.')) return;
+    try {
+      const r = await fetch('/api/project-docs', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ action: 'remove', village: VILLAGE, docId: docId }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.ok) throw new Error(d.error || 'Could not remove');
+      docs = docs.filter(function(x) { return x.id !== docId; });
+      renderDocs(); showToast('Document removed');
+    } catch (e) { showToast('⚠️ ' + e.message); }
   }
 
   // ── VIEW 1 — Projects list ─────────────────────────────────────
@@ -727,6 +1015,7 @@
   // ── VIEW 2 — Project drill-in ──────────────────────────────────
   async function openProject(slug) {
     currentSlug = slug;
+    resetDocs();
     showDetail();
     showTab('overview');
     document.getElementById('d-name').textContent = 'Loading…';

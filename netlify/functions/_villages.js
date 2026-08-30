@@ -60,10 +60,31 @@ async function queryVillage(village) {
     status: p.properties['Status']?.select?.name || 'live',
     contentDbId: (p.properties['Content DB ID']?.rich_text || []).map(t => t.plain_text).join('').replace(/[^a-f0-9]/gi, '') || null,
     newsBuildHook: p.properties['News Build Hook']?.url || null,
+    docsRootFolderId: (p.properties['Docs Root Folder ID']?.rich_text || []).map(t => t.plain_text).join('').trim() || null,
     publicModules: (p.properties['Public Modules']?.multi_select || []).map(o => o.name),
     notifyEmails: parseEmails((p.properties['Notify Emails']?.rich_text || []).map(t => t.plain_text).join('')),
     moduleAccess: safeJson((p.properties['Module Access']?.rich_text || []).map(t => t.plain_text).join('')),
   };
+}
+
+/**
+ * getDocsRootFolderId(village) — the Google Drive folder that holds this
+ * village's project documentation. Per-village by design (each village points at
+ * its OWN Drive folder in the VF Villages registry) so the Documentation feature
+ * is generic for any village. Resolution order:
+ *   1. the village's "Docs Root Folder ID" registry field,
+ *   2. the VILLAGE_DOCS_ROOT_FOLDER_ID env var (single-village deployments),
+ *   3. the Smiths Lake default folder (keeps villagefirst.org.au working with
+ *      zero config — same invariant as the rest of the platform).
+ * Fail-open to the default on any Notion error.
+ */
+const SMITHS_LAKE_DOCS_ROOT = '1h5V9IzTYXPsHQ3in_GKxEa_uu5ZKTbeA';
+export async function getDocsRootFolderId(village) {
+  try {
+    const rec = await queryVillage(village || process.env.VILLAGE_NAME || 'Smiths Lake');
+    if (rec && rec.docsRootFolderId) return rec.docsRootFolderId;
+  } catch (_) { /* fall through */ }
+  return process.env.VILLAGE_DOCS_ROOT_FOLDER_ID || SMITHS_LAKE_DOCS_ROOT;
 }
 
 /** Split a comma/newline/semicolon-separated address blob into clean addresses. */
