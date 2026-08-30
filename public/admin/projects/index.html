@@ -886,7 +886,11 @@
       return '<div class="db-item"><span>' + docIcon(it.mime, 'Linked') + '</span><span class="db-name">' + esc(it.name) + '</span>' +
         '<span class="db-act" onclick="linkBrowsed(' + jsArg(it.id) + ',' + jsArg(it.name) + ',' + jsArg(it.mime || '') + ',' + jsArg(it.url || '') + ',' + (it.size || 0) + ')">+ Link</span></div>';
     }).join('');
-    if (!items.length) rows = '<div class="empty" style="padding:14px;">This folder is empty.</div>';
+    if (!items.length) {
+      rows = docBrowseStack.length
+        ? '<div class="empty" style="padding:14px;">This folder is empty.</div>'
+        : '<div class="scope-hint" style="margin:10px;">Nothing to show. If this folder isn\'t actually empty, Drive browsing needs a one-time Google re-authorisation to read existing files — until then, paste a Drive link below to link a document.</div>';
+    }
     box.innerHTML = '<div class="db-crumb">' + crumbs + '</div>' + rows;
   }
   function browseRoot(rootId) { docBrowseStack = []; openDocBrowser(); }
