@@ -1,0 +1,413 @@
+---
+// SearchBar.astro — site-wide search, shown at the top-left of every page
+// (rendered via BaseLayout, directly under the header).
+//
+// Reuses the existing build-time search index (public/search.json, produced by
+// src/scripts/generate-search-index.js) and the sitemap's card look. As you
+// type, matching cards render in a panel DIRECTLY UNDER the bar on the current
+// page — no navigation to the sitemap.
+//
+// Progressive enhancement: with JS off, the form still GETs /sitemap/?q=… so
+// search keeps working; with JS on we intercept and show inline results.
+import { village } from '../config/village.js';
+
+const q = Astro.url.searchParams.get('q') || '';
+---
+
+<div class="site-search-bar" id="site-search">
+  <div class="site-search-inner">
+    <form class="site-search-form" role="search" action="/sitemap/" method="get" autocomplete="off">
+      <div class="site-search-field">
+        <span class="site-search-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="7"></circle>
+            <path d="M21 21l-4.3-4.3"></path>
+          </svg>
+        </span>
+        <input
+          id="site-search-input"
+          class="site-search-input"
+          type="search"
+          name="q"
+          value={q}
+          placeholder={`Search ${village.name}…`}
+          aria-label={`Search ${village.displayName}`}
+          aria-expanded="false"
+          aria-controls="site-search-results"
+          autocomplete="off"
+        />
+      </div>
+      <button type="submit" class="site-search-submit">Search</button>
+    </form>
+
+    <div id="site-search-results" class="ss-results" role="region"
+         aria-live="polite" aria-label="Search results" hidden></div>
+  </div>
+</div>
+
+<style>
+  /* Static bar chrome (scoped is fine — this markup is server-rendered). */
+  .site-search-bar {
+    background: var(--color-sky-pale, #E8F4FC);
+    border-bottom: 1px solid var(--color-light-gray, #E8EDF3);
+  }
+
+  .site-search-inner {
+    position: relative;
+    max-width: var(--max-width, 1200px);
+    margin: 0 auto;
+    padding: 0.6rem var(--space-4, 1rem);
+  }
+
+  .site-search-form {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: flex-start;
+  }
+
+  .site-search-field {
+    position: relative;
+    flex: 0 1 460px;
+  }
+
+  .site-search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    color: var(--color-medium-gray, #6B7280);
+    pointer-events: none;
+  }
+
+  .site-search-input {
+    width: 100%;
+    padding: 0.6rem 0.9rem 0.6rem 2.5rem;
+    border: 2px solid var(--color-light-gray, #E8EDF3);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: #fff;
+    color: var(--color-navy, #1B365D);
+  }
+
+  .site-search-input::placeholder { color: var(--color-medium-gray, #6B7280); }
+
+  .site-search-input:focus {
+    outline: none;
+    border-color: var(--color-sky, #5B9BD5);
+    box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.2);
+  }
+
+  .site-search-submit {
+    flex-shrink: 0;
+    background: var(--color-navy, #1B365D);
+    color: #fff;
+    border: none;
+    padding: 0.62rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+
+  .site-search-submit:hover { background: var(--color-navy-light, #2B4A7D); }
+  .site-search-submit:focus-visible { outline: 3px solid var(--color-golden, #F5A623); outline-offset: 2px; }
+
+  @media (max-width: 640px) {
+    .site-search-field { flex: 1 1 auto; }
+    .site-search-submit { padding: 0.62rem 0.9rem; }
+  }
+</style>
+
+<!-- Results panel + cards are built by JS, so their styles must be GLOBAL
+     (Astro-scoped styles never reach createElement/innerHTML nodes). -->
+<style is:global>
+  .ss-results {
+    position: absolute;
+    top: calc(100% - 0.3rem);
+    left: var(--space-4, 1rem);
+    width: min(820px, calc(100% - 2 * var(--space-4, 1rem)));
+    max-height: 74vh;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid var(--color-light-gray, #E8EDF3);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(16, 33, 61, 0.18);
+    z-index: 900;
+    padding: 0.75rem;
+  }
+  .ss-results[hidden] { display: none; }
+
+  .ss-head {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-medium-gray, #6B7280);
+    padding: 0.25rem 0.5rem 0.6rem;
+  }
+
+  .ss-status {
+    padding: 1.25rem 0.5rem;
+    text-align: center;
+    color: var(--color-medium-gray, #6B7280);
+    font-size: 0.95rem;
+  }
+
+  .ss-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .ss-card {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid var(--color-light-gray, #E8EDF3);
+    border-radius: 10px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  }
+  a.ss-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(16, 33, 61, 0.12);
+    border-color: var(--color-sky, #5B9BD5);
+  }
+  .ss-card--static { cursor: default; }
+
+  .ss-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    min-height: 52px;
+    color: #fff;
+    background: linear-gradient(135deg, #1B365D 0%, #2B4A7D 100%);
+  }
+  .ss-icon.green { background: linear-gradient(135deg, #16A34A 0%, #22C55E 100%); }
+  .ss-icon.red { background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%); }
+  .ss-icon.blue { background: linear-gradient(135deg, #5B9BD5 0%, #7BB3E0 100%); }
+  .ss-icon.orange { background: linear-gradient(135deg, #F5A623 0%, #FB923C 100%); }
+
+  .ss-body {
+    padding: 0.7rem 0.8rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .ss-sec {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--color-sky, #5B9BD5);
+  }
+
+  .ss-title {
+    font-size: 0.98rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--color-navy, #1B365D);
+    margin: 0;
+  }
+
+  .ss-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+  .ss-badge {
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .ss-badge.cat { background: #DBEAFE; color: #1E40AF; }
+  .ss-badge.year { background: #FEF3C7; color: #92400E; }
+  .ss-badge.status { background: #D1FAE5; color: #065F46; }
+
+  .ss-desc {
+    margin: 0;
+    font-size: 0.83rem;
+    line-height: 1.45;
+    color: var(--color-medium-gray, #6B7280);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .ss-meta {
+    font-size: 0.78rem;
+    color: var(--color-medium-gray, #6B7280);
+    line-height: 1.35;
+  }
+
+  .ss-link {
+    margin-top: 0.15rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-golden-dark, #D4900F);
+  }
+
+  .ss-results mark { background: #FEF08A; color: inherit; border-radius: 2px; }
+
+  @media (max-width: 640px) {
+    .ss-results { width: calc(100% - 2 * var(--space-4, 1rem)); max-height: 68vh; }
+    .ss-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+  const root = document.getElementById('site-search');
+  const input = document.getElementById('site-search-input') as HTMLInputElement | null;
+  const form = root?.querySelector('form') as HTMLFormElement | null;
+  const panel = document.getElementById('site-search-results');
+
+  if (root && input && form && panel) {
+    let index: any[] | null = null;
+    let state: 'idle' | 'loading' | 'ready' | 'error' = 'idle';
+
+    const SECTION_COLOUR: Record<string, string> = {
+      'Emergency & Safety': 'red',
+      'Environment & Sustainability': 'green',
+      'History & Culture': 'orange',
+    };
+
+    function escapeHtml(s: string): string {
+      return (s || '').replace(/[&<>"']/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+    }
+
+    function highlight(escaped: string, query: string): string {
+      const q = query.trim();
+      if (!q) return escaped;
+      const rx = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+      return escaped.replace(rx, '<mark>$1</mark>');
+    }
+
+    function truncate(t: string, n: number): string {
+      return t.length <= n ? t : t.slice(0, n).replace(/\s+\S*$/, '') + '…';
+    }
+
+    async function ensureIndex() {
+      if (state === 'ready' || state === 'loading') return;
+      state = 'loading';
+      try {
+        const res = await fetch('/search.json');
+        index = await res.json();
+        state = 'ready';
+      } catch (err) {
+        console.error('Search index failed to load:', err);
+        index = [];
+        state = 'error';
+      }
+    }
+
+    function cardHtml(it: any, query: string): string {
+      const colour = SECTION_COLOUR[it.section] || 'blue';
+      const badges: string[] = [];
+      if (it.category) badges.push(`<span class="ss-badge cat">${escapeHtml(it.category)}</span>`);
+      if (it.yearEra) badges.push(`<span class="ss-badge year">${escapeHtml(it.yearEra)}</span>`);
+      if (Array.isArray(it.status) && it.status[0]) badges.push(`<span class="ss-badge status">${escapeHtml(it.status[0])}</span>`);
+
+      const meta: string[] = [];
+      if (it.address) meta.push(`<div class="ss-meta">📍 ${escapeHtml(it.address)}</div>`);
+      if (it.operatingHours) meta.push(`<div class="ss-meta">🕐 ${escapeHtml(it.operatingHours)}</div>`);
+      if (it.contactPhone) meta.push(`<div class="ss-meta">📞 ${escapeHtml(it.contactPhone)}</div>`);
+
+      const desc = it.description
+        ? `<p class="ss-desc">${highlight(escapeHtml(truncate(it.description, 150)), query)}</p>`
+        : '';
+      const link = it.url
+        ? `<span class="ss-link">${it.linkIsExternal ? 'View document →' : 'Learn more →'}</span>`
+        : '';
+
+      const inner = `
+        <div class="ss-icon ${colour}">${it.icon || '📄'}</div>
+        <div class="ss-body">
+          ${it.section ? `<div class="ss-sec">${escapeHtml(it.section)}</div>` : ''}
+          <h3 class="ss-title">${highlight(escapeHtml(it.title || ''), query)}</h3>
+          ${badges.length ? `<div class="ss-badges">${badges.join('')}</div>` : ''}
+          ${desc}
+          ${meta.join('')}
+          ${link}
+        </div>`;
+
+      if (it.url) {
+        const ext = it.linkIsExternal ? ' target="_blank" rel="noopener"' : '';
+        return `<a class="ss-card" href="${escapeHtml(it.url)}"${ext}>${inner}</a>`;
+      }
+      return `<div class="ss-card ss-card--static">${inner}</div>`;
+    }
+
+    function openPanel() {
+      panel!.hidden = false;
+      input!.setAttribute('aria-expanded', 'true');
+    }
+    function closePanel() {
+      panel!.hidden = true;
+      input!.setAttribute('aria-expanded', 'false');
+    }
+
+    function render() {
+      const raw = input!.value.trim();
+      if (raw.length < 2) { closePanel(); panel!.innerHTML = ''; return; }
+
+      if (state !== 'ready') {
+        panel!.innerHTML = '<div class="ss-status">Searching…</div>';
+        openPanel();
+        return;
+      }
+
+      const q = raw.toLowerCase();
+      const matches = (index || [])
+        .filter((it) => (it.searchText || '').includes(q))
+        .slice(0, 48);
+
+      if (matches.length === 0) {
+        panel!.innerHTML = `<div class="ss-status">No results for “${escapeHtml(raw)}”. Try another word.</div>`;
+        openPanel();
+        return;
+      }
+
+      const cards = matches.map((it) => cardHtml(it, raw)).join('');
+      panel!.innerHTML =
+        `<div class="ss-head">${matches.length} result${matches.length > 1 ? 's' : ''} for “${escapeHtml(raw)}”</div>` +
+        `<div class="ss-grid">${cards}</div>`;
+      openPanel();
+    }
+
+    let timer: number | undefined;
+    input.addEventListener('input', () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(async () => { await ensureIndex(); render(); }, 130);
+    });
+
+    input.addEventListener('focus', () => {
+      ensureIndex();
+      if (input.value.trim().length >= 2) render();
+    });
+
+    // With JS on, keep the user on the page — show inline results instead of
+    // navigating to /sitemap/. (The GET action is the no-JS fallback.)
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await ensureIndex();
+      render();
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { closePanel(); input.blur(); }
+    });
+
+    document.addEventListener('mousedown', (e) => {
+      if (!root.contains(e.target as Node)) closePanel();
+    });
+  }
+</script>

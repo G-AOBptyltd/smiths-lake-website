@@ -469,62 +469,13 @@ const villageDisplay = import.meta.env.PUBLIC_VILLAGE_DISPLAY_NAME || 'Smiths La
     </div>
 
     <div class="content-wrapper">
-      
-      <!-- Static Pages Section -->
-      <div class="static-pages">
-        <h2>📍 Site Pages</h2>
-        <div class="static-grid">
-          
-          <div class="static-category">
-            <h3>Main Pages</h3>
-            <ul>
-              <li><a href="/">Home</a></li>
-              <li><a href="/about/">About Our Area</a></li>
-              <li><a href="/contact/">Contact Us</a></li>
-              <li><a href="/feedback/">Submit Feedback</a></li>
-              <li><a href="/membership/">Membership</a></li>
-            </ul>
-          </div>
 
-          <div class="static-category">
-            <h3>Section Pages</h3>
-            <ul>
-              <li><a href="/emergency/">Emergency & Safety</a></li>
-              <li><a href="/services/">Services & Amenities</a></li>
-              <li><a href="/groups/">Groups & Activities</a></li>
-              <li><a href="/environment/">Environment & Conservation</a></li>
-              <li><a href="/history/">History & Culture</a></li>
-              <li><a href="/projects/">Project Hub</a></li>
-            </ul>
-          </div>
-
-          <div class="static-category">
-            <h3>Legal & Info</h3>
-            <ul>
-              <li><a href="/privacy/">Privacy Policy</a></li>
-              <li><a href="/accessibility/">Accessibility Statement</a></li>
-              <li><a href="/sitemap/">Site Map</a></li>
-            </ul>
-          </div>
-
-          <div class="static-category">
-            <h3>External Resources</h3>
-            <ul>
-              <li><a href="https://www.midcoast.nsw.gov.au/" target="_blank" rel="noopener">MidCoast Council ↗</a></li>
-              <li><a href="https://www.rfs.nsw.gov.au/" target="_blank" rel="noopener">NSW Rural Fire Service ↗</a></li>
-              <li><a href="https://www.bom.gov.au/" target="_blank" rel="noopener">Bureau of Meteorology ↗</a></li>
-            </ul>
-          </div>
-          
-        </div>
-      </div>
-
-      <!-- Search and Filter Section -->
-      <div class="filter-section">
+      <!-- Search and Filter Section (moved to top: search first, then browse) -->
+      <div class="filter-section" id="searchTop">
         <div class="search-box">
-          <input 
-            type="search" 
-            id="searchInput" 
+          <input
+            type="search"
+            id="searchInput"
             placeholder="Search content by title or description..."
             aria-label="Search content"
           />
@@ -582,6 +533,55 @@ const villageDisplay = import.meta.env.PUBLIC_VILLAGE_DISPLAY_NAME || 'Smiths La
 
         <div class="results-summary" id="resultsSummary">
           Showing {publishedContent.length} items
+        </div>
+      </div>
+
+      <!-- Static Pages Section -->
+      <div class="static-pages">
+        <h2>📍 Site Pages</h2>
+        <div class="static-grid">
+          
+          <div class="static-category">
+            <h3>Main Pages</h3>
+            <ul>
+              <li><a href="/">Home</a></li>
+              <li><a href="/about/">About Our Area</a></li>
+              <li><a href="/contact/">Contact Us</a></li>
+              <li><a href="/feedback/">Submit Feedback</a></li>
+              <li><a href="/membership/">Membership</a></li>
+            </ul>
+          </div>
+
+          <div class="static-category">
+            <h3>Section Pages</h3>
+            <ul>
+              <li><a href="/emergency/">Emergency & Safety</a></li>
+              <li><a href="/services/">Services & Amenities</a></li>
+              <li><a href="/groups/">Groups & Activities</a></li>
+              <li><a href="/environment/">Environment & Conservation</a></li>
+              <li><a href="/history/">History & Culture</a></li>
+              <li><a href="/projects/">Project Hub</a></li>
+            </ul>
+          </div>
+
+          <div class="static-category">
+            <h3>Legal & Info</h3>
+            <ul>
+              <li><a href="/privacy/">Privacy Policy</a></li>
+              <li><a href="/accessibility/">Accessibility Statement</a></li>
+              <li><a href="/sitemap/">Site Map</a></li>
+            </ul>
+          </div>
+
+          <div class="static-category">
+            <h3>External Resources</h3>
+            <ul>
+              <li><a href="https://www.midcoast.nsw.gov.au/" target="_blank" rel="noopener">MidCoast Council ↗</a></li>
+              <li><a href="https://www.rfs.nsw.gov.au/" target="_blank" rel="noopener">NSW Rural Fire Service ↗</a></li>
+              <li><a href="https://www.bom.gov.au/" target="_blank" rel="noopener">Bureau of Meteorology ↗</a></li>
+            </ul>
+          </div>
+          
         </div>
       </div>
 
@@ -817,8 +817,21 @@ const villageDisplay = import.meta.env.PUBLIC_VILLAGE_DISPLAY_NAME || 'Smiths La
     statusFilter?.addEventListener('change', filterContent);
     typeFilter?.addEventListener('change', filterContent);
 
+    // Pre-fill from ?q= (the site-wide SearchBar routes here as /sitemap/?q=…).
+    // Fill the search box, run the filter, and jump to the results.
+    const initialQuery = new URLSearchParams(window.location.search).get('q');
+    if (initialQuery && searchInput) {
+      searchInput.value = initialQuery;
+    }
+
     // Initial filter
     filterContent();
+
+    if (initialQuery) {
+      const top = document.getElementById('searchTop');
+      if (top) top.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      searchInput?.focus();
+    }
   </script>
 </Layout>
 
