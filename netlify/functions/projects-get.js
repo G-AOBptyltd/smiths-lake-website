@@ -17,6 +17,7 @@
  */
 
 import { requireRole } from './_auth.js';
+import { requireEntitlement } from './_entitlements.js';
 import { computeRollups } from './_cocon-calc.js';
 import {
   PROJECTS_DB, SCHEDULE_DB, BUDGET_DB, jsonResp, queryAll,
@@ -32,6 +33,8 @@ export const handler = async (event, context) => {
 
   const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer', 'pm'] });
   if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
+  const ent = await requireEntitlement(village, 'projects');
+  if (!ent.ok) return jsonResp(ent.status, { error: ent.error });
 
   if (!PROJECTS_DB || !SCHEDULE_DB || !BUDGET_DB) {
     return jsonResp(503, { error: 'Co-Contribution/Projects databases not configured. Set NOTION_COCON_PROJECTS_DB_ID, NOTION_COCON_SCHEDULE_DB_ID, NOTION_COCON_BUDGET_DB_ID.' });

@@ -15,6 +15,7 @@
  */
 
 import { requireRole } from './_auth.js';
+import { requireEntitlement } from './_entitlements.js';
 import { computeRollups } from './_cocon-calc.js';
 
 const NOTION_VERSION = '2022-06-28';
@@ -117,6 +118,8 @@ export const handler = async (event, context) => {
   if (!auth.ok) {
     return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };
   }
+  const ent = await requireEntitlement(village, 'cocon');
+  if (!ent.ok) return { statusCode: ent.status, headers: corsHeaders(), body: JSON.stringify({ error: ent.error }) };
 
   if (!PROJECTS_DB || !SCHEDULE_DB || !BUDGET_DB) {
     return {

@@ -220,35 +220,39 @@
   // resident-facing page can be switched on/off per village (server-enforced).
   // `minPackage` = lowest Village1st package that includes the module.
   const TOOLS = [
-    { id: 'surveys',  icon: '📊', name: 'Surveys',          desc: 'Create surveys, watch results live', href: '/survey-admin/', roles: ['admin', 'steward', 'viewer'], moduleToggle: true, tierNote: { foundation: 'Basic surveys', interactive: 'Full consultation engine', complete: 'Full consultation engine' } },
+    { id: 'surveys', minPackage: 'growth',  icon: '📊', name: 'Surveys',          desc: 'Create surveys, watch results live', href: '/survey-admin/', roles: ['admin', 'steward', 'viewer'], moduleToggle: true, tierNote: { growth: 'Full consultation engine', complete: 'Full consultation engine' } },
     { id: 'news',     icon: '📰', name: 'News desk',         desc: 'Write stories and publish village news', href: '/admin/news/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'pages',    icon: '🏡', name: 'Village pages',     desc: 'Edit your About Us, Contact and story pages', href: '/admin/pages/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'publish',  icon: '🌐', name: 'Publish website',   desc: 'Push the latest Notion content live', href: '/admin/publish-news.html', roles: ['admin', 'steward'] },
     { id: 'playbook', icon: '📖', name: 'Playbooks', desc: 'A guide for every admin job — surveys, news, publishing, access', href: '/admin/playbook/', roles: ['admin', 'steward', 'viewer'] },
-    { id: 'contrib',  icon: '🤝', name: 'Contributions portal', desc: 'Log donations, payments, gifts, time in kind & donated services', href: '/admin/contrib/', roles: ['admin', 'treasurer'], moduleToggle: true },
+    { id: 'contrib', minPackage: 'complete',  icon: '🤝', name: 'Contributions portal', desc: 'Log donations, payments, gifts, time in kind & donated services', href: '/admin/contrib/', roles: ['admin', 'treasurer'], moduleToggle: true },
     { id: 'cocon',    icon: '📑', name: 'Co-contribution & budget', desc: 'Grant co-contribution schedule & project budget — live dashboard + council export', href: '/admin/cocontribution/', roles: ['admin', 'treasurer'], moduleToggle: true, minPackage: 'complete' },
     // Grant Portal is deliberately in EVERY package: a Foundation village
     // uses the grant pipeline to win the funding that pays for Complete.
     { id: 'grants',   icon: '🏆', name: 'Grant Portal', desc: 'Track every grant application — research to outcome, amounts & deadlines', href: '/admin/grants/', roles: ['admin', 'treasurer'], moduleToggle: true },
     // Projects = the system-of-record spine: each project ties together its budget,
     // grants, volunteer groups (and their hours) and contributions, with reports.
-    { id: 'projects', icon: '🗂️', name: 'Projects', desc: 'The project system of record — budgets, grants, volunteers & hours in one place, with steering-committee reports', href: '/admin/projects/', roles: ['admin', 'treasurer', 'pm'], moduleToggle: true },
+    { id: 'projects', minPackage: 'complete', icon: '🗂️', name: 'Projects', desc: 'The project system of record — budgets, grants, volunteers & hours in one place, with steering-committee reports', href: '/admin/projects/', roles: ['admin', 'treasurer', 'pm'], moduleToggle: true },
     { id: 'profile',  icon: '📇', name: 'Village profile', desc: 'The community resilience profile — snapshot, hazards, facilities & the action register', href: '/admin/profile/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'services', icon: '🏪', name: 'Services directory',  desc: 'Keep every service listing accurate — service stewards manage their own', href: '/admin/services/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'members',  icon: '🪪', name: 'Membership',          desc: 'Member register — approvals, payments, renewals & member emails', href: '/admin/members/', roles: ['admin'], moduleToggle: true },
-    { id: 'events',   icon: '🎟️', name: 'Events & ticketing', desc: 'Create events, take registrations, run the door on the night', href: '/admin/events/', roles: ['admin'], publicToggle: true, moduleToggle: true },
-    { id: 'ads',      icon: '📣', name: 'Advertising',        desc: 'Local business placements & sponsorships — dates, tiers & fees', href: '/admin/ads/', roles: ['admin'], moduleToggle: true },
-    { id: 'volunteers', icon: '🙋', name: 'Volunteer hub',     desc: 'Group rosters, working bees & volunteer hours — stewards see their own groups', href: '/admin/volunteers/', roles: ['admin', 'steward'], moduleToggle: true },
-    { id: 'bookings', icon: '🏛️', name: 'Facility bookings',  desc: 'Hall hire requests, the booking calendar, fees & bonds', href: '/admin/bookings/', roles: ['admin'], publicToggle: true, moduleToggle: true },
+    { id: 'events', minPackage: 'growth',   icon: '🎟️', name: 'Events & ticketing', desc: 'Create events, take registrations, run the door on the night', href: '/admin/events/', roles: ['admin'], publicToggle: true, moduleToggle: true },
+    { id: 'ads', minPackage: 'growth',      icon: '📣', name: 'Advertising',        desc: 'Local business placements & sponsorships — dates, tiers & fees', href: '/admin/ads/', roles: ['admin'], moduleToggle: true },
+    { id: 'volunteers', minPackage: 'growth', icon: '🙋', name: 'Volunteer hub',     desc: 'Group rosters, working bees & volunteer hours — stewards see their own groups', href: '/admin/volunteers/', roles: ['admin', 'steward'], moduleToggle: true },
+    { id: 'bookings', minPackage: 'growth', icon: '🏛️', name: 'Facility bookings',  desc: 'Hall hire requests, the booking calendar, fees & bonds', href: '/admin/bookings/', roles: ['admin'], publicToggle: true, moduleToggle: true },
   ];
 
   let currentUser = null;
   let villagesData = [];
   let currentTab = 'modules';
 
-  // ── Village1st packages (village1st.com.au service levels) ─────────
-  const PKG_ORDER = ['foundation', 'interactive', 'complete'];
-  const PKG_LABEL = { foundation: 'Foundation', interactive: 'Interactive', complete: 'Complete' };
+  // ── Village1st plans (village1st.com.au) ──────────────────────────
+  const PKG_ORDER = ['starter', 'growth', 'complete'];
+  const PKG_LABEL = { starter: 'Starter', growth: 'Growth', complete: 'Complete' };
+  // Legacy plan ids (foundation/interactive) normalise onto the current ones so
+  // existing villages keep working until their Package is re-set.
+  const PKG_LEGACY = { foundation: 'starter', interactive: 'growth', complete: 'complete' };
+  function normalisePkg(p) { p = String(p || '').toLowerCase(); return PKG_ORDER.indexOf(p) >= 0 ? p : (PKG_LEGACY[p] || 'complete'); }
 
   function activeVillage() {
     return document.getElementById('village-select').value || localStorage.getItem('vf_active_village') || 'Smiths Lake';
@@ -275,8 +279,9 @@
   }
   function villagePackage(vName) {
     // Fail-open: no package recorded = 'complete' (pre-package villages keep everything).
+    // Legacy ids (foundation/interactive) normalise onto starter/growth.
     const v = villageRec(vName);
-    return (v && v.package) || 'complete';
+    return normalisePkg((v && v.package) || 'complete');
   }
   function inPackage(tool, vName) {
     if (!tool.minPackage) return true;

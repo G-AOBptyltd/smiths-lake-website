@@ -20,6 +20,7 @@
  */
 
 import { requireRole } from './_auth.js';
+import { requireEntitlement } from './_entitlements.js';
 
 const NOTION_VERSION = '2022-06-28';
 const CONTRIB_DB_ID = process.env.NOTION_CONTRIB_DB_ID || '6d182a0d4f0c42c2879f13753e355861';
@@ -54,6 +55,8 @@ export const handler = async (event, context) => {
   if (!auth.ok) {
     return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };
   }
+  const ent = await requireEntitlement(village, 'contrib');
+  if (!ent.ok) return { statusCode: ent.status, headers: corsHeaders(), body: JSON.stringify({ error: ent.error }) };
 
   const contributor = (body.contributor || '').trim();
   if (!contributor) {

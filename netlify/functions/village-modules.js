@@ -34,8 +34,10 @@ const VILLAGES_DB_ID = process.env.NOTION_VF_VILLAGES_DB_ID || '2c6272ccd9174103
 const TOGGLABLE = ['events', 'bookings'];
 // Modules a super-admin can switch on/off per village (portal tile ids).
 const MODULES = ['surveys', 'news', 'contrib', 'cocon', 'grants', 'projects', 'profile', 'services', 'members', 'events', 'ads', 'volunteers', 'bookings'];
-// Village1st service levels (village1st.com.au): Foundation | Interactive | Complete.
-const PACKAGES = ['foundation', 'interactive', 'complete'];
+// Village1st plans (village1st.com.au): Starter | Growth | Complete.
+// Legacy values (foundation/interactive/complete) still read fine and normalise
+// via _entitlements.normalisePlan; existing rows are unaffected until re-set.
+const PACKAGES = ['starter', 'growth', 'complete'];
 // Role levels the access matrix can configure (visibility only). 'pm' = Project Manager.
 const MATRIX_ROLES = ['admin', 'treasurer', 'pm', 'steward', 'viewer'];
 // Tiles the matrix may reference: the toggleable modules plus the two utilities.
