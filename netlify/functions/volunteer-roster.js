@@ -17,6 +17,7 @@
  */
 
 import { getRoles } from './_auth.js';
+import { requireEntitlement } from './_entitlements.js';
 import {
   VOLUNTEERS_DB_ID, notionHeaders, jsonResp, notProvisioned, rtChunks,
   queryAll, parseVolunteer, resolveScope, scopeCoversVolunteer, scopeHasCard,
@@ -39,6 +40,8 @@ export const handler = async (event, context) => {
     const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
     const scope = await resolveScope(context, village);
     if (!scope.ok) return jsonResp(scope.status, { error: scope.error });
+    const ent = await requireEntitlement(village, 'volunteers');
+    if (!ent.ok) return jsonResp(ent.status, { error: ent.error });
     try {
       const all = (await queryAll(
         VOLUNTEERS_DB_ID,

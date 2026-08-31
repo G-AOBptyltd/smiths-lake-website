@@ -13,6 +13,7 @@
  */
 
 import { requireRole, getRoles } from './_auth.js';
+import { requireEntitlement } from './_entitlements.js';
 import {
   ADS_DB_ID, notionHeaders, jsonResp, notProvisioned, rtChunks,
   queryAll, parseAd, getAd, AD_STATUSES, AD_TIERS,
@@ -25,6 +26,8 @@ export const handler = async (event, context) => {
     const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
     const auth = requireRole(context, { village, anyOf: ['admin'] });
     if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
+    const ent = await requireEntitlement(village, 'ads');
+    if (!ent.ok) return jsonResp(ent.status, { error: ent.error });
     try {
       const ads = (await queryAll(ADS_DB_ID, { property: 'Village', rich_text: { equals: village } },
         [{ property: 'End Date', direction: 'descending' }])).map(parseAd);

@@ -13,6 +13,7 @@
  */
 
 import { requireRole } from './_auth.js';
+import { requireEntitlement } from './_entitlements.js';
 import {
   PROJECTS_DB, BUDGET_DB, jsonResp, queryAll,
   parseProject, parseBudget, ensureProjectSchema, grantsForProject, listGroups,
@@ -24,6 +25,8 @@ export const handler = async (event, context) => {
   const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer', 'pm'] });
   if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
+  const ent = await requireEntitlement(village, 'projects');
+  if (!ent.ok) return jsonResp(ent.status, { error: ent.error });
 
   if (!PROJECTS_DB) {
     return jsonResp(503, { error: 'Projects database not configured. Set NOTION_COCON_PROJECTS_DB_ID.' });
