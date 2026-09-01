@@ -32,6 +32,11 @@
 
 # Survey Platform API — proxy Netlify Functions to clean /api/* paths
 [[redirects]]
+  from = "/api/vapp-admin"
+  to = "/.netlify/functions/vapp-admin"
+  status = 200
+
+[[redirects]]
   from = "/api/survey-list"
   to = "/.netlify/functions/survey-list"
   status = 200
