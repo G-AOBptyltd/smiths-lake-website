@@ -24,6 +24,12 @@
   status = 301
   force = true
 
+# Volunteer app — admin toggles which website cards are joinable sign-up groups
+[[redirects]]
+  from = "/api/volunteer-groups"
+  to = "/.netlify/functions/volunteer-groups"
+  status = 200
+
 # Survey Platform API — proxy Netlify Functions to clean /api/* paths
 [[redirects]]
   from = "/api/survey-list"

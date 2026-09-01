@@ -142,6 +142,7 @@
       <button class="s-item on" data-panel="roster" onclick="showPanel('roster')">🙋 Roster</button>
       <button class="s-item" data-panel="activities" onclick="showPanel('activities')">🛠 Activities</button>
       <button class="s-item" data-panel="stewards" id="nav-stewards" style="display:none;" onclick="showPanel('stewards')">🧭 Stewards</button>
+      <a class="s-item" href="/admin/volunteers/groups/" id="nav-signup-groups" style="display:none; text-decoration:none;">📋 Sign-up groups</a>
       <button class="s-item" data-panel="groups" id="nav-groups" style="display:none;" onclick="showPanel('groups')">🗂 Groups &amp; projects</button>
       <button class="s-item" data-panel="help" onclick="showPanel('help')">💡 Help</button>
     </div>
@@ -399,6 +400,7 @@
       }
 
       document.getElementById('nav-stewards').style.display = scope.isAdmin ? '' : 'none';
+      document.getElementById('nav-signup-groups').style.display = scope.isAdmin ? '' : 'none';
       document.getElementById('nav-groups').style.display = scope.isAdmin ? '' : 'none';
       groupsLoaded = false;
       if (document.getElementById('panel-groups').classList.contains('on') && scope.isAdmin) loadGroupsPanel();
