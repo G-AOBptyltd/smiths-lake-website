@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sign-up groups — Volunteer hub — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; font-size: 14px; color: #1f2937; }
+  button { font-family: inherit; }
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; font-family: inherit; }
+  .village-select option { color: #1f2937; }
+
+  .main { max-width: 760px; margin: 0 auto; padding: 22px 18px 80px; }
+  h1 { font-size: 1.15rem; color: #143d2e; margin-bottom: 4px; }
+  .sub { font-size: 12.5px; color: #6b7280; margin-bottom: 18px; line-height: 1.5; }
+  .back { display: inline-block; margin-bottom: 14px; color: #15795f; text-decoration: none; font-size: 12.5px; }
+
+  .kind-h { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #0f5c48; font-weight: 800; margin: 20px 0 8px; }
+  .row { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 11px 14px; margin-bottom: 8px; }
+  .row-main { flex: 1; min-width: 0; }
+  .row-title { font-weight: 650; font-size: 13.5px; }
+  .row-meta { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 20px; margin-left: 6px; }
+  .tag.safety { background: #fdecec; color: #b3261e; border: 1px solid #f3c6c2; }
+
+  .switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; border: none; border-radius: 20px; background: #cbd5e1; cursor: pointer; transition: background .15s; }
+  .switch.on { background: #15795f; }
+  .switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .switch.on::after { transform: translateX(20px); }
+  .switch:disabled { opacity: .5; cursor: default; }
+
+  .empty, .loading { color: #6b7280; font-size: 13px; padding: 24px 0; text-align: center; }
+  .err { background: #fdeceb; color: #b3261e; border: 1px solid #f3c6c2; border-radius: 8px; padding: 10px 12px; font-size: 12.5px; margin-bottom: 12px; }
+  .count { font-size: 12px; color: #6b7280; margin-bottom: 8px; }
+  #auth-screen { max-width: 380px; margin: 80px auto; text-align: center; }
+  .btn-green { background: #15795f; color: #fff; border: none; border-radius: 8px; padding: 10px 18px; font-weight: 700; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" style="display:none;">
+  <h1>Volunteer hub</h1>
+  <p class="sub">Please sign in to manage sign-up groups.</p>
+  <button class="btn-green" onclick="netlifyIdentity.open()">Sign in</button>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · <a href="/admin/volunteers/">Volunteers</a> · Sign-up groups</div>
+    <div class="topbar-sp"></div>
+    <select class="village-select" id="village-select"><option>Smiths Lake</option></select>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="main">
+    <a class="back" href="/admin/volunteers/">← Back to Volunteer hub</a>
+    <h1>Sign-up groups</h1>
+    <p class="sub">
+      Choose which of your website's groups and activities appear in the
+      <b>Village1st Volunteer sign-up app</b>. Turn one on and residents can sign
+      up to it; turn it off and it disappears from the app. Whether it's a
+      volunteer group, interest group or club — and whether it asks the health
+      &amp; safety questions — is set automatically from the card's category, so
+      you only choose which ones to offer. Info and reference cards aren't listed.
+    </p>
+    <div id="err" class="err" style="display:none;"></div>
+    <div id="count" class="count"></div>
+    <div id="list"><div class="loading">Loading your groups…</div></div>
+  </div>
+</div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+  let groups = [];
+
+  const KIND_HEADING = { volunteer: 'Volunteer groups', interest: 'Interest groups', club: 'Clubs & activities' };
+
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } else { document.getElementById('auth-screen').style.display = 'block'; } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+    loadVillages();
+    loadGroups();
+  }
+
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const data = await r.json();
+      const villages = (data.villages || []).filter(v => v.status === 'live');
+      if (villages.length) {
+        sel.innerHTML = '';
+        villages.forEach(v => {
+          const o = document.createElement('option');
+          o.value = v.name; o.textContent = v.name;
+          if (v.name === VILLAGE) o.selected = true;
+          sel.appendChild(o);
+        });
+      }
+    } catch (e) { /* keep default */ }
+    sel.onchange = () => { VILLAGE = sel.value; localStorage.setItem('vf_active_village', VILLAGE); loadGroups(); };
+  }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+  function showErr(m) { const e = document.getElementById('err'); if (!m) { e.style.display = 'none'; return; } e.textContent = m; e.style.display = 'block'; }
+
+  async function loadGroups() {
+    showErr('');
+    document.getElementById('list').innerHTML = '<div class="loading">Loading your groups…</div>';
+    document.getElementById('count').textContent = '';
+    try {
+      const r = await fetch('/api/volunteer-groups?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not load groups');
+      groups = data.groups || [];
+      render();
+    } catch (e) {
+      document.getElementById('list').innerHTML = '';
+      showErr(e.message);
+    }
+  }
+
+  function render() {
+    const list = document.getElementById('list');
+    if (!groups.length) { list.innerHTML = '<div class="empty">No groups or activities found for this village yet.</div>'; return; }
+    const on = groups.filter(g => g.signupGroup).length;
+    document.getElementById('count').textContent = on + ' of ' + groups.length + ' showing in the app';
+    let html = '';
+    ['volunteer', 'interest', 'club'].forEach(kind => {
+      const items = groups.filter(g => g.kind === kind);
+      if (!items.length) return;
+      html += '<div class="kind-h">' + KIND_HEADING[kind] + '</div>';
+      items.forEach(g => {
+        html += '<div class="row">'
+          + '<div class="row-main"><div class="row-title">' + esc(g.title)
+          + (g.requiresSafety ? '<span class="tag safety">safety questions</span>' : '') + '</div>'
+          + '<div class="row-meta">' + esc(g.category || g.section) + '</div></div>'
+          + '<button class="switch' + (g.signupGroup ? ' on' : '') + '" data-id="' + esc(g.id) + '" '
+          + 'aria-label="Toggle ' + esc(g.title) + '" onclick="toggle(this)"></button>'
+          + '</div>';
+      });
+    });
+    list.innerHTML = html;
+  }
+
+  async function toggle(btn) {
+    const id = btn.getAttribute('data-id');
+    const g = groups.find(x => x.id === id);
+    if (!g) return;
+    const next = !g.signupGroup;
+    btn.disabled = true;
+    btn.classList.toggle('on', next);
+    showErr('');
+    try {
+      const r = await fetch('/api/volunteer-groups', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, pageId: id, enabled: next }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Could not save');
+      g.signupGroup = next;
+      const on = groups.filter(x => x.signupGroup).length;
+      document.getElementById('count').textContent = on + ' of ' + groups.length + ' showing in the app';
+    } catch (e) {
+      btn.classList.toggle('on', g.signupGroup); // revert
+      showErr(e.message + ' — change not saved.');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>
