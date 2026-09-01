@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Volunteer app — approvals · VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<style>
+  :root { --ink:#1f2a24; --muted:#6b746d; --line:#e2e7e2; --bg:#f5f7f4; --accent:#2f8f5b; --err:#b3261e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .auth-screen { max-width:460px; margin:12vh auto; text-align:center; padding:24px; }
+  .auth-screen h1 { font-family:Georgia,serif; }
+  .btn { border:none; border-radius:10px; padding:11px 18px; font:600 15px inherit; cursor:pointer; background:var(--accent); color:#fff; }
+  .top { display:flex; align-items:center; gap:12px; background:#12603a; color:#fff; padding:12px 18px; }
+  .top .t { font-weight:700; }
+  .top .sp { flex:1; }
+  .top a, .top button { color:#fff; }
+  .top .out { background:rgba(255,255,255,.15); border:none; border-radius:8px; padding:7px 12px; font:600 13px inherit; cursor:pointer; }
+  .wrap { max-width:780px; margin:0 auto; padding:20px 16px 64px; }
+  h1.page { font-family:Georgia,serif; font-size:24px; margin:8px 0 2px; }
+  .lead { color:var(--muted); margin:0 0 16px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin:14px 0; }
+  .card h2 { font-size:16px; margin:0 0 4px; }
+  .card .hint { color:var(--muted); font-size:13px; margin:0 0 10px; }
+  .row { display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-top:8px; }
+  .row .main { flex:1; min-width:0; }
+  .row .title { font-weight:650; }
+  .row .meta { color:var(--muted); font-size:12.5px; margin-top:2px; }
+  .who { font-weight:650; }
+  .tag { margin-left:8px; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:#8a5a00; background:#fff8e6; border:1px solid #f0d69a; border-radius:10px; padding:1px 7px; }
+  .chip { flex:0 0 auto; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:4px 9px; border-radius:20px; border:1px solid var(--line); color:var(--muted); background:#fff; }
+  .chip.on { color:#1c6b3a; border-color:#b7e0c4; background:#eafaf0; }
+  .hrs { display:flex; align-items:center; gap:6px; margin-top:6px; }
+  .hrs input { width:74px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; font:inherit; }
+  .hrs .u { font-size:12px; color:var(--muted); }
+  .acts { display:flex; gap:8px; flex:0 0 auto; }
+  .mini { border:1.5px solid var(--accent); background:#fff; color:var(--accent); font:600 13px inherit; padding:8px 13px; border-radius:20px; cursor:pointer; }
+  .mini.go { background:var(--accent); color:#fff; }
+  .mini.no { border-color:var(--line); color:var(--muted); }
+  .mini:disabled { opacity:.55; cursor:default; }
+  .empty { color:var(--muted); font-size:13.5px; }
+  .notice { background:#fff8e6; border:1px solid #f0d69a; border-radius:12px; padding:14px 16px; color:#5a4300; }
+  .notice code { background:#fff; border:1px solid #e7dcae; border-radius:6px; padding:1px 6px; }
+  .err { color:var(--err); font-size:13.5px; }
+  .grp-list { color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:3rem;">🙋</div>
+  <h1>Volunteer app — approvals</h1>
+  <p>Review RSVPs, who's on site, and approve volunteer hours from the app. Sign in to continue.</p>
+  <button class="btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="top">
+    <div class="t">🏘️ <span id="top-village">Smiths Lake</span></div>
+    <div class="sp"></div>
+    <a href="/admin/volunteers/" style="font-size:13px;">← Volunteer hub</a>
+    <button class="out" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+  <div class="wrap">
+    <h1 class="page">Volunteer app — approvals</h1>
+    <p class="lead" id="lead">RSVPs, on-site sign-ins and hours from the volunteer app — the same data your stewards see in the app.</p>
+
+    <div id="notconfigured" class="notice" style="display:none;">
+      <strong>Not connected yet.</strong> To show the volunteer-app data here, set
+      <code>VAPP_SUPABASE_URL</code> and <code>VAPP_SUPABASE_SERVICE_KEY</code> on this site's
+      Netlify environment (the volunteer app's Supabase project URL + service_role key), then redeploy.
+    </div>
+
+    <div id="content" style="display:none;">
+      <section class="card">
+        <h2>Hours to approve <span id="pc"></span></h2>
+        <p class="hint">Adjust the hours if needed (e.g. an auto 2 h default), then Approve — the value saved is what counts toward grants.</p>
+        <div id="pending"></div>
+      </section>
+
+      <section class="card">
+        <h2>On site (last 24 h) <span id="oc"></span></h2>
+        <div id="onsite"></div>
+      </section>
+
+      <section class="card">
+        <h2>Coming up — RSVPs <span id="rc"></span></h2>
+        <div id="rsvps"></div>
+      </section>
+
+      <section class="card">
+        <h2>New joiners <span id="jc"></span></h2>
+        <p class="hint">Most recent sign-ups from the app.</p>
+        <div id="joiners"></div>
+      </section>
+
+      <p class="grp-list" id="scopeline"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+
+  let recovering = false;
+  function clearDeadSession() { try { Object.keys(localStorage).forEach(k => { if (/gotrue|netlify/i.test(k)) localStorage.removeItem(k); }); } catch (_) {} }
+  function recoverFromDeadSession() {
+    if (recovering) return; recovering = true; clearDeadSession(); currentUser = null;
+    try { netlifyIdentity.close(); } catch (_) {}
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('auth-screen').style.display = '';
+    try { netlifyIdentity.open('login'); } catch (_) {}
+  }
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; boot(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); boot(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+  netlifyIdentity.on('error', err => {
+    const m = ((err && err.json && (err.json.msg || err.json.error_description)) || (err && err.message) || '') + '';
+    if (/user not found|not_?found|404|401|invalid|expired|jwt/i.test(m)) recoverFromDeadSession();
+  });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); }
+    catch (e) { recoverFromDeadSession(); }
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+  const fmtTime = iso => { try { return new Date(iso).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }); } catch (_) { return ''; } }
+  const fmtWhen = iso => { try { return new Date(iso).toLocaleDateString([], { day:'numeric', month:'short' }); } catch (_) { return iso; } }
+
+  async function boot() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('top-village').textContent = VILLAGE;
+    await load();
+  }
+
+  async function load() {
+    let d;
+    try {
+      const r = await fetch('/api/vapp-admin?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      if (r.status === 401 || r.status === 403) { document.getElementById('content').style.display='none'; document.getElementById('notconfigured').style.display='none'; document.getElementById('lead').innerHTML = '<span class="err">You don\'t have access to this village\'s volunteer data.</span>'; return; }
+      d = await r.json();
+    } catch (_) { document.getElementById('lead').innerHTML = '<span class="err">Could not load — please try again.</span>'; return; }
+
+    if (!d.configured) {
+      document.getElementById('notconfigured').style.display = '';
+      document.getElementById('content').style.display = 'none';
+      return;
+    }
+    document.getElementById('notconfigured').style.display = 'none';
+    document.getElementById('content').style.display = '';
+
+    renderPending(d.pending || []);
+    renderOnsite(d.onsite || []);
+    renderRsvps(d.rsvps || []);
+    renderJoiners(d.joiners || []);
+    const sc = d.scope || {};
+    document.getElementById('scopeline').textContent = sc.isAdmin
+      ? 'You see every group in ' + VILLAGE + '.'
+      : 'You see your steward groups only' + ((sc.cards && sc.cards.length) ? ': ' + sc.cards.map(c => c.title || c.path).join(', ') : ' (none assigned yet).');
+  }
+
+  const count = (id, n) => document.getElementById(id).textContent = n ? '(' + n + ')' : '';
+
+  function renderPending(list) {
+    count('pc', list.length);
+    const el = document.getElementById('pending');
+    if (!list.length) { el.innerHTML = '<div class="empty">Nothing waiting — all caught up.</div>'; return; }
+    el.innerHTML = list.map(h => `
+      <div class="row" data-id="${esc(h.id)}">
+        <div class="main">
+          <div class="who">${esc(h.name)}${h.auto ? '<span class="tag">auto · check</span>' : ''}</div>
+          <div class="meta">${esc(h.activity || h.group_id || '')} · ${esc(h.worked_on)}</div>
+          <div class="hrs"><input type="number" min="0" step="0.25" value="${esc(h.hours)}" data-h="${esc(h.id)}"><span class="u">hours</span></div>
+        </div>
+        <div class="acts">
+          <button class="mini go" onclick="decide('${esc(h.id)}','approve',this)">Approve</button>
+          <button class="mini no" onclick="decide('${esc(h.id)}','reject',this)">Reject</button>
+        </div>
+      </div>`).join('');
+  }
+  function renderOnsite(list) {
+    count('oc', list.length);
+    const el = document.getElementById('onsite');
+    if (!list.length) { el.innerHTML = '<div class="empty">No sign-ins in the last 24 hours.</div>'; return; }
+    el.innerHTML = list.map(a => `
+      <div class="row">
+        <div class="main">
+          <div class="who">${esc(a.name)}</div>
+          <div class="meta">${esc(a.activity_id || a.group_id || '')} · in ${fmtTime(a.signed_in_at)}${a.signed_out_at ? ' · out ' + fmtTime(a.signed_out_at) : ''}</div>
+        </div>
+        <span class="chip ${a.signed_out_at ? 'on' : ''}">${a.signed_out_at ? 'done' : 'on site'}</span>
+      </div>`).join('');
+  }
+  function renderRsvps(list) {
+    count('rc', list.length);
+    const el = document.getElementById('rsvps');
+    if (!list.length) { el.innerHTML = '<div class="empty">No RSVPs yet.</div>'; return; }
+    const byAct = {};
+    list.forEach(r => { (byAct[r.activity_id] ||= []).push(r); });
+    el.innerHTML = Object.entries(byAct).map(([act, rs]) => `
+      <div class="row">
+        <div class="main">
+          <div class="title">${esc(act)} — ${rs.length} coming</div>
+          <div class="meta">${esc(rs.map(r => r.name).join(', '))}</div>
+        </div>
+      </div>`).join('');
+  }
+  function renderJoiners(list) {
+    count('jc', list.length);
+    const el = document.getElementById('joiners');
+    if (!list.length) { el.innerHTML = '<div class="empty">No sign-ups yet.</div>'; return; }
+    el.innerHTML = list.map(j => `
+      <div class="row">
+        <div class="main">
+          <div class="who">${esc(j.name || 'Volunteer')}</div>
+          <div class="meta">${esc(j.group_id || '')}${j.joined_at ? ' · joined ' + fmtWhen(j.joined_at) : ''}</div>
+        </div>
+        <span class="chip ${j.status === 'active' ? 'on' : ''}">${esc(j.status || '')}</span>
+      </div>`).join('');
+  }
+
+  async function decide(id, action, btn) {
+    const row = btn.closest('.row');
+    row.querySelectorAll('button').forEach(b => b.disabled = true);
+    const body = { village: VILLAGE, action, id };
+    if (action === 'approve') { const inp = row.querySelector('input[data-h]'); if (inp) body.hours = inp.value; }
+    try {
+      const r = await fetch('/api/vapp-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(body) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'failed');
+      row.remove();
+      const el = document.getElementById('pending');
+      const left = el.querySelectorAll('.row').length;
+      count('pc', left);
+      if (!left) el.innerHTML = '<div class="empty">Nothing waiting — all caught up.</div>';
+    } catch (e) {
+      row.querySelectorAll('button').forEach(b => b.disabled = false);
+      alert('Could not save: ' + e.message);
+    }
+  }
+</script>
+</body>
+</html>
