@@ -24,6 +24,19 @@
   status = 301
   force = true
 
+# Friendly door to the Volunteers app (Village1st platform, Smiths Lake instance)
+[[redirects]]
+  from = "/volunteers"
+  to = "https://smithslake-stewards.village1st.com.au"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/volunteers/*"
+  to = "https://smithslake-stewards.village1st.com.au/:splat"
+  status = 301
+  force = true
+
 # Volunteer app — admin toggles which website cards are joinable sign-up groups
 [[redirects]]
   from = "/api/volunteer-groups"
