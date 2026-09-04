@@ -49,6 +49,17 @@
   to = "/.netlify/functions/vapp-admin"
   status = 200
 
+# Volunteer directory (Supabase-backed) + one-time Notion→Supabase migration
+[[redirects]]
+  from = "/api/vapp-volunteers"
+  to = "/.netlify/functions/vapp-volunteers"
+  status = 200
+
+[[redirects]]
+  from = "/api/vapp-migrate"
+  to = "/.netlify/functions/vapp-migrate"
+  status = 200
+
 [[redirects]]
   from = "/api/survey-list"
   to = "/.netlify/functions/survey-list"

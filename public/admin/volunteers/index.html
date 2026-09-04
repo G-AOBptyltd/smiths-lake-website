@@ -143,6 +143,7 @@
       <button class="s-item" data-panel="activities" onclick="showPanel('activities')">🛠 Activities</button>
       <a class="s-item" href="/admin/volunteers/hours/">📲 App approvals</a>
       <button class="s-item" data-panel="stewards" id="nav-stewards" style="display:none;" onclick="showPanel('stewards')">🧭 Stewards</button>
+      <button class="s-item" data-panel="app-volunteers" id="nav-app-volunteers" style="display:none;" onclick="showPanel('app-volunteers')">🙋 Volunteers</button>
       <a class="s-item" href="/admin/volunteers/groups/" id="nav-signup-groups" style="display:none; text-decoration:none;">📋 Sign-up groups</a>
       <button class="s-item" data-panel="groups" id="nav-groups" style="display:none;" onclick="showPanel('groups')">🗂 Groups &amp; projects</button>
       <button class="s-item" data-panel="help" onclick="showPanel('help')">💡 Help</button>
@@ -256,6 +257,36 @@
         </div>
       </div>
 
+      <!-- ── Volunteers (Supabase app directory) ─────────────────── -->
+      <div class="panel" id="panel-app-volunteers">
+        <h1>Volunteers</h1>
+        <p class="sub">Everyone in the volunteer app — the source of truth. People who signed up on the website but aren't in the app yet are flagged <b>website only</b> until they're migrated across.</p>
+
+        <div class="form-card" id="av-migrate-card" style="display:none;">
+          <h2>Migrate website roster → app</h2>
+          <p class="meta-line" id="av-migrate-status">Checking…</p>
+          <div class="form-actions">
+            <button class="btn btn-ghost" id="av-dryrun-btn" onclick="appVolDryRun()">Dry run (preview only)</button>
+            <button class="btn btn-green" id="av-commit-btn" style="display:none;" onclick="appVolCommit()">Run migration</button>
+            <span class="status-msg" id="av-migrate-msg"></span>
+          </div>
+          <div id="av-migrate-report" class="meta-line" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="stats" id="av-stats"></div>
+        <div class="toolbar">
+          <select id="av-status" onchange="renderAppVolunteers()">
+            <option value="">All</option>
+            <option value="active">Active</option>
+            <option value="archived">Archived</option>
+            <option value="inactive">Inactive</option>
+            <option value="notmigrated">Website only (not migrated)</option>
+          </select>
+          <input type="search" id="av-search" placeholder="Search name, email…" oninput="renderAppVolunteers()" />
+        </div>
+        <div class="ledger" id="av-list"><div class="empty">Loading volunteers…</div></div>
+      </div>
+
       <!-- ── Stewards (admin only) ───────────────────────────────── -->
       <div class="panel" id="panel-stewards">
         <h1>Community stewards</h1>
@@ -315,6 +346,8 @@
   let scope = { isAdmin: false, cards: [] };
   let openVolunteerId = null, openActivityId = null;
   let projects = [], groupsLoaded = false;
+  // Volunteer directory (Supabase app data) — the Volunteers tab.
+  let appVolunteers = [], appVolLoaded = false, appVolMigrated = false, appVolConfigured = false, appVolExpected = 0;
 
   // Same map + slug algorithm as the website build — keys steward cards to page paths.
   const SECTION_TO_PATH = {
@@ -378,6 +411,7 @@
     document.getElementById('panel-' + name).classList.add('on');
     document.querySelectorAll('.s-item').forEach(b => b.classList.toggle('on', b.dataset.panel === name));
     if (name === 'groups' && !groupsLoaded) loadGroupsPanel();
+    if (name === 'app-volunteers' && !appVolLoaded) loadAppVolunteers();
   }
 
   // ── Data loading ───────────────────────────────────────────────
@@ -401,9 +435,12 @@
       }
 
       document.getElementById('nav-stewards').style.display = scope.isAdmin ? '' : 'none';
+      document.getElementById('nav-app-volunteers').style.display = scope.isAdmin ? '' : 'none';
       document.getElementById('nav-signup-groups').style.display = scope.isAdmin ? '' : 'none';
       document.getElementById('nav-groups').style.display = scope.isAdmin ? '' : 'none';
       groupsLoaded = false;
+      appVolLoaded = false;
+      if (document.getElementById('panel-app-volunteers').classList.contains('on') && scope.isAdmin) loadAppVolunteers();
       if (document.getElementById('panel-groups').classList.contains('on') && scope.isAdmin) loadGroupsPanel();
       if (scope.isAdmin) loadStewards();
       loadCatalogue();
@@ -977,6 +1014,129 @@
   function setMsg(id, msg, kind) {
     const el = document.getElementById(id);
     el.textContent = msg; el.className = 'status-msg' + (kind ? ' ' + kind : '');
+  }
+
+  // ── Volunteers (Supabase app directory) ────────────────────────
+  async function loadAppVolunteers() {
+    const el = document.getElementById('av-list');
+    el.innerHTML = '<div class="empty">Loading volunteers…</div>';
+    try {
+      const r = await fetch('/api/vapp-volunteers?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not load volunteers');
+      appVolConfigured = d.configured !== false;
+      appVolMigrated = !!d.migrated;
+      appVolunteers = d.volunteers || [];
+      appVolLoaded = true;
+      const mc = document.getElementById('av-migrate-card');
+      if (mc) mc.style.display = isSuper() ? '' : 'none';
+      updateMigrateStatus(d.counts || {});
+      if (!appVolConfigured) {
+        document.getElementById('av-stats').innerHTML = '';
+        el.innerHTML = '<div class="empty">The volunteer app isn\'t connected to this site yet. An admin needs to set <b>VAPP_SUPABASE_URL</b> and <b>VAPP_SUPABASE_SERVICE_KEY</b> in Netlify, then reload.</div>';
+        return;
+      }
+      renderAppVolunteers();
+    } catch (e) {
+      el.innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
+    }
+  }
+
+  function renderAppVolunteers() {
+    const counts = {
+      active: appVolunteers.filter(v => v.inApp && v.status === 'active').length,
+      archived: appVolunteers.filter(v => v.inApp && v.status === 'archived').length,
+      inactive: appVolunteers.filter(v => v.inApp && v.status === 'inactive').length,
+      notMigrated: appVolunteers.filter(v => v.notMigrated).length,
+    };
+    document.getElementById('av-stats').innerHTML =
+      stat(counts.active, 'Active') + stat(counts.archived, 'Archived') +
+      stat(counts.inactive, 'Inactive') + stat(counts.notMigrated, 'Not migrated');
+
+    const status = document.getElementById('av-status').value;
+    const q = document.getElementById('av-search').value.trim().toLowerCase();
+    const list = appVolunteers.filter(v => {
+      if (status === 'notmigrated') { if (!v.notMigrated) return false; }
+      else if (status) { if (!(v.inApp && v.status === status)) return false; }
+      if (q && ![v.name, v.email, v.phone].join(' ').toLowerCase().includes(q)) return false;
+      return true;
+    });
+    const el = document.getElementById('av-list');
+    if (!list.length) { el.innerHTML = '<div class="empty">No volunteers match.</div>'; return; }
+    el.innerHTML = list.map(v => {
+      const groupsLine = (v.groups || []).map(g => '<span class="chip chip-card">' + esc(g.title) + '</span>').join(' ');
+      const note = [v.email, v.phone].filter(Boolean).join(' · ');
+      const chipCls = v.notMigrated ? 'chip-applied' : (v.status === 'active' ? 'chip-active' : 'chip-inactive');
+      const chipTxt = v.notMigrated ? 'website only' : v.status;
+      let actions = '';
+      if (v.inApp && !v.notMigrated) {
+        actions = v.status === 'archived'
+          ? '<button class="link-btn" onclick="setVolStatus(\'' + v.id + '\', \'active\')">Restore</button>'
+          : '<button class="link-btn danger" onclick="setVolStatus(\'' + v.id + '\', \'archived\')">Archive</button>';
+      }
+      return '<div class="row">' +
+        '<span class="chip ' + chipCls + '">' + esc(chipTxt) + '</span>' +
+        '<div class="row-main"><div class="row-name">' + esc(v.name) + ' ' + (v.isMember ? '<span class="chip chip-member">member</span>' : '') + '</div>' +
+        '<div class="row-note">' + esc(note) + '</div><div class="row-note">' + groupsLine + '</div></div>' +
+        '<span class="row-actions">' + actions + '</span></div>';
+    }).join('');
+  }
+
+  async function setVolStatus(id, status) {
+    const verb = status === 'archived' ? 'Archive' : 'Restore';
+    if (!confirm(verb + ' this volunteer?')) return;
+    try {
+      const r = await fetch('/api/vapp-volunteers', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, action: 'setStatus', id, status }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Update failed');
+      const v = appVolunteers.find(x => x.id === id); if (v) v.status = status;
+      renderAppVolunteers();
+    } catch (e) { alert(e.message); }
+  }
+
+  function updateMigrateStatus(counts) {
+    const s = document.getElementById('av-migrate-status');
+    if (!s) return;
+    const nm = counts.notMigrated || 0;
+    if (!appVolConfigured) { s.textContent = 'The volunteer app isn\'t connected yet.'; }
+    else if (!appVolMigrated) { s.innerHTML = 'The app database needs migration <b>0006</b> applied before the roster can be migrated across.'; }
+    else { s.innerHTML = nm ? ('<b>' + nm + '</b> website volunteer(s) are not in the app yet.') : 'All website volunteers are already in the app. ✓'; }
+    const commit = document.getElementById('av-commit-btn');
+    if (commit) commit.style.display = (appVolMigrated && nm > 0) ? '' : 'none';
+  }
+
+  async function appVolDryRun() {
+    const msg = document.getElementById('av-migrate-msg');
+    const rep = document.getElementById('av-migrate-report');
+    msg.textContent = 'Running dry run…'; rep.textContent = '';
+    try {
+      const r = await fetch('/api/vapp-migrate?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Dry run failed');
+      if (d.configured === false) { msg.textContent = 'The volunteer app isn\'t connected yet.'; return; }
+      appVolExpected = d.willInsert || 0;
+      msg.textContent = 'Dry run complete — nothing was written.';
+      rep.innerHTML = 'Notion roster: ' + d.notionTotal + ' · <b>will insert: ' + d.willInsert + '</b>' +
+        ' · already in app: ' + d.alreadyInSupabase + ' · needs review (no email): ' + ((d.needsReview || []).length) +
+        ((d.preview && d.preview.length) ? '<br>e.g. ' + d.preview.slice(0, 5).map(p => esc(p.name)).join(', ') + (d.preview.length > 5 ? '…' : '') : '');
+    } catch (e) { msg.textContent = esc(e.message); }
+  }
+
+  async function appVolCommit() {
+    if (!appVolExpected) { alert('Run the dry run first so you can see exactly what will be written.'); return; }
+    if (!confirm('Insert ' + appVolExpected + ' volunteer(s) into the app database?\n\nThis writes production data. It is safe to re-run (already-migrated people are skipped), but there is no automatic undo.')) return;
+    const msg = document.getElementById('av-migrate-msg');
+    msg.textContent = 'Migrating…';
+    try {
+      const r = await fetch('/api/vapp-migrate', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, confirm: true, expected: appVolExpected }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Migration failed');
+      msg.textContent = 'Inserted ' + (d.insertedCount || 0) + ' volunteer(s).' + ((d.failed && d.failed.length) ? ' ' + d.failed.length + ' failed — see console.' : '');
+      if (d.failed && d.failed.length) console.warn('Migration failures:', d.failed);
+      appVolLoaded = false; loadAppVolunteers();
+    } catch (e) { msg.textContent = esc(e.message); }
   }
 
   function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
