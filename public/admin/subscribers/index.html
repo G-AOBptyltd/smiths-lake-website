@@ -4,8 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex" />
-<title>Subscribers — Mailchimp → Supabase · VillageFirst</title>
+<title>Newsletter subscribers · VillageFirst</title>
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
 <style>
   :root { --ink:#1f2a24; --muted:#6b746d; --line:#e2e7e2; --bg:#f5f7f4; --accent:#2f8f5b; --err:#b3261e; }
   * { box-sizing:border-box; }
@@ -15,68 +16,105 @@
   .btn { border:none; border-radius:10px; padding:11px 18px; font:600 15px inherit; cursor:pointer; background:var(--accent); color:#fff; }
   .btn.ghost { background:#fff; color:var(--accent); border:1.5px solid var(--accent); }
   .btn:disabled { opacity:.55; cursor:default; }
-  .top { display:flex; align-items:center; gap:12px; background:#12603a; color:#fff; padding:12px 18px; }
-  .top .t { font-weight:700; } .top .sp { flex:1; } .top a, .top button { color:#fff; }
-  .top .out { background:rgba(255,255,255,.15); border:none; border-radius:8px; padding:7px 12px; font:600 13px inherit; cursor:pointer; }
-  .wrap { max-width:780px; margin:0 auto; padding:20px 16px 64px; }
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; white-space: nowrap; font-family: inherit; }
+  .village-select option { color: #1f2937; }
+  .wrap { max-width:840px; margin:0 auto; padding:20px 16px 64px; }
   h1.page { font-family:Georgia,serif; font-size:24px; margin:8px 0 2px; }
   .lead { color:var(--muted); margin:0 0 16px; }
-  .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin:14px 0; }
-  .card h2 { font-size:16px; margin:0 0 4px; }
-  .card .hint { color:var(--muted); font-size:13px; margin:0 0 10px; }
-  .stat { display:inline-block; margin:6px 18px 6px 0; }
-  .stat b { font-size:24px; display:block; }
+  .stats { display:flex; gap:22px; margin:10px 0 16px; flex-wrap:wrap; }
+  .stat b { font-size:26px; display:block; line-height:1.1; }
   .stat span { color:var(--muted); font-size:12.5px; }
-  .actions { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center; }
-  .msg { font-size:13.5px; color:var(--muted); }
-  .msg.err { color:var(--err); }
+  .toolbar { display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
+  .toolbar input, .toolbar select { padding:9px 11px; border:1px solid var(--line); border-radius:9px; font:inherit; background:#fff; }
+  .toolbar input[type=search] { flex:1; min-width:180px; }
+  .list { background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  .row { display:flex; align-items:center; gap:12px; padding:11px 16px; border-top:1px solid var(--line); }
+  .row:first-child { border-top:none; }
+  .row .main { flex:1; min-width:0; }
+  .row .nm { font-weight:600; }
+  .row .em { color:var(--muted); font-size:13px; word-break:break-all; }
+  .chip { flex:0 0 auto; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:4px 10px; border-radius:20px; }
+  .chip.sub { color:#1c6b3a; background:#eafaf0; }
+  .chip.unsub { color:#8a4b00; background:#fff3e2; }
+  .chip.other { color:var(--muted); background:#eef1ee; }
+  .since { color:var(--muted); font-size:12px; flex:0 0 auto; }
+  .empty { color:var(--muted); padding:22px 16px; text-align:center; }
   .notice { background:#fff8e6; border:1px solid #f0d69a; border-radius:12px; padding:14px 16px; color:#5a4300; }
-  code { background:#f2f4f1; border:1px solid var(--line); border-radius:6px; padding:1px 6px; font-size:12.5px; word-break:break-all; }
+  /* Super-admin only — plumbing, hidden from committee admins entirely */
+  details.adv { margin-top:26px; border:1px dashed #cfd8d2; border-radius:12px; background:#fbfcfb; }
+  details.adv > summary { cursor:pointer; padding:12px 16px; color:var(--muted); font-size:13px; font-weight:600; list-style:none; }
+  details.adv > summary::-webkit-details-marker { display:none; }
+  details.adv .adv-body { padding:0 16px 16px; }
+  .adv-body h3 { font-size:14px; margin:10px 0 4px; }
+  .adv-body .mini { color:var(--muted); font-size:12.5px; margin:0 0 8px; }
+  .adv-body code { background:#f2f4f1; border:1px solid var(--line); border-radius:6px; padding:1px 6px; font-size:12px; word-break:break-all; }
+  .msg { font-size:13px; color:var(--muted); }
+  .msg.err { color:var(--err); }
 </style>
 </head>
 <body>
 
 <div id="auth-screen" class="auth-screen">
   <div style="font-size:3rem;">📧</div>
-  <h1>Subscribers</h1>
-  <p>Migrate the Mailchimp audience into Supabase and keep it in sync. Super-admin only.</p>
+  <h1>Newsletter subscribers</h1>
+  <p>Sign in to see the community mailing list.</p>
   <button class="btn" onclick="netlifyIdentity.open('login')">Sign in</button>
 </div>
 
 <div id="app" style="display:none;">
-  <div class="top">
-    <div class="t">🏘️ <span id="top-village">Smiths Lake</span></div>
-    <div class="sp"></div>
-    <a href="/admin/" style="font-size:13px;">← Admin</a>
-    <button class="out" onclick="netlifyIdentity.logout()">Sign out</button>
+  <div class="topbar">
+    <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · Subscribers</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
   </div>
   <div class="wrap">
-    <h1 class="page">Subscribers · Mailchimp → Supabase</h1>
-    <p class="lead">Bring the newsletter audience into Supabase so it becomes the source of truth. Import is idempotent — safe to re-run.</p>
+    <h1 class="page">Newsletter subscribers</h1>
+    <p class="lead">Everyone signed up to receive community updates.</p>
 
     <div id="notice" class="notice" style="display:none;"></div>
 
     <div id="content" style="display:none;">
-      <section class="card">
-        <h2>Audience</h2>
-        <p class="hint">Live counts. "Dry run" reads Mailchimp and writes nothing.</p>
-        <div>
-          <div class="stat"><b id="s-mc">—</b><span>in Mailchimp</span></div>
-          <div class="stat"><b id="s-sb">—</b><span>in Supabase</span></div>
-        </div>
-        <div class="actions">
-          <button class="btn ghost" id="btn-dry" onclick="dryRun()">Dry run</button>
-          <button class="btn" id="btn-import" onclick="importNow()">Import / re-sync now</button>
-          <span class="msg" id="msg"></span>
-        </div>
-      </section>
+      <div class="stats">
+        <div class="stat"><b id="c-total">0</b><span>subscribers</span></div>
+        <div class="stat"><b id="c-sub">0</b><span>receiving updates</span></div>
+        <div class="stat"><b id="c-unsub">0</b><span>opted out</span></div>
+      </div>
+      <div class="toolbar">
+        <input type="search" id="q" placeholder="Search name or email…" oninput="render()" />
+        <select id="filter" onchange="render()">
+          <option value="">Everyone</option>
+          <option value="subscribed">Receiving updates</option>
+          <option value="unsubscribed">Opted out</option>
+        </select>
+        <button class="btn ghost" onclick="exportCsv()">Export CSV</button>
+      </div>
+      <div class="list" id="list"><div class="empty">Loading…</div></div>
 
-      <section class="card">
-        <h2>Ongoing sync (webhook)</h2>
-        <p class="hint">In Mailchimp → Audience → Settings → Webhooks, add this URL so new subscribes/unsubscribes flow into Supabase automatically:</p>
-        <p><code id="hook-url">https://villagefirst.org.au/api/mailchimp-webhook?secret=YOUR_SECRET</code></p>
-        <p class="hint">Set <code>MAILCHIMP_WEBHOOK_SECRET</code> in Netlify to any random string and use it in place of <code>YOUR_SECRET</code>. Tick the subscribe / unsubscribe / profile / cleaned / email-changed events.</p>
-      </section>
+      <!-- Super-admin only: sync & maintenance. Regular admins never see this. -->
+      <details class="adv" id="adv" style="display:none;">
+        <summary>⚙︎ Sync &amp; maintenance (super-admin only)</summary>
+        <div class="adv-body">
+          <h3>Mailing-list source</h3>
+          <p class="mini">The list is kept in step with Mailchimp automatically. Use this only to reconcile if you think they've drifted.</p>
+          <p class="mini"><span id="adv-counts">—</span></p>
+          <div class="toolbar" style="margin:0;">
+            <button class="btn ghost" onclick="advDryRun()">Check counts</button>
+            <button class="btn" onclick="advResync()">Re-sync from Mailchimp</button>
+            <span class="msg" id="adv-msg"></span>
+          </div>
+          <h3 style="margin-top:16px;">Automatic sync (webhook)</h3>
+          <p class="mini">Connected — new subscribes/unsubscribes flow in automatically. Endpoint (for reference):</p>
+          <p class="mini"><code id="hook-url">/api/mailchimp-webhook</code></p>
+        </div>
+      </details>
     </div>
   </div>
 </div>
@@ -84,6 +122,7 @@
 <script>
   let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
   let currentUser = null;
+  let subscribers = [];
 
   netlifyIdentity.on('init', u => { if (u) { currentUser = u; boot(); } });
   netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); boot(); });
@@ -94,54 +133,108 @@
     try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (_) {}
     return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
   }
+  function isSuper() {
+    const roles = (currentUser && currentUser.app_metadata && currentUser.app_metadata.roles) || [];
+    return roles.includes('super-admin');
+  }
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+  const fmtDate = iso => { try { return new Date(iso).toLocaleDateString([], { day:'numeric', month:'short', year:'numeric' }); } catch (_) { return ''; } };
 
   function boot() {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    document.getElementById('top-village').textContent = VILLAGE;
-    document.getElementById('hook-url').textContent =
-      location.origin + '/api/mailchimp-webhook?secret=YOUR_SECRET';
-    dryRun();
+    document.getElementById('user-email').textContent = (currentUser && currentUser.email) || '';
+    if (isSuper()) {
+      document.getElementById('adv').style.display = '';
+      document.getElementById('hook-url').textContent = location.origin + '/api/mailchimp-webhook';
+    }
+    load();
   }
 
-  function showNotice(html) {
+  function showNotice(msg) {
     const n = document.getElementById('notice');
-    n.style.display = ''; n.innerHTML = html;
+    n.style.display = ''; n.textContent = msg;
     document.getElementById('content').style.display = 'none';
   }
 
-  async function dryRun() {
-    const msg = document.getElementById('msg');
-    msg.className = 'msg'; msg.textContent = 'Checking Mailchimp…';
+  async function load() {
     try {
-      const r = await fetch('/api/mailchimp-sync?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
-      if (r.status === 401 || r.status === 403) { showNotice('<strong>Super-admin only.</strong> You need the super-admin role to run the Mailchimp sync.'); return; }
+      const r = await fetch('/api/subscriber-list?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      if (r.status === 401 || r.status === 403) { showNotice('You don’t have access to the subscriber list.'); return; }
       const d = await r.json();
-      if (d.configured === false) {
-        showNotice('<strong>Not connected yet.</strong> ' + (d.reason || 'Set MAILCHIMP_API_KEY and MAILCHIMP_AUDIENCE_ID in Netlify.'));
-        return;
-      }
-      document.getElementById('notice').style.display = 'none';
+      if (d.configured === false) { showNotice('The mailing list isn’t set up yet.'); return; }
       document.getElementById('content').style.display = '';
-      document.getElementById('s-mc').textContent = d.audienceTotal ?? '—';
-      document.getElementById('s-sb').textContent = d.inSupabase ?? '—';
-      msg.textContent = 'Dry run complete — nothing was written.';
-    } catch (e) { msg.className = 'msg err'; msg.textContent = 'Could not reach Mailchimp — try again.'; }
+      subscribers = d.subscribers || [];
+      const c = d.counts || {};
+      document.getElementById('c-total').textContent = c.total || 0;
+      document.getElementById('c-sub').textContent = c.subscribed || 0;
+      document.getElementById('c-unsub').textContent = c.unsubscribed || 0;
+      render();
+    } catch (_) { showNotice('Could not load the list — please try again.'); }
   }
 
-  async function importNow() {
-    const mc = document.getElementById('s-mc').textContent;
-    if (!confirm('Import / re-sync ' + mc + ' contacts from Mailchimp into Supabase?\n\nThis is idempotent — existing contacts are updated, not duplicated.')) return;
-    const btn = document.getElementById('btn-import'); btn.disabled = true;
-    const msg = document.getElementById('msg'); msg.className = 'msg'; msg.textContent = 'Importing… (this can take a moment for large audiences)';
+  function statusChip(s) {
+    if (s === 'subscribed') return '<span class="chip sub">receiving</span>';
+    if (s === 'unsubscribed') return '<span class="chip unsub">opted out</span>';
+    return '<span class="chip other">' + esc(s) + '</span>';
+  }
+
+  function filtered() {
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    const f = document.getElementById('filter').value;
+    return subscribers.filter(s => {
+      if (f && s.status !== f) return false;
+      if (q && ![s.name, s.email].join(' ').toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }
+
+  function render() {
+    const list = filtered();
+    const el = document.getElementById('list');
+    if (!list.length) { el.innerHTML = '<div class="empty">No subscribers match.</div>'; return; }
+    el.innerHTML = list.map(s =>
+      '<div class="row">' +
+        '<div class="main"><div class="nm">' + (esc(s.name) || '<span style="color:#9aa39c">(no name)</span>') + '</div>' +
+        '<div class="em">' + esc(s.email) + '</div></div>' +
+        '<span class="since">' + (s.since ? fmtDate(s.since) : '') + '</span>' +
+        statusChip(s.status) +
+      '</div>'
+    ).join('');
+  }
+
+  function exportCsv() {
+    const rows = [['Name', 'Email', 'Status', 'Since']].concat(
+      filtered().map(s => [s.name, s.email, s.status, s.since ? fmtDate(s.since) : ''])
+    );
+    const csv = rows.map(r => r.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = 'newsletter-subscribers.csv';
+    a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  // ── Super-admin only (plumbing) ────────────────────────────────
+  async function advDryRun() {
+    const msg = document.getElementById('adv-msg'); msg.className = 'msg'; msg.textContent = 'Checking…';
+    try {
+      const r = await fetch('/api/mailchimp-sync?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const d = await r.json();
+      if (d.configured === false) { msg.textContent = 'Mailchimp not connected.'; return; }
+      document.getElementById('adv-counts').textContent = 'Mailchimp: ' + (d.audienceTotal ?? '—') + ' · here: ' + (d.inSupabase ?? '—');
+      msg.textContent = '';
+    } catch (_) { msg.className = 'msg err'; msg.textContent = 'Could not check.'; }
+  }
+  async function advResync() {
+    if (!confirm('Re-sync the list from Mailchimp now? Safe to run — nothing is duplicated.')) return;
+    const msg = document.getElementById('adv-msg'); msg.className = 'msg'; msg.textContent = 'Re-syncing…';
     try {
       const r = await fetch('/api/mailchimp-sync', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, confirm: true }) });
       const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Import failed');
-      document.getElementById('s-sb').textContent = d.inSupabase ?? '—';
-      msg.textContent = 'Imported/updated ' + (d.imported ?? 0) + ' contact(s).' + (d.failedPages ? ' ' + d.failedPages + ' page(s) failed — check logs.' : '');
+      if (!r.ok) throw new Error(d.error || 'failed');
+      msg.textContent = 'Synced ' + (d.imported ?? 0) + '.';
+      load();
     } catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
-    finally { btn.disabled = false; }
   }
 </script>
 </body>
