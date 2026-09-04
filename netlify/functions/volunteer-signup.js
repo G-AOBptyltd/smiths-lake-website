@@ -27,6 +27,61 @@ function esc(s) {
   return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 
+// ── Best-effort mirror into the volunteer app's Supabase ──────────────────
+// Part of making Supabase the single source of truth. This is ADDITIVE and
+// FULLY FAIL-OPEN: it only runs when the app's Supabase env is configured, it
+// swallows every error internally, and it can never change the signup response
+// (the Notion write above remains the authoritative path during transition).
+const SUPA_URL = process.env.VAPP_SUPABASE_URL;
+const SUPA_KEY = process.env.VAPP_SUPABASE_SERVICE_KEY;
+
+function slugVillage(v) {
+  return String(v || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+async function supaReq(path, opts = {}) {
+  const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers: {
+      apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
+      'Content-Type': 'application/json', ...(opts.headers || {}),
+    },
+  });
+  const text = await res.text();
+  let data = null; try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
+  return { ok: res.ok, status: res.status, data };
+}
+async function mirrorToSupabase({ firstName, lastName, email, phone, isMember, village, cardPath, cardTitle }) {
+  if (!SUPA_URL || !SUPA_KEY) return;
+  try {
+    const vslug = slugVillage(village);
+    const gslug = normPath(cardPath).split('/').pop() || null;
+    const found = await supaReq(`volunteers?village_id=eq.${vslug}&email=eq.${encodeURIComponent(email)}&select=id`);
+    let vid = (found.ok && Array.isArray(found.data) && found.data[0]) ? found.data[0].id : null;
+    if (!vid) {
+      const ins = await supaReq('volunteers', {
+        method: 'POST', headers: { Prefer: 'return=representation' },
+        body: JSON.stringify([{
+          village_id: vslug, first_name: firstName, last_name: lastName,
+          mobile: phone || '', email, group_id: gslug,
+          status: 'active', member_status: isMember ? 'member' : null,
+        }]),
+      });
+      vid = (ins.ok && Array.isArray(ins.data) && ins.data[0]) ? ins.data[0].id : null;
+    }
+    // Group membership (join table may not exist pre-0006; a duplicate 409 is
+    // fine — both are swallowed).
+    if (vid && gslug) {
+      await supaReq('volunteer_groups', {
+        method: 'POST', headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify([{
+          volunteer_id: vid, village_id: vslug, group_id: gslug,
+          group_title: cardTitle, is_primary: false, source: 'website',
+        }]),
+      });
+    }
+  } catch (_) { /* fully best-effort — never affects the signup */ }
+}
+
 async function notifyStewards(v, context) {
   const key = process.env.VF_RESEND_API_KEY;
   if (!key) return;
@@ -120,6 +175,7 @@ export const handler = async (event, context) => {
       });
       if (!res.ok) throw new Error(`Notion responded ${res.status}`);
       await notifyStewards({ fullName: existing.name, cardTitle, cardPath, email, phone, message, village, isExisting: true }, context);
+      await mirrorToSupabase({ firstName, lastName, email, phone, isMember, village, cardPath, cardTitle });
       return jsonResp(200, { ok: true });
     }
 
@@ -146,6 +202,7 @@ export const handler = async (event, context) => {
     });
     if (!res.ok) throw new Error(`Notion responded ${res.status}`);
     await notifyStewards({ fullName, cardTitle, cardPath, email, phone, message, village, isExisting: false }, context);
+    await mirrorToSupabase({ firstName, lastName, email, phone, isMember, village, cardPath, cardTitle });
     return jsonResp(200, { ok: true });
   } catch (err) {
     return jsonResp(502, { error: 'Sorry — we could not record your signup just now. Please try again shortly.' });
