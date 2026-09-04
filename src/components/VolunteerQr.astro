@@ -1,0 +1,42 @@
+---
+// Floating "Volunteer" QR badge — pinned top-left, visible site-wide on every page.
+// Discreet but scannable (92px). Tappable too, so a visitor already on their phone
+// can just tap through to the volunteer app instead of scanning their own screen.
+const APP_URL = 'https://smithslake-stewards.village1st.com.au';
+---
+<a class="vqr" href={APP_URL} target="_blank" rel="noopener" aria-label="Volunteer — scan or tap to sign up / sign in">
+  <img src="/images/volunteer-qr.png" width="92" height="92" alt="Scan to volunteer" loading="eager" />
+  <span class="vqr-lbl"><b>Volunteer</b><s>Scan to sign in</s></span>
+</a>
+
+<style>
+  .vqr {
+    position: fixed;
+    top: 84px;
+    left: 14px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-top: 4px solid #F5A623;
+    border-radius: 14px;
+    padding: 8px 12px 8px 8px;
+    box-shadow: 0 10px 30px rgba(27, 54, 93, 0.18);
+    text-decoration: none;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .vqr:hover { transform: translateY(-1px); box-shadow: 0 14px 36px rgba(27, 54, 93, 0.24); }
+  .vqr img { width: 92px; height: 92px; display: block; image-rendering: pixelated; border-radius: 8px; }
+  .vqr-lbl { display: flex; flex-direction: column; line-height: 1.2; }
+  .vqr-lbl b { font-family: 'Roboto Slab', Georgia, serif; font-size: 15px; font-weight: 700; color: #1B365D; }
+  .vqr-lbl s { font-size: 12px; color: #5B7A9E; text-decoration: none; }
+
+  /* Tighter on phones — smaller QR, drop the label so it stays out of the way. */
+  @media (max-width: 640px) {
+    .vqr { top: 70px; left: 10px; padding: 6px; gap: 0; }
+    .vqr img { width: 64px; height: 64px; }
+    .vqr-lbl { display: none; }
+  }
+</style>
