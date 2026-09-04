@@ -12,7 +12,8 @@ const APP_URL = 'https://smithslake-stewards.village1st.com.au';
 <style>
   .vqr {
     position: fixed;
-    top: 84px;
+    /* Sits below the header + search bar so it never covers the search field. */
+    top: 200px;
     left: 14px;
     z-index: 1000;
     display: flex;
@@ -35,7 +36,7 @@ const APP_URL = 'https://smithslake-stewards.village1st.com.au';
 
   /* Tighter on phones — smaller QR, drop the label so it stays out of the way. */
   @media (max-width: 640px) {
-    .vqr { top: 70px; left: 10px; padding: 6px; gap: 0; }
+    .vqr { top: 150px; left: 10px; padding: 6px; gap: 0; }
     .vqr img { width: 64px; height: 64px; }
     .vqr-lbl { display: none; }
   }
