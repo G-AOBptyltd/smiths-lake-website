@@ -39,16 +39,25 @@ function slugVillage(v) {
   return String(v || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 async function supaReq(path, opts = {}) {
-  const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
-    ...opts,
-    headers: {
-      apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
-      'Content-Type': 'application/json', ...(opts.headers || {}),
-    },
-  });
-  const text = await res.text();
-  let data = null; try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
-  return { ok: res.ok, status: res.status, data };
+  // Hard 2s timeout: a Supabase stall must never delay the public signup
+  // response. On abort/error the mirror's try/catch swallows it (fail-open).
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 2000);
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+      ...opts,
+      signal: ctl.signal,
+      headers: {
+        apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json', ...(opts.headers || {}),
+      },
+    });
+    const text = await res.text();
+    let data = null; try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
+    return { ok: res.ok, status: res.status, data };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 async function mirrorToSupabase({ firstName, lastName, email, phone, isMember, village, cardPath, cardTitle }) {
   if (!SUPA_URL || !SUPA_KEY) return;
