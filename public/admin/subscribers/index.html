@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Subscribers — Mailchimp → Supabase · VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<style>
+  :root { --ink:#1f2a24; --muted:#6b746d; --line:#e2e7e2; --bg:#f5f7f4; --accent:#2f8f5b; --err:#b3261e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .auth-screen { max-width:460px; margin:12vh auto; text-align:center; padding:24px; }
+  .auth-screen h1 { font-family:Georgia,serif; }
+  .btn { border:none; border-radius:10px; padding:11px 18px; font:600 15px inherit; cursor:pointer; background:var(--accent); color:#fff; }
+  .btn.ghost { background:#fff; color:var(--accent); border:1.5px solid var(--accent); }
+  .btn:disabled { opacity:.55; cursor:default; }
+  .top { display:flex; align-items:center; gap:12px; background:#12603a; color:#fff; padding:12px 18px; }
+  .top .t { font-weight:700; } .top .sp { flex:1; } .top a, .top button { color:#fff; }
+  .top .out { background:rgba(255,255,255,.15); border:none; border-radius:8px; padding:7px 12px; font:600 13px inherit; cursor:pointer; }
+  .wrap { max-width:780px; margin:0 auto; padding:20px 16px 64px; }
+  h1.page { font-family:Georgia,serif; font-size:24px; margin:8px 0 2px; }
+  .lead { color:var(--muted); margin:0 0 16px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin:14px 0; }
+  .card h2 { font-size:16px; margin:0 0 4px; }
+  .card .hint { color:var(--muted); font-size:13px; margin:0 0 10px; }
+  .stat { display:inline-block; margin:6px 18px 6px 0; }
+  .stat b { font-size:24px; display:block; }
+  .stat span { color:var(--muted); font-size:12.5px; }
+  .actions { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; align-items:center; }
+  .msg { font-size:13.5px; color:var(--muted); }
+  .msg.err { color:var(--err); }
+  .notice { background:#fff8e6; border:1px solid #f0d69a; border-radius:12px; padding:14px 16px; color:#5a4300; }
+  code { background:#f2f4f1; border:1px solid var(--line); border-radius:6px; padding:1px 6px; font-size:12.5px; word-break:break-all; }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:3rem;">📧</div>
+  <h1>Subscribers</h1>
+  <p>Migrate the Mailchimp audience into Supabase and keep it in sync. Super-admin only.</p>
+  <button class="btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="top">
+    <div class="t">🏘️ <span id="top-village">Smiths Lake</span></div>
+    <div class="sp"></div>
+    <a href="/admin/" style="font-size:13px;">← Admin</a>
+    <button class="out" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+  <div class="wrap">
+    <h1 class="page">Subscribers · Mailchimp → Supabase</h1>
+    <p class="lead">Bring the newsletter audience into Supabase so it becomes the source of truth. Import is idempotent — safe to re-run.</p>
+
+    <div id="notice" class="notice" style="display:none;"></div>
+
+    <div id="content" style="display:none;">
+      <section class="card">
+        <h2>Audience</h2>
+        <p class="hint">Live counts. "Dry run" reads Mailchimp and writes nothing.</p>
+        <div>
+          <div class="stat"><b id="s-mc">—</b><span>in Mailchimp</span></div>
+          <div class="stat"><b id="s-sb">—</b><span>in Supabase</span></div>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" id="btn-dry" onclick="dryRun()">Dry run</button>
+          <button class="btn" id="btn-import" onclick="importNow()">Import / re-sync now</button>
+          <span class="msg" id="msg"></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Ongoing sync (webhook)</h2>
+        <p class="hint">In Mailchimp → Audience → Settings → Webhooks, add this URL so new subscribes/unsubscribes flow into Supabase automatically:</p>
+        <p><code id="hook-url">https://villagefirst.org.au/api/mailchimp-webhook?secret=YOUR_SECRET</code></p>
+        <p class="hint">Set <code>MAILCHIMP_WEBHOOK_SECRET</code> in Netlify to any random string and use it in place of <code>YOUR_SECRET</code>. Tick the subscribe / unsubscribe / profile / cleaned / email-changed events.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; boot(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); boot(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (_) {}
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+
+  function boot() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('top-village').textContent = VILLAGE;
+    document.getElementById('hook-url').textContent =
+      location.origin + '/api/mailchimp-webhook?secret=YOUR_SECRET';
+    dryRun();
+  }
+
+  function showNotice(html) {
+    const n = document.getElementById('notice');
+    n.style.display = ''; n.innerHTML = html;
+    document.getElementById('content').style.display = 'none';
+  }
+
+  async function dryRun() {
+    const msg = document.getElementById('msg');
+    msg.className = 'msg'; msg.textContent = 'Checking Mailchimp…';
+    try {
+      const r = await fetch('/api/mailchimp-sync?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      if (r.status === 401 || r.status === 403) { showNotice('<strong>Super-admin only.</strong> You need the super-admin role to run the Mailchimp sync.'); return; }
+      const d = await r.json();
+      if (d.configured === false) {
+        showNotice('<strong>Not connected yet.</strong> ' + (d.reason || 'Set MAILCHIMP_API_KEY and MAILCHIMP_AUDIENCE_ID in Netlify.'));
+        return;
+      }
+      document.getElementById('notice').style.display = 'none';
+      document.getElementById('content').style.display = '';
+      document.getElementById('s-mc').textContent = d.audienceTotal ?? '—';
+      document.getElementById('s-sb').textContent = d.inSupabase ?? '—';
+      msg.textContent = 'Dry run complete — nothing was written.';
+    } catch (e) { msg.className = 'msg err'; msg.textContent = 'Could not reach Mailchimp — try again.'; }
+  }
+
+  async function importNow() {
+    const mc = document.getElementById('s-mc').textContent;
+    if (!confirm('Import / re-sync ' + mc + ' contacts from Mailchimp into Supabase?\n\nThis is idempotent — existing contacts are updated, not duplicated.')) return;
+    const btn = document.getElementById('btn-import'); btn.disabled = true;
+    const msg = document.getElementById('msg'); msg.className = 'msg'; msg.textContent = 'Importing… (this can take a moment for large audiences)';
+    try {
+      const r = await fetch('/api/mailchimp-sync', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, confirm: true }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Import failed');
+      document.getElementById('s-sb').textContent = d.inSupabase ?? '—';
+      msg.textContent = 'Imported/updated ' + (d.imported ?? 0) + ' contact(s).' + (d.failedPages ? ' ' + d.failedPages + ' page(s) failed — check logs.' : '');
+    } catch (e) { msg.className = 'msg err'; msg.textContent = e.message; }
+    finally { btn.disabled = false; }
+  }
+</script>
+</body>
+</html>

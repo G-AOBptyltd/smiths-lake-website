@@ -60,6 +60,17 @@
   to = "/.netlify/functions/vapp-migrate"
   status = 200
 
+# Mailchimp audience → Supabase subscribers (one-time sync + ongoing webhook)
+[[redirects]]
+  from = "/api/mailchimp-sync"
+  to = "/.netlify/functions/mailchimp-sync"
+  status = 200
+
+[[redirects]]
+  from = "/api/mailchimp-webhook"
+  to = "/.netlify/functions/mailchimp-webhook"
+  status = 200
+
 [[redirects]]
   from = "/api/survey-list"
   to = "/.netlify/functions/survey-list"
