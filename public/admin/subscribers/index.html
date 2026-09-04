@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex" />
 <title>Newsletter subscribers · VillageFirst</title>
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
 <style>
   :root { --ink:#1f2a24; --muted:#6b746d; --line:#e2e7e2; --bg:#f5f7f4; --accent:#2f8f5b; --err:#b3261e; }
   * { box-sizing:border-box; }
@@ -15,9 +16,14 @@
   .btn { border:none; border-radius:10px; padding:11px 18px; font:600 15px inherit; cursor:pointer; background:var(--accent); color:#fff; }
   .btn.ghost { background:#fff; color:var(--accent); border:1.5px solid var(--accent); }
   .btn:disabled { opacity:.55; cursor:default; }
-  .top { display:flex; align-items:center; gap:12px; background:#12603a; color:#fff; padding:12px 18px; }
-  .top .t { font-weight:700; } .top .sp { flex:1; } .top a, .top button { color:#fff; }
-  .top .out { background:rgba(255,255,255,.15); border:none; border-radius:8px; padding:7px 12px; font:600 13px inherit; cursor:pointer; }
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; white-space: nowrap; }
+  .topbar-brand a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; white-space: nowrap; font-family: inherit; }
+  .village-select option { color: #1f2937; }
   .wrap { max-width:840px; margin:0 auto; padding:20px 16px 64px; }
   h1.page { font-family:Georgia,serif; font-size:24px; margin:8px 0 2px; }
   .lead { color:var(--muted); margin:0 0 16px; }
@@ -62,11 +68,12 @@
 </div>
 
 <div id="app" style="display:none;">
-  <div class="top">
-    <div class="t">🏘️ <span id="top-village">Smiths Lake</span></div>
-    <div class="sp"></div>
-    <a href="/admin/" style="font-size:13px;">← Admin</a>
-    <button class="out" onclick="netlifyIdentity.logout()">Sign out</button>
+  <div class="topbar">
+    <div class="topbar-brand"><a href="/admin/">🏘️ Admin</a> · Subscribers</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
   </div>
   <div class="wrap">
     <h1 class="page">Newsletter subscribers</h1>
@@ -136,7 +143,7 @@
   function boot() {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    document.getElementById('top-village').textContent = VILLAGE;
+    document.getElementById('user-email').textContent = (currentUser && currentUser.email) || '';
     if (isSuper()) {
       document.getElementById('adv').style.display = '';
       document.getElementById('hook-url').textContent = location.origin + '/api/mailchimp-webhook';
