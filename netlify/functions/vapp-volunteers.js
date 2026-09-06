@@ -40,6 +40,13 @@ const SUPA_KEY = process.env.VAPP_SUPABASE_SERVICE_KEY;
 
 const APP_STATUSES = ['active', 'inactive', 'archived'];
 
+// Newsletter interest → volunteer group. A subscriber with a matching interest
+// surfaces as a read-only "interested" lead on that group. Extend as more
+// interest groups map to volunteer cards.
+const INTEREST_GROUPS = [
+  { match: /landcare/i, slug: 'landcare-and-bush-regeneration', title: 'Landcare & Bush Regeneration' },
+];
+
 function slugVillage(v) {
   return String(v || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
@@ -188,12 +195,42 @@ export const handler = async (event, context) => {
       });
     }
 
+    // 5) Fold in newsletter subscribers whose interests map to a volunteer group
+    //    (e.g. Landcare) as read-only "interested" leads — NOT volunteers, so
+    //    the group's steward/admin can see who to reach out to. Skips anyone
+    //    already in the list (by email). PII → scope-gated like everything else.
+    const shownEmails = new Set(volunteers.map((v) => (v.email || '').toLowerCase()).filter(Boolean));
+    try {
+      const subRes = await supa(`subscribers?village_id=eq.${vslug}&status=eq.subscribed&select=email,first_name,last_name,interests`);
+      for (const s of asArr(subRes)) {
+        const ints = Array.isArray(s.interests) ? s.interests : [];
+        if (!ints.length) continue;
+        const email = (s.email || '').toLowerCase();
+        for (const ig of INTEREST_GROUPS) {
+          if (!ints.some((i) => ig.match.test(i))) continue;
+          if (!inAllowed(ig.slug)) continue;                 // scope
+          if (email && shownEmails.has(email)) continue;     // already a volunteer/lead
+          if (email) shownEmails.add(email);
+          volunteers.push({
+            source: 'newsletter', id: 'sub:' + email, inApp: false, inNotion: false,
+            name: `${s.first_name || ''} ${s.last_name || ''}`.trim() || s.email || '(no name)',
+            firstName: s.first_name || '', lastName: s.last_name || '',
+            email: s.email || '', phone: '',
+            status: 'interested', interested: true,
+            groups: [{ slug: ig.slug, title: ig.title }],
+            isMember: false, memberStatus: null, joinedAt: null, notMigrated: false,
+          });
+        }
+      }
+    } catch (_) { /* fail-open: subscribers table optional */ }
+
     const counts = {
       total: volunteers.length,
       active: volunteers.filter((v) => v.inApp && v.status === 'active').length,
       inactive: volunteers.filter((v) => v.inApp && v.status === 'inactive').length,
       archived: volunteers.filter((v) => v.inApp && v.status === 'archived').length,
       notMigrated: volunteers.filter((v) => v.notMigrated).length,
+      interested: volunteers.filter((v) => v.interested).length,
     };
 
     return jsonResp(200, {

@@ -19,14 +19,15 @@ import { jsonResp } from './_stewards.js';
 import { requireRole, getRoles } from './_auth.js';
 import {
   MC_AUDIENCE, mcConfigured, supaConfigured, mcFetch, supa, slugVillage,
-  memberToRow, upsertSubscribers,
+  memberToRow, upsertSubscribers, fetchInterestMap,
 } from './_mailchimp.js';
 
 function safeBody(event) { try { return event.body ? JSON.parse(event.body) : {}; } catch (_) { return {}; } }
 
 const MEMBER_FIELDS = [
   'members.id', 'members.email_address', 'members.status', 'members.merge_fields',
-  'members.tags', 'members.web_id', 'members.timestamp_opt', 'members.timestamp_signup',
+  'members.tags', 'members.interests', 'members.web_id',
+  'members.timestamp_opt', 'members.timestamp_signup',
   'total_items',
 ].join(',');
 
@@ -71,6 +72,8 @@ export const handler = async (event, context) => {
     const body = safeBody(event);
     if (body.confirm !== true) return jsonResp(400, { error: 'Commit requires confirm:true', audienceTotal: total, inSupabase: already });
 
+    const interestMap = await fetchInterestMap();   // interest id → name (Landcare, …)
+
     let offset = 0, imported = 0, failedPages = 0;
     const PAGE = 1000;
     while (offset < total) {
@@ -78,7 +81,7 @@ export const handler = async (event, context) => {
       if (!r.ok) { failedPages++; break; }
       const members = r.data?.members || [];
       if (!members.length) break;
-      const rows = members.map((m) => memberToRow(m, village)).filter((row) => row.email);
+      const rows = members.map((m) => memberToRow(m, village, interestMap)).filter((row) => row.email);
       const up = await upsertSubscribers(rows);
       if (up.ok) imported += rows.length; else failedPages++;
       offset += members.length;

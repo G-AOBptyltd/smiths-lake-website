@@ -281,6 +281,7 @@
             <option value="archived">Archived</option>
             <option value="inactive">Inactive</option>
             <option value="notmigrated">Website only (not migrated)</option>
+            <option value="interested">Interested (newsletter)</option>
           </select>
           <input type="search" id="av-search" placeholder="Search name, email…" oninput="renderAppVolunteers()" />
         </div>
@@ -1048,15 +1049,18 @@
       archived: appVolunteers.filter(v => v.inApp && v.status === 'archived').length,
       inactive: appVolunteers.filter(v => v.inApp && v.status === 'inactive').length,
       notMigrated: appVolunteers.filter(v => v.notMigrated).length,
+      interested: appVolunteers.filter(v => v.interested).length,
     };
     document.getElementById('av-stats').innerHTML =
       stat(counts.active, 'Active') + stat(counts.archived, 'Archived') +
-      stat(counts.inactive, 'Inactive') + stat(counts.notMigrated, 'Not migrated');
+      stat(counts.inactive, 'Inactive') + stat(counts.notMigrated, 'Not migrated') +
+      (counts.interested ? stat(counts.interested, 'Interested (newsletter)') : '');
 
     const status = document.getElementById('av-status').value;
     const q = document.getElementById('av-search').value.trim().toLowerCase();
     const list = appVolunteers.filter(v => {
       if (status === 'notmigrated') { if (!v.notMigrated) return false; }
+      else if (status === 'interested') { if (!v.interested) return false; }
       else if (status) { if (!(v.inApp && v.status === status)) return false; }
       if (q && ![v.name, v.email, v.phone].join(' ').toLowerCase().includes(q)) return false;
       return true;
@@ -1066,10 +1070,10 @@
     el.innerHTML = list.map(v => {
       const groupsLine = (v.groups || []).map(g => '<span class="chip chip-card">' + esc(g.title) + '</span>').join(' ');
       const note = [v.email, v.phone].filter(Boolean).join(' · ');
-      const chipCls = v.notMigrated ? 'chip-applied' : (v.status === 'active' ? 'chip-active' : 'chip-inactive');
-      const chipTxt = v.notMigrated ? 'website only' : v.status;
+      const chipCls = v.interested ? 'chip-member' : (v.notMigrated ? 'chip-applied' : (v.status === 'active' ? 'chip-active' : 'chip-inactive'));
+      const chipTxt = v.interested ? 'interested' : (v.notMigrated ? 'website only' : v.status);
       let actions = '';
-      if (v.inApp && !v.notMigrated) {
+      if (v.inApp && !v.notMigrated && !v.interested) {
         actions = v.status === 'archived'
           ? '<button class="link-btn" onclick="setVolStatus(\'' + v.id + '\', \'active\')">Restore</button>'
           : '<button class="link-btn danger" onclick="setVolStatus(\'' + v.id + '\', \'archived\')">Archive</button>';
