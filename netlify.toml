@@ -60,6 +60,11 @@
   to = "/.netlify/functions/vapp-migrate"
   status = 200
 
+[[redirects]]
+  from = "/api/vapp-matrix"
+  to = "/.netlify/functions/vapp-matrix"
+  status = 200
+
 # Newsletter subscriber list (human-facing, admin)
 [[redirects]]
   from = "/api/subscriber-list"
