@@ -103,10 +103,56 @@ export const handler = async (event, context) => {
   const allowedSlugs = scope.isAdmin ? null : new Set((scope.cards || []).map((c) => slugOfPath(c.path)));
   const inAllowed = (slug) => !allowedSlugs || (slug != null && allowedSlugs.has(slug));
 
-  // ── POST: change a volunteer's lifecycle status (archive / restore) ────
+  // ── POST: lead actions + volunteer status (archive / restore) ─────────
   if (event.httpMethod === 'POST') {
     const body = safeBody(event);
-    const { action, id, status } = body;
+    const { action } = body;
+
+    // Convert a newsletter "interested" lead into a volunteer in a group.
+    if (action === 'addLead') {
+      const email = String(body.email || '').toLowerCase().trim();
+      const groupSlug = body.groupSlug;
+      const groupTitle = body.groupTitle || titleCase(groupSlug || '');
+      if (!email || !groupSlug) return jsonResp(400, { error: 'Bad request' });
+      if (!inAllowed(groupSlug)) return jsonResp(403, { error: 'Out of your group scope' });
+      const ex = await supa(`volunteers?village_id=eq.${vslug}&email=eq.${encodeURIComponent(email)}&select=id`);
+      if (ex.ok && Array.isArray(ex.data) && ex.data.length) return jsonResp(200, { ok: true, already: true });
+      const ins = await supa('volunteers', {
+        method: 'POST', headers: { Prefer: 'return=representation' },
+        body: JSON.stringify([{
+          village_id: vslug, first_name: body.firstName || '(no name)', last_name: body.lastName || '',
+          mobile: '', email, group_id: groupSlug, status: 'active', member_status: null,
+        }]),
+      });
+      const vid = ins.ok && Array.isArray(ins.data) ? ins.data[0]?.id : null;
+      if (!vid) return jsonResp(502, { error: 'Could not add volunteer' });
+      await supa('volunteer_groups', {
+        method: 'POST', headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify([{ volunteer_id: vid, village_id: vslug, group_id: groupSlug, group_title: groupTitle, is_primary: true, source: 'website' }]),
+      });
+      return jsonResp(200, { ok: true });
+    }
+
+    // Dismiss (or restore) a lead for a group — stops it showing as interested.
+    if (action === 'dismissLead' || action === 'undismissLead') {
+      const email = String(body.email || '').toLowerCase().trim();
+      const groupSlug = body.groupSlug;
+      if (!email || !groupSlug) return jsonResp(400, { error: 'Bad request' });
+      if (!inAllowed(groupSlug)) return jsonResp(403, { error: 'Out of your group scope' });
+      const cur = await supa(`subscribers?village_id=eq.${vslug}&email=eq.${encodeURIComponent(email)}&select=dismissed_groups`);
+      if (!cur.ok || !Array.isArray(cur.data) || !cur.data.length) return jsonResp(404, { error: 'Not found' });
+      let arr = Array.isArray(cur.data[0].dismissed_groups) ? cur.data[0].dismissed_groups : [];
+      if (action === 'dismissLead') { if (!arr.includes(groupSlug)) arr.push(groupSlug); }
+      else { arr = arr.filter((g) => g !== groupSlug); }
+      const up = await supa(`subscribers?village_id=eq.${vslug}&email=eq.${encodeURIComponent(email)}`, {
+        method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ dismissed_groups: arr }),
+      });
+      if (!up.ok) return jsonResp(502, { error: 'Update failed' });
+      return jsonResp(200, { ok: true });
+    }
+
+    // setStatus (archive / restore) on an existing app volunteer.
+    const { id, status } = body;
     if (action !== 'setStatus') return jsonResp(400, { error: 'Unknown action' });
     if (!id || !APP_STATUSES.includes(status)) return jsonResp(400, { error: 'Bad request' });
     const chk = await supa(`volunteers?id=eq.${encodeURIComponent(id)}&select=village_id,group_id`);
@@ -201,7 +247,7 @@ export const handler = async (event, context) => {
     //    already in the list (by email). PII → scope-gated like everything else.
     const shownEmails = new Set(volunteers.map((v) => (v.email || '').toLowerCase()).filter(Boolean));
     try {
-      const subRes = await supa(`subscribers?village_id=eq.${vslug}&status=eq.subscribed&select=email,first_name,last_name,interests`);
+      const subRes = await supa(`subscribers?village_id=eq.${vslug}&status=eq.subscribed&select=email,first_name,last_name,interests,dismissed_groups`);
       const subs = asArr(subRes);
       // Cross-badge: flag volunteers who are also on the newsletter.
       const subEmails = new Set(subs.map((s) => (s.email || '').toLowerCase()).filter(Boolean));
@@ -209,9 +255,11 @@ export const handler = async (event, context) => {
       for (const s of subs) {
         const ints = Array.isArray(s.interests) ? s.interests : [];
         if (!ints.length) continue;
+        const dismissed = Array.isArray(s.dismissed_groups) ? s.dismissed_groups : [];
         const email = (s.email || '').toLowerCase();
         for (const ig of INTEREST_GROUPS) {
           if (!ints.some((i) => ig.match.test(i))) continue;
+          if (dismissed.includes(ig.slug)) continue;         // dismissed as a lead here
           if (!inAllowed(ig.slug)) continue;                 // scope
           if (email && shownEmails.has(email)) continue;     // already a volunteer/lead
           if (email) shownEmails.add(email);

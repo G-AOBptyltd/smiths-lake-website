@@ -1073,7 +1073,14 @@
       const chipCls = v.interested ? 'chip-member' : (v.notMigrated ? 'chip-applied' : (v.status === 'active' ? 'chip-active' : 'chip-inactive'));
       const chipTxt = v.interested ? 'interested' : (v.notMigrated ? 'website only' : v.status);
       let actions = '';
-      if (v.inApp && !v.notMigrated && !v.interested) {
+      if (v.interested) {
+        const g = (v.groups && v.groups[0]) || {};
+        const subj = encodeURIComponent((g.title || 'Volunteering') + ' — ' + VILLAGE);
+        actions =
+          (v.email ? '<a class="link-btn" href="mailto:' + encodeURIComponent(v.email) + '?subject=' + subj + '">Email</a> ' : '') +
+          '<button class="link-btn" onclick="addLead(\'' + v.email + '\',\'' + g.slug + '\')">Add</button> ' +
+          '<button class="link-btn danger" onclick="dismissLead(\'' + v.email + '\',\'' + g.slug + '\')">Remove</button>';
+      } else if (v.inApp && !v.notMigrated) {
         actions = v.status === 'archived'
           ? '<button class="link-btn" onclick="setVolStatus(\'' + v.id + '\', \'active\')">Restore</button>'
           : '<button class="link-btn danger" onclick="setVolStatus(\'' + v.id + '\', \'archived\')">Archive</button>';
@@ -1096,6 +1103,30 @@
       if (!r.ok) throw new Error(d.error || 'Update failed');
       const v = appVolunteers.find(x => x.id === id); if (v) v.status = status;
       renderAppVolunteers();
+    } catch (e) { alert(e.message); }
+  }
+
+  // ── Interested-lead actions (from the newsletter) ──────────────
+  async function addLead(email, slug) {
+    const v = appVolunteers.find(x => x.interested && x.email === email && ((x.groups && x.groups[0]) || {}).slug === slug);
+    const gt = v ? ((v.groups && v.groups[0]) || {}).title : slug;
+    if (!confirm('Add ' + ((v && v.name) || email) + ' as a volunteer in ' + gt + '?\n\nOnly do this once they’ve agreed to volunteer — they signed up for the newsletter, not (yet) to volunteer.')) return;
+    try {
+      const r = await fetch('/api/vapp-volunteers', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, action: 'addLead', email, groupSlug: slug, groupTitle: gt, firstName: v && v.firstName, lastName: v && v.lastName }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not add');
+      appVolLoaded = false; loadAppVolunteers();
+    } catch (e) { alert(e.message); }
+  }
+  async function dismissLead(email, slug) {
+    if (!confirm('Remove this person from the interested list for this group?\n\nThey stay on the newsletter — this just clears them as a volunteer lead.')) return;
+    try {
+      const r = await fetch('/api/vapp-volunteers', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, action: 'dismissLead', email, groupSlug: slug }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not remove');
+      appVolLoaded = false; loadAppVolunteers();
     } catch (e) { alert(e.message); }
   }
 
