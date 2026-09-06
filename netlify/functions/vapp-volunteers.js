@@ -44,8 +44,10 @@ const APP_STATUSES = ['active', 'inactive', 'archived'];
 // surfaces as a read-only "interested" lead on that group. Extend as more
 // interest groups map to volunteer cards.
 const INTEREST_GROUPS = [
-  { match: /landcare/i, slug: 'landcare-and-bush-regeneration', title: 'Landcare & Bush Regeneration' },
+  { match: /landcare/i, slug: 'landcare-and-bush-regeneration', title: 'Landcare & Bush Regeneration', path: 'environment/landcare-and-bush-regeneration' },
 ];
+
+function esc(s) { return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
 
 function slugVillage(v) {
   return String(v || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -130,6 +132,36 @@ export const handler = async (event, context) => {
         method: 'POST', headers: { Prefer: 'return=minimal' },
         body: JSON.stringify([{ volunteer_id: vid, village_id: vslug, group_id: groupSlug, group_title: groupTitle, is_primary: true, source: 'website' }]),
       });
+      return jsonResp(200, { ok: true });
+    }
+
+    // Invite a lead to volunteer — short branded email via Resend (no mailto).
+    if (action === 'inviteLead') {
+      const email = String(body.email || '').toLowerCase().trim();
+      const groupSlug = body.groupSlug;
+      if (!email || !groupSlug) return jsonResp(400, { error: 'Bad request' });
+      if (!inAllowed(groupSlug)) return jsonResp(403, { error: 'Out of your group scope' });
+      const key = process.env.VF_RESEND_API_KEY;
+      if (!key) return jsonResp(200, { ok: false, error: 'Email sending isn’t configured (VF_RESEND_API_KEY).' });
+      const ig = INTEREST_GROUPS.find((g) => g.slug === groupSlug) || {};
+      const groupTitle = body.groupTitle || ig.title || titleCase(groupSlug);
+      const first = String(body.firstName || '').trim();
+      const from = process.env.VF_PLEDGE_FROM || 'VillageFirst <noreply@villagefirst.org.au>';
+      const replyTo = (process.env.VF_PLEDGE_NOTIFY_TO || '').split(',')[0].trim();
+      const link = `https://villagefirst.org.au/${ig.path || ''}`;
+      const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2937;max-width:520px;">
+        <p>Hi${first ? ' ' + esc(first) : ' there'},</p>
+        <p>You told us you're interested in <b>${esc(groupTitle)}</b> here at ${esc(village)} — that's wonderful. We'd love to have you lend a hand.</p>
+        <p>Getting involved takes a minute:</p>
+        <p><a href="${link}" style="display:inline-block;background:#15795f;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">Volunteer for ${esc(groupTitle)}</a></p>
+        <p style="color:#6b7280;font-size:13px;">No pressure — reply to this email if you'd just like to know more first. You'll stay on our newsletter either way.</p>
+        <p>Thanks,<br>The ${esc(village)} team</p>
+      </div>`;
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from, to: email, subject: `Get involved with ${groupTitle}`, html, ...(replyTo ? { reply_to: replyTo } : {}) }),
+      });
+      if (!res.ok) return jsonResp(502, { error: 'Could not send the invite' });
       return jsonResp(200, { ok: true });
     }
 

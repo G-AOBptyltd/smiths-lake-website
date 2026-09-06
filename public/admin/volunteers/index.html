@@ -1075,9 +1075,8 @@
       let actions = '';
       if (v.interested) {
         const g = (v.groups && v.groups[0]) || {};
-        const subj = encodeURIComponent((g.title || 'Volunteering') + ' — ' + VILLAGE);
         actions =
-          (v.email ? '<a class="link-btn" href="mailto:' + encodeURIComponent(v.email) + '?subject=' + subj + '">Email</a> ' : '') +
+          (v.email ? '<button class="link-btn" onclick="inviteLead(\'' + v.email + '\',\'' + g.slug + '\')">Invite</button> ' : '') +
           '<button class="link-btn" onclick="addLead(\'' + v.email + '\',\'' + g.slug + '\')">Add</button> ' +
           '<button class="link-btn danger" onclick="dismissLead(\'' + v.email + '\',\'' + g.slug + '\')">Remove</button>';
       } else if (v.inApp && !v.notMigrated) {
@@ -1107,6 +1106,20 @@
   }
 
   // ── Interested-lead actions (from the newsletter) ──────────────
+  async function inviteLead(email, slug) {
+    const v = appVolunteers.find(x => x.interested && x.email === email && ((x.groups && x.groups[0]) || {}).slug === slug);
+    const g = (v && v.groups && v.groups[0]) || {};
+    if (!confirm('Send a short volunteering invite to ' + ((v && v.name) || email) + '?\n\nIt emails them a warm "get involved with ' + (g.title || 'this group') + '" message via VillageFirst (Resend) with a sign-up link.')) return;
+    try {
+      const r = await fetch('/api/vapp-volunteers', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, action: 'inviteLead', email, groupSlug: slug, groupTitle: g.title, firstName: v && v.firstName }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not send');
+      if (d.ok === false) { alert(d.error || 'Email is not set up.'); return; }
+      alert('Invite sent to ' + email + '.');
+    } catch (e) { alert(e.message); }
+  }
+
   async function addLead(email, slug) {
     const v = appVolunteers.find(x => x.interested && x.email === email && ((x.groups && x.groups[0]) || {}).slug === slug);
     const gt = v ? ((v.groups && v.groups[0]) || {}).title : slug;
