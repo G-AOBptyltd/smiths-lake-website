@@ -19,7 +19,7 @@
  * for THEIR village — the role string granted is derived server-side.
  */
 
-import { requireRole, villageKey } from './_auth.js';
+import { requireRole, villageKey, getRoles } from './_auth.js';
 import {
   STEWARDS_DB_ID, notionHeaders, jsonResp, notProvisioned, rtChunks,
   queryAll, parseSteward, normPath,
@@ -105,6 +105,25 @@ async function ensureIdentity(context, email, village) {
   } catch (_) {
     return { invited: false, warning: 'Register row saved, but Identity wiring failed — check their account in Netlify' };
   }
+}
+
+// Revoke ONLY the "<village>:steward" role from an account (keeps the account
+// and any other roles — never hard-delete a sign-in account). Best-effort.
+async function revokeIdentityRole(context, email, village) {
+  const identity = context?.clientContext?.identity;
+  if (!identity?.url || !identity?.token || !email) return;
+  const adminHeaders = { Authorization: `Bearer ${identity.token}`, 'Content-Type': 'application/json' };
+  const role = `${villageKey(village)}:steward`;
+  try {
+    const listRes = await fetch(`${identity.url}/admin/users`, { headers: adminHeaders });
+    if (!listRes.ok) return;
+    const user = (((await listRes.json()).users) || []).find((u) => (u.email || '').toLowerCase() === email);
+    if (!user) return;
+    const roles = (user.app_metadata?.roles || []).filter((r) => r !== role);
+    await fetch(`${identity.url}/admin/users/${user.id}`, {
+      method: 'PUT', headers: adminHeaders, body: JSON.stringify({ app_metadata: { roles } }),
+    });
+  } catch (_) { /* best-effort */ }
 }
 
 async function getSteward(pageId) {
@@ -215,6 +234,38 @@ export const handler = async (event, context) => {
       if (changedCards && steward.email) {
         await sendStewardWelcome({ email: steward.email, name: steward.name, cards: changedCards, village, changed: true });
       }
+      return jsonResp(200, { ok: true });
+    }
+
+    // Fix a steward's email address (keeps their cards). Re-wires Identity for
+    // the new email; the old account keeps its role but no longer has a register
+    // row, so it sees no cards.
+    if (body.action === 'editEmail') {
+      const steward = await getSteward(body.pageId);
+      if (!steward || steward.village !== village) return jsonResp(404, { error: 'Steward not found' });
+      const newEmail = (body.email || '').trim().toLowerCase().slice(0, 200);
+      if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) return jsonResp(400, { error: 'A valid email address is required' });
+      if (newEmail === (steward.email || '').toLowerCase()) return jsonResp(200, { ok: true });
+      const res = await fetch(`https://api.notion.com/v1/pages/${body.pageId}`, {
+        method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ properties: { 'Email': { email: newEmail } } }),
+      });
+      if (!res.ok) throw new Error(`Notion responded ${res.status}`);
+      const idr = await ensureIdentity(context, newEmail, village);
+      if (!idr.invited) await sendStewardWelcome({ email: newEmail, name: steward.name, cards: steward.cards, village, changed: true });
+      return jsonResp(200, { ok: true, ...(idr.warning ? { warning: idr.warning } : {}) });
+    }
+
+    // Hard-delete a steward from the register (super-admin only). Archives the
+    // Notion row AND revokes the steward role — but never deletes the account.
+    if (body.action === 'delete') {
+      if (!getRoles(auth.user).includes('super-admin')) return jsonResp(403, { error: 'Only the super-admin can delete a steward from the register' });
+      const steward = await getSteward(body.pageId);
+      if (!steward || steward.village !== village) return jsonResp(404, { error: 'Steward not found' });
+      const res = await fetch(`https://api.notion.com/v1/pages/${body.pageId}`, {
+        method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ archived: true }),
+      });
+      if (!res.ok) throw new Error(`Notion responded ${res.status}`);
+      await revokeIdentityRole(context, steward.email, village);
       return jsonResp(200, { ok: true });
     }
 

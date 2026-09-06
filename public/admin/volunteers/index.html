@@ -867,10 +867,12 @@
     el.innerHTML = stewards.map(s => {
       const cardsLine = (s.cards || []).map(c => '<span class="chip chip-card">' + esc(c.title) + '</span>').join(' ');
       const removed = s.status === 'Removed';
+      const del = isSuper() ? '<button class="link-btn danger" onclick="event.stopPropagation(); deleteSteward(\'' + s.id + '\')">Delete</button>' : '';
       const actions =
-        (removed ? '<button class="link-btn" onclick="event.stopPropagation(); stewardAction(\'' + s.id + '\', \'restore\')">Restore</button>'
+        (removed ? '<button class="link-btn" onclick="event.stopPropagation(); stewardAction(\'' + s.id + '\', \'restore\')">Restore</button>' + del
                  : '<button class="link-btn" onclick="event.stopPropagation(); editStewardCards(\'' + s.id + '\')">Edit cards</button>' +
-                   '<button class="link-btn danger" onclick="event.stopPropagation(); stewardAction(\'' + s.id + '\', \'remove\')">Remove</button>');
+                   '<button class="link-btn" onclick="event.stopPropagation(); editStewardEmail(\'' + s.id + '\')">Edit email</button>' +
+                   '<button class="link-btn danger" onclick="event.stopPropagation(); stewardAction(\'' + s.id + '\', \'remove\')">Remove</button>' + del);
       return '<div class="row" style="cursor:default;">' +
         '<span class="chip ' + (removed ? 'chip-removed' : 'chip-active') + '">' + esc(s.status) + '</span>' +
         '<div class="row-main"><div class="row-name">' + esc(s.name || s.email) + '</div>' +
@@ -906,6 +908,36 @@
       const r = await fetch('/api/steward-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, action, pageId: id }) });
       const data = await r.json();
       if (!r.ok) throw new Error(data.error || 'Action failed');
+      loadStewards();
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
+
+  async function editStewardEmail(id) {
+    const s = stewards.find(x => x.id === id);
+    if (!s) return;
+    const email = prompt('New email address for ' + (s.name || s.email) + ':', s.email || '');
+    if (email == null) return;
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || trimmed === (s.email || '').toLowerCase()) return;
+    try {
+      const r = await fetch('/api/steward-admin', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, action: 'editEmail', pageId: id, email: trimmed }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Update failed');
+      if (data.warning) alert('Saved, but: ' + data.warning);
+      loadStewards();
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
+
+  async function deleteSteward(id) {
+    const s = stewards.find(x => x.id === id);
+    if (!s) return;
+    if (!confirm('Delete ' + (s.name || s.email) + ' from the steward register?\n\nRemoves their register row and revokes their steward access. Their sign-in account is kept. This can’t be undone.')) return;
+    try {
+      const r = await fetch('/api/steward-admin', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, action: 'delete', pageId: id }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Delete failed');
       loadStewards();
     } catch (e) { alert('⚠️ ' + e.message); }
   }
