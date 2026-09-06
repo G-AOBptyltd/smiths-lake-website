@@ -148,7 +148,8 @@ export const handler = async (event, context) => {
       const first = String(body.firstName || '').trim();
       const from = process.env.VF_PLEDGE_FROM || 'VillageFirst <noreply@villagefirst.org.au>';
       const replyTo = (process.env.VF_PLEDGE_NOTIFY_TO || '').split(',')[0].trim();
-      const link = `https://villagefirst.org.au/${ig.path || ''}`;
+      // Route to the volunteer app (where they actually sign up), env-overridable per village.
+      const link = process.env.VOLUNTEER_APP_URL || 'https://smithslake-stewards.village1st.com.au';
       const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2937;max-width:520px;">
         <p>Hi${first ? ' ' + esc(first) : ' there'},</p>
         <p>You told us you're interested in <b>${esc(groupTitle)}</b> here at ${esc(village)} — that's wonderful. We'd love to have you lend a hand.</p>
