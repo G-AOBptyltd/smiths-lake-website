@@ -202,7 +202,11 @@ export const handler = async (event, context) => {
     const shownEmails = new Set(volunteers.map((v) => (v.email || '').toLowerCase()).filter(Boolean));
     try {
       const subRes = await supa(`subscribers?village_id=eq.${vslug}&status=eq.subscribed&select=email,first_name,last_name,interests`);
-      for (const s of asArr(subRes)) {
+      const subs = asArr(subRes);
+      // Cross-badge: flag volunteers who are also on the newsletter.
+      const subEmails = new Set(subs.map((s) => (s.email || '').toLowerCase()).filter(Boolean));
+      for (const v of volunteers) { if (v.email && subEmails.has(v.email.toLowerCase())) v.onNewsletter = true; }
+      for (const s of subs) {
         const ints = Array.isArray(s.interests) ? s.interests : [];
         if (!ints.length) continue;
         const email = (s.email || '').toLowerCase();

@@ -1080,7 +1080,7 @@
       }
       return '<div class="row">' +
         '<span class="chip ' + chipCls + '">' + esc(chipTxt) + '</span>' +
-        '<div class="row-main"><div class="row-name">' + esc(v.name) + ' ' + (v.isMember ? '<span class="chip chip-member">member</span>' : '') + '</div>' +
+        '<div class="row-main"><div class="row-name">' + esc(v.name) + ' ' + (v.isMember ? '<span class="chip chip-member">member</span>' : '') + (v.onNewsletter ? ' <span class="chip" style="background:#e0f2fe;color:#0369a1;">✉ newsletter</span>' : '') + '</div>' +
         '<div class="row-note">' + esc(note) + '</div><div class="row-note">' + groupsLine + '</div></div>' +
         '<span class="row-actions">' + actions + '</span></div>';
     }).join('');

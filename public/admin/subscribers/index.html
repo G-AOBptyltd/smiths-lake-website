@@ -43,6 +43,7 @@
   .chip.sub { color:#1c6b3a; background:#eafaf0; }
   .chip.unsub { color:#8a4b00; background:#fff3e2; }
   .chip.other { color:var(--muted); background:#eef1ee; }
+  .chip.vol { color:#5b21b6; background:#ede9fe; }
   .ichips { margin-top:5px; display:flex; gap:6px; flex-wrap:wrap; }
   .ichip { font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:12px; background:#eef1ee; color:#4b5563; }
   .ichip.lc { background:#e3f4e8; color:#1c6b3a; border:1px solid #b7e0c4; }
@@ -206,7 +207,7 @@
         '<span class="ichip' + (/landcare/i.test(i) ? ' lc' : '') + '">' + esc(i) + '</span>').join('');
       const contact = [s.email, s.phone].filter(Boolean).map(esc).join(' · ');
       return '<div class="row">' +
-        '<div class="main"><div class="nm">' + (esc(s.name) || '<span style="color:#9aa39c">(no name)</span>') + '</div>' +
+        '<div class="main"><div class="nm">' + (esc(s.name) || '<span style="color:#9aa39c">(no name)</span>') + (s.isVolunteer ? ' <span class="chip vol">volunteer</span>' : '') + '</div>' +
         '<div class="em">' + contact + '</div>' +
         (interests ? '<div class="ichips">' + interests + '</div>' : '') + '</div>' +
         '<span class="since">' + (s.since ? fmtDate(s.since) : '') + '</span>' +
