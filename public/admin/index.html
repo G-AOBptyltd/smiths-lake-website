@@ -411,6 +411,7 @@
     let active = localStorage.getItem('vf_active_village') || 'Smiths Lake';
     try {
       const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      if (r.status === 401) { recoverFromDeadSession(); return; }
       const data = await r.json();
       const all = (data.villages || []);
       if (!all.length) return;
@@ -677,6 +678,7 @@
     el.innerHTML = '<div style="padding:16px;color:#9ca3af;font-size:12px;">Loading users…</div>';
     try {
       const res = await fetch('/api/identity-admin', { headers: await authHeaders() });
+      if (res.status === 401) { recoverFromDeadSession(); return; }   // stale token → clean re-login
       if (res.status === 503) { el.innerHTML = '<div class="info-box">In-app user management needs Netlify Identity\'s admin context. If this persists, manage users in Netlify → Identity.</div>'; return; }
       if (!res.ok) { el.innerHTML = '<div class="info-box">Could not load users (' + res.status + ').</div>'; return; }
       const data = await res.json();
@@ -700,6 +702,7 @@
   async function setUserRole(userId, role) {
     try {
       const res = await fetch('/api/identity-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ action: 'setrole', userId: userId, role: role }) });
+      if (res.status === 401) { recoverFromDeadSession(); return; }
       const data = await res.json();
       if (res.ok && data.success) showToast('✅ Role updated (applies on their next sign-in)');
       else showToast('⚠️ ' + (data.error || 'Could not update role'));
@@ -794,6 +797,7 @@
     if (!email) { showToast('Enter an email to invite.'); return; }
     try {
       const res = await fetch('/api/identity-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ action: 'invite', email: email, role: role }) });
+      if (res.status === 401) { recoverFromDeadSession(); return; }
       const data = await res.json();
       if (res.ok && data.success) { showToast('✅ ' + (data.message || 'Invitation sent')); document.getElementById('invite-email').value = ''; loadAccess(); }
       else showToast('⚠️ ' + (data.error || 'Invite failed'));
