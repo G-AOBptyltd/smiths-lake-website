@@ -122,6 +122,34 @@
   .auth-btn:hover { background: #0f5c48; }
   .site-link { margin-top: 2rem; }
   .site-link a { font-size: 0.78rem; color: #15795f; }
+
+  /* Village detail modal */
+  .vd-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.5); display: none; align-items: flex-start; justify-content: center; z-index: 1000; padding: 24px 14px; overflow-y: auto; }
+  .vd-overlay.show { display: flex; }
+  .vd-modal { background: #fff; border-radius: 14px; width: 100%; max-width: 640px; box-shadow: 0 20px 60px rgba(0,0,0,.3); overflow: hidden; margin: auto; }
+  .vd-head { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px; background: linear-gradient(135deg, #0f4c3a 0%, #15795f 100%); color: #fff; }
+  .vd-head .vd-title { flex: 1; font-size: 16px; font-weight: 800; line-height: 1.25; }
+  .vd-head .vd-sub { font-size: 11px; color: rgba(255,255,255,.75); margin-top: 3px; }
+  .vd-x { background: rgba(255,255,255,.15); border: none; color: #fff; width: 28px; height: 28px; border-radius: 7px; font-size: 15px; cursor: pointer; flex-shrink: 0; }
+  .vd-x:hover { background: rgba(255,255,255,.3); }
+  .vd-body { padding: 16px 18px 20px; max-height: 70vh; overflow-y: auto; }
+  .vd-sec { margin-bottom: 18px; }
+  .vd-sec:last-child { margin-bottom: 0; }
+  .vd-sec-h { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #0f5c48; margin-bottom: 8px; }
+  .vd-app { white-space: pre-wrap; font-size: 12.5px; line-height: 1.6; color: #1e293b; background: #f8faf9; border: 1px solid #e2e8f0; border-radius: 9px; padding: 12px 14px; }
+  .vd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+  .vd-kv { background: #f8faf9; border: 1px solid #eef2f0; border-radius: 8px; padding: 8px 10px; }
+  .vd-kv .k { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; }
+  .vd-kv .v { font-size: 12.5px; color: #0f172a; margin-top: 3px; word-break: break-word; }
+  .vd-doc { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #e2e8f0; border-radius: 9px; padding: 9px 12px; margin-bottom: 7px; text-decoration: none; }
+  .vd-doc:hover { border-color: #0f8f80; background: #f0fdf6; }
+  .vd-doc .di { font-size: 18px; }
+  .vd-doc .dn { flex: 1; font-size: 12.5px; font-weight: 600; color: #143d2e; word-break: break-word; }
+  .vd-doc .dl { font-size: 11px; font-weight: 700; color: #0f8f80; white-space: nowrap; }
+  .vd-empty { font-size: 12px; color: #9ca3af; font-style: italic; }
+  .vd-notes { width: 100%; min-height: 84px; border: 1.5px solid #e2e8f0; border-radius: 9px; padding: 10px 12px; font-size: 12.5px; color: #1e293b; font-family: inherit; resize: vertical; outline: none; }
+  .vd-notes:focus { border-color: #0f8f80; }
+  .vd-notes-foot { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -209,6 +237,20 @@
 </div>
 
 <div class="vf-toast" id="toast"></div>
+
+<!-- Village detail modal (super-admin / village admin) -->
+<div class="vd-overlay" id="vd-overlay" onclick="if(event.target===this)closeVillageDetail()">
+  <div class="vd-modal" role="dialog" aria-modal="true" aria-labelledby="vd-title">
+    <div class="vd-head">
+      <div style="flex:1;">
+        <div class="vd-title" id="vd-title">Village</div>
+        <div class="vd-sub" id="vd-sub"></div>
+      </div>
+      <button class="vd-x" onclick="closeVillageDetail()" aria-label="Close">✕</button>
+    </div>
+    <div class="vd-body" id="vd-body"></div>
+  </div>
+</div>
 
 <script>
   // ── Module registry ──────────────────────────────────────────────
@@ -539,6 +581,7 @@
         '<div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">' + pkgControl + '</div>' +
         '<div class="mchips">' + modChips + '</div>' +
         '<div class="vcard-foot">' +
+          '<button class="btn btn-g btn-sm" onclick="openVillageDetail(' + jsArg(v.name) + ')">🔎 Details</button> ' +
           '<button class="btn btn-s btn-sm" onclick="openVillage(' + jsArg(v.name) + ')">Open modules →</button>' +
           '<div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">' + lifecycle + '</div>' +
         '</div>' +
@@ -561,6 +604,103 @@
     renderTiles();
     buildRoleOptions();
     showTab('modules');
+  }
+
+  // ── Village detail (open a village: config + application + documents + notes) ──
+  var vdCurrent = null;   // village name currently shown in the modal
+
+  function vdFmtDate(iso) {
+    if (!iso) return '—';
+    try { return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }); }
+    catch (_) { return iso; }
+  }
+
+  function openVillageDetail(name) {
+    vdCurrent = name;
+    document.getElementById('vd-title').textContent = name;
+    document.getElementById('vd-sub').textContent = 'Loading…';
+    document.getElementById('vd-body').innerHTML = '<div class="vd-empty">Loading village details…</div>';
+    document.getElementById('vd-overlay').classList.add('show');
+    (async function() {
+      try {
+        const r = await fetch('/api/village-detail?village=' + encodeURIComponent(name), { headers: await authHeaders() });
+        const data = await r.json().catch(function(){ return {}; });
+        if (!r.ok) { renderVillageDetailError(data.error || ('Error ' + r.status)); return; }
+        renderVillageDetail(name, data);
+      } catch (e) { renderVillageDetailError('Network error'); }
+    })();
+  }
+
+  function closeVillageDetail() {
+    vdCurrent = null;
+    document.getElementById('vd-overlay').classList.remove('show');
+  }
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeVillageDetail(); });
+
+  function renderVillageDetailError(msg) {
+    document.getElementById('vd-sub').textContent = '';
+    document.getElementById('vd-body').innerHTML = '<div class="vd-empty">Could not load this village: ' + escHtml(msg) + '</div>';
+  }
+
+  function renderVillageDetail(name, data) {
+    const v = data.village || {};
+    const pill = STATUS_PILL[v.status] || { cls: 'draft', label: v.status || '—' };
+    document.getElementById('vd-sub').innerHTML =
+      '<span class="pill ' + pill.cls + '" style="font-size:9.5px;">' + escHtml(pill.label) + '</span>' +
+      ' &nbsp;•&nbsp; Applied ' + escHtml(vdFmtDate(v.createdTime)) +
+      (v.notionUrl ? ' &nbsp;•&nbsp; <a href="' + escHtml(v.notionUrl) + '" target="_blank" rel="noopener noreferrer" style="color:#c7eedd;text-decoration:underline;">Open in Notion ↗</a>' : '');
+
+    // Config key/values
+    const kv = function(k, val) { return '<div class="vd-kv"><div class="k">' + escHtml(k) + '</div><div class="v">' + val + '</div></div>'; };
+    const rows = [];
+    rows.push(kv('Package', escHtml((PKG_LABEL[v.package] || v.package || '—')) + ' package'));
+    if (v.publicModules && v.publicModules.length) rows.push(kv('Public modules', escHtml(v.publicModules.join(', '))));
+    if (v.disabledModules && v.disabledModules.length) rows.push(kv('Modules switched off', escHtml(v.disabledModules.join(', '))));
+    if (v.siteUrl) rows.push(kv('Site URL', '<a href="' + escHtml(v.siteUrl) + '" target="_blank" rel="noopener noreferrer" style="color:#0f8f80;">' + escHtml(v.siteUrl) + '</a>'));
+    if (v.notifyEmails) rows.push(kv('Notify emails', escHtml(v.notifyEmails)));
+    if (v.contentDbId) rows.push(kv('Content DB ID', escHtml(v.contentDbId)));
+    rows.push(kv('Last updated', escHtml(vdFmtDate(v.lastEditedTime))));
+
+    // Application submission
+    const appText = (data.application && data.application.text) || '';
+    const appHtml = appText.trim()
+      ? '<div class="vd-app">' + escHtml(appText) + '</div>'
+      : '<div class="vd-empty">No application submission recorded on this village\'s page.</div>';
+
+    // Documents
+    const docs = data.documents || [];
+    const docsHtml = docs.length
+      ? docs.map(function(d) {
+          return '<a class="vd-doc" href="' + escHtml(d.url || '#') + '" target="_blank" rel="noopener noreferrer">' +
+            '<span class="di">📄</span><span class="dn">' + escHtml(d.name || 'document') + '</span><span class="dl">Open / download ↗</span></a>';
+        }).join('')
+      : '<div class="vd-empty">No documents attached to this village\'s application.</div>';
+
+    // Notes (editable — saved back to the VF Villages row)
+    const notes = data.notes || '';
+    const notesHtml =
+      '<textarea class="vd-notes" id="vd-notes" placeholder="Committee notes about this village / application…">' + escHtml(notes) + '</textarea>' +
+      '<div class="vd-notes-foot">' +
+        '<button class="btn btn-g btn-sm" onclick="saveVillageNotes(' + jsArg(name) + ')">Save notes</button>' +
+        '<span style="font-size:11px;color:#9ca3af;">Saved to the village registry</span>' +
+      '</div>';
+
+    document.getElementById('vd-body').innerHTML =
+      '<div class="vd-sec"><div class="vd-sec-h">Application submission</div>' + appHtml + '</div>' +
+      '<div class="vd-sec"><div class="vd-sec-h">Documents</div>' + docsHtml + '</div>' +
+      '<div class="vd-sec"><div class="vd-sec-h">Configuration</div><div class="vd-grid">' + rows.join('') + '</div></div>' +
+      '<div class="vd-sec"><div class="vd-sec-h">Committee notes</div>' + notesHtml + '</div>';
+  }
+
+  async function saveVillageNotes(name) {
+    const ta = document.getElementById('vd-notes');
+    if (!ta) return;
+    try {
+      const res = await fetch('/api/village-detail', { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: name, notes: ta.value }) });
+      const data = await res.json().catch(function(){ return {}; });
+      if (res.ok && data.success) showToast('✅ Notes saved');
+      else showToast('⚠️ ' + (data.error || 'Could not save notes'));
+    } catch (_) { showToast('⚠️ Network error'); }
   }
 
   // ── Village lifecycle (super-admin, server-enforced) ───────────────
