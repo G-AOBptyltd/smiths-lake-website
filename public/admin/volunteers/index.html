@@ -361,6 +361,13 @@
     'History & Culture': 'history',
   };
   const VOLUNTEER_SECTIONS = ['Environment & Sustainability', 'Groups & Activities', 'Emergency & Safety'];
+  // The steward card-picker offers only genuine volunteer groups. Emergency &
+  // Safety cards (Police Station, AusAlert, Marine Rescue…) are managed by the
+  // Emergency module / Emergency Coordinator role, not volunteer stewards.
+  const STEWARD_PICKER_SECTIONS = ['Environment & Sustainability', 'Groups & Activities'];
+  function stewardCatalogue() {
+    return catalogue.filter(c => !c.section || STEWARD_PICKER_SECTIONS.includes(c.section));
+  }
   function generateSlug(title) {
     if (!title) return 'untitled';
     return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 100);
@@ -511,7 +518,7 @@
   function buildCardPickers() {
     buildCardFilters();
     const s = document.getElementById('s-cards');
-    if (scope.isAdmin) s.innerHTML = cardCheckboxes(catalogue, []);
+    if (scope.isAdmin) s.innerHTML = cardCheckboxes(stewardCatalogue(), []);
     const a = document.getElementById('a-card');
     const opts = scope.isAdmin ? allKnownCards() : (scope.cards || []);
     a.innerHTML = opts.map(c => '<option value="' + esc(c.path) + '" data-title="' + esc(c.title) + '">' + esc(c.title) + '</option>').join('');
@@ -948,7 +955,7 @@
     // Reuse the appoint form pre-filled — saving upserts by email.
     document.getElementById('s-email').value = s.email;
     document.getElementById('s-name').value = s.name || '';
-    const options = withVolunteerCards(catalogue, { cards: s.cards });
+    const options = withVolunteerCards(stewardCatalogue(), { cards: s.cards });
     document.getElementById('s-cards').innerHTML = cardCheckboxes(options, (s.cards || []).map(c => c.path));
     setMsg('s-msg', 'Editing ' + (s.name || s.email) + ' — tick/untick cards and press Appoint steward to save.', '');
     window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -139,6 +139,7 @@ const DEFAULT_MODULE_ROLES = {
   projects: ['admin', 'treasurer', 'pm'],
   profile: ['admin', 'steward'],
   services: ['admin', 'steward'],
+  emergency: ['admin', 'emergency'],
   members: ['admin'],
   events: ['admin'],
   ads: ['admin'],

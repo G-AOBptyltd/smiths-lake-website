@@ -235,6 +235,7 @@
     { id: 'projects', minPackage: 'complete', icon: '🗂️', name: 'Projects', desc: 'The project system of record — budgets, grants, volunteers & hours in one place, with steering-committee reports', href: '/admin/projects/', roles: ['admin', 'treasurer', 'pm'], moduleToggle: true },
     { id: 'profile',  icon: '📇', name: 'Village profile', desc: 'The community resilience profile — snapshot, hazards, facilities & the action register', href: '/admin/profile/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'services', icon: '🏪', name: 'Services directory',  desc: 'Keep every service listing accurate — service stewards manage their own', href: '/admin/services/', roles: ['admin', 'steward'], moduleToggle: true },
+    { id: 'emergency', icon: '🚨', name: 'Emergency & Safety',  desc: 'Coordinate the emergency & safety cards — contacts, alerts & response info', href: '/admin/emergency/', roles: ['admin', 'emergency'], moduleToggle: true, soon: true },
     { id: 'members',  icon: '🪪', name: 'Membership',          desc: 'Member register — approvals, payments, renewals & member emails', href: '/admin/members/', roles: ['admin'], moduleToggle: true },
     { id: 'events', minPackage: 'growth',   icon: '🎟️', name: 'Events & ticketing', desc: 'Create events, take registrations, run the door on the night', href: '/admin/events/', roles: ['admin'], publicToggle: true, moduleToggle: true },
     { id: 'ads', minPackage: 'growth',      icon: '📣', name: 'Advertising',        desc: 'Local business placements & sponsorships — dates, tiers & fees', href: '/admin/ads/', roles: ['admin'], moduleToggle: true },
@@ -337,8 +338,8 @@
   }
 
   // ── Module-access matrix (visibility only — endpoints keep their own auth) ──
-  const MATRIX_ROLES = ['admin', 'treasurer', 'pm', 'steward', 'viewer'];
-  const MATRIX_ROLE_LABEL = { admin: 'Village Admin', treasurer: 'Treasurer', pm: 'Project Manager', steward: 'Steward', viewer: 'Viewer' };
+  const MATRIX_ROLES = ['admin', 'treasurer', 'pm', 'steward', 'emergency', 'viewer'];
+  const MATRIX_ROLE_LABEL = { admin: 'Village Admin', treasurer: 'Treasurer', pm: 'Project Manager', steward: 'Steward', emergency: 'Emergency Coordinator', viewer: 'Viewer' };
   function accessMatrix(vName) {
     const v = villageRec(vName);
     return (v && v.moduleAccess && typeof v.moduleAccess === 'object') ? v.moduleAccess : null;
@@ -639,6 +640,7 @@
       '<option value="' + key + ':steward">Steward — ' + escHtml(activeVillage()) + '</option>' +
       '<option value="' + key + ':pm">Project Manager — ' + escHtml(activeVillage()) + '</option>' +
       '<option value="' + key + ':treasurer">Village Treasurer — ' + escHtml(activeVillage()) + '</option>' +
+      '<option value="' + key + ':emergency">Emergency Coordinator — ' + escHtml(activeVillage()) + '</option>' +
       '<option value="' + key + ':admin">Village Admin — ' + escHtml(activeVillage()) + '</option>' +
       '<option value="' + key + ':viewer">Committee Viewer — ' + escHtml(activeVillage()) + '</option>' +
       (isSuper() ? '<option value="super-admin">Super Admin (all villages)</option>' : '');
@@ -650,6 +652,7 @@
       { v: key + ':steward', l: 'Steward' },
       { v: key + ':pm', l: 'Project Manager' },
       { v: key + ':treasurer', l: 'Village Treasurer' },
+      { v: key + ':emergency', l: 'Emergency Coordinator' },
       { v: key + ':admin', l: 'Village Admin' },
       { v: key + ':viewer', l: 'Committee Viewer' },
       { v: 'super-admin', l: 'Super Admin' },
@@ -664,6 +667,7 @@
     if (r.endsWith(':admin')) return 'Village Admin (' + r.split(':')[0] + ')';
     if (r.endsWith(':treasurer')) return 'Village Treasurer (' + r.split(':')[0] + ')';
     if (r.endsWith(':pm')) return 'Project Manager (' + r.split(':')[0] + ')';
+    if (r.endsWith(':emergency')) return 'Emergency Coordinator (' + r.split(':')[0] + ')';
     if (r.endsWith(':steward')) return 'Steward (' + r.split(':')[0] + ')';
     if (r.endsWith(':viewer')) return 'Committee Viewer (' + r.split(':')[0] + ')';
     return r ? r : 'No role';
