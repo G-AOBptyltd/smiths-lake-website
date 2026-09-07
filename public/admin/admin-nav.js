@@ -25,6 +25,7 @@
     { id: 'projects', href: '/admin/projects/',          label: '🗂 Projects' },
     { id: 'profile',  href: '/admin/profile/',           label: '📇 Profile' },
     { id: 'services', href: '/admin/services/',          label: '🏪 Services' },
+    { id: 'emergency', href: '/admin/emergency/',        label: '🚨 Emergency' },
     { id: 'members',  href: '/admin/members/',           label: '🪪 Membership' },
     { id: 'subscribers', href: '/admin/subscribers/',    label: '📧 Subscribers' },
     { id: 'volunteers', href: '/admin/volunteers/',      label: '🙋 Volunteers' },
@@ -45,6 +46,7 @@
     if (p.indexOf('/admin/grants') === 0) return 'grants';
     if (p.indexOf('/admin/projects') === 0) return 'projects';
     if (p.indexOf('/admin/profile') === 0) return 'profile';
+    if (p.indexOf('/admin/emergency') === 0) return 'emergency';
     if (p.indexOf('/admin/services') === 0) return 'services';
     if (p.indexOf('/admin/subscribers') === 0) return 'subscribers';
     if (p.indexOf('/admin/members') === 0) return 'members';
