@@ -20,18 +20,32 @@ export const handler = async (event, context) => {
   const vslug = slugVillage(village);
   const r = await supa(
     `subscribers?village_id=eq.${vslug}` +
-    `&select=email,first_name,last_name,status,tags,source,subscribed_at,created_at` +
+    `&select=email,first_name,last_name,status,tags,interests,merge_fields,source,subscribed_at,created_at` +
     `&order=created_at.desc`
   );
   if (!r.ok) return jsonResp(502, { error: 'Could not load subscribers' });
 
+  // Cross-badge: which subscribers are also active volunteers (email match).
+  const volEmails = new Set();
+  try {
+    const vr = await supa(`volunteers?village_id=eq.${vslug}&status=eq.active&select=email`);
+    if (vr.ok) for (const v of (Array.isArray(vr.data) ? vr.data : [])) if (v.email) volEmails.add(v.email.toLowerCase());
+  } catch (_) { /* fail-open */ }
+
   const subscribers = (Array.isArray(r.data) ? r.data : []).map((s) => ({
     name: `${s.first_name || ''} ${s.last_name || ''}`.trim(),
     email: s.email || '',
+    phone: (s.merge_fields && (s.merge_fields.PHONE || s.merge_fields.MMERGE6)) || '',
     status: s.status || 'subscribed',
     tags: Array.isArray(s.tags) ? s.tags : [],
+    interests: Array.isArray(s.interests) ? s.interests : [],
+    isVolunteer: volEmails.has((s.email || '').toLowerCase()),
     since: s.subscribed_at || s.created_at || null,
   }));
+
+  // Distinct interest names present (for the filter dropdown).
+  const interestSet = new Set();
+  subscribers.forEach((s) => s.interests.forEach((i) => interestSet.add(i)));
 
   const counts = {
     total: subscribers.length,
@@ -39,5 +53,5 @@ export const handler = async (event, context) => {
     unsubscribed: subscribers.filter((s) => s.status === 'unsubscribed').length,
   };
 
-  return jsonResp(200, { configured: true, subscribers, counts });
+  return jsonResp(200, { configured: true, subscribers, counts, interests: [...interestSet].sort() });
 };

@@ -15,6 +15,7 @@
  *   - "<village>:treasurer"    → Village Treasurer (finance modules)
  *   - "<village>:pm"           → Village Project Manager (manages projects; money read-only)
  *   - "<village>:steward"      → Survey / group Steward
+ *   - "<village>:emergency"    → Emergency Coordinator (emergency & safety module)
  *   - "<village>:viewer"       → Committee Viewer
  *
  * Role matching below is generic — any "<village>:<name>" role works; the names

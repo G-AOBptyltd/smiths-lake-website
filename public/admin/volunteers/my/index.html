@@ -318,7 +318,7 @@
     <div class="screen" id="s-home">
       <div class="hello" id="hello">G'day 👋</div>
       <div class="group-name" id="home-group"></div>
-      <button class="switch-link" id="switch-group" style="display:none;" onclick="go('s-groups')">switch group</button>
+      <button class="switch-link" id="switch-group" style="display:none;" onclick="openGroupChooser()">switch group</button>
 
       <button class="task-btn" onclick="go('s-approve')">
         <span class="task-icon">🙋</span>
@@ -599,6 +599,19 @@
   }
 
   function chooseGroup(i) { setGroup(window._groups[i]); }
+
+  // "switch group" must (re)render the chooser — previously it only navigated,
+  // so if a group was auto-selected the list was never populated (blank page).
+  function openGroupChooser() {
+    const groups = myGroups();
+    if (!groups.length) {
+      document.getElementById('group-list').innerHTML =
+        '<div class="sub">No groups are assigned to you yet — ask your village admin.</div>';
+    } else {
+      renderGroupChooser(groups);
+    }
+    go('s-groups');
+  }
 
   function setGroup(g) {
     GROUP = g;

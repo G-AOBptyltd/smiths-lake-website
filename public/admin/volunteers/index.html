@@ -281,8 +281,10 @@
             <option value="archived">Archived</option>
             <option value="inactive">Inactive</option>
             <option value="notmigrated">Website only (not migrated)</option>
+            <option value="interested">Interested (newsletter)</option>
           </select>
           <input type="search" id="av-search" placeholder="Search name, email…" oninput="renderAppVolunteers()" />
+          <a href="/admin/volunteers/matrix/" style="margin-left:auto;font-size:13px;color:#15795f;text-decoration:none;font-weight:600;white-space:nowrap;">🗂 Groups grid ↗</a>
         </div>
         <div class="ledger" id="av-list"><div class="empty">Loading volunteers…</div></div>
       </div>
@@ -359,6 +361,13 @@
     'History & Culture': 'history',
   };
   const VOLUNTEER_SECTIONS = ['Environment & Sustainability', 'Groups & Activities', 'Emergency & Safety'];
+  // The steward card-picker offers only genuine volunteer groups. Emergency &
+  // Safety cards (Police Station, AusAlert, Marine Rescue…) are managed by the
+  // Emergency module / Emergency Coordinator role, not volunteer stewards.
+  const STEWARD_PICKER_SECTIONS = ['Environment & Sustainability', 'Groups & Activities'];
+  function stewardCatalogue() {
+    return catalogue.filter(c => !c.section || STEWARD_PICKER_SECTIONS.includes(c.section));
+  }
   function generateSlug(title) {
     if (!title) return 'untitled';
     return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 100);
@@ -509,7 +518,7 @@
   function buildCardPickers() {
     buildCardFilters();
     const s = document.getElementById('s-cards');
-    if (scope.isAdmin) s.innerHTML = cardCheckboxes(catalogue, []);
+    if (scope.isAdmin) s.innerHTML = cardCheckboxes(stewardCatalogue(), []);
     const a = document.getElementById('a-card');
     const opts = scope.isAdmin ? allKnownCards() : (scope.cards || []);
     a.innerHTML = opts.map(c => '<option value="' + esc(c.path) + '" data-title="' + esc(c.title) + '">' + esc(c.title) + '</option>').join('');
@@ -865,10 +874,12 @@
     el.innerHTML = stewards.map(s => {
       const cardsLine = (s.cards || []).map(c => '<span class="chip chip-card">' + esc(c.title) + '</span>').join(' ');
       const removed = s.status === 'Removed';
+      const del = isSuper() ? '<button class="link-btn danger" onclick="event.stopPropagation(); deleteSteward(\'' + s.id + '\')">Delete</button>' : '';
       const actions =
-        (removed ? '<button class="link-btn" onclick="event.stopPropagation(); stewardAction(\'' + s.id + '\', \'restore\')">Restore</button>'
+        (removed ? '<button class="link-btn" onclick="event.stopPropagation(); stewardAction(\'' + s.id + '\', \'restore\')">Restore</button>' + del
                  : '<button class="link-btn" onclick="event.stopPropagation(); editStewardCards(\'' + s.id + '\')">Edit cards</button>' +
-                   '<button class="link-btn danger" onclick="event.stopPropagation(); stewardAction(\'' + s.id + '\', \'remove\')">Remove</button>');
+                   '<button class="link-btn" onclick="event.stopPropagation(); editStewardEmail(\'' + s.id + '\')">Edit email</button>' +
+                   '<button class="link-btn danger" onclick="event.stopPropagation(); stewardAction(\'' + s.id + '\', \'remove\')">Remove</button>' + del);
       return '<div class="row" style="cursor:default;">' +
         '<span class="chip ' + (removed ? 'chip-removed' : 'chip-active') + '">' + esc(s.status) + '</span>' +
         '<div class="row-main"><div class="row-name">' + esc(s.name || s.email) + '</div>' +
@@ -908,13 +919,43 @@
     } catch (e) { alert('⚠️ ' + e.message); }
   }
 
+  async function editStewardEmail(id) {
+    const s = stewards.find(x => x.id === id);
+    if (!s) return;
+    const email = prompt('New email address for ' + (s.name || s.email) + ':', s.email || '');
+    if (email == null) return;
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || trimmed === (s.email || '').toLowerCase()) return;
+    try {
+      const r = await fetch('/api/steward-admin', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, action: 'editEmail', pageId: id, email: trimmed }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Update failed');
+      if (data.warning) alert('Saved, but: ' + data.warning);
+      loadStewards();
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
+
+  async function deleteSteward(id) {
+    const s = stewards.find(x => x.id === id);
+    if (!s) return;
+    if (!confirm('Delete ' + (s.name || s.email) + ' from the steward register?\n\nRemoves their register row and revokes their steward access. Their sign-in account is kept. This can’t be undone.')) return;
+    try {
+      const r = await fetch('/api/steward-admin', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, action: 'delete', pageId: id }) });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Delete failed');
+      loadStewards();
+    } catch (e) { alert('⚠️ ' + e.message); }
+  }
+
   function editStewardCards(id) {
     const s = stewards.find(x => x.id === id);
     if (!s) return;
     // Reuse the appoint form pre-filled — saving upserts by email.
     document.getElementById('s-email').value = s.email;
     document.getElementById('s-name').value = s.name || '';
-    const options = withVolunteerCards(catalogue, { cards: s.cards });
+    const options = withVolunteerCards(stewardCatalogue(), { cards: s.cards });
     document.getElementById('s-cards').innerHTML = cardCheckboxes(options, (s.cards || []).map(c => c.path));
     setMsg('s-msg', 'Editing ' + (s.name || s.email) + ' — tick/untick cards and press Appoint steward to save.', '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1048,15 +1089,18 @@
       archived: appVolunteers.filter(v => v.inApp && v.status === 'archived').length,
       inactive: appVolunteers.filter(v => v.inApp && v.status === 'inactive').length,
       notMigrated: appVolunteers.filter(v => v.notMigrated).length,
+      interested: appVolunteers.filter(v => v.interested).length,
     };
     document.getElementById('av-stats').innerHTML =
       stat(counts.active, 'Active') + stat(counts.archived, 'Archived') +
-      stat(counts.inactive, 'Inactive') + stat(counts.notMigrated, 'Not migrated');
+      stat(counts.inactive, 'Inactive') + stat(counts.notMigrated, 'Not migrated') +
+      (counts.interested ? stat(counts.interested, 'Interested (newsletter)') : '');
 
     const status = document.getElementById('av-status').value;
     const q = document.getElementById('av-search').value.trim().toLowerCase();
     const list = appVolunteers.filter(v => {
       if (status === 'notmigrated') { if (!v.notMigrated) return false; }
+      else if (status === 'interested') { if (!v.interested) return false; }
       else if (status) { if (!(v.inApp && v.status === status)) return false; }
       if (q && ![v.name, v.email, v.phone].join(' ').toLowerCase().includes(q)) return false;
       return true;
@@ -1066,17 +1110,23 @@
     el.innerHTML = list.map(v => {
       const groupsLine = (v.groups || []).map(g => '<span class="chip chip-card">' + esc(g.title) + '</span>').join(' ');
       const note = [v.email, v.phone].filter(Boolean).join(' · ');
-      const chipCls = v.notMigrated ? 'chip-applied' : (v.status === 'active' ? 'chip-active' : 'chip-inactive');
-      const chipTxt = v.notMigrated ? 'website only' : v.status;
+      const chipCls = v.interested ? 'chip-member' : (v.notMigrated ? 'chip-applied' : (v.status === 'active' ? 'chip-active' : 'chip-inactive'));
+      const chipTxt = v.interested ? 'interested' : (v.notMigrated ? 'website only' : v.status);
       let actions = '';
-      if (v.inApp && !v.notMigrated) {
+      if (v.interested) {
+        const g = (v.groups && v.groups[0]) || {};
+        actions =
+          (v.email ? '<button class="link-btn" onclick="inviteLead(' + jsArg(v.email) + ',' + jsArg(g.slug) + ')">Invite</button> ' : '') +
+          '<button class="link-btn" onclick="addLead(' + jsArg(v.email) + ',' + jsArg(g.slug) + ')">Add</button> ' +
+          '<button class="link-btn danger" onclick="dismissLead(' + jsArg(v.email) + ',' + jsArg(g.slug) + ')">Remove</button>';
+      } else if (v.inApp && !v.notMigrated) {
         actions = v.status === 'archived'
           ? '<button class="link-btn" onclick="setVolStatus(\'' + v.id + '\', \'active\')">Restore</button>'
           : '<button class="link-btn danger" onclick="setVolStatus(\'' + v.id + '\', \'archived\')">Archive</button>';
       }
       return '<div class="row">' +
         '<span class="chip ' + chipCls + '">' + esc(chipTxt) + '</span>' +
-        '<div class="row-main"><div class="row-name">' + esc(v.name) + ' ' + (v.isMember ? '<span class="chip chip-member">member</span>' : '') + '</div>' +
+        '<div class="row-main"><div class="row-name">' + esc(v.name) + ' ' + (v.isMember ? '<span class="chip chip-member">member</span>' : '') + (v.onNewsletter ? ' <span class="chip" style="background:#e0f2fe;color:#0369a1;">✉ newsletter</span>' : '') + '</div>' +
         '<div class="row-note">' + esc(note) + '</div><div class="row-note">' + groupsLine + '</div></div>' +
         '<span class="row-actions">' + actions + '</span></div>';
     }).join('');
@@ -1092,6 +1142,44 @@
       if (!r.ok) throw new Error(d.error || 'Update failed');
       const v = appVolunteers.find(x => x.id === id); if (v) v.status = status;
       renderAppVolunteers();
+    } catch (e) { alert(e.message); }
+  }
+
+  // ── Interested-lead actions (from the newsletter) ──────────────
+  async function inviteLead(email, slug) {
+    const v = appVolunteers.find(x => x.interested && x.email === email && ((x.groups && x.groups[0]) || {}).slug === slug);
+    const g = (v && v.groups && v.groups[0]) || {};
+    if (!confirm('Send a short volunteering invite to ' + ((v && v.name) || email) + '?\n\nIt emails them a warm "get involved with ' + (g.title || 'this group') + '" message via VillageFirst (Resend) with a sign-up link.')) return;
+    try {
+      const r = await fetch('/api/vapp-volunteers', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, action: 'inviteLead', email, groupSlug: slug, groupTitle: g.title, firstName: v && v.firstName }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not send');
+      if (d.ok === false) { alert(d.error || 'Email is not set up.'); return; }
+      alert('Invite sent to ' + email + '.');
+    } catch (e) { alert(e.message); }
+  }
+
+  async function addLead(email, slug) {
+    const v = appVolunteers.find(x => x.interested && x.email === email && ((x.groups && x.groups[0]) || {}).slug === slug);
+    const gt = v ? ((v.groups && v.groups[0]) || {}).title : slug;
+    if (!confirm('Add ' + ((v && v.name) || email) + ' as a volunteer in ' + gt + '?\n\nOnly do this once they’ve agreed to volunteer — they signed up for the newsletter, not (yet) to volunteer.')) return;
+    try {
+      const r = await fetch('/api/vapp-volunteers', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, action: 'addLead', email, groupSlug: slug, groupTitle: gt, firstName: v && v.firstName, lastName: v && v.lastName }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not add');
+      appVolLoaded = false; loadAppVolunteers();
+    } catch (e) { alert(e.message); }
+  }
+  async function dismissLead(email, slug) {
+    if (!confirm('Remove this person from the interested list for this group?\n\nThey stay on the newsletter — this just clears them as a volunteer lead.')) return;
+    try {
+      const r = await fetch('/api/vapp-volunteers', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, action: 'dismissLead', email, groupSlug: slug }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not remove');
+      appVolLoaded = false; loadAppVolunteers();
     } catch (e) { alert(e.message); }
   }
 
@@ -1140,6 +1228,9 @@
   }
 
   function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+  // Safe single-quoted JS string literal for use INSIDE a double-quoted onclick="" attribute
+  // (escapes the JS-string context AND the HTML-attribute context). Returns with the quotes.
+  function jsArg(s) { return "'" + String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + "'"; }
 </script>
 </body>
 </html>

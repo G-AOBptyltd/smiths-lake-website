@@ -52,8 +52,23 @@ export function slugVillage(v) {
 
 const MC_STATUSES = ['subscribed', 'unsubscribed', 'cleaned', 'pending', 'transactional'];
 
+// Fetch the audience's interest groups → Map(interestId → name), e.g.
+// { "abc123": "Landcare", "def456": "General VillageFirst" }. Used to turn a
+// member's interests object ({id:true/false}) into human interest names.
+export async function fetchInterestMap() {
+  const map = new Map();
+  const cats = await mcFetch(`lists/${MC_AUDIENCE}/interest-categories?count=100&fields=categories.id`);
+  if (!cats.ok) return map;
+  for (const c of (cats.data?.categories || [])) {
+    const ins = await mcFetch(`lists/${MC_AUDIENCE}/interest-categories/${c.id}/interests?count=200&fields=interests.id,interests.name`);
+    if (ins.ok) for (const i of (ins.data?.interests || [])) if (i.id) map.set(i.id, i.name);
+  }
+  return map;
+}
+
 // Map a Mailchimp member object → a `subscribers` row (upsert shape).
-export function memberToRow(m, village) {
+// interestMap (optional) resolves the member's interest ids to names.
+export function memberToRow(m, village, interestMap) {
   const mf = m.merge_fields || {};
   return {
     village_id: slugVillage(village),
@@ -62,6 +77,9 @@ export function memberToRow(m, village) {
     last_name: mf.LNAME || null,
     status: MC_STATUSES.includes(m.status) ? m.status : 'subscribed',
     tags: (m.tags || []).map((t) => (t && t.name) ? t.name : t).filter(Boolean),
+    interests: interestMap
+      ? Object.entries(m.interests || {}).filter(([, on]) => on).map(([id]) => interestMap.get(id)).filter(Boolean)
+      : [],
     merge_fields: mf,
     source: 'mailchimp',
     mailchimp_id: m.id || null,

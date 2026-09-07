@@ -43,6 +43,10 @@
   .chip.sub { color:#1c6b3a; background:#eafaf0; }
   .chip.unsub { color:#8a4b00; background:#fff3e2; }
   .chip.other { color:var(--muted); background:#eef1ee; }
+  .chip.vol { color:#5b21b6; background:#ede9fe; }
+  .ichips { margin-top:5px; display:flex; gap:6px; flex-wrap:wrap; }
+  .ichip { font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:12px; background:#eef1ee; color:#4b5563; }
+  .ichip.lc { background:#e3f4e8; color:#1c6b3a; border:1px solid #b7e0c4; }
   .since { color:var(--muted); font-size:12px; flex:0 0 auto; }
   .empty { color:var(--muted); padding:22px 16px; text-align:center; }
   .notice { background:#fff8e6; border:1px solid #f0d69a; border-radius:12px; padding:14px 16px; color:#5a4300; }
@@ -94,6 +98,7 @@
           <option value="subscribed">Receiving updates</option>
           <option value="unsubscribed">Opted out</option>
         </select>
+        <select id="ifilter" onchange="render()"><option value="">All interests</option></select>
         <button class="btn ghost" onclick="exportCsv()">Export CSV</button>
       </div>
       <div class="list" id="list"><div class="empty">Loading…</div></div>
@@ -165,6 +170,8 @@
       if (d.configured === false) { showNotice('The mailing list isn’t set up yet.'); return; }
       document.getElementById('content').style.display = '';
       subscribers = d.subscribers || [];
+      const ifil = document.getElementById('ifilter');
+      ifil.innerHTML = '<option value="">All interests</option>' + (d.interests || []).map(i => '<option>' + esc(i) + '</option>').join('');
       const c = d.counts || {};
       document.getElementById('c-total').textContent = c.total || 0;
       document.getElementById('c-sub').textContent = c.subscribed || 0;
@@ -182,8 +189,10 @@
   function filtered() {
     const q = document.getElementById('q').value.trim().toLowerCase();
     const f = document.getElementById('filter').value;
+    const inr = document.getElementById('ifilter').value;
     return subscribers.filter(s => {
       if (f && s.status !== f) return false;
+      if (inr && !(s.interests || []).includes(inr)) return false;
       if (q && ![s.name, s.email].join(' ').toLowerCase().includes(q)) return false;
       return true;
     });
@@ -193,19 +202,23 @@
     const list = filtered();
     const el = document.getElementById('list');
     if (!list.length) { el.innerHTML = '<div class="empty">No subscribers match.</div>'; return; }
-    el.innerHTML = list.map(s =>
-      '<div class="row">' +
-        '<div class="main"><div class="nm">' + (esc(s.name) || '<span style="color:#9aa39c">(no name)</span>') + '</div>' +
-        '<div class="em">' + esc(s.email) + '</div></div>' +
+    el.innerHTML = list.map(s => {
+      const interests = (s.interests || []).map(i =>
+        '<span class="ichip' + (/landcare/i.test(i) ? ' lc' : '') + '">' + esc(i) + '</span>').join('');
+      const contact = [s.email, s.phone].filter(Boolean).map(esc).join(' · ');
+      return '<div class="row">' +
+        '<div class="main"><div class="nm">' + (esc(s.name) || '<span style="color:#9aa39c">(no name)</span>') + (s.isVolunteer ? ' <span class="chip vol">volunteer</span>' : '') + '</div>' +
+        '<div class="em">' + contact + '</div>' +
+        (interests ? '<div class="ichips">' + interests + '</div>' : '') + '</div>' +
         '<span class="since">' + (s.since ? fmtDate(s.since) : '') + '</span>' +
         statusChip(s.status) +
-      '</div>'
-    ).join('');
+      '</div>';
+    }).join('');
   }
 
   function exportCsv() {
-    const rows = [['Name', 'Email', 'Status', 'Since']].concat(
-      filtered().map(s => [s.name, s.email, s.status, s.since ? fmtDate(s.since) : ''])
+    const rows = [['Name', 'Email', 'Phone', 'Status', 'Interests', 'Since']].concat(
+      filtered().map(s => [s.name, s.email, s.phone, s.status, (s.interests || []).join('; '), s.since ? fmtDate(s.since) : ''])
     );
     const csv = rows.map(r => r.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(',')).join('\r\n');
     const a = document.createElement('a');
