@@ -1116,9 +1116,9 @@
       if (v.interested) {
         const g = (v.groups && v.groups[0]) || {};
         actions =
-          (v.email ? '<button class="link-btn" onclick="inviteLead(\'' + v.email + '\',\'' + g.slug + '\')">Invite</button> ' : '') +
-          '<button class="link-btn" onclick="addLead(\'' + v.email + '\',\'' + g.slug + '\')">Add</button> ' +
-          '<button class="link-btn danger" onclick="dismissLead(\'' + v.email + '\',\'' + g.slug + '\')">Remove</button>';
+          (v.email ? '<button class="link-btn" onclick="inviteLead(' + jsArg(v.email) + ',' + jsArg(g.slug) + ')">Invite</button> ' : '') +
+          '<button class="link-btn" onclick="addLead(' + jsArg(v.email) + ',' + jsArg(g.slug) + ')">Add</button> ' +
+          '<button class="link-btn danger" onclick="dismissLead(' + jsArg(v.email) + ',' + jsArg(g.slug) + ')">Remove</button>';
       } else if (v.inApp && !v.notMigrated) {
         actions = v.status === 'archived'
           ? '<button class="link-btn" onclick="setVolStatus(\'' + v.id + '\', \'active\')">Restore</button>'
@@ -1228,6 +1228,9 @@
   }
 
   function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+  // Safe single-quoted JS string literal for use INSIDE a double-quoted onclick="" attribute
+  // (escapes the JS-string context AND the HTML-attribute context). Returns with the quotes.
+  function jsArg(s) { return "'" + String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + "'"; }
 </script>
 </body>
 </html>

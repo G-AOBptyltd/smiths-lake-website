@@ -7,7 +7,7 @@
  * (an emergency coordinator manages the whole emergency module for the village).
  */
 
-import { requireRole } from './_auth.js';
+import { requireRole, hasRole } from './_auth.js';
 import { getVillageRecord } from './_villages.js';
 
 const NOTION_VERSION = '2022-06-28';
@@ -77,7 +77,7 @@ export const handler = async (event, context) => {
     } while (cursor);
 
     const cards = results.map(parseEmergencyCard).sort((a, b) => a.title.localeCompare(b.title));
-    return resp(200, { cards, isAdmin: auth.user ? true : false });
+    return resp(200, { cards, isAdmin: hasRole(auth.user, { village, anyOf: ['admin'] }) });
   } catch (err) {
     return resp(502, { error: err.message });
   }

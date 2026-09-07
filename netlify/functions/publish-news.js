@@ -27,7 +27,7 @@ export const handler = async (event, context) => {
 
   // Publishing rebuilds the live site — gate it to the village's admins/stewards
   // (server-side, via the verified Identity JWT). Prevents anonymous rebuild abuse.
-  const auth = requireRole(context, { village, anyOf: ['admin', 'steward'] });
+  const auth = requireRole(context, { village, anyOf: ['admin', 'steward', 'emergency'] });
   if (!auth.ok) {
     return { statusCode: auth.status, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ error: auth.error }) };
   }
