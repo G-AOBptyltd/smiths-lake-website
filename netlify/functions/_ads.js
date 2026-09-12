@@ -12,6 +12,9 @@
  * a preview of the sponsor strip; nothing is mounted publicly by default.
  */
 
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
+
 const NOTION_VERSION = '2022-06-28';
 
 export const ADS_DB_ID = process.env.NOTION_VF_ADS_DB_ID || '3bfd508adfc181a290c1cb82448000d0';

@@ -17,6 +17,8 @@ import {
   BOOKINGS_DB_ID, FACILITIES_DB_ID, notionHeaders, jsonResp, notProvisioned,
   rtChunks, queryAll, parseBooking, getFacility, overlaps, OCCUPYING,
 } from './_bookings.js';
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
 import { isModulePublic, getModuleRecipients } from './_villages.js';
 
 function esc(s) {

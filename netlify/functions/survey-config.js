@@ -8,6 +8,8 @@
  *   { survey: {...}, status: 'active' | 'closed' | 'scheduled' | 'not-found' }
  */
 
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
 import { getVillageStatus } from './_villages.js';
 
 const NOTION_VERSION = '2022-06-28';

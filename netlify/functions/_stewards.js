@@ -18,6 +18,8 @@
  *   scoped by the Village text column (same v1 model as Contributions/Members).
  */
 
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
 import { hasRole, requireRole } from './_auth.js';
 
 const NOTION_VERSION = '2022-06-28';

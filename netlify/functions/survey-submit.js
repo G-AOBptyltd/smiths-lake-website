@@ -9,6 +9,8 @@
  * Response: { success: true } | { error: '...' }
  */
 
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
 import { getVillageStatus } from './_villages.js';
 
 // Simple in-memory rate limiter (resets on function cold start)

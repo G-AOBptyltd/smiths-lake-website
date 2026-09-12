@@ -25,6 +25,8 @@ import {
   VOLUNTEERS_DB_ID, ACTIVITIES_DB_ID, queryAll as vfQueryAll,
   parseActivity, parseVolunteer, normPath,
 } from './_stewards.js';
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
 import { appHoursByGroup } from './_vledger.js';
 
 const NOTION_VERSION = '2022-06-28';
