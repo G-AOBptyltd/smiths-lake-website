@@ -1,0 +1,291 @@
+---
+// Community Resilience — public, read-only surface for the Village Resilience Profile.
+// ADDED 2026-09-12.
+//
+// WHY THIS PAGE EXISTS
+// --------------------
+// The resilience work was real but invisible to a visitor: the Community Profile
+// tool sat behind a "Village Profile" button on /emergency/ at a /demo/ URL, and
+// the village's actual track record (Resilience Canopy, MidCoast LEMC, SCSEO) was
+// filed as a single News card under Fire & Rescue. A partner agency looking for
+// resilience on this site found nothing labelled as such. This page is the
+// read-only surface that makes the work checkable.
+//
+// MULTI-TENANCY: the framing, the nine domains and the privacy model are
+// UNIVERSAL and render for every village. The dated track record is
+// Smiths-Lake-specific and is gated behind isDefaultVillage, matching the
+// pattern used by src/pages/about/index.astro so village-specific prose never
+// leaks onto another village's site (see commit 6ffb38c, village copy sweep).
+import Layout from '../../layouts/BaseLayout.astro';
+import SectionHero from '../../components/SectionHero.astro';
+import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
+import { village } from '../../config/village.js';
+
+const villageName = village.name;
+const isDefaultVillage = village.name === 'Smiths Lake';
+
+const sectionSettings = await fetchSectionSettingsBySlug('resilience');
+
+let sectionHeroManifest = {};
+try {
+  const fs = await import('fs');
+  const path = await import('path');
+  const manifestPath = path.resolve(process.cwd(), 'public/images/heroes/manifest.json');
+  if (fs.existsSync(manifestPath)) {
+    sectionHeroManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  }
+} catch (e) { /* manifest not yet generated */ }
+const heroImage = sectionHeroManifest['resilience'] || sectionHeroManifest['emergency'] || null;
+
+// The nine domains of the Village Resilience Profile — these mirror the section
+// headings in the Community Profile tool exactly, so the page never describes
+// something the tool does not actually collect.
+const domains = [
+  { n: '1', icon: '🏘️', title: 'Community overview and snapshot',
+    desc: 'Who is here — population, age profile, dwellings. The first thing any agency asks.' },
+  { n: '2', icon: '🗺️', title: 'Community map',
+    desc: 'The village drawn as responders would need to read it.' },
+  { n: '3', icon: '🛣️', title: 'Access, egress and isolation',
+    desc: 'How people get out, and what happens when they cannot.' },
+  { n: '4', icon: '⚡', title: 'Utilities and infrastructure dependencies',
+    desc: 'Power, water, telecommunications — what the village depends on and what fails first.' },
+  { n: '5', icon: '🔥', title: 'Hazards and risks',
+    desc: 'The hazards this village actually faces, named and rated locally.' },
+  { n: '6', icon: '🤝', title: 'People and vulnerabilities',
+    desc: 'Aggregate only — who may need support, counted without naming anyone.' },
+  { n: '7', icon: '🏛️', title: 'Community facility capability',
+    desc: 'What the hall and other facilities can actually do in an event.' },
+  { n: '8', icon: '🚜', title: 'Assets and equipment',
+    desc: 'The plant, vehicles and equipment the community can call on.' },
+  { n: '9', icon: '🧰', title: 'Community skills',
+    desc: 'The trades, medical and practical skills already living in the village.' },
+];
+
+// Verifiable, dated record — every item is drawn from the village's own
+// published Community Emergency Planning & Preparedness update.
+const milestones = [
+  { date: 'June 2026', title: 'Resilience Canopy Facilitation Program',
+    desc: 'Three residents completed the program in Port Macquarie.' },
+  { date: '2 July 2026', title: 'MidCoast Local Emergency Management workshop',
+    desc: 'Four residents attended at the Council chambers, contributing the village’s work to the region-wide community resilience exercise.' },
+  { date: '9 July 2026', title: 'Small Communities Supporting Each Other (SCSEO)',
+    desc: 'The village’s resilience work was presented to the SCSEO group, hosted by MidCoast Council.' },
+];
+---
+
+<Layout
+  title="Community Resilience"
+  description={`Community resilience at ${villageName} — the Village Resilience Profile, how it is built, and the work under way.`}
+>
+  <SectionHero
+    title={sectionSettings?.heroTitle || 'Community Resilience'}
+    subtitle={sectionSettings?.heroSubtitle || `Connected communities are resilient communities. How ${villageName} is building — and keeping current — a picture of itself that emergency services and councils can use.`}
+    accentHex={sectionSettings?.accentHex || '#12876A'}
+    backgroundImage={heroImage}
+    overlayOpacity={sectionSettings?.overlayOpacity ?? 50}
+  >
+    <p class="hero-brand">VillageFirst · Community Resilience</p>
+  </SectionHero>
+
+  <main class="res-wrap">
+
+    <!-- WHAT IT IS -->
+    <section class="res-intro">
+      <h2>A village that can describe itself is a village that can be helped</h2>
+      <p>
+        When a fire, flood or storm arrives, the questions come fast — how many people live here,
+        who needs help to leave, which road is open, what can the hall actually do. A village that
+        already has those answers written down is a far easier village to support.
+      </p>
+      <p>
+        The <strong>Village Resilience Profile</strong> is how {villageName} keeps those answers
+        current. It is built by the community itself, kept up to date by the community itself, and
+        written to be read by the people who turn up to help.
+      </p>
+    </section>
+
+    <!-- NINE DOMAINS -->
+    <section class="res-section">
+      <div class="res-head">
+        <h2>What the profile covers</h2>
+        <p class="res-sub">Nine domains, worked through section by section with the community.</p>
+      </div>
+      <div class="domain-grid">
+        {domains.map((d) => (
+          <article class="domain-card">
+            <div class="domain-top">
+              <span class="domain-icon">{d.icon}</span>
+              <span class="domain-num">{d.n}</span>
+            </div>
+            <h3>{d.title}</h3>
+            <p>{d.desc}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <!-- PRIVACY -->
+    <section class="res-section">
+      <div class="privacy-box">
+        <h2><span aria-hidden="true">🔒</span> Privacy — a deliberate two-tier model</h2>
+        <p>
+          A community profile is only useful if people are willing to fill it in. That means being
+          explicit about what is recorded and what is not.
+        </p>
+        <div class="tier-grid">
+          <div class="tier tier-1">
+            <h3>Tier 1 — shareable</h3>
+            <p>
+              Aggregate numbers, facilities, hazards and capability. <strong>No names, no addresses,
+              no personal details.</strong> This is the tier that may be shared with agencies, and it
+              is what generates the Community Profile Summary Sheet.
+            </p>
+          </div>
+          <div class="tier tier-2">
+            <h3>Tier 2 — held locally</h3>
+            <p>
+              Contact lists and support-network detail. These stay with the community and are
+              <strong>never entered into the profile</strong>.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRACK RECORD (default village only) -->
+    {isDefaultVillage && (
+      <section class="res-section">
+        <div class="res-head">
+          <h2>The work so far</h2>
+          <p class="res-sub">Residents of {villageName} building the village's emergency preparedness resources and plans.</p>
+        </div>
+        <ol class="timeline">
+          {milestones.map((m) => (
+            <li class="tl-item">
+              <div class="tl-date">{m.date}</div>
+              <div class="tl-body">
+                <h3>{m.title}</h3>
+                <p>{m.desc}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <p class="res-note">
+          The Community Profile tool and other resources are in development. Progress is reported
+          through <a href="/home/fire-rescue/">Community Emergency Planning &amp; Preparedness</a>.
+        </p>
+      </section>
+    )}
+
+    <!-- LINKS -->
+    <section class="res-section">
+      <div class="cta-grid">
+        <a class="cta-card cta-primary" href="/demo/community-profile-input.html">
+          <span class="cta-icon" aria-hidden="true">📋</span>
+          <span class="cta-text">
+            <strong>See the Community Profile tool</strong>
+            <em>The nine domains as a working form, with a summary sheet that builds itself. Demonstration prototype.</em>
+          </span>
+        </a>
+        <a class="cta-card" href="/emergency/">
+          <span class="cta-icon" aria-hidden="true">🚨</span>
+          <span class="cta-text">
+            <strong>Emergency &amp; Safety</strong>
+            <em>Contacts, evacuation and safety information for {villageName}.</em>
+          </span>
+        </a>
+      </div>
+    </section>
+
+  </main>
+</Layout>
+
+<style>
+  .hero-brand {
+    margin-top: 1.25rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  .res-wrap { max-width: 1100px; margin: 0 auto; padding: 0 1.25rem 4rem; }
+
+  .res-intro { padding: 3rem 0 1rem; max-width: 780px; }
+  .res-intro h2 { font-size: 1.7rem; line-height: 1.25; margin-bottom: 1rem; color: #1B365D; }
+  .res-intro p { font-size: 1.02rem; line-height: 1.7; color: #3c4a57; margin-bottom: 0.9rem; }
+
+  .res-section { padding: 2.25rem 0; }
+  .res-head { margin-bottom: 1.5rem; }
+  .res-head h2 { font-size: 1.45rem; color: #1B365D; margin-bottom: 0.35rem; }
+  .res-sub { color: #5c6b73; font-size: 0.97rem; }
+
+  .domain-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+  .domain-card {
+    background: #fff;
+    border: 1px solid #e3e8ee;
+    border-top: 3px solid #12876A;
+    border-radius: 10px;
+    padding: 1.1rem 1.15rem;
+  }
+  .domain-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+  .domain-icon { font-size: 1.4rem; line-height: 1; }
+  .domain-num {
+    font-size: 0.72rem; font-weight: 800; color: #12876A;
+    background: #e8f5f0; border-radius: 999px; padding: 2px 9px;
+  }
+  .domain-card h3 { font-size: 0.98rem; color: #1B365D; margin-bottom: 0.35rem; line-height: 1.3; }
+  .domain-card p { font-size: 0.88rem; color: #55636f; line-height: 1.55; }
+
+  .privacy-box {
+    background: #f4f9f7;
+    border: 1px solid #cfe6dd;
+    border-left: 4px solid #12876A;
+    border-radius: 10px;
+    padding: 1.6rem 1.75rem;
+  }
+  .privacy-box h2 { font-size: 1.3rem; color: #0f4c3a; margin-bottom: 0.6rem; }
+  .privacy-box > p { color: #3c4a57; line-height: 1.65; margin-bottom: 1.1rem; max-width: 720px; }
+  .tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+  .tier { background: #fff; border: 1px solid #d8e6e0; border-radius: 8px; padding: 1.05rem 1.15rem; }
+  .tier h3 { font-size: 0.98rem; margin-bottom: 0.4rem; }
+  .tier-1 h3 { color: #0f4c3a; }
+  .tier-2 h3 { color: #7a4b0b; }
+  .tier-2 { border-color: #f0ddbc; background: #fffdf8; }
+  .tier p { font-size: 0.9rem; line-height: 1.6; color: #4a5866; }
+
+  .timeline { list-style: none; margin: 0; padding: 0; border-left: 2px solid #d8e6e0; }
+  .tl-item { position: relative; padding: 0 0 1.5rem 1.5rem; }
+  .tl-item::before {
+    content: ''; position: absolute; left: -7px; top: 6px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #12876A; border: 2px solid #fff;
+  }
+  .tl-date { font-size: 0.78rem; font-weight: 700; color: #12876A; text-transform: uppercase; letter-spacing: 0.6px; }
+  .tl-body h3 { font-size: 1rem; color: #1B365D; margin: 0.15rem 0 0.25rem; }
+  .tl-body p { font-size: 0.92rem; color: #55636f; line-height: 1.6; }
+  .res-note { margin-top: 0.75rem; font-size: 0.9rem; color: #5c6b73; }
+  .res-note a { color: #12876A; }
+
+  .cta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+  .cta-card {
+    display: flex; gap: 0.9rem; align-items: flex-start;
+    background: #fff; border: 1px solid #e3e8ee; border-radius: 10px;
+    padding: 1.15rem 1.25rem; text-decoration: none; transition: border-color .15s, transform .15s;
+  }
+  .cta-card:hover { border-color: #12876A; transform: translateY(-2px); }
+  .cta-primary { border-color: #12876A; background: #f4f9f7; }
+  .cta-icon { font-size: 1.5rem; line-height: 1; }
+  .cta-text strong { display: block; color: #1B365D; font-size: 1rem; margin-bottom: 0.2rem; }
+  .cta-text em { font-style: normal; display: block; color: #55636f; font-size: 0.87rem; line-height: 1.55; }
+
+  @media (max-width: 640px) {
+    .res-intro h2 { font-size: 1.4rem; }
+    .privacy-box { padding: 1.2rem 1.1rem; }
+  }
+</style>
