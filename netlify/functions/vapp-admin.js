@@ -17,11 +17,15 @@
  * the page shows a friendly "connect me" notice.
  *
  * GET  /api/vapp-admin?village=Smiths Lake
- *        → { configured, pending, rsvps, onsite, joiners, scope }
+ *        → { configured, pending, decided, totals, rsvps, onsite, joiners, scope }
+ *        `decided` is the recent approve/reject history with who decided and
+ *        when — without it a decision disappeared the moment it was made.
  * POST /api/vapp-admin  { village, action:'approve'|'reject', id, hours? }
+ *        Works on an already-decided row too, so a decision can be changed.
  */
 
 import { normPath, resolveScope, jsonResp } from './_stewards.js';
+import { findAppVolunteer } from './_vapp.js';
 
 const SUPA_URL = process.env.VAPP_SUPABASE_URL;
 const SUPA_KEY = process.env.VAPP_SUPABASE_SERVICE_KEY;
@@ -36,8 +40,12 @@ function slugOfPath(p) { return normPath(p).split('/').pop(); }
 function safeBody(event) { try { return event.body ? JSON.parse(event.body) : {}; } catch (_) { return {}; } }
 function asArr(res) { return Array.isArray(res.data) ? res.data : []; }
 function nameOf(row) {
-  const v = row.volunteers;
-  return v ? `${v.first_name || ''} ${v.last_name || ''}`.trim() : 'A volunteer';
+  // `volunteer` is the aliased embed used for hours (two FKs to volunteers, so
+  // each must name its constraint); `volunteers` is the plain one used by
+  // rsvps/attendance, which have only one.
+  const v = row.volunteer || row.volunteers;
+  const n = v ? `${v.first_name || ''} ${v.last_name || ''}`.trim() : '';
+  return n || 'A volunteer';
 }
 
 async function supa(path, opts = {}) {
@@ -62,7 +70,7 @@ export const handler = async (event, context) => {
 
   if (!SUPA_URL || !SUPA_KEY) {
     return jsonResp(200, {
-      configured: false, pending: [], rsvps: [], onsite: [], joiners: [],
+      configured: false, pending: [], decided: [], totals: {}, rsvps: [], onsite: [], joiners: [],
       scope: { isAdmin: scope.isAdmin },
     });
   }
@@ -85,6 +93,12 @@ export const handler = async (event, context) => {
       status: action === 'approve' ? 'approved' : 'rejected',
       approved_at: new Date().toISOString(),
     };
+    // Record WHO decided, not just when. The app already does this; the
+    // console never did, so anything decided at a desk showed no decider.
+    // Only works if the signed-in admin/steward also has an app volunteer
+    // record — if not, approved_by stays null and the row still decides fine.
+    const decider = await findAppVolunteer({ email: scope.user?.email, village });
+    if (decider) patch.approved_by = decider.id;
     if (action === 'approve' && body.hours != null && body.hours !== '') {
       const n = Number(body.hours);
       if (!Number.isFinite(n) || n < 0) return jsonResp(400, { error: 'Bad hours' });
@@ -101,11 +115,27 @@ export const handler = async (event, context) => {
   try {
     const sel = 'volunteers(first_name,last_name)';
     const cutoff = new Date(Date.now() - 24 * 3.6e6).toISOString();
-    const [hRes, rRes, aRes, jRes] = await Promise.all([
-      supa(`hours?village_id=eq.${vslug}&status=eq.pending&select=id,hours,worked_on,activity_type,group_id,note,volunteer_id,${sel}&order=worked_on.desc`),
+    // ⚠️ `hours` has TWO foreign keys to volunteers — volunteer_id and
+    // approved_by (added by migration 0004). A bare `volunteers(...)` embed is
+    // therefore ambiguous, and PostgREST rejects the WHOLE request rather than
+    // picking one. asArr() then yields [] and the page cheerfully reports
+    // "nothing waiting" — which is why Hours to approve had been permanently
+    // empty here even with pending rows sitting in the table. Both embeds must
+    // name their constraint. rsvps/attendance have a single FK, so `sel` is
+    // still fine for those.
+    const whoSel = 'volunteer:volunteers!hours_volunteer_id_fkey(first_name,last_name)';
+    const hoursSel = `id,hours,worked_on,activity_type,group_id,note,volunteer_id,${whoSel}`;
+    // `decided` is the audit trail: once hours were approved or rejected they
+    // vanished from every screen, so nobody could check what had been waved
+    // through, spot a mistake, or answer "did you approve mine?".
+    const decidedSel = `${hoursSel},status,approved_at,`
+      + 'decided_by:volunteers!hours_approved_by_fkey(first_name,last_name)';
+    const [hRes, rRes, aRes, jRes, dRes] = await Promise.all([
+      supa(`hours?village_id=eq.${vslug}&status=eq.pending&select=${hoursSel}&order=worked_on.desc`),
       supa(`rsvps?village_id=eq.${vslug}&status=eq.going&select=id,activity_id,group_id,volunteer_id,${sel}`),
       supa(`attendance?village_id=eq.${vslug}&signed_in_at=gte.${cutoff}&select=id,activity_id,group_id,signed_in_at,signed_out_at,volunteer_id,${sel}&order=signed_in_at.desc`),
       supa(`volunteers?village_id=eq.${vslug}&select=id,first_name,last_name,group_id,status,joined_at&order=joined_at.desc&limit=30`),
+      supa(`hours?village_id=eq.${vslug}&status=in.(approved,rejected)&select=${decidedSel}&order=approved_at.desc.nullslast&limit=100`),
     ]);
     const pending = asArr(hRes).filter((r) => inScope(r.group_id)).map((r) => ({
       id: r.id, name: nameOf(r), hours: r.hours, worked_on: r.worked_on,
@@ -123,8 +153,23 @@ export const handler = async (event, context) => {
       id: r.id, name: `${r.first_name || ''} ${r.last_name || ''}`.trim(),
       group_id: r.group_id, status: r.status, joined_at: r.joined_at,
     }));
+    const decided = asArr(dRes).filter((r) => inScope(r.group_id)).map((r) => ({
+      id: r.id, name: nameOf(r), hours: r.hours, worked_on: r.worked_on,
+      activity: r.activity_type, group_id: r.group_id, note: r.note,
+      status: r.status, decidedAt: r.approved_at,
+      decidedBy: r.decided_by
+        ? `${r.decided_by.first_name || ''} ${r.decided_by.last_name || ''}`.trim()
+        : null,
+    }));
+    const totals = decided.reduce((t, r) => {
+      if (r.status === 'approved') { t.approvedCount += 1; t.approvedHours += Number(r.hours) || 0; }
+      else t.rejectedCount += 1;
+      return t;
+    }, { approvedCount: 0, approvedHours: 0, rejectedCount: 0 });
+    totals.approvedHours = Math.round(totals.approvedHours * 100) / 100;
+
     return jsonResp(200, {
-      configured: true, pending, rsvps, onsite, joiners,
+      configured: true, pending, rsvps, onsite, joiners, decided, totals,
       scope: { isAdmin: scope.isAdmin, cards: scope.cards },
     });
   } catch (err) {

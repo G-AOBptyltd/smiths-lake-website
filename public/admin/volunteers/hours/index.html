@@ -44,6 +44,8 @@
   .notice { background:#fff8e6; border:1px solid #f0d69a; border-radius:12px; padding:14px 16px; color:#5a4300; }
   .notice code { background:#fff; border:1px solid #e7dcae; border-radius:6px; padding:1px 6px; }
   .err { color:var(--err); font-size:13.5px; }
+  .toolbar-mini { display:flex; gap:8px; align-items:center; margin:8px 0 10px; flex-wrap:wrap; }
+  .toolbar-mini select, .toolbar-mini input { border:1px solid #d1d5db; border-radius:7px; padding:6px 9px; font-size:12.5px; font-family:inherit; background:#fff; }
   .grp-list { color:var(--muted); font-size:13px; }
 </style>
 </head>
@@ -81,6 +83,20 @@
       </section>
 
       <section class="card">
+        <h2>Already decided <span id="dc"></span></h2>
+        <p class="hint" id="dtotals"></p>
+        <div class="toolbar-mini">
+          <select id="dfilter" onchange="renderDecided()">
+            <option value="">Approved &amp; rejected</option>
+            <option value="approved">Approved only</option>
+            <option value="rejected">Rejected only</option>
+          </select>
+          <input type="search" id="dsearch" placeholder="Search a name…" oninput="renderDecided()" />
+        </div>
+        <div id="decided"></div>
+      </section>
+
+      <section class="card">
         <h2>On site (last 24 h) <span id="oc"></span></h2>
         <div id="onsite"></div>
       </section>
@@ -103,6 +119,7 @@
 
 <script>
   let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let decidedRows = [], decidedTotals = {};   // approve/reject history
   let currentUser = null;
 
   let recovering = false;
@@ -131,6 +148,7 @@
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
   const fmtTime = iso => { try { return new Date(iso).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }); } catch (_) { return ''; } }
+  const fmtDate = iso => { try { return new Date(iso).toLocaleString([], { day:'numeric', month:'short', hour:'numeric', minute:'2-digit' }); } catch (_) { return ''; } }
   const fmtWhen = iso => { try { return new Date(iso).toLocaleDateString([], { day:'numeric', month:'short' }); } catch (_) { return iso; } }
 
   async function boot() {
@@ -157,6 +175,9 @@
     document.getElementById('content').style.display = '';
 
     renderPending(d.pending || []);
+    decidedRows = d.decided || [];
+    decidedTotals = d.totals || {};
+    renderDecided();
     renderOnsite(d.onsite || []);
     renderRsvps(d.rsvps || []);
     renderJoiners(d.joiners || []);
@@ -185,6 +206,41 @@
         </div>
       </div>`).join('');
   }
+  // What's already been decided. Approving used to make a row vanish with no
+  // trace, so there was no way to check a decision, spot a mistake, or answer
+  // "did you approve mine?". A decision can be changed from here — the same
+  // endpoint accepts an already-decided row.
+  function renderDecided() {
+    const want = document.getElementById('dfilter').value;
+    const q = document.getElementById('dsearch').value.trim().toLowerCase();
+    const list = decidedRows.filter(h =>
+      (!want || h.status === want) && (!q || (h.name || '').toLowerCase().includes(q)));
+    count('dc', list.length);
+    const t = decidedTotals || {};
+    document.getElementById('dtotals').textContent =
+      (t.approvedCount || 0) + ' approved (' + (t.approvedHours || 0) + ' h counting toward grants) · '
+      + (t.rejectedCount || 0) + ' rejected. Most recent first.';
+    const el = document.getElementById('decided');
+    if (!list.length) { el.innerHTML = '<div class="empty">Nothing decided yet.</div>'; return; }
+    el.innerHTML = list.map(h => {
+      const approved = h.status === 'approved';
+      const by = h.decidedBy ? ' by ' + esc(h.decidedBy) : '';
+      const when = h.decidedAt ? fmtDate(h.decidedAt) : 'date not recorded';
+      const flip = approved ? 'reject' : 'approve';
+      return `
+      <div class="row">
+        <div class="main">
+          <div class="who">${esc(h.name)} <span class="chip ${approved ? 'on' : ''}">${esc(h.status)}</span></div>
+          <div class="meta">${esc(h.hours)} h · ${esc(h.activity || h.group_id || '')} · worked ${esc(h.worked_on)}</div>
+          <div class="meta">${esc(when)}${by}</div>
+        </div>
+        <div class="acts">
+          <button class="mini ${approved ? 'no' : 'go'}" onclick="decide('${esc(h.id)}','${flip}',this)">Change to ${flip}ed</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
   function renderOnsite(list) {
     count('oc', list.length);
     const el = document.getElementById('onsite');
@@ -235,11 +291,10 @@
       const r = await fetch('/api/vapp-admin', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(body) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'failed');
-      row.remove();
-      const el = document.getElementById('pending');
-      const left = el.querySelectorAll('.row').length;
-      count('pc', left);
-      if (!left) el.innerHTML = '<div class="empty">Nothing waiting — all caught up.</div>';
+      // Reload rather than removing the row by hand: a decision now moves
+      // between two lists (and can be changed back), so DOM surgery on one of
+      // them would leave the other stale.
+      await load();
     } catch (e) {
       row.querySelectorAll('button').forEach(b => b.disabled = false);
       alert('Could not save: ' + e.message);
