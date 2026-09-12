@@ -313,6 +313,14 @@
   to = "/.netlify/functions/volunteer-activity"
   status = 200
 
+# Volunteer hours ledger — approved hours joined to projects + grants.
+# Every /api/* path on this site is declared explicitly; a function without a
+# redirect here is simply 404, with no build error to warn you.
+[[redirects]]
+  from = "/api/volunteer-ledger"
+  to = "/.netlify/functions/volunteer-ledger"
+  status = 200
+
 [[redirects]]
   from = "/api/steward-admin"
   to = "/.netlify/functions/steward-admin"
