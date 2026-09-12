@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Volunteer hours ledger · VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<style>
+  :root { --ink:#1f2a24; --muted:#6b746d; --line:#e2e7e2; --bg:#f5f7f4; --accent:#2f8f5b; --err:#b3261e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .auth-screen { max-width:460px; margin:12vh auto; text-align:center; padding:24px; }
+  .auth-screen h1 { font-family:Georgia,serif; }
+  .btn { border:none; border-radius:10px; padding:11px 18px; font:600 15px inherit; cursor:pointer; background:var(--accent); color:#fff; }
+  .top { display:flex; align-items:center; gap:12px; background:#12603a; color:#fff; padding:12px 18px; }
+  .top .t { font-weight:700; } .top .sp { flex:1; }
+  .top a, .top button { color:#fff; }
+  .top .out { background:rgba(255,255,255,.15); border:none; border-radius:8px; padding:7px 12px; font:600 13px inherit; cursor:pointer; }
+  .wrap { max-width:900px; margin:0 auto; padding:20px 16px 64px; }
+  h1.page { font-family:Georgia,serif; font-size:24px; margin:8px 0 2px; }
+  .lead { color:var(--muted); margin:0 0 16px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin:14px 0; }
+  .card h2 { font-size:16px; margin:0 0 4px; }
+  .card .hint { color:var(--muted); font-size:13px; margin:0 0 10px; }
+  .stats { display:flex; gap:10px; flex-wrap:wrap; margin:12px 0 4px; }
+  .stat { flex:1 1 150px; background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+  .stat b { display:block; font-size:22px; font-family:Georgia,serif; }
+  .stat span { color:var(--muted); font-size:12px; }
+  .toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0 2px; }
+  .toolbar label { font-size:12px; color:var(--muted); font-weight:600; }
+  .toolbar input { border:1px solid #d1d5db; border-radius:7px; padding:6px 9px; font:inherit; font-size:12.5px; background:#fff; }
+  .proj { border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-top:10px; }
+  .proj .h { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .proj .n { font-weight:700; font-size:15px; }
+  .proj .v { margin-left:auto; font-family:Georgia,serif; font-size:19px; }
+  .proj .meta { color:var(--muted); font-size:12.5px; margin-top:2px; }
+  .gline { display:flex; gap:10px; align-items:baseline; border-top:1px dashed var(--line); padding:6px 0 0; margin-top:6px; font-size:13px; }
+  .gline .gn { flex:1; }
+  .gline .gh { color:var(--muted); font-size:12.5px; }
+  .chip { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; padding:3px 8px; border-radius:20px; border:1px solid var(--line); color:var(--muted); background:#fff; }
+  .chip.on { color:#1c6b3a; border-color:#b7e0c4; background:#eafaf0; }
+  .chip.warn { color:#8a5a00; border-color:#f0d69a; background:#fff8e6; }
+  .empty { color:var(--muted); font-size:13.5px; }
+  .notice { background:#fff8e6; border:1px solid #f0d69a; border-radius:12px; padding:14px 16px; color:#5a4300; margin:14px 0; }
+  .notice.bad { background:#fdeceb; border-color:#f3c6c2; color:#7a1c15; }
+  .err { color:var(--err); font-size:13.5px; }
+  a.plain { color:var(--accent); font-weight:600; text-decoration:none; }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:3rem;">📒</div>
+  <h1>Volunteer hours ledger</h1>
+  <p>Approved volunteer hours, by project and grant. Sign in to continue.</p>
+  <button class="btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="top">
+    <div class="t">🏘️ <span id="top-village">Smiths Lake</span></div>
+    <div class="sp"></div>
+    <a href="/admin/volunteers/" style="font-size:13px;">← Volunteer hub</a>
+    <button class="out" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+  <div class="wrap">
+    <h1 class="page">Volunteer hours ledger</h1>
+    <p class="lead" id="lead">
+      Every <strong>approved</strong> volunteer hour, matched to the project it belongs to and valued
+      as in-kind co-contribution. Combines hours logged in the app with working bees logged here.
+    </p>
+
+    <div class="toolbar">
+      <label for="from">From</label><input type="date" id="from" onchange="load()" />
+      <label for="to">To</label><input type="date" id="to" onchange="load()" />
+      <button class="btn" style="padding:7px 13px;font-size:13px;" onclick="clearRange()">All time</button>
+      <a class="plain" id="csv" href="#" style="margin-left:auto;">⬇ Export CSV for acquittal</a>
+    </div>
+
+    <div id="content" style="display:none;">
+      <div class="stats" id="stats"></div>
+
+      <div id="warnings"></div>
+
+      <section class="card">
+        <h2>By project</h2>
+        <p class="hint">Hours reach a project through the volunteer groups linked to it on the Projects page. Value = hours × that project's volunteer hour rate.</p>
+        <div id="projects"></div>
+      </section>
+
+      <section class="card">
+        <h2>Not linked to any project <span id="uc"></span></h2>
+        <p class="hint">Real volunteer effort that no project claims — so no grant can currently evidence it. Link the group to a project to bring it in.</p>
+        <div id="unlinked"></div>
+      </section>
+    </div>
+    <p class="err" id="fatal"></p>
+  </div>
+</div>
+
+<script>
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let currentUser = null;
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+  const money = n => '$' + (Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 });
+  const hrs = n => (Math.round((Number(n) || 0) * 100) / 100).toLocaleString();
+
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; boot(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); boot(); });
+  netlifyIdentity.on('logout', () => { currentUser = null; location.reload(); });
+
+  async function authHeaders() {
+    const token = currentUser ? await currentUser.jwt() : null;
+    return token ? { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }
+                 : { 'Content-Type': 'application/json' };
+  }
+
+  function boot() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = '';
+    document.getElementById('top-village').textContent = VILLAGE;
+    load();
+  }
+
+  function rangeQS() {
+    const f = document.getElementById('from').value;
+    const t = document.getElementById('to').value;
+    return (f ? '&from=' + f : '') + (t ? '&to=' + t : '');
+  }
+  function clearRange() {
+    document.getElementById('from').value = '';
+    document.getElementById('to').value = '';
+    load();
+  }
+
+  async function load() {
+    const fatal = document.getElementById('fatal');
+    fatal.textContent = '';
+    const qs = 'village=' + encodeURIComponent(VILLAGE) + rangeQS();
+    document.getElementById('csv').href = '/api/volunteer-ledger?' + qs + '&format=csv';
+    let d;
+    try {
+      const r = await fetch('/api/volunteer-ledger?' + qs, { headers: await authHeaders() });
+      d = await r.json();
+      if (!r.ok) { fatal.textContent = d.error || 'Could not load the ledger.'; return; }
+    } catch (e) { fatal.textContent = 'Could not load the ledger — please try again.'; return; }
+
+    document.getElementById('content').style.display = '';
+    render(d);
+  }
+
+  function render(d) {
+    const t = d.totals || {};
+    document.getElementById('stats').innerHTML =
+      stat(hrs(t.totalHours) + ' h', 'Approved hours') +
+      stat(money(t.valuedTotal), 'In-kind value') +
+      stat(hrs(t.appHours) + ' h', 'From the app') +
+      stat(hrs(t.activityHours) + ' h', 'From working bees') +
+      stat(hrs(t.unlinkedHours) + ' h', 'Not linked to a project');
+
+    // Things that would quietly distort a grant claim get said out loud.
+    const warn = [];
+    if ((t.projectsMissingRate || []).length) {
+      warn.push('<div class="notice"><strong>No hour rate set</strong> on: '
+        + t.projectsMissingRate.map(esc).join(', ')
+        + '. Their hours are counted but valued at $0 — set a <em>Volunteer Hour Rate</em> on the project to value them.</div>');
+    }
+    if ((d.sharedGroups || []).length) {
+      warn.push('<div class="notice bad"><strong>Shared between projects.</strong> '
+        + d.sharedGroups.map(s => esc(nameOfGroup(d, s.groupKey)) + ' → ' + s.projects.map(esc).join(' + ')).join('; ')
+        + '. These hours are counted under each project — do not claim the same hour against two grants.</div>');
+    }
+    document.getElementById('warnings').innerHTML = warn.join('');
+
+    const projects = (d.projects || []).filter(p => p.totalHours > 0)
+      .sort((a, b) => b.value - a.value || b.totalHours - a.totalHours);
+    const pe = document.getElementById('projects');
+    pe.innerHTML = projects.length ? projects.map(p => projectCard(d, p)).join('')
+      : '<div class="empty">No approved hours are linked to a project yet.</div>';
+
+    const un = d.unlinked || [];
+    document.getElementById('uc').textContent = un.length ? '(' + un.length + ')' : '';
+    document.getElementById('unlinked').innerHTML = un.length ? un.map(r => `
+      <div class="gline">
+        <span class="gn">${esc(nameOfGroup(d, r.groupKey))}</span>
+        <span class="gh">${hrs(r.appHours)} h app · ${hrs(r.activityHours)} h working bees</span>
+        <strong>${hrs(r.totalHours)} h</strong>
+      </div>`).join('')
+      : '<div class="empty">Every group with hours is linked to a project. ✓</div>';
+  }
+
+  function nameOfGroup(d, key) { return (d.groupTitles || {})[key] || key; }
+  function stat(big, label) { return '<div class="stat"><b>' + esc(big) + '</b><span>' + esc(label) + '</span></div>'; }
+
+  function projectCard(d, p) {
+    const grants = (p.grants || []).map(g =>
+      '<span class="chip ' + (g.status === 'Successful' ? 'on' : '') + '">'
+      + esc(g.funder || g.name) + ' · ' + esc(g.status) + '</span>').join(' ');
+    const rateNote = p.noRateSet ? '<span class="chip warn">no hour rate</span>'
+      : (p.rateFromVillageDefault ? '<span class="chip warn">village default rate</span>' : '');
+    return `
+      <div class="proj">
+        <div class="h">
+          <span class="n">${esc(p.name)}</span>
+          <span class="chip">${esc(p.status)}</span>
+          ${rateNote}
+          <span class="v">${esc(money(p.value))}</span>
+        </div>
+        <div class="meta">
+          ${hrs(p.totalHours)} h × ${esc(money(p.hourRate))}/h
+          ${p.grantProgram ? ' · grant program: ' + esc(p.grantProgram) : ''}
+          ${grants ? '<br>' + grants : ''}
+        </div>
+        ${p.groups.map(g => `
+          <div class="gline">
+            <span class="gn">${esc(nameOfGroup(d, g.groupKey))}</span>
+            <span class="gh">${g.noHoursYet ? 'no hours yet'
+              : hrs(g.appHours) + ' h app · ' + hrs(g.activityHours) + ' h working bees'}</span>
+            <strong>${hrs(g.totalHours)} h</strong>
+          </div>`).join('')}
+      </div>`;
+  }
+</script>
+</body>
+</html>
