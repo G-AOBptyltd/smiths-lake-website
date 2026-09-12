@@ -15,16 +15,18 @@
  *   format=csv returns the per-project x per-group rows as a CSV attachment,
  *   which is the shape a grant acquittal actually wants.
  *
- * Auth: village admin / pm / treasurer — the people who answer to funders.
- * A steward is deliberately NOT given the whole-village money view; their own
- * group's hours are in the app and in /admin/volunteers/hours/.
+ * Auth: village admin / pm / treasurer see the whole village. A STEWARD may
+ * open it too but sees only the cards they are appointed to — their own
+ * group's hours, the project those hours feed and what they are worth. They
+ * never see another group's numbers or a village-wide total, so the scoping
+ * is done server-side and the response simply does not contain the rest.
  */
 
 import { requireRole } from './_auth.js';
 import {
   jsonResp, listGroups, PROJECTS_DB, queryAll, parseProject, grantsForProject,
 } from './_projects.js';
-import { ACTIVITIES_DB_ID, parseActivity } from './_stewards.js';
+import { ACTIVITIES_DB_ID, parseActivity, resolveScope, normPath } from './_stewards.js';
 import { ledgerByGroup, attachToProjects, groupKeyOfPath } from './_vledger.js';
 
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
@@ -39,8 +41,27 @@ export const handler = async (event, context) => {
   const params = event.queryStringParameters || {};
   const village = params.village || process.env.VILLAGE_NAME || 'Smiths Lake';
 
-  const auth = requireRole(context, { village, anyOf: ['admin', 'pm', 'treasurer'] });
-  if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
+  // Admin / PM / treasurer get the village. Anyone else falls through to the
+  // steward path, which resolves the cards they actually hold.
+  const priv = requireRole(context, { village, anyOf: ['admin', 'pm', 'treasurer'] });
+  let scope = { isAdmin: true, cards: null };
+  if (!priv.ok) {
+    const st = await resolveScope(context, village);
+    if (!st.ok) return jsonResp(st.status, { error: st.error });
+    scope = st;
+    if (!scope.isAdmin && !(scope.cards || []).length) {
+      return jsonResp(200, {
+        village, range: { from: null, to: null }, villageRate: 0, scopedToSteward: true,
+        totals: { totalHours: 0, appHours: 0, activityHours: 0, linkedHours: 0,
+          unlinkedHours: 0, valuedTotal: 0, projectsWithHours: 0, projectsMissingRate: [] },
+        projects: [], unlinked: [], sharedGroups: [], groupTitles: {},
+        note: 'You are not appointed to any groups yet.',
+      });
+    }
+  }
+  const mySlugs = scope.isAdmin ? null
+    : new Set((scope.cards || []).map((c) => normPath(c.path).split('/').pop()));
+  const mine = (key) => !mySlugs || mySlugs.has(key);
 
   const from = isDate(params.from) ? params.from : null;
   const to = isDate(params.to) ? params.to : null;
@@ -62,7 +83,26 @@ export const handler = async (event, context) => {
     const rows = await ledgerByGroup(village, { from, to }, activities);
 
     const projects = projectPages.map(parseProject).filter((p) => p.status !== 'Archived');
-    const { perProject, unlinked, sharedGroups } = attachToProjects(rows, projects, { villageRate });
+    const all = attachToProjects(rows, projects, { villageRate });
+
+    // A steward sees only their own cards. Filtering AFTER the full attach
+    // keeps the project↔group maths identical for everyone — we simply drop
+    // the rows that are not theirs, rather than computing a second, subtly
+    // different view that could disagree with the admin one.
+    let { perProject, unlinked, sharedGroups } = all;
+    let scopedRows = rows;
+    if (mySlugs) {
+      perProject = perProject
+        .map((p) => {
+          const groups = p.groups.filter((g) => mine(g.groupKey));
+          const hours = Math.round(groups.reduce((t, g) => t + (g.totalHours || 0), 0) * 100) / 100;
+          return { ...p, groups, totalHours: hours, value: Math.round(hours * p.hourRate * 100) / 100 };
+        })
+        .filter((p) => p.groups.length);
+      unlinked = unlinked.filter((r) => mine(r.groupKey));
+      sharedGroups = sharedGroups.filter((sg) => mine(sg.groupKey));
+      scopedRows = rows.filter((r) => mine(r.groupKey));
+    }
 
     // Human titles for the group slugs, so the ledger reads in card names
     // rather than in the app's internal keys.
@@ -83,9 +123,9 @@ export const handler = async (event, context) => {
     }
 
     const totals = {
-      totalHours: round2(rows.reduce((s, r) => s + r.totalHours, 0)),
-      appHours: round2(rows.reduce((s, r) => s + r.appHours, 0)),
-      activityHours: round2(rows.reduce((s, r) => s + r.activityHours, 0)),
+      totalHours: round2(scopedRows.reduce((s, r) => s + r.totalHours, 0)),
+      appHours: round2(scopedRows.reduce((s, r) => s + r.appHours, 0)),
+      activityHours: round2(scopedRows.reduce((s, r) => s + r.activityHours, 0)),
       linkedHours: round2(perProject.reduce((s, p) => s + p.totalHours, 0)),
       unlinkedHours: round2(unlinked.reduce((s, r) => s + r.totalHours, 0)),
       valuedTotal: round2(perProject.reduce((s, p) => s + p.value, 0)),
@@ -127,6 +167,8 @@ export const handler = async (event, context) => {
 
     return jsonResp(200, {
       village, range: { from, to }, villageRate,
+      scopedToSteward: !!mySlugs,
+      myGroups: mySlugs ? [...mySlugs] : null,
       totals, projects: perProject, unlinked, sharedGroups, groupTitles,
     });
   } catch (err) {

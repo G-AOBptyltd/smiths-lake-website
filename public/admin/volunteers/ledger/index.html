@@ -167,6 +167,13 @@
 
     // Things that would quietly distort a grant claim get said out loud.
     const warn = [];
+    if (d.scopedToSteward) {
+      warn.push('<div class="notice"><strong>Your groups only.</strong> '
+        + 'You are seeing the hours for the group(s) you steward'
+        + ((d.myGroups || []).length ? ' — ' + d.myGroups.map(k => esc(nameOfGroup(d, k))).join(', ') : '')
+        + '. Village-wide totals are not included.'
+        + (d.note ? ' ' + esc(d.note) : '') + '</div>');
+    }
     if ((t.projectsMissingRate || []).length) {
       warn.push('<div class="notice"><strong>No hour rate set</strong> on: '
         + t.projectsMissingRate.map(esc).join(', ')
