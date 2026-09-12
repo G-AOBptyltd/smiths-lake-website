@@ -143,6 +143,7 @@
       <button class="s-item" data-panel="activities" onclick="showPanel('activities')">🛠 Activities</button>
       <a class="s-item" href="/admin/volunteers/hours/">📲 App approvals</a>
       <button class="s-item" data-panel="stewards" id="nav-stewards" style="display:none;" onclick="showPanel('stewards')">🧭 Stewards</button>
+        <a class="s-item" href="/admin/volunteers/ledger/" style="display:block;text-decoration:none;">📒 Hours ledger ↗</a>
       <button class="s-item" data-panel="app-volunteers" id="nav-app-volunteers" style="display:none;" onclick="showPanel('app-volunteers')">🙋 Volunteers</button>
       <a class="s-item" href="/admin/volunteers/groups/" id="nav-signup-groups" style="display:none; text-decoration:none;">📋 Sign-up groups</a>
       <button class="s-item" data-panel="groups" id="nav-groups" style="display:none;" onclick="showPanel('groups')">🗂 Groups &amp; projects</button>
@@ -308,6 +309,7 @@
           </select>
           <input type="search" id="av-search" placeholder="Search name, email…" oninput="renderAppVolunteers()" />
           <a href="/admin/volunteers/matrix/" style="margin-left:auto;font-size:13px;color:#15795f;text-decoration:none;font-weight:600;white-space:nowrap;">🗂 Groups grid ↗</a>
+          <a href="/admin/volunteers/ledger/" style="font-size:13px;color:#15795f;text-decoration:none;font-weight:600;white-space:nowrap;">📒 Hours ledger ↗</a>
         </div>
         <div class="ledger" id="av-list"><div class="empty">Loading volunteers…</div></div>
       </div>

@@ -25,6 +25,7 @@ import {
   VOLUNTEERS_DB_ID, ACTIVITIES_DB_ID, queryAll as vfQueryAll,
   parseActivity, parseVolunteer, normPath,
 } from './_stewards.js';
+import { appHoursByGroup } from './_vledger.js';
 
 const NOTION_VERSION = '2022-06-28';
 
@@ -208,11 +209,19 @@ export async function grantsForProject(village, slug) {
 /**
  * Aggregate confirmed volunteer effort for a set of linked groups (cards).
  * Reads VF Activities (status Confirmed | Pushed) and VF Volunteers for the
- * village, matching by normalised card path. Fail-open to zeros.
+ * village, matching by normalised card path, AND the approved hours logged in
+ * the volunteer app.
+ *
+ * The app hours used to be missing entirely: every project exec number and
+ * grant co-contribution valuation was built from the Notion working-bee
+ * ledger alone, so a volunteer who tapped in and out on their phone and had
+ * their steward approve it contributed nothing to any project's figures.
+ * `appHoursByGroup` excludes rows mirrored FROM a Notion activity, so a
+ * working bee is not counted twice. Fail-open to zeros throughout.
  */
 export async function aggregateVolunteers(village, groups) {
   const paths = new Set((groups || []).map((g) => normPath(g.path)).filter(Boolean));
-  const empty = { totalHours: 0, activityCount: 0, volunteerCount: 0, byGroup: [] };
+  const empty = { totalHours: 0, activityHours: 0, appHours: 0, activityCount: 0, volunteerCount: 0, byGroup: [] };
   if (!paths.size || !ACTIVITIES_DB_ID) return empty;
   try {
     const [actRows, volRows] = await Promise.all([
@@ -224,19 +233,33 @@ export async function aggregateVolunteers(village, groups) {
     const vols = volRows.map(parseVolunteer)
       .filter((v) => (v.cards || []).some((c) => paths.has(normPath(c.path))));
 
+    // Approved app hours, keyed by the card path's last segment (the app's
+    // group_id). Kept as its own number per group so a grant acquittal can
+    // still say which hours came from a signed sheet and which from the app.
+    const appHours = await appHoursByGroup(village);
+    const appFor = (gp) => appHours.get(String(gp).split('/').pop() || '') || null;
+
     const byGroup = (groups || []).map((g) => {
       const gp = normPath(g.path);
       const ga = acts.filter((a) => normPath(a.cardPath) === gp);
+      const ah = appFor(gp);
+      const activityHours = Math.round(ga.reduce((s, a) => s + (a.totalHours || 0), 0) * 2) / 2;
       return {
         path: g.path,
         title: g.title || g.path,
-        hours: Math.round(ga.reduce((s, a) => s + (a.totalHours || 0), 0) * 2) / 2,
+        hours: Math.round((activityHours + (ah?.hours || 0)) * 100) / 100,
+        activityHours,
+        appHours: Math.round((ah?.hours || 0) * 100) / 100,
         activities: ga.length,
         volunteers: vols.filter((v) => (v.cards || []).some((c) => normPath(c.path) === gp)).length,
       };
     });
+    const totalActivityHours = Math.round(acts.reduce((s, a) => s + (a.totalHours || 0), 0) * 2) / 2;
+    const totalAppHours = byGroup.reduce((s, g) => s + g.appHours, 0);
     return {
-      totalHours: Math.round(acts.reduce((s, a) => s + (a.totalHours || 0), 0) * 2) / 2,
+      totalHours: Math.round((totalActivityHours + totalAppHours) * 100) / 100,
+      activityHours: totalActivityHours,
+      appHours: Math.round(totalAppHours * 100) / 100,
       activityCount: acts.length,
       volunteerCount: vols.length,
       byGroup,
