@@ -56,10 +56,15 @@ async function patchPage(pageId, properties) {
 function swapCards(cards, fromPath, toPath, toTitle) {
   const out = [];
   let changed = false;
-  for (const c of (cards || [])) {
-    const p = normPath(c?.path);
-    if (p === fromPath) { changed = true; c = { path: toPath, title: toTitle || c?.title }; }
-    if (!out.some((x) => normPath(x.path) === normPath(c.path))) out.push(c);
+  for (const card of (cards || [])) {
+    // Never reassign the loop binding — esbuild refuses to bundle an
+    // assignment to a const, and Netlify then ships the file unbundled,
+    // which fails at runtime as "Cannot use import statement outside a
+    // module". Build a new object instead.
+    const isTarget = normPath(card?.path) === fromPath;
+    const next = isTarget ? { path: toPath, title: toTitle || card?.title } : card;
+    if (isTarget) changed = true;
+    if (!out.some((x) => normPath(x.path) === normPath(next.path))) out.push(next);
     else changed = true;                       // collapsed a duplicate entry
   }
   return { cards: out, changed };
