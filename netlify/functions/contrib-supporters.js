@@ -13,6 +13,9 @@
  *     playfully WITHOUT publishing exact dollar figures.
  */
 
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
+
 const NOTION_VERSION = '2022-06-28';
 const CONTRIB_DB_ID = process.env.NOTION_CONTRIB_DB_ID || '6d182a0d4f0c42c2879f13753e355861';
 

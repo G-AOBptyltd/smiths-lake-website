@@ -7,6 +7,9 @@
  * Response: { surveys: [...] }
  */
 
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
+
 const NOTION_VERSION = '2022-06-28';
 const DB_ID = process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596';
 

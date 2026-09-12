@@ -26,6 +26,11 @@
  * assigned in Phase 2. This is safe because the email comes from the token.
  */
 
+// Rate-limit guard for api.notion.com. _auth.js does not call Notion itself,
+// but it is imported by 52 functions that do — making this the single most
+// effective place to hook it. Side-effect import; see the file.
+import './_notion-guard.js';
+
 export function getIdentityUser(context) {
   return context?.clientContext?.user || null;
 }

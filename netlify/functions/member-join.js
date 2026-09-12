@@ -22,6 +22,8 @@
  *   VF_RESEND_API_KEY / VF_PLEDGE_NOTIFY_TO / VF_PLEDGE_FROM
  */
 
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
 import { getModuleRecipients } from './_villages.js';
 
 const NOTION_VERSION = '2022-06-28';

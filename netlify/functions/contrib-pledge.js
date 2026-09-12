@@ -21,6 +21,8 @@
  *   Until these exist the pledge just saves silently. Email never blocks the pledge.
  */
 
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
 import { getModuleRecipients } from './_villages.js';
 
 const NOTION_VERSION = '2022-06-28';

@@ -9,6 +9,9 @@
  * year-by-year audit trail for AGMs and grant applications).
  */
 
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
+
 const NOTION_VERSION = '2022-06-28';
 export const MEMBERS_DB_ID = process.env.NOTION_MEMBERS_DB_ID || '494becca311c4d668a0f7f2750c08a74';
 

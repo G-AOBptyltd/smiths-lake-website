@@ -14,6 +14,9 @@
  * ticket sales arrive with each village's own Tyro merchant.
  */
 
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
+
 const NOTION_VERSION = '2022-06-28';
 
 export const EVENTS_DB_ID = process.env.NOTION_VF_EVENTS_DB_ID || '3bfd508adfc1814488d5f68e3f6e99b7';

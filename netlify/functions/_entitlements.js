@@ -16,6 +16,9 @@
  * the registry. Call requireEntitlement() AFTER requireRole() in an endpoint.
  */
 
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
+
 const NOTION_VERSION = '2022-06-28';
 const VILLAGES_DB_ID = process.env.NOTION_VF_VILLAGES_DB_ID || '2c6272ccd9174103a077087c5de250d0';
 

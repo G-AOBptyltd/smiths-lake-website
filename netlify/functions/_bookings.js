@@ -17,6 +17,9 @@
  * later as a "pay online" path.
  */
 
+// Rate-limit guard for api.notion.com. Side-effect import — see the file.
+import './_notion-guard.js';
+
 const NOTION_VERSION = '2022-06-28';
 
 // Fallbacks = the DBs provisioned under the Smiths Lake Community page (Aug 2026).
