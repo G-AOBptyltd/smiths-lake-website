@@ -107,7 +107,14 @@ export const handler = async (event, context) => {
     // Human titles for the group slugs, so the ledger reads in card names
     // rather than in the app's internal keys.
     const groupTitles = {};
-    for (const g of groups) groupTitles[groupKeyOfPath(g.path)] = g.title;
+    const groupPaths = {};
+    for (const g of groups) {
+      const k = groupKeyOfPath(g.path);
+      groupTitles[k] = g.title;
+      // The consolidation tool works in full card paths, not slugs, so the
+      // page needs both to offer a merge.
+      groupPaths[k] = g.path;
+    }
 
     // Grants hang off a project by slug, so an hour can be traced all the way
     // to the funder it is being claimed against. Only fetched for projects
@@ -169,7 +176,7 @@ export const handler = async (event, context) => {
       village, range: { from, to }, villageRate,
       scopedToSteward: !!mySlugs,
       myGroups: mySlugs ? [...mySlugs] : null,
-      totals, projects: perProject, unlinked, sharedGroups, groupTitles,
+      totals, projects: perProject, unlinked, sharedGroups, groupTitles, groupPaths,
     });
   } catch (err) {
     return jsonResp(502, { error: err.message });

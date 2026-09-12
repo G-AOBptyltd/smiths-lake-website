@@ -86,6 +86,13 @@
 
       <div id="warnings"></div>
 
+      <section class="card" id="dupcard" style="display:none;">
+        <h2>Duplicate groups</h2>
+        <p class="hint">The same group exists as two content cards, so its history is split in two and a project can only claim one half. Merging rewrites every reference — working bees, app hours, volunteers, stewards and project links — onto the card you keep.</p>
+        <div id="dupes"></div>
+        <p class="meta-line" id="dupmsg"></p>
+      </section>
+
       <section class="card">
         <h2>By project</h2>
         <p class="hint">Hours reach a project through the volunteer groups linked to it on the Projects page. Value = hours × that project's volunteer hour rate.</p>
@@ -157,6 +164,7 @@
 
   function render(d) {
     indexTitles(d);
+    renderDupes(d);
     const t = d.totals || {};
     document.getElementById('stats').innerHTML =
       stat(hrs(t.totalHours) + ' h', 'Approved hours') +
@@ -216,6 +224,73 @@
     }
     dupTitles = new Set([...seen.entries()].filter(([, n]) => n > 1).map(([t]) => t));
   }
+  // Same display name, two slugs = one group split across two content cards.
+  // Offer the merge here, where the damage is visible, rather than making it
+  // a thing you have to know to go and find.
+  let LEDGER = null;
+  function renderDupes(d) {
+    LEDGER = d;
+    const byTitle = new Map();
+    for (const [key, title] of Object.entries(d.groupTitles || {})) {
+      if (!byTitle.has(title)) byTitle.set(title, []);
+      byTitle.get(title).push(key);
+    }
+    const hoursOf = (key) => {
+      const inProj = (d.projects || []).flatMap(p => p.groups).find(g => g.groupKey === key);
+      const un = (d.unlinked || []).find(u => u.groupKey === key);
+      return (inProj && inProj.totalHours) || (un && un.totalHours) || 0;
+    };
+    const pairs = [...byTitle.entries()].filter(([, keys]) => keys.length > 1);
+    const card = document.getElementById('dupcard');
+    if (!pairs.length || !d.groupPaths) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    document.getElementById('dupes').innerHTML = pairs.map(([title, keys]) => {
+      const opts = keys.map(k => `
+        <div class="gline">
+          <span class="gn">${esc(k)}</span>
+          <span class="gh">${hrs(hoursOf(k))} h</span>
+          <button class="btn" style="padding:5px 11px;font-size:12px;"
+            onclick="previewMerge('${esc(title)}', '${esc(k)}')">Keep this one</button>
+        </div>`).join('');
+      return `<div class="proj"><div class="h"><span class="n">${esc(title)}</span>
+        <span class="chip warn">${keys.length} cards</span></div>${opts}</div>`;
+    }).join('');
+  }
+
+  async function previewMerge(title, keepKey) {
+    const d = LEDGER;
+    const keys = Object.entries(d.groupTitles).filter(([, t]) => t === title).map(([k]) => k);
+    const drop = keys.filter(k => k !== keepKey);
+    const msg = document.getElementById('dupmsg');
+    const to = d.groupPaths[keepKey];
+    msg.textContent = 'Checking…';
+    const plans = [];
+    for (const k of drop) {
+      const from = d.groupPaths[k];
+      if (!from || !to) { msg.textContent = 'Missing a card path for ' + k + '.'; return; }
+      const r = await fetch('/api/group-consolidate?village=' + encodeURIComponent(VILLAGE)
+        + '&from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to),
+        { headers: await authHeaders() });
+      const plan = await r.json();
+      if (!r.ok) { msg.textContent = plan.error || 'Could not preview the merge.'; return; }
+      plans.push({ from, to, plan });
+    }
+    const lines = plans.map(x => x.from + ' → ' + x.to + ': ' + x.plan.total + ' record(s)'
+      + (x.plan.notion.activityHoursMoving ? ', ' + x.plan.notion.activityHoursMoving + ' h of working bees' : ''));
+    if (!confirm('Merge into ' + keepKey + '?\n\n' + lines.join('\n')
+      + '\n\nThis rewrites grant evidence and cannot be undone from here.')) { msg.textContent = ''; return; }
+    for (const x of plans) {
+      const r = await fetch('/api/group-consolidate', {
+        method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, from: x.from, to: x.to, confirm: true, expected: x.plan.total }),
+      });
+      const out = await r.json();
+      if (!r.ok) { msg.textContent = out.error || 'Merge failed.'; return; }
+    }
+    msg.textContent = 'Merged. Reloading…';
+    load();
+  }
+
   function nameOfGroup(d, key) {
     const title = (d.groupTitles || {})[key];
     if (!title) return key;

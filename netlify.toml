@@ -321,6 +321,12 @@
   to = "/.netlify/functions/volunteer-ledger"
   status = 200
 
+# Merge a duplicate volunteer group into the real one (super-admin, dry-run first).
+[[redirects]]
+  from = "/api/group-consolidate"
+  to = "/.netlify/functions/group-consolidate"
+  status = 200
+
 [[redirects]]
   from = "/api/steward-admin"
   to = "/.netlify/functions/steward-admin"
