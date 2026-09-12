@@ -152,6 +152,7 @@
   }
 
   function render(d) {
+    indexTitles(d);
     const t = d.totals || {};
     document.getElementById('stats').innerHTML =
       stat(hrs(t.totalHours) + ' h', 'Approved hours') +
@@ -191,7 +192,24 @@
       : '<div class="empty">Every group with hours is linked to a project. ✓</div>';
   }
 
-  function nameOfGroup(d, key) { return (d.groupTitles || {})[key] || key; }
+  // Two Notion cards can share a display name ("Landcare & Bush Regeneration"
+  // exists as both landcare-bush-regeneration and landcare-and-bush-
+  // regeneration), and the whole point of this page is telling their hours
+  // apart. When a title is not unique, show the slug alongside it.
+  let dupTitles = new Set();
+  function indexTitles(d) {
+    const seen = new Map();
+    for (const [key, title] of Object.entries(d.groupTitles || {})) {
+      seen.set(title, (seen.get(title) || 0) + 1);
+      void key;
+    }
+    dupTitles = new Set([...seen.entries()].filter(([, n]) => n > 1).map(([t]) => t));
+  }
+  function nameOfGroup(d, key) {
+    const title = (d.groupTitles || {})[key];
+    if (!title) return key;
+    return dupTitles.has(title) ? title + ' (' + key + ')' : title;
+  }
   function stat(big, label) { return '<div class="stat"><b>' + esc(big) + '</b><span>' + esc(label) + '</span></div>'; }
 
   function projectCard(d, p) {
