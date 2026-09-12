@@ -26,14 +26,34 @@
  *
  * GET  /api/vapp-volunteers?village=Smiths Lake
  *        → { configured, scope, volunteers:[…], counts:{…} }
- * POST /api/vapp-volunteers  { village, action:'setStatus', id, status }
- *        status ∈ active | inactive | archived   (app volunteers only)
+ *
+ * POST /api/vapp-volunteers  { village, action, … }
+ *      setStatus     { id, status }        active | inactive | archived
+ *      update        { id, firstName?, lastName?, email?, mobile?, address? }
+ *      create        { firstName, lastName, mobile, email?, groupSlug,
+ *                      groupTitle?, sendWelcome? }   also writes the
+ *                      volunteer_groups row and sends the welcome
+ *      resendWelcome { id }                re-send the how-to-sign-in email
+ *      remove        { id }                SUPER-ADMIN only; cascades
+ *      addLead / inviteLead / dismissLead / undismissLead — newsletter leads
+ *
+ * These used to live only on the Notion "Roster" tab. Supabase became the
+ * source of truth for volunteers on 7 Sep 2026 and the roster drained to
+ * almost nothing, so the ability to add, correct, archive, delete or re-invite
+ * a volunteer effectively disappeared with it. They belong here now.
+ *
+ * Every write re-checks village + steward card scope server-side first.
  */
 
 import {
   resolveScope, jsonResp, normPath,
   queryAll, parseVolunteer, VOLUNTEERS_DB_ID,
 } from './_stewards.js';
+import { getRoles } from './_auth.js';
+
+// Where the volunteer actually signs in. Per-village, same env var the steward
+// onboarding uses, so a second village points at its own app deployment.
+const APP_URL = (process.env.VF_APP_URL || 'https://smithslake-stewards.village1st.com.au').replace(/\/+$/, '');
 
 const SUPA_URL = process.env.VAPP_SUPABASE_URL;
 const SUPA_KEY = process.env.VAPP_SUPABASE_SERVICE_KEY;
@@ -72,6 +92,55 @@ async function supa(path, opts = {}) {
   const text = await res.text();
   let data = null; try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
   return { ok: res.ok, status: res.status, data };
+}
+
+/**
+ * Send (or re-send) a volunteer their welcome + how-to-sign-in email.
+ *
+ * This lives on the WEBSITE, not in the app, on purpose. The app's own
+ * send-welcome function is wired to a Resend account that has never had
+ * villagefirst.org.au verified, so every welcome it tried to send was
+ * rejected before it was even logged — which is why volunteers kept saying
+ * they never got anything. This site holds VF_RESEND_API_KEY, whose account
+ * can send as villagefirst.org.au.
+ *
+ * Returns { ok } or { ok:false, error } — the caller surfaces the reason
+ * rather than failing silently, which is the whole point.
+ */
+async function sendVolunteerWelcome({ email, name, village }) {
+  const key = process.env.VF_RESEND_API_KEY;
+  if (!key) return { ok: false, error: 'Email is not configured on this site (VF_RESEND_API_KEY is not set)' };
+  const from = process.env.VF_PLEDGE_FROM || 'VillageFirst <noreply@villagefirst.org.au>';
+  const replyTo = (process.env.VF_PLEDGE_NOTIFY_TO || '').split(',')[0].trim();
+  const first = String(name || '').trim().split(/\s+/)[0] || 'there';
+  const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2937;max-width:520px;">
+    <p>Hi ${esc(first)},</p>
+    <p>Thanks for volunteering with <strong>${esc(village)}</strong>. Everything happens in the app:
+       RSVP to what's on, tap in and out at a working bee, and your hours are logged for you.</p>
+    <p><a href="${APP_URL}" style="display:inline-block;background:#15795f;color:#fff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;">Open the volunteer app</a></p>
+    <p style="background:#f0fdf4;border-left:3px solid #15795f;padding:10px 14px;border-radius:4px;">
+      <strong>Signing in:</strong> tap the button, enter <strong>${esc(email)}</strong>, and we'll email you a
+      one-tap sign-in link. No password to remember. Add the app to your home screen and it opens like any other app.</p>
+    <p style="color:#6b7280;font-size:13px;">If you weren't expecting this, just reply and let us know.</p>
+    <p>Thanks,<br>The ${esc(village)} team</p>
+  </div>`;
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from, to: email, subject: `Welcome to ${village} — how to sign in`, html,
+        ...(replyTo ? { reply_to: replyTo } : {}),
+      }),
+    });
+    if (!res.ok) {
+      const detail = (await res.text()).slice(0, 200);
+      return { ok: false, error: `The email provider rejected it (${res.status}). ${detail}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: `Could not reach the email provider: ${err.message}` };
+  }
 }
 
 // Group memberships for a village → Map(volunteer_id → [{slug,title}]).
@@ -184,11 +253,69 @@ export const handler = async (event, context) => {
       return jsonResp(200, { ok: true });
     }
 
-    // setStatus (archive / restore) on an existing app volunteer.
-    const { id, status } = body;
-    if (action !== 'setStatus') return jsonResp(400, { error: 'Unknown action' });
-    if (!id || !APP_STATUSES.includes(status)) return jsonResp(400, { error: 'Bad request' });
-    const chk = await supa(`volunteers?id=eq.${encodeURIComponent(id)}&select=village_id,group_id`);
+    // Add someone to the register by hand — the person who rang up, or signed
+    // a paper form at a working bee. Creates the volunteer AND their group
+    // membership row, the same pair the website sign-up writes, so they are
+    // not left invisible in the groups grid.
+    if (action === 'create') {
+      const text = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+      const firstName = text(body.firstName, 100);
+      const lastName = text(body.lastName, 100);
+      const mobile = text(body.mobile, 40);
+      const email = text(body.email, 200).toLowerCase();
+      const groupSlug = text(body.groupSlug, 200);
+      if (!firstName || !lastName) return jsonResp(400, { error: 'A first and last name are required' });
+      if (!mobile) return jsonResp(400, { error: 'A mobile number is required' });
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonResp(400, { error: 'That email address does not look right' });
+      if (!groupSlug) return jsonResp(400, { error: 'Pick a group for this volunteer' });
+      if (!inAllowed(groupSlug)) return jsonResp(403, { error: 'Out of your group scope' });
+      if (email) {
+        const dup = await supa(`volunteers?village_id=eq.${vslug}&email=eq.${encodeURIComponent(email)}&select=id`);
+        if (dup.ok && Array.isArray(dup.data) && dup.data.length) {
+          return jsonResp(409, { error: 'Someone with that email is already on the register' });
+        }
+      }
+      const ins = await supa('volunteers', {
+        method: 'POST', headers: { Prefer: 'return=representation' },
+        body: JSON.stringify({
+          village_id: vslug, first_name: firstName, last_name: lastName,
+          mobile, email: email || null, group_id: groupSlug, status: 'active',
+        }),
+      });
+      if (!ins.ok || !Array.isArray(ins.data) || !ins.data.length) {
+        return jsonResp(502, { error: 'Could not add that volunteer' });
+      }
+      const newId = ins.data[0].id;
+      await supa('volunteer_groups', {
+        method: 'POST', headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify([{
+          volunteer_id: newId, village_id: vslug, group_id: groupSlug,
+          group_title: text(body.groupTitle, 200) || titleCase(groupSlug),
+          is_primary: true, source: 'admin',
+        }]),
+      });
+      // Best-effort welcome; a failure here must not undo the record.
+      let emailWarning = null;
+      if (email && body.sendWelcome !== false) {
+        const sent = await sendVolunteerWelcome({ email, name: `${firstName} ${lastName}`, village });
+        if (!sent.ok) emailWarning = `Added, but the welcome email did not send: ${sent.error}`;
+      }
+      return jsonResp(200, { ok: true, id: newId, ...(emailWarning ? { warning: emailWarning } : {}) });
+    }
+
+    // ── Actions on an existing app volunteer ───────────────────────────
+    // All of them need the same two guards first: the record really is in
+    // THIS village, and a steward may only touch their own groups' people.
+    // The UI filter is never the gate.
+    const { id } = body;
+    if (!['setStatus', 'update', 'remove', 'resendWelcome'].includes(action)) {
+      return jsonResp(400, { error: 'Unknown action' });
+    }
+    if (!id) return jsonResp(400, { error: 'Bad request' });
+
+    const chk = await supa(
+      `volunteers?id=eq.${encodeURIComponent(id)}` +
+      `&select=village_id,group_id,first_name,last_name,email`);
     if (!chk.ok || !Array.isArray(chk.data) || !chk.data.length) return jsonResp(404, { error: 'Not found' });
     const row = chk.data[0];
     if (slugVillage(row.village_id) !== vslug) return jsonResp(403, { error: 'Wrong village' });
@@ -197,11 +324,69 @@ export const handler = async (event, context) => {
       const slugs = gm?.get(id)?.map((g) => g.slug) || (row.group_id ? [row.group_id] : []);
       if (!slugs.some(inAllowed)) return jsonResp(403, { error: 'Out of your group scope' });
     }
-    const up = await supa(`volunteers?id=eq.${encodeURIComponent(id)}`, {
-      method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status }),
-    });
-    if (!up.ok) return jsonResp(502, { error: 'Update failed' });
-    return jsonResp(200, { ok: true });
+
+    if (action === 'setStatus') {
+      const { status } = body;
+      if (!APP_STATUSES.includes(status)) return jsonResp(400, { error: 'Bad request' });
+      const up = await supa(`volunteers?id=eq.${encodeURIComponent(id)}`, {
+        method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status }),
+      });
+      if (!up.ok) return jsonResp(502, { error: 'Update failed' });
+      return jsonResp(200, { ok: true });
+    }
+
+    // Correct someone's details. Only these fields — group membership is the
+    // matrix's job, and status has its own action.
+    if (action === 'update') {
+      const patch = {};
+      const text = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+      if (body.firstName != null) patch.first_name = text(body.firstName, 100);
+      if (body.lastName != null) patch.last_name = text(body.lastName, 100);
+      if (body.mobile != null) patch.mobile = text(body.mobile, 40);
+      if (body.address != null) patch.address = text(body.address, 300) || null;
+      if (body.email != null) {
+        const em = text(body.email, 200).toLowerCase();
+        if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return jsonResp(400, { error: 'That email address does not look right' });
+        patch.email = em || null;
+      }
+      if (!patch.first_name && body.firstName != null) return jsonResp(400, { error: 'A first name is required' });
+      if (!patch.last_name && body.lastName != null) return jsonResp(400, { error: 'A last name is required' });
+      if (!Object.keys(patch).length) return jsonResp(400, { error: 'Nothing to change' });
+      const up = await supa(`volunteers?id=eq.${encodeURIComponent(id)}`, {
+        method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(patch),
+      });
+      if (!up.ok) return jsonResp(502, { error: 'Could not save those changes' });
+      return jsonResp(200, { ok: true });
+    }
+
+    // Hard delete. SUPER-ADMIN only, because it cascades: the person's hours,
+    // attendance, RSVPs, group memberships and any steward role go with them,
+    // and none of it comes back. Archiving is the reversible option and is
+    // what the UI offers first.
+    if (action === 'remove') {
+      if (!getRoles(scope.user).includes('super-admin')) {
+        return jsonResp(403, { error: 'Only the super-admin can permanently delete a volunteer — use Archive instead' });
+      }
+      const del = await supa(`volunteers?id=eq.${encodeURIComponent(id)}`, {
+        method: 'DELETE', headers: { Prefer: 'return=minimal' },
+      });
+      if (!del.ok) return jsonResp(502, { error: 'Delete failed' });
+      return jsonResp(200, { ok: true });
+    }
+
+    // Re-send the welcome / sign-in prompt. Deliberately sent from HERE rather
+    // than from the app: this site holds the VillageFirst Resend key, whose
+    // account has villagefirst.org.au verified.
+    if (action === 'resendWelcome') {
+      if (!row.email) return jsonResp(400, { error: 'That volunteer has no email address on file' });
+      const sent = await sendVolunteerWelcome({
+        email: row.email,
+        name: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
+        village,
+      });
+      if (!sent.ok) return jsonResp(502, { error: sent.error });
+      return jsonResp(200, { ok: true, sentTo: row.email });
+    }
   }
 
   // ── GET: the full directory ────────────────────────────────────────────
