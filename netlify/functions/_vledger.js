@@ -74,12 +74,17 @@ export async function appHoursByGroup(village, { from, to } = {}) {
  * Confirmed working-bee hours from the Notion activity ledger, keyed the same
  * way. Only Confirmed | Pushed count — a Draft activity is still being edited.
  */
-export async function activityHoursByGroup(village, { from, to } = {}) {
+export async function activityHoursByGroup(village, { from, to } = {}, preloaded = null) {
   const out = new Map();
-  if (!ACTIVITIES_DB_ID) return out;
+  if (!ACTIVITIES_DB_ID && !preloaded) return out;
   try {
-    const rows = await queryAll(ACTIVITIES_DB_ID, { property: 'Village', rich_text: { equals: village } });
-    for (const a of rows.map(parseActivity)) {
+    // `preloaded` lets a caller that has already read VF Activities pass them
+    // in. The ledger needs this list twice (here and via listGroups), and
+    // fetching a paginated Notion database twice in one request is how we got
+    // rate-limited (429) the first time this page was used for real.
+    const acts = preloaded
+      || (await queryAll(ACTIVITIES_DB_ID, { property: 'Village', rich_text: { equals: village } })).map(parseActivity);
+    for (const a of acts) {
       if (a.status !== 'Confirmed' && a.status !== 'Pushed') continue;
       if (from && a.date && a.date < from) continue;
       if (to && a.date && a.date > to) continue;
@@ -107,10 +112,12 @@ export async function activityHoursByGroup(village, { from, to } = {}) {
  * these hours came from a signed attendance sheet and which from the app?" is
  * the first question asked.
  */
-export async function ledgerByGroup(village, range = {}) {
+export async function ledgerByGroup(village, range = {}, preloadedActivities = null) {
+  // Supabase and Notion are different services, so these two may safely run
+  // together; what must NOT be parallelised is several Notion reads at once.
   const [app, act] = await Promise.all([
     appHoursByGroup(village, range),
-    activityHoursByGroup(village, range),
+    activityHoursByGroup(village, range, preloadedActivities),
   ]);
   const keys = new Set([...app.keys(), ...act.keys()].filter(Boolean));
   const rows = [];
