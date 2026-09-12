@@ -24,6 +24,7 @@ import { requireRole } from './_auth.js';
 import {
   jsonResp, listGroups, PROJECTS_DB, queryAll, parseProject, grantsForProject,
 } from './_projects.js';
+import { ACTIVITIES_DB_ID, parseActivity } from './_stewards.js';
 import { ledgerByGroup, attachToProjects, groupKeyOfPath } from './_vledger.js';
 
 const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
@@ -46,13 +47,19 @@ export const handler = async (event, context) => {
   const villageRate = Number(process.env.VF_VOLUNTEER_HOUR_RATE) || 0;
 
   try {
-    const [rows, projectPages, groups] = await Promise.all([
-      ledgerByGroup(village, { from, to }),
-      PROJECTS_DB
-        ? queryAll(PROJECTS_DB, { property: 'Village', rich_text: { equals: village } })
-        : Promise.resolve([]),
-      listGroups(village),
-    ]);
+    // Notion allows ~3 requests/sec and this page reads four databases, each
+    // paginated. Firing them together earned a 429 on the first real use, so
+    // the Notion reads are sequential and VF Activities — which both the
+    // ledger and listGroups() need — is fetched ONCE and passed through.
+    const activities = ACTIVITIES_DB_ID
+      ? (await queryAll(ACTIVITIES_DB_ID, { property: 'Village', rich_text: { equals: village } })).map(parseActivity)
+      : [];
+    const projectPages = PROJECTS_DB
+      ? await queryAll(PROJECTS_DB, { property: 'Village', rich_text: { equals: village } })
+      : [];
+    const groups = await listGroups(village);
+    // Supabase is a different service, so this one may overlap nothing.
+    const rows = await ledgerByGroup(village, { from, to }, activities);
 
     const projects = projectPages.map(parseProject).filter((p) => p.status !== 'Archived');
     const { perProject, unlinked, sharedGroups } = attachToProjects(rows, projects, { villageRate });
@@ -65,15 +72,15 @@ export const handler = async (event, context) => {
     // Grants hang off a project by slug, so an hour can be traced all the way
     // to the funder it is being claimed against. Only fetched for projects
     // that actually have hours — the rest would be a wasted round trip each.
-    await Promise.all(perProject.map(async (p) => {
+    for (const p of perProject) {
       p.grants = [];
-      if (!p.slug || p.totalHours <= 0) return;
+      if (!p.slug || p.totalHours <= 0) continue;   // skip: a wasted Notion call each
       const gs = await grantsForProject(village, p.slug);
       p.grants = gs.map((g) => ({
         name: g.name, funder: g.funder, status: g.status,
         amountRequested: g.amountRequested ?? null, amountAwarded: g.amountAwarded ?? null,
       }));
-    }));
+    }
 
     const totals = {
       totalHours: round2(rows.reduce((s, r) => s + r.totalHours, 0)),

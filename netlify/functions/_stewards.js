@@ -87,22 +87,43 @@ export function mergeCard(cards, card) {
 
 // ── Notion query helper (paginates) ───────────────────────────────
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Notion allows roughly three requests a second and answers 429 when you
+ * exceed it. A paginated query over several databases trips that easily — the
+ * volunteer ledger did on its first real use — and the old behaviour was to
+ * throw the raw "Notion responded 429" straight at the user, who can do
+ * nothing about it. Retry instead, honouring Retry-After when Notion sends
+ * one, and give up only after several attempts.
+ */
+async function notionQueryPage(dbId, body, attempt = 0) {
+  const res = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
+    method: 'POST', headers: notionHeaders(), body: JSON.stringify(body),
+  });
+  if (res.ok) return res.json();
+  const retryable = res.status === 429 || res.status >= 500;
+  if (retryable && attempt < 4) {
+    const hinted = Number(res.headers.get('retry-after')) * 1000;
+    const backoff = Number.isFinite(hinted) && hinted > 0 ? hinted : 400 * (2 ** attempt);
+    await sleep(Math.min(backoff, 5000));
+    return notionQueryPage(dbId, body, attempt + 1);
+  }
+  throw new Error(res.status === 429
+    ? 'Notion is rate-limiting us — please try again in a moment.'
+    : `Notion responded ${res.status}`);
+}
+
 export async function queryAll(dbId, filter, sorts) {
   const results = [];
   let cursor;
   do {
-    const res = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
-      method: 'POST',
-      headers: notionHeaders(),
-      body: JSON.stringify({
-        ...(filter ? { filter } : {}),
-        ...(sorts ? { sorts } : {}),
-        page_size: 100,
-        ...(cursor ? { start_cursor: cursor } : {}),
-      }),
+    const data = await notionQueryPage(dbId, {
+      ...(filter ? { filter } : {}),
+      ...(sorts ? { sorts } : {}),
+      page_size: 100,
+      ...(cursor ? { start_cursor: cursor } : {}),
     });
-    if (!res.ok) throw new Error(`Notion responded ${res.status}`);
-    const data = await res.json();
     results.push(...data.results);
     cursor = data.has_more ? data.next_cursor : undefined;
   } while (cursor);
