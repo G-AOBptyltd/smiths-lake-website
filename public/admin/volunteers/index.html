@@ -273,6 +273,29 @@
           <div id="av-migrate-report" class="meta-line" style="margin-top:8px;"></div>
         </div>
 
+        <!-- Add someone who joined off-line: rang up, or signed a paper form
+             at a working bee. Writes the same volunteer + group-membership
+             pair the website sign-up writes. -->
+        <div class="form-card">
+          <h2>Add a volunteer</h2>
+          <p class="meta-line">For someone who signed up on paper or over the phone. They'll get the same welcome email with a link to the app.</p>
+          <div class="two-col">
+            <div><label for="av-new-first">First name</label><input type="text" id="av-new-first" maxlength="100" /></div>
+            <div><label for="av-new-last">Last name</label><input type="text" id="av-new-last" maxlength="100" /></div>
+          </div>
+          <div class="two-col">
+            <div><label for="av-new-mobile">Mobile</label><input type="tel" id="av-new-mobile" maxlength="40" /></div>
+            <div><label for="av-new-email">Email <span class="hint">(optional — but needed to sign in)</span></label><input type="email" id="av-new-email" maxlength="200" /></div>
+          </div>
+          <label for="av-new-group">Group</label>
+          <select id="av-new-group"><option value="">Choose a group…</option></select>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;"><input type="checkbox" id="av-new-welcome" checked style="width:auto;accent-color:#0f766e;" /> Email them a welcome with a link to the app</label>
+          <div class="form-actions">
+            <button class="btn btn-green" id="av-new-btn" onclick="addAppVolunteer()">Add volunteer</button>
+            <span class="status-msg" id="av-new-msg"></span>
+          </div>
+        </div>
+
         <div class="stats" id="av-stats"></div>
         <div class="toolbar">
           <select id="av-status" onchange="renderAppVolunteers()">
@@ -350,6 +373,7 @@
   let projects = [], groupsLoaded = false;
   // Volunteer directory (Supabase app data) — the Volunteers tab.
   let appVolunteers = [], appVolLoaded = false, appVolMigrated = false, appVolConfigured = false, appVolExpected = 0;
+  let avEditingId = null;            // volunteer whose inline editor is open
 
   // Same map + slug algorithm as the website build — keys steward cards to page paths.
   const SECTION_TO_PATH = {
@@ -1077,6 +1101,7 @@
         el.innerHTML = '<div class="empty">The volunteer app isn\'t connected to this site yet. An admin needs to set <b>VAPP_SUPABASE_URL</b> and <b>VAPP_SUPABASE_SERVICE_KEY</b> in Netlify, then reload.</div>';
         return;
       }
+      fillNewVolGroups();
       renderAppVolunteers();
     } catch (e) {
       el.innerHTML = '<div class="empty">' + esc(e.message) + '</div>';
@@ -1120,16 +1145,129 @@
           '<button class="link-btn" onclick="addLead(' + jsArg(v.email) + ',' + jsArg(g.slug) + ')">Add</button> ' +
           '<button class="link-btn danger" onclick="dismissLead(' + jsArg(v.email) + ',' + jsArg(g.slug) + ')">Remove</button>';
       } else if (v.inApp && !v.notMigrated) {
-        actions = v.status === 'archived'
-          ? '<button class="link-btn" onclick="setVolStatus(\'' + v.id + '\', \'active\')">Restore</button>'
-          : '<button class="link-btn danger" onclick="setVolStatus(\'' + v.id + '\', \'archived\')">Archive</button>';
+        // Edit and re-send are always available; archive is the reversible
+        // "remove", and a permanent delete is super-admin only because it
+        // takes the person's hours and attendance with it.
+        actions =
+          '<button class="link-btn" onclick="editVol(\'' + v.id + '\')">Edit</button> ' +
+          (v.email ? '<button class="link-btn" onclick="resendVolWelcome(\'' + v.id + '\')">Resend email</button> ' : '') +
+          (v.status === 'archived'
+            ? '<button class="link-btn" onclick="setVolStatus(\'' + v.id + '\', \'active\')">Restore</button>'
+            : '<button class="link-btn danger" onclick="setVolStatus(\'' + v.id + '\', \'archived\')">Archive</button>') +
+          (isSuper() ? ' <button class="link-btn danger" onclick="deleteVol(\'' + v.id + '\')">Delete</button>' : '');
       }
+      const editor = (avEditingId === v.id) ? volEditForm(v) : '';
       return '<div class="row">' +
         '<span class="chip ' + chipCls + '">' + esc(chipTxt) + '</span>' +
         '<div class="row-main"><div class="row-name">' + esc(v.name) + ' ' + (v.isMember ? '<span class="chip chip-member">member</span>' : '') + (v.onNewsletter ? ' <span class="chip" style="background:#e0f2fe;color:#0369a1;">✉ newsletter</span>' : '') + '</div>' +
-        '<div class="row-note">' + esc(note) + '</div><div class="row-note">' + groupsLine + '</div></div>' +
+        '<div class="row-note">' + esc(note) + '</div><div class="row-note">' + groupsLine + '</div>' + editor + '</div>' +
         '<span class="row-actions">' + actions + '</span></div>';
     }).join('');
+  }
+
+  // Inline editor, rendered into the row itself so you never lose your place
+  // in the list. Groups are deliberately NOT here — that's the groups grid.
+  function volEditForm(v) {
+    const f = (id, label, val, type) =>
+      '<div><label for="' + id + '">' + label + '</label>' +
+      '<input type="' + (type || 'text') + '" id="' + id + '" value="' + esc(val || '') + '" /></div>';
+    return '<div class="form-card" style="margin:10px 0 2px;max-width:none;">' +
+      '<div class="two-col">' + f('ave-first', 'First name', v.firstName) + f('ave-last', 'Last name', v.lastName) + '</div>' +
+      '<div class="two-col">' + f('ave-email', 'Email', v.email, 'email') + f('ave-mobile', 'Mobile', v.phone, 'tel') + '</div>' +
+      '<div class="form-actions">' +
+      '<button class="btn btn-green" onclick="saveVolEdit(\'' + v.id + '\')">Save</button>' +
+      '<button class="btn btn-ghost" onclick="editVol(null)">Cancel</button>' +
+      '<span class="status-msg" id="ave-msg"></span>' +
+      '</div></div>';
+  }
+
+  function editVol(id) { avEditingId = id; renderAppVolunteers(); }
+
+  async function saveVolEdit(id) {
+    const msg = document.getElementById('ave-msg');
+    const payload = {
+      village: VILLAGE, action: 'update', id,
+      firstName: document.getElementById('ave-first').value,
+      lastName: document.getElementById('ave-last').value,
+      email: document.getElementById('ave-email').value,
+      mobile: document.getElementById('ave-mobile').value,
+    };
+    msg.textContent = 'Saving…'; msg.className = 'status-msg';
+    try {
+      const r = await fetch('/api/vapp-volunteers', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(payload) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not save');
+      avEditingId = null;
+      appVolLoaded = false; loadAppVolunteers();
+    } catch (e) { msg.textContent = e.message; msg.className = 'status-msg err'; }
+  }
+
+  async function resendVolWelcome(id) {
+    const v = appVolunteers.find(x => x.id === id) || {};
+    if (!confirm('Email ' + (v.name || 'this volunteer') + ' a welcome with a link to the app?\n\nIt goes to ' + (v.email || '') + ' and explains that signing in is a one-tap emailed link.')) return;
+    try {
+      const r = await fetch('/api/vapp-volunteers', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, action: 'resendWelcome', id }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not send');
+      alert('Sent to ' + d.sentTo + '.');
+    } catch (e) { alert(e.message); }
+  }
+
+  async function deleteVol(id) {
+    const v = appVolunteers.find(x => x.id === id) || {};
+    if (!confirm('Permanently delete ' + (v.name || 'this volunteer') + '?\n\nThis also deletes their hours, attendance, RSVPs and group memberships, and cannot be undone. Archive instead if you just want them off the active list.')) return;
+    if (!confirm('Last check — really delete ' + (v.name || 'this volunteer') + ' and all their history?')) return;
+    try {
+      const r = await fetch('/api/vapp-volunteers', { method: 'POST', headers: await authHeaders(),
+        body: JSON.stringify({ village: VILLAGE, action: 'remove', id }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Delete failed');
+      appVolLoaded = false; loadAppVolunteers();
+    } catch (e) { alert(e.message); }
+  }
+
+  // Populate the "add a volunteer" group picker from the groups already in
+  // use, so a typed-in name can't invent a new slug the way the grid once did.
+  function fillNewVolGroups() {
+    const sel = document.getElementById('av-new-group');
+    if (!sel) return;
+    const seen = new Map();
+    appVolunteers.forEach(v => (v.groups || []).forEach(g => { if (g.slug && !seen.has(g.slug)) seen.set(g.slug, g.title); }));
+    (scope.cards || []).forEach(c => { const s = String(c.path || '').split('/').pop(); if (s && !seen.has(s)) seen.set(s, c.title); });
+    const keep = sel.value;
+    sel.innerHTML = '<option value="">Choose a group…</option>' +
+      [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1]))
+        .map(([s, t]) => '<option value="' + esc(s) + '">' + esc(t) + '</option>').join('');
+    if (keep) sel.value = keep;
+  }
+
+  async function addAppVolunteer() {
+    const msg = document.getElementById('av-new-msg');
+    const btn = document.getElementById('av-new-btn');
+    const sel = document.getElementById('av-new-group');
+    const payload = {
+      village: VILLAGE, action: 'create',
+      firstName: document.getElementById('av-new-first').value,
+      lastName: document.getElementById('av-new-last').value,
+      mobile: document.getElementById('av-new-mobile').value,
+      email: document.getElementById('av-new-email').value,
+      groupSlug: sel.value,
+      groupTitle: sel.selectedOptions[0] ? sel.selectedOptions[0].textContent : '',
+      sendWelcome: document.getElementById('av-new-welcome').checked,
+    };
+    msg.textContent = 'Adding…'; msg.className = 'status-msg'; btn.disabled = true;
+    try {
+      const r = await fetch('/api/vapp-volunteers', { method: 'POST', headers: await authHeaders(), body: JSON.stringify(payload) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not add');
+      ['av-new-first', 'av-new-last', 'av-new-mobile', 'av-new-email'].forEach(i => { document.getElementById(i).value = ''; });
+      sel.value = '';
+      msg.textContent = d.warning || 'Volunteer added ✓';
+      msg.className = 'status-msg ' + (d.warning ? 'err' : 'ok');
+      appVolLoaded = false; loadAppVolunteers();
+    } catch (e) { msg.textContent = e.message; msg.className = 'status-msg err'; }
+    btn.disabled = false;
   }
 
   async function setVolStatus(id, status) {

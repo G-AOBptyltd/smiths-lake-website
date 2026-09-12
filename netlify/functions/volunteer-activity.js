@@ -19,12 +19,18 @@
  *
  * Card scoping enforced server-side on both the target card and (for save)
  * any card change.
+ *
+ * Hours saved here are ALSO mirrored into the volunteer app's Supabase `hours`
+ * table (see _vapp.js) so a volunteer sees them on their phone. Notion remains
+ * the ledger of record; the mirror is keyed by this activity's page id and is
+ * rewritten on every save, so the two never drift.
  */
 
 import {
   ACTIVITIES_DB_ID, notionHeaders, jsonResp, notProvisioned, rtChunks,
   queryAll, parseActivity, resolveScope, scopeHasCard, normPath, ensureActivitySchema,
 } from './_stewards.js';
+import { mirrorActivityHours, unmirrorActivityHours } from './_vapp.js';
 
 async function getActivity(pageId) {
   const res = await fetch(`https://api.notion.com/v1/pages/${pageId}`, { headers: notionHeaders() });
@@ -138,7 +144,18 @@ export const handler = async (event, context) => {
         throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
       }
       const page = await res.json();
-      return jsonResp(200, { ok: true, pageId: page.id, totalHours });
+      // Push the same hours into the volunteer APP so they show up on each
+      // volunteer's phone under "Your hours". Notion stays the audit trail
+      // behind grant claims; Supabase is what the app can actually read.
+      // Idempotent per activity, so editing attendance rewrites cleanly.
+      const mirror = await mirrorActivityHours({
+        pageId: page.id, village, cardPath, date: properties['Date'].date.start,
+        attendance, activityTitle: name,
+      });
+      return jsonResp(200, {
+        ok: true, pageId: page.id, totalHours, appHours: mirror.mirrored,
+        ...(mirror.warning ? { warning: mirror.warning } : {}),
+      });
     }
 
     if (body.action === 'status') {
@@ -167,6 +184,8 @@ export const handler = async (event, context) => {
         method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ archived: true }),
       });
       if (!res.ok) throw new Error(`Notion responded ${res.status}`);
+      // Take the mirrored hours back off the volunteers' phones too.
+      await unmirrorActivityHours(body.pageId);
       return jsonResp(200, { ok: true });
     }
 
