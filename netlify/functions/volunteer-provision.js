@@ -14,7 +14,6 @@
  */
 
 import { requireRole } from './_auth.js';
-import { MEMBERS_DB_ID } from './_members.js';
 import { STEWARDS_DB_ID, VOLUNTEERS_DB_ID, ACTIVITIES_DB_ID, notionHeaders, jsonResp } from './_stewards.js';
 
 const SCHEMAS = {
@@ -75,15 +74,16 @@ const SCHEMAS = {
 };
 
 /**
- * Find a Notion page to parent the new DBs under. Tries the Members DB first,
- * then the Contributions and Surveys DBs, walking block parents up to the
+ * Find a Notion page to parent the new DBs under. Tries the Contributions DB
+ * first, then the Surveys DB, walking block parents up to the
  * containing page (DBs nested inside page sections have block parents, not
  * page parents). An explicit parentPageId in the body always wins.
  */
 async function findParentPage(explicit) {
   if (explicit) return String(explicit).replace(/[^a-f0-9-]/gi, '');
   const candidates = [
-    MEMBERS_DB_ID,
+    // (The Members DB used to lead this list; it moved to Supabase in Phase 1
+    // of the PII plan, so the Contributions DB — which stays in Notion — anchors.)
     process.env.NOTION_CONTRIB_DB_ID || '6d182a0d4f0c42c2879f13753e355861',
     process.env.NOTION_VF_SURVEYS_DB_ID || 'dd226ceaec144baaac9fddc63a767596',
   ];

@@ -7,49 +7,22 @@
  * Auth: village ADMIN / super-admin only — the register holds member PII
  * (addresses, phone numbers), so stewards and viewers are deliberately out.
  *
- * Multi-village: village param filters the "Village" text column; v1 stores
- * every village in one Members DB (mirrors the Contributions portal).
+ * Multi-village: rows carry village_id (the tenant slug) and every query
+ * filters on it. The register lives in Supabase — see _members.js.
  */
 
 import { requireRole } from './_auth.js';
-import { MEMBERS_DB_ID, notionHeaders, parseMember, membershipYear } from './_members.js';
-
-function corsHeaders() {
-  return { 'Content-Type': 'application/json' };
-}
+import { listMembers, membershipYear, jsonResp } from './_members.js';
 
 export const handler = async (event, context) => {
-  if (event.httpMethod !== 'GET') {
-    return { statusCode: 405, headers: corsHeaders(), body: JSON.stringify({ error: 'GET only' }) };
-  }
+  if (event.httpMethod !== 'GET') return jsonResp(405, { error: 'GET only' });
 
   const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const auth = requireRole(context, { village, anyOf: ['admin'] });
-  if (!auth.ok) {
-    return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };
-  }
+  if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
 
   try {
-    const results = [];
-    let cursor = undefined;
-    do {
-      const res = await fetch(`https://api.notion.com/v1/databases/${MEMBERS_DB_ID}/query`, {
-        method: 'POST',
-        headers: notionHeaders(),
-        body: JSON.stringify({
-          filter: { property: 'Village', rich_text: { equals: village } },
-          sorts: [{ property: 'Date Applied', direction: 'descending' }],
-          page_size: 100,
-          ...(cursor ? { start_cursor: cursor } : {}),
-        }),
-      });
-      if (!res.ok) throw new Error(`Notion responded ${res.status}`);
-      const data = await res.json();
-      results.push(...data.results);
-      cursor = data.has_more ? data.next_cursor : undefined;
-    } while (cursor);
-
-    const items = results.map(parseMember);
+    const items = await listMembers(village);
 
     // Headline totals for the current membership year.
     const currentYear = membershipYear(new Date());
@@ -66,8 +39,8 @@ export const handler = async (event, context) => {
     }
     totals.feesCollected = Math.round(totals.feesCollected * 100) / 100;
 
-    return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ items, totals, currentYear }) };
+    return jsonResp(200, { items, totals, currentYear });
   } catch (err) {
-    return { statusCode: 502, headers: corsHeaders(), body: JSON.stringify({ error: err.message }) };
+    return jsonResp(502, { error: err.message });
   }
 };
