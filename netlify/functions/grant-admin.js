@@ -48,8 +48,15 @@ async function findDbByTitle() {
   });
   if (!res.ok) return null;
   const hits = (await res.json()).results || [];
-  const hit = hits.find((d) => ((d.title || []).map((t) => t.plain_text).join('') === DB_TITLE) && !d.archived);
-  return hit ? hit.id : null;
+  const matches = hits.filter((d) => ((d.title || []).map((t) => t.plain_text).join('') === DB_TITLE) && !d.archived);
+  // Two registers with the same title is exactly how grants got split across
+  // two databases in Aug–Sep 2026: this picked whichever Notion ranked first,
+  // and that ranking moved. Refuse to guess — a wrong guess writes a grant
+  // where nobody will ever look for it.
+  if (matches.length > 1) {
+    throw new Error(`${matches.length} databases are titled "${DB_TITLE}" — grants would be split between them. Set NOTION_VF_GRANTS_DB_ID to the one to use, and archive the rest.`);
+  }
+  return matches.length ? matches[0].id : null;
 }
 
 async function parentPageOfContribDb() {

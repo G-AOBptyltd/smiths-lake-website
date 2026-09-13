@@ -171,8 +171,17 @@ async function resolveGrantsDb() {
     });
     if (!res.ok) return null;
     const hits = (await res.json()).results || [];
-    const hit = hits.find((d) => ((d.title || []).map((t) => t.plain_text).join('').includes('VF Grants')) && !d.archived);
-    cachedGrantsDb = hit ? hit.id : null;
+    // Exact title, same as grant-admin.js — the old substring match would also
+    // have accepted a renamed "retired duplicate" register.
+    const matches = hits.filter((d) => ((d.title || []).map((t) => t.plain_text).join('') === '🏆 VF Grants') && !d.archived);
+    if (matches.length > 1) {
+      // Same fork that split the grants in Aug–Sep 2026. Projects stays up
+      // (fail-open, grants tab empty) but the cause goes to the function log.
+      console.error(`resolveGrantsDb: ${matches.length} databases titled "🏆 VF Grants" — set NOTION_VF_GRANTS_DB_ID and archive the rest`);
+      cachedGrantsDb = null;
+      return null;
+    }
+    cachedGrantsDb = matches.length ? matches[0].id : null;
   } catch (_) { cachedGrantsDb = null; }
   return cachedGrantsDb;
 }
