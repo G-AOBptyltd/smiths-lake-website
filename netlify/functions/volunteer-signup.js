@@ -3,46 +3,45 @@
  *
  * "Volunteer for this group" forms on the card detail pages (e.g.
  * /environment/landcare-and-bush-regeneration/) post here. Mirrors the
- * member-join hardening: honeypot, length caps, no trusted input, and the
- * only public writer to the VF Volunteers DB.
+ * member-join hardening: honeypot, length caps, no trusted input.
  *
  * Body: { village?, cardPath, cardTitle, firstName, lastName, email, phone?,
  *         message?, isMember?, website? }
  *
- * Upsert by email+village: an existing volunteer signing up for a second card
- * gets that card APPENDED to their record (status untouched); a new email
- * creates a row with Status = Applied for the steward/admin to approve.
+ * Writes to the volunteer app's Supabase (`volunteers` + `volunteer_groups`),
+ * which has been the source of truth since 7 Sep 2026. Upsert by email+village:
+ * an existing volunteer signing up for a second group gets that group APPENDED
+ * to their record; a new email creates a `volunteers` row. A person's details
+ * never go to Notion from here — the Notion write that used to lead this
+ * function (and that the 7 Sep migration had already drained) was removed on
+ * 14 Sep 2026 under the PII plan: a public form re-populating a retired
+ * register is exactly the write path that plan exists to close.
  *
  * Notifies the card's stewards (or the village notify list if the card has
- * none) via the VF Resend vars — env-gated, fail-open.
+ * none) via the VF Resend vars — env-gated, fail-open. Stewards are still read
+ * from Notion (PII plan Phase 3); the message text reaches them in that email.
  */
 
-import {
-  VOLUNTEERS_DB_ID, STEWARDS_DB_ID, notionHeaders, jsonResp, notProvisioned,
-  rtChunks, queryAll, parseVolunteer, parseSteward, normPath, mergeCard,
-} from './_stewards.js';
+import { STEWARDS_DB_ID, jsonResp, queryAll, parseSteward, normPath } from './_stewards.js';
 import { getModuleRecipients } from './_villages.js';
+import { supaConfigured, slugVillage } from './_supa.js';
 
 function esc(s) {
   return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 
-// ── Best-effort mirror into the volunteer app's Supabase ──────────────────
-// Part of making Supabase the single source of truth. This is ADDITIVE and
-// FULLY FAIL-OPEN: it only runs when the app's Supabase env is configured, it
-// swallows every error internally, and it can never change the signup response
-// (the Notion write above remains the authoritative path during transition).
+// ── The write: the volunteer app's Supabase ───────────────────────────────
+// This is the authoritative path. It THROWS on failure so the resident sees the
+// "could not record your signup" message rather than a false success — losing a
+// signup silently is worse than asking them to try again.
 const SUPA_URL = process.env.VAPP_SUPABASE_URL;
 const SUPA_KEY = process.env.VAPP_SUPABASE_SERVICE_KEY;
 
-function slugVillage(v) {
-  return String(v || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-}
 async function supaReq(path, opts = {}) {
-  // Hard 2s timeout: a Supabase stall must never delay the public signup
-  // response. On abort/error the mirror's try/catch swallows it (fail-open).
+  // Bounded so a Supabase stall cannot hang the public form; on timeout the
+  // caller's catch returns the 502 message.
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 2000);
+  const timer = setTimeout(() => ctl.abort(), 8000);
   try {
     const res = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
       ...opts,
@@ -59,36 +58,56 @@ async function supaReq(path, opts = {}) {
     clearTimeout(timer);
   }
 }
-async function mirrorToSupabase({ firstName, lastName, email, phone, isMember, village, cardPath, cardTitle }) {
-  if (!SUPA_URL || !SUPA_KEY) return;
-  try {
-    const vslug = slugVillage(village);
-    const gslug = normPath(cardPath).split('/').pop() || null;
-    const found = await supaReq(`volunteers?village_id=eq.${vslug}&email=eq.${encodeURIComponent(email)}&select=id`);
-    let vid = (found.ok && Array.isArray(found.data) && found.data[0]) ? found.data[0].id : null;
-    if (!vid) {
-      const ins = await supaReq('volunteers', {
-        method: 'POST', headers: { Prefer: 'return=representation' },
-        body: JSON.stringify([{
-          village_id: vslug, first_name: firstName, last_name: lastName,
-          mobile: phone || '', email, group_id: gslug,
-          status: 'active', member_status: isMember ? 'member' : null,
-        }]),
-      });
-      vid = (ins.ok && Array.isArray(ins.data) && ins.data[0]) ? ins.data[0].id : null;
-    }
-    // Group membership (join table may not exist pre-0006; a duplicate 409 is
-    // fine — both are swallowed).
-    if (vid && gslug) {
-      await supaReq('volunteer_groups', {
-        method: 'POST', headers: { Prefer: 'return=minimal' },
-        body: JSON.stringify([{
-          volunteer_id: vid, village_id: vslug, group_id: gslug,
-          group_title: cardTitle, is_primary: false, source: 'website',
-        }]),
-      });
-    }
-  } catch (_) { /* fully best-effort — never affects the signup */ }
+
+/**
+ * Upsert the volunteer and attach the group. Returns { isExisting, fullName }.
+ * The `volunteers` table has no free-text column (health notes live in their
+ * own table by design), so the signup message is delivered to the stewards in
+ * the notification email — the same as the Supabase path has done since 7 Sep.
+ */
+async function writeVolunteer({ firstName, lastName, email, phone, isMember, village, cardPath, cardTitle }) {
+  const vslug = slugVillage(village);
+  const gslug = normPath(cardPath).split('/').pop() || null;
+
+  const found = await supaReq(`volunteers?village_id=eq.${encodeURIComponent(vslug)}&email=eq.${encodeURIComponent(email)}&select=id,first_name,last_name,member_status`);
+  if (!found.ok) throw new Error(`Supabase lookup failed (${found.status})`);
+  const existing = Array.isArray(found.data) ? found.data[0] : null;
+  let vid = existing ? existing.id : null;
+
+  if (!vid) {
+    const ins = await supaReq('volunteers', {
+      method: 'POST', headers: { Prefer: 'return=representation' },
+      body: JSON.stringify([{
+        village_id: vslug, first_name: firstName, last_name: lastName,
+        mobile: phone || '', email, group_id: gslug,
+        status: 'active', member_status: isMember ? 'member' : null,
+      }]),
+    });
+    vid = (ins.ok && Array.isArray(ins.data) && ins.data[0]) ? ins.data[0].id : null;
+    if (!vid) throw new Error(`Supabase insert failed (${ins.status})`);
+  } else if (isMember && existing.member_status !== 'member') {
+    // Best-effort: a returning volunteer telling us they are now a member.
+    await supaReq(`volunteers?id=eq.${encodeURIComponent(vid)}`, {
+      method: 'PATCH', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ member_status: 'member' }),
+    }).catch(() => {});
+  }
+
+  // Group membership. A duplicate (same volunteer, same group) is a 409 from
+  // the unique index and means "already attached" — not an error for the resident.
+  if (gslug) {
+    const g = await supaReq('volunteer_groups', {
+      method: 'POST', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify([{
+        volunteer_id: vid, village_id: vslug, group_id: gslug,
+        group_title: cardTitle, is_primary: false, source: 'website',
+      }]),
+    });
+    if (!g.ok && g.status !== 409) throw new Error(`Supabase group attach failed (${g.status})`);
+  }
+
+  const fullName = existing ? `${existing.first_name} ${existing.last_name}`.trim() : `${firstName} ${lastName}`;
+  return { isExisting: !!existing, fullName };
 }
 
 async function notifyStewards(v, context) {
@@ -136,7 +155,7 @@ async function notifyStewards(v, context) {
 
 export const handler = async (event, context) => {
   if (event.httpMethod !== 'POST') return jsonResp(405, { error: 'POST only' });
-  if (!VOLUNTEERS_DB_ID) return notProvisioned();
+  if (!supaConfigured()) return jsonResp(503, { error: 'Volunteer signups are not switched on for this site yet.' });
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch {
@@ -159,59 +178,9 @@ export const handler = async (event, context) => {
   const message = (body.message || '').trim().slice(0, 2000);
   const isMember = body.isMember === true || body.isMember === 'true';
   const village = (body.village || process.env.VILLAGE_NAME || 'Smiths Lake').slice(0, 100);
-  const fullName = `${firstName} ${lastName}`;
-  const today = new Date().toISOString().slice(0, 10);
-  const card = { path: cardPath, title: cardTitle };
-
   try {
-    const existing = (await queryAll(VOLUNTEERS_DB_ID, {
-      and: [
-        { property: 'Email', email: { equals: email } },
-        { property: 'Village', rich_text: { equals: village } },
-      ],
-    })).map(parseVolunteer)[0];
-
-    if (existing) {
-      const cards = mergeCard(existing.cards, card);
-      const res = await fetch(`https://api.notion.com/v1/pages/${existing.id}`, {
-        method: 'PATCH',
-        headers: notionHeaders(),
-        body: JSON.stringify({ properties: {
-          'Cards': { rich_text: rtChunks(JSON.stringify(cards)) },
-          'PPCA Member': { checkbox: isMember || existing.isMember },
-          ...(message ? { 'Message': { rich_text: rtChunks([existing.message, `[${cardTitle}] ${message}`].filter(Boolean).join('\n').slice(0, 2000)) } } : {}),
-        } }),
-      });
-      if (!res.ok) throw new Error(`Notion responded ${res.status}`);
-      await notifyStewards({ fullName: existing.name, cardTitle, cardPath, email, phone, message, village, isExisting: true }, context);
-      await mirrorToSupabase({ firstName, lastName, email, phone, isMember, village, cardPath, cardTitle });
-      return jsonResp(200, { ok: true });
-    }
-
-    const res = await fetch('https://api.notion.com/v1/pages', {
-      method: 'POST',
-      headers: notionHeaders(),
-      body: JSON.stringify({
-        parent: { database_id: VOLUNTEERS_DB_ID },
-        properties: {
-          'Volunteer': { title: [{ text: { content: fullName } }] },
-          'First Name': { rich_text: rtChunks(firstName) },
-          'Last Name': { rich_text: rtChunks(lastName) },
-          'Email': { email },
-          'Phone': phone ? { phone_number: phone } : { phone_number: null },
-          'Village': { rich_text: rtChunks(village) },
-          'Cards': { rich_text: rtChunks(JSON.stringify([card])) },
-          'Status': { select: { name: 'Applied' } },
-          'PPCA Member': { checkbox: isMember },
-          'Message': { rich_text: rtChunks(message) },
-          'Date Joined': { date: { start: today } },
-          'Logged By': { rich_text: rtChunks(`public form (${email})`) },
-        },
-      }),
-    });
-    if (!res.ok) throw new Error(`Notion responded ${res.status}`);
-    await notifyStewards({ fullName, cardTitle, cardPath, email, phone, message, village, isExisting: false }, context);
-    await mirrorToSupabase({ firstName, lastName, email, phone, isMember, village, cardPath, cardTitle });
+    const { isExisting, fullName } = await writeVolunteer({ firstName, lastName, email, phone, isMember, village, cardPath, cardTitle });
+    await notifyStewards({ fullName, cardTitle, cardPath, email, phone, message, village, isExisting }, context);
     return jsonResp(200, { ok: true });
   } catch (err) {
     return jsonResp(502, { error: 'Sorry — we could not record your signup just now. Please try again shortly.' });
