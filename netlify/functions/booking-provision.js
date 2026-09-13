@@ -1,20 +1,25 @@
 /**
  * booking-provision.js — POST /api/booking-provision   (SUPER-ADMIN only)
  *
- * One-time setup for Facility bookings: creates 🏛 VF Facilities and
- * 📅 VF Bookings under the Smiths Lake Community page, and seeds the
- * facilities register with the Community Hall (placeholder rates — the
- * committee corrects them in the admin tool).
+ * One-time setup for Facility bookings: creates 🏛 VF Facilities under the
+ * Smiths Lake Community page and seeds the register with the Community Hall
+ * (placeholder rates — the committee corrects them in the admin tool).
+ *
+ * The BOOKINGS themselves no longer live in Notion. Since Phase 2 of the PII
+ * plan (14 Sep 2026) every hire request lands in the Supabase `bookings` table
+ * (migration 0014, applied once per Supabase project — not per village), so
+ * there is nothing to provision for them here. NOTION_VF_BOOKINGS_DB_ID is
+ * retired; this route used to create that DB too.
  *
  * Body (optional): { parentPageId }  — defaults to the Smiths Lake Community
  * page both integrations are connected to.
  *
- * Idempotent: DBs whose env var is already set are skipped and echoed.
- * Env vars to set after: NOTION_VF_FACILITIES_DB_ID / NOTION_VF_BOOKINGS_DB_ID.
+ * Idempotent: a DB whose env var is already set is skipped and echoed.
+ * Env var to set after: NOTION_VF_FACILITIES_DB_ID.
  */
 
 import { requireRole } from './_auth.js';
-import { FACILITIES_DB_ID, BOOKINGS_DB_ID, notionHeaders, jsonResp, rtChunks } from './_bookings.js';
+import { FACILITIES_DB_ID, T_BOOKINGS, notionHeaders, jsonResp, rtChunks } from './_bookings.js';
 
 const DEFAULT_PARENT = '2c6d508adfc180c6a1a6e3df41c1dd09'; // Smiths Lake Community page
 
@@ -35,39 +40,6 @@ const SCHEMAS = {
       'Conditions': { rich_text: {} },
       'Status': { select: { options: [{ name: 'Active', color: 'green' }, { name: 'Inactive', color: 'gray' }] } },
       'Order': { number: {} },
-    },
-  },
-  bookings: {
-    title: '📅 VF Bookings',
-    existing: BOOKINGS_DB_ID,
-    envVar: 'NOTION_VF_BOOKINGS_DB_ID',
-    properties: {
-      'Booking': { title: {} },
-      'Village': { rich_text: {} },
-      'Facility': { rich_text: {} },
-      'Facility ID': { rich_text: {} },
-      'Date': { date: {} },
-      'Name': { rich_text: {} },
-      'Email': { email: {} },
-      'Phone': { phone_number: {} },
-      'Purpose': { rich_text: {} },
-      'Attendees': { number: {} },
-      'Status': { select: { options: [
-        { name: 'Requested', color: 'yellow' }, { name: 'Confirmed', color: 'green' },
-        { name: 'Declined', color: 'red' }, { name: 'Cancelled', color: 'gray' },
-        { name: 'Completed', color: 'blue' },
-      ] } },
-      'Fee Quoted': { number: {} },
-      'Bond': { number: {} },
-      'Payment Date': { date: {} },
-      'Payment Reference': { rich_text: {} },
-      'Amount Paid': { number: {} },
-      'Bond Returned': { checkbox: {} },
-      'Note': { rich_text: {} },
-      'Logged By': { rich_text: {} },
-      'Last Updated By': { rich_text: {} },
-      'Last Email': { rich_text: {} },
-      'Date Requested': { date: {} },
     },
   },
 };
@@ -137,6 +109,7 @@ export const handler = async (event, context) => {
       ok: true,
       created,
       envVars: chunked,
+      bookings: `Bookings live in the Supabase table "${T_BOOKINGS}" (migration 0014) — nothing to provision in Notion.`,
       next: created.length ? 'Set these env vars (join the id chunks) and redeploy.' : 'Already provisioned.',
     });
   } catch (err) {

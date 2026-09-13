@@ -484,7 +484,7 @@
 
   async function doDelete() {
     const b = bookings.find(x => x.id === openId);
-    if (!b || !confirm('Permanently remove this booking for ' + b.name + '?\n\nMoves to Notion\'s trash. Use Declined or Cancelled to keep the record.')) return;
+    if (!b || !confirm('Permanently remove this booking for ' + b.name + '?\n\nIt is archived (the super-admin can restore it). Use Declined or Cancelled to keep the record.')) return;
     try { await call({ action: 'delete' }, 'bk-msg'); openId = null; await loadAll(); showPanel('bookings'); }
     catch (e) { setMsg('bk-msg', e.message, 'err'); }
   }
