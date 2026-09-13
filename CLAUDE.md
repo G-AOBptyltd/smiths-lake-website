@@ -20,6 +20,24 @@ as coaching/course signals in `AOB-Course-Roadmap-Signal-Log.md` (per `.claude/r
 Nothing else. **If you are ever unsure whether something creates an Agility Ops ↔ VillageFirst
 crossover, STOP and ask Greg before proceeding.**
 
+## Where a record lives (STRICT — decide before you build)
+**Name the data class before choosing the store, and say so out loud.** There are exactly
+two stores and one rule:
+- **Identifies a person** (name, email, phone, address, what happened to them, what they
+  paid) → **Supabase** (`tzdpcowvhnryurgqtstx`, Sydney, deny-by-default RLS) via the shared
+  `netlify/functions/_supa.js` client. Public forms insert one narrow row; admin functions
+  re-check Netlify Identity role + village on every call.
+- **Content a committee edits like a document** (news, services, events, facilities, grants,
+  project budgets) → **Notion** (the CMS).
+"Build it like the grants module" is an instruction about UI and code shape, never about
+storage. Nothing else holds personal data: no Netlify Forms, no Zapier, no third-party
+list as the master copy. A migration is finished only when every **public writer** has been
+pointed at the new store — check the code, not the row count (the volunteer form kept
+writing Notion for a week after the "completed" 7 Sep migration). Simplification is the
+strategy: one client, one intake pattern (public form → Supabase row → committee email),
+one consent record, one retention engine, one check. Plan + history:
+`~/AgilityOpsBizAI/AOB/villagefirst/docs/Village1st-PII-Consolidation-Plan-v1.4.html`.
+
 ## Project Overview
 - **Local path:** `~/AgilityOpsBizAI/repos/Village1stPlatform/smiths-lake-website` (moved here 14 Aug 2026 from `~/AOB Websites/`; repo index at `~/AgilityOpsBizAI/repos/CLAUDE.md`)
 - **Live site:** https://villagefirst.org.au
@@ -174,12 +192,13 @@ Card-level volunteer management: network → village → **card** (a content pag
 ## Facility bookings (/facilities/ + /admin/bookings/, added Aug 2026)
 Community-hall hire: public page shows rates + a 2-month availability calendar (live from
 `/api/booking-availability` — no rebuild when rates change) and posts requests (member-join
-hardening) → 📅 VF Bookings as **Requested**; the committee confirms every booking (no
+hardening) → the Supabase `bookings` table as **Requested** (migration 0014, Sep 2026 — the
+📅 VF Bookings Notion register is retired); the committee confirms every booking (no
 auto-confirm; clashes are flagged, not rejected — committee decides). 🏛 VF Facilities holds
 the hireable spaces + rates/conditions, edited in the console (Facilities & rates tab).
 Created by POST `/api/booking-provision` (super-admin; seeds the hall with placeholder rates);
-env vars `NOTION_VF_FACILITIES_DB_ID` / `NOTION_VF_BOOKINGS_DB_ID`. Booking Date property
-holds start+end datetimes → conflict check is one interval overlap. Status flow Requested →
+env var `NOTION_VF_FACILITIES_DB_ID` (`NOTION_VF_BOOKINGS_DB_ID` is retired). `start_at`/`end_at`
+are local wall-clock timestamps → conflict check is one interval overlap. Status flow Requested →
 Confirmed | Declined → Cancelled / Completed; payment recorded manually (fee/bond/reference/
 bond-returned) until Tyro; emails (confirmed incl. `VF_BOOKING_PAY_INSTRUCTIONS` (falls back
 to `VF_MEMBER_PAY_INSTRUCTIONS`) + conditions, declined) via VF Resend, stamped in Last Email.
@@ -188,15 +207,16 @@ Functions: `booking-availability` (public, no PII), `booking-request` (public), 
 
 ## Events & ticketing (/events/ + /admin/events/, added Aug 2026)
 Pre-Tyro model chosen by Greg: **RSVP + capacity + pay at the door**. 🎟 VF Events (Status
-Draft → Published → Closed/Cancelled/Completed; only Published show publicly) + 🙌 VF Event
-RSVPs (Registered | Waitlist | Cancelled | Attended; a row = a party of ≤10 seats). Capacity
+Draft → Published → Closed/Cancelled/Completed; only Published show publicly) + the Supabase
+`event_rsvps` table (migration 0014, Sep 2026 — the 🙌 VF Event RSVPs Notion register is
+retired; Registered | Waitlist | Cancelled | Attended; a row = a party of ≤10 seats). Capacity
 enforced SERVER-side at RSVP time — full events take Waitlist rows and say so honestly;
 promoting off the waitlist re-checks capacity (409 + force override). Public /events/ loads
 live from `event-list` (no PII — seats counted only) and posts to `event-rsvp` (member-join
 hardening; auto confirmation email to registrant + committee heads-up, env-gated fail-open).
 Console /admin/events/: event editor, door list (✓ Arrived check-in, per-party door takings
-via `rsvpPayment`, waitlist promote, door-list CSV). Env `NOTION_VF_EVENTS_DB_ID` /
-`NOTION_VF_EVENT_RSVPS_DB_ID` + baked fallbacks. Functions: `event-list` (public),
+via `rsvpPayment`, waitlist promote, door-list CSV). Env `NOTION_VF_EVENTS_DB_ID` + baked
+fallback (`NOTION_VF_EVENT_RSVPS_DB_ID` is retired). Functions: `event-list` (public),
 `event-rsvp` (public), `event-admin` (admin, PII), shared `_events.js`. Village-segregated
 like bookings (Village column + village-scoped roles); per-village payment config arrives
 with the Villages-registry generalisation pass (see Facility bookings section).
