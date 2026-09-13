@@ -276,11 +276,20 @@
     // grants, volunteer groups (and their hours) and contributions, with reports.
     { id: 'projects', minPackage: 'complete', icon: '🗂️', name: 'Projects', desc: 'The project system of record — budgets, grants, volunteers & hours in one place, with steering-committee reports', href: '/admin/projects/', roles: ['admin', 'treasurer', 'pm'], moduleToggle: true },
     { id: 'profile',  icon: '📇', name: 'Village profile', desc: 'The community resilience profile — snapshot, hazards, facilities & the action register', href: '/admin/profile/', roles: ['admin', 'steward'], moduleToggle: true },
+    // Recovery Support completes the resilience arc: profile (prepare) →
+    // emergency (respond) → recovery (the weeks afterwards). Deliberately in
+    // EVERY package — no minPackage — so a village is never locked out of
+    // coordinating its own recovery by its plan (see _entitlements.js).
+    { id: 'recovery', icon: '🌱', name: 'Recovery support', desc: 'The weeks after a fire, flood or storm — who needs what, who has offered help, and the evidence for a recovery-funding claim', href: '/admin/recovery/', roles: ['admin', 'emergency', 'steward'], moduleToggle: true },
     { id: 'services', icon: '🏪', name: 'Services directory',  desc: 'Keep every service listing accurate — service stewards manage their own', href: '/admin/services/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'emergency', icon: '🚨', name: 'Emergency & Safety',  desc: 'Coordinate the emergency & safety cards — contacts, hours & response info', href: '/admin/emergency/', roles: ['admin', 'emergency'], moduleToggle: true },
     { id: 'members',  icon: '🪪', name: 'Membership',          desc: 'Member register — approvals, payments, renewals & member emails', href: '/admin/members/', roles: ['admin'], moduleToggle: true },
     { id: 'events', minPackage: 'growth',   icon: '🎟️', name: 'Events & ticketing', desc: 'Create events, take registrations, run the door on the night', href: '/admin/events/', roles: ['admin'], publicToggle: true, moduleToggle: true },
     { id: 'ads', minPackage: 'growth',      icon: '📣', name: 'Advertising',        desc: 'Local business placements & sponsorships — dates, tiers & fees', href: '/admin/ads/', roles: ['admin'], moduleToggle: true },
+    // Each seller keeps their own money and is paid directly; one seller per
+    // order. publicToggle is wired fail-closed for the resident-facing
+    // storefront, which is a later phase — the console works either way.
+    { id: 'popup', minPackage: 'growth', icon: '🛍', name: 'Online pop-up store', desc: 'A pop-up shopfront for local makers, markets and fundraising ranges — every seller keeps their own money', href: '/admin/popup/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'volunteers', minPackage: 'growth', icon: '🙋', name: 'Volunteer hub',     desc: 'Group rosters, working bees & volunteer hours — stewards see their own groups', href: '/admin/volunteers/', roles: ['admin', 'steward'], moduleToggle: true },
     { id: 'vappapprovals', minPackage: 'growth', icon: '📲', name: 'App approvals',   desc: 'RSVPs, on-site sign-ins & hours from the volunteer app — approve or adjust', href: '/admin/volunteers/hours/', roles: ['admin', 'steward'] },
     { id: 'subscribers', icon: '📧', name: 'Subscribers',     desc: 'The community newsletter mailing list — who’s signed up for updates', href: '/admin/subscribers/', roles: ['admin'], moduleToggle: true },

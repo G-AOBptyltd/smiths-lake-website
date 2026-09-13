@@ -371,6 +371,33 @@
   to = "/.netlify/functions/profile-admin"
   status = 200
 
+# Resilience Recovery Support API
+[[redirects]]
+  from = "/api/recovery-admin"
+  to = "/.netlify/functions/recovery-admin"
+  status = 200
+
+[[redirects]]
+  from = "/api/recovery-register"
+  to = "/.netlify/functions/recovery-register"
+  status = 200
+
+# Online Pop-Up Store API
+[[redirects]]
+  from = "/api/store-admin"
+  to = "/.netlify/functions/store-admin"
+  status = 200
+
+[[redirects]]
+  from = "/api/store-catalogue"
+  to = "/.netlify/functions/store-catalogue"
+  status = 200
+
+[[redirects]]
+  from = "/api/store-orders"
+  to = "/.netlify/functions/store-orders"
+  status = 200
+
 # Events & ticketing API
 [[redirects]]
   from = "/api/event-list"

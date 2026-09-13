@@ -24,6 +24,7 @@
     { id: 'grants',   href: '/admin/grants/',            label: '🏆 Grants' },
     { id: 'projects', href: '/admin/projects/',          label: '🗂 Projects' },
     { id: 'profile',  href: '/admin/profile/',           label: '📇 Profile' },
+    { id: 'recovery', href: '/admin/recovery/',          label: '🌱 Recovery' },
     { id: 'services', href: '/admin/services/',          label: '🏪 Services' },
     { id: 'emergency', href: '/admin/emergency/',        label: '🚨 Emergency' },
     { id: 'members',  href: '/admin/members/',           label: '🪪 Membership' },
@@ -32,6 +33,7 @@
     { id: 'bookings', href: '/admin/bookings/',          label: '🏛 Bookings' },
     { id: 'events',   href: '/admin/events/',            label: '🎟 Events' },
     { id: 'ads',      href: '/admin/ads/',               label: '📣 Advertising' },
+    { id: 'popup',    href: '/admin/popup/',             label: '🛍 Pop-up store' },
     { id: 'playbook', href: '/admin/playbook/',          label: '📖 Playbooks' },
   ];
 
@@ -46,6 +48,8 @@
     if (p.indexOf('/admin/grants') === 0) return 'grants';
     if (p.indexOf('/admin/projects') === 0) return 'projects';
     if (p.indexOf('/admin/profile') === 0) return 'profile';
+    if (p.indexOf('/admin/recovery') === 0) return 'recovery';
+    if (p.indexOf('/admin/popup') === 0) return 'popup';
     if (p.indexOf('/admin/emergency') === 0) return 'emergency';
     if (p.indexOf('/admin/services') === 0) return 'services';
     if (p.indexOf('/admin/subscribers') === 0) return 'subscribers';

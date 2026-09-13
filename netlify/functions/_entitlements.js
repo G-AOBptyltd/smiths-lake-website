@@ -29,9 +29,21 @@ const LEGACY_PLAN = { foundation: 'starter', interactive: 'growth', complete: 'c
 // Lowest plan that includes each PRICED module. Modules NOT listed here are in
 // every plan (the Starter base: website/pages, news, services, members, profile,
 // grants, admin, publish, playbook) and are never gated.
+//
+// `recovery` (Resilience Recovery Support) is DELIBERATELY absent, so it is in
+// every plan. Same reasoning as the Grant Portal, for a different reason: a
+// village coordinating the weeks after a fire, flood or storm must never be
+// locked out of its own recovery register by a subscription tier. It also
+// completes the preparedness -> response -> recovery arc that `profile` and
+// `emergency` already give every Starter village. To price it instead, add
+// `recovery: 'growth'` here and set minPackage on its tile in
+// public/admin/index.html - those two lines are the whole change.
 export const MODULE_MIN_PLAN = {
   // Growth tier
   surveys: 'growth', volunteers: 'growth', events: 'growth', bookings: 'growth', ads: 'growth',
+  // The pop-up store sits with the other 'engage & mobilise' modules: it brings
+  // local business onto the village site the same way advertising does.
+  popup: 'growth',
   // Complete tier
   projects: 'complete', contrib: 'complete', cocon: 'complete',
 };

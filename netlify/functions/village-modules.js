@@ -31,9 +31,9 @@ import { requireRole } from './_auth.js';
 
 const NOTION_VERSION = '2022-06-28';
 const VILLAGES_DB_ID = process.env.NOTION_VF_VILLAGES_DB_ID || '2c6272ccd9174103a077087c5de250d0';
-const TOGGLABLE = ['events', 'bookings'];
+const TOGGLABLE = ['events', 'bookings', 'popup'];
 // Modules a super-admin can switch on/off per village (portal tile ids).
-const MODULES = ['surveys', 'news', 'contrib', 'cocon', 'grants', 'projects', 'profile', 'services', 'emergency', 'members', 'events', 'ads', 'volunteers', 'bookings'];
+const MODULES = ['surveys', 'news', 'contrib', 'cocon', 'grants', 'projects', 'profile', 'services', 'emergency', 'members', 'events', 'ads', 'volunteers', 'bookings', 'recovery', 'popup'];
 // Village1st plans (village1st.com.au): Starter | Growth | Complete.
 // Legacy values (foundation/interactive/complete) still read fine and normalise
 // via _entitlements.normalisePlan; existing rows are unaffected until re-set.

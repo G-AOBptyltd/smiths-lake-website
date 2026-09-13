@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Online Pop-Up Store — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; color: #1e293b; font-size: 13px; }
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; font-family: inherit; }
+  .village-select option { color: #1f2937; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 1.4rem 1rem 3rem; }
+  .ph { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .ph-title { font-size: 1.05rem; font-weight: 700; color: #143d2e; }
+  .ph-sub { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+  .ph-acts { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { padding: 6px 13px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
+  .btn-g { background: #0f8f80; color: #fff; }
+  .btn-g:hover { background: #0c7568; }
+  .btn-s { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+  .btn-r { background: #fee2e2; color: #dc2626; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center; }
+  .stat .n { font-size: 20px; font-weight: 900; color: #143d2e; }
+  .stat .l { font-size: 10.5px; color: #6b7280; font-weight: 600; margin-top: 3px; }
+
+  .grp-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #64748b; margin: 16px 0 8px; }
+  .g-row { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .g-row:hover { border-color: #0f8f80; }
+  .g-name { font-weight: 700; color: #0f172a; }
+  .g-meta { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .g-amt { margin-left: auto; text-align: right; }
+  .g-amt .a { font-weight: 800; color: #143d2e; }
+  .g-amt .l { font-size: 10px; color: #9ca3af; }
+  .pill { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+
+  /* Season */
+  .st-Draft { background: #f1f5f9; color: #475569; }
+  .st-Open { background: #dcfce7; color: #166534; }
+  .st-Closed { background: #e0e7ff; color: #3730a3; }
+  .st-Archived { background: #f3f4f6; color: #6b7280; }
+  /* Seller */
+  .st-Invited { background: #f1f5f9; color: #475569; }
+  .st-Onboarding { background: #fef3c7; color: #92400e; }
+  .st-Approved { background: #dbeafe; color: #1d4ed8; }
+  .st-Live { background: #dcfce7; color: #166534; }
+  .st-Suspended { background: #fee2e2; color: #b91c1c; }
+  /* Product */
+  .st-Active { background: #dcfce7; color: #166534; }
+  .st-Soldout { background: #fef3c7; color: #92400e; }
+  .st-Withdrawn { background: #f3f4f6; color: #6b7280; }
+  /* Order payment */
+  .st-Awaitingpayment { background: #fef3c7; color: #92400e; }
+  .st-Paidconfirmedbyseller { background: #dcfce7; color: #166534; }
+  .st-Refundedbyseller { background: #e0e7ff; color: #3730a3; }
+  .st-Cancelled { background: #f3f4f6; color: #6b7280; }
+  /* Order fulfilment */
+  .st-New { background: #f1f5f9; color: #475569; }
+  .st-Packed { background: #e0e7ff; color: #3730a3; }
+  .st-Readyforpickup { background: #dbeafe; color: #1d4ed8; }
+  .st-Collected { background: #dcfce7; color: #166534; }
+  .st-Shipped { background: #dbeafe; color: #1d4ed8; }
+  .st-Completed { background: #dcfce7; color: #166534; }
+
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; }
+  .card + .card { margin-top: 12px; }
+  .card-t { font-size: 12px; font-weight: 800; color: #143d2e; margin-bottom: 10px; }
+  .f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .f-f { margin-bottom: 4px; }
+  .f-l { font-size: 10px; font-weight: 700; color: #374151; margin-bottom: 3px; }
+  .f-i { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 5px; padding: 7px 9px; font-size: 12px; background: #fff; outline: none; font-family: inherit; color: #1e293b; }
+  .f-i:focus { border-color: #0f8f80; }
+  textarea.f-i { resize: vertical; }
+  .f-hint { font-size: 10px; color: #9ca3af; margin-top: 3px; }
+  .form-acts { display: flex; gap: 8px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
+  .msg { font-size: 11px; font-weight: 600; }
+  .msg.ok { color: #16a34a; } .msg.err { color: #dc2626; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab { font-size: 12px; font-weight: 600; color: #4b5563; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 5px 14px; cursor: pointer; font-family: inherit; }
+  .tab:hover { background: #f0fdf6; }
+  .tab.on { background: #0f5c48; color: #fff; border-color: #0f5c48; font-weight: 700; }
+  .tabpanel { display: none; } .tabpanel.on { display: block; }
+
+  .empty { text-align: center; padding: 36px 16px; color: #9ca3af; }
+  .note { font-size: 11.5px; color: #6b7280; margin-top: 14px; line-height: 1.5; }
+  .money-rule { background: #f0fdf6; border: 1px solid #b6e3d0; border-left: 3px solid #0f8f80; border-radius: 8px; padding: 11px 13px; font-size: 11.5px; color: #14532d; line-height: 1.55; margin-bottom: 14px; }
+  .money-rule b { color: #0f5c48; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 12px; }
+  .kv dt { color: #6b7280; } .kv dd { font-weight: 600; color: #0f172a; word-break: break-word; }
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.tbl th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #64748b; padding: 6px 8px; border-bottom: 1px solid #e2e8f0; }
+  table.tbl td { padding: 7px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  table.tbl tr:hover td { background: #f9fafb; }
+  .line { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .line select, .line input { font-family: inherit; }
+  .line .qty { max-width: 80px; }
+  .totals { text-align: right; font-size: 12px; margin-top: 10px; }
+  .totals .big { font-size: 16px; font-weight: 900; color: #143d2e; }
+
+  .vf-toast { position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 12px; opacity: 0; transition: opacity .3s; z-index: 999; }
+  .vf-toast.show { opacity: 1; }
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; text-align: center; padding: 1rem; }
+  .auth-btn { background: #15795f; color: #fff; border: none; border-radius: 8px; padding: .75rem 2rem; font-size: .95rem; font-weight: 700; cursor: pointer; }
+  @media (max-width: 760px) { .f-grid { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">🛍</div>
+  <h1 style="font-size:1.2rem;color:#143d2e;">Online Pop-Up Store</h1>
+  <p style="font-size:.85rem;color:#6b7280;max-width:400px;">A pop-up storefront for local makers, markets and community fundraising ranges. Every seller keeps their own money. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand">🛍 VillageFirst · Pop-Up Store</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="wrap">
+
+    <!-- ══ LIST: seasons + sellers ══ -->
+    <div id="panel-list">
+      <div class="ph">
+        <div><div class="ph-title">Pop-up store</div><div class="ph-sub" id="list-sub">Seasons and the seller register</div></div>
+        <div class="ph-acts">
+          <button class="btn btn-s" id="new-seller-btn" onclick="newSeller()">+ New seller</button>
+          <button class="btn btn-g" id="new-season-btn" onclick="newSeason()">+ New season</button>
+        </div>
+      </div>
+      <div class="money-rule">
+        <b>How the money works.</b> Every seller is paid <b>directly</b> by the buyer, into the seller's own account, using the seller's
+        own payment link or arrangement. The village <b>never holds, pools or forwards a seller's money</b> — so these takings are not
+        village income, and the committee is not acting as a payment service. One order always belongs to <b>one seller</b>, which is what
+        keeps settlement and refunds clean.
+      </div>
+      <div class="stats" id="list-stats"></div>
+
+      <div class="tabs">
+        <button class="tab on" data-tab="seasons" onclick="showListTab('seasons')">Seasons</button>
+        <button class="tab" data-tab="sellers" onclick="showListTab('sellers')">Sellers</button>
+      </div>
+      <div class="tabpanel on" id="ltab-seasons">
+        <div id="season-list"><div class="empty">Loading…</div></div>
+        <div class="note">A <b>season</b> is one pop-up: a summer market, a Christmas fundraiser, a one-weekend art trail.
+        Create it as a <b>Draft</b>, add sellers and their range, set it <b>Open</b> when trading starts, and <b>Closed</b> when the season ends.
+        Nothing about a closed season disappears — the orders stay as a trading record.</div>
+      </div>
+      <div class="tabpanel" id="ltab-sellers">
+        <div id="seller-list"></div>
+        <div class="note">A seller goes <b>Live</b> only once the committee has recorded <b>how that seller gets paid directly</b> and ticked
+        the confirmation. Until then their products cannot go Active and no orders can be taken — that is the safeguard that keeps the
+        village out of other people's money.</div>
+      </div>
+    </div>
+
+    <!-- ══ SEASON DETAIL ══ -->
+    <div id="panel-season" style="display:none;">
+      <div class="ph">
+        <div><div class="ph-title" id="s-title">—</div><div class="ph-sub" id="s-sub"></div></div>
+        <div class="ph-acts">
+          <select class="f-i" id="s-status" style="max-width:140px;" onchange="setSeasonStatus(this.value)"></select>
+          <button class="btn btn-s" onclick="editSeason()">Edit season</button>
+          <button class="btn btn-s" onclick="exportOrders()">⬇ Export orders (CSV)</button>
+          <button class="btn btn-s" onclick="showList()">← All seasons</button>
+        </div>
+      </div>
+      <div id="s-msg" class="msg" style="margin-bottom:10px;"></div>
+
+      <div class="tabs">
+        <button class="tab on" data-tab="overview" onclick="showTab('overview')">Overview</button>
+        <button class="tab" data-tab="products" onclick="showTab('products')">Products</button>
+        <button class="tab" data-tab="orders" onclick="showTab('orders')">Orders</button>
+      </div>
+
+      <div class="tabpanel on" id="tab-overview">
+        <div class="stats" id="s-stats"></div>
+        <div class="card"><div class="card-t">The season</div><dl class="kv" id="s-kv"></dl></div>
+        <div class="card" id="s-terms-card" style="display:none;">
+          <div class="card-t">Terms shown to buyers</div>
+          <div id="s-terms" style="font-size:12.5px;line-height:1.6;white-space:pre-wrap;"></div>
+        </div>
+      </div>
+
+      <div class="tabpanel" id="tab-products">
+        <div class="ph">
+          <div><div class="ph-title" style="font-size:.95rem;">Range for this season</div><div class="ph-sub">Each seller's products — price, stock and how it is collected</div></div>
+          <div class="ph-acts"><button class="btn btn-g" onclick="newProduct()">+ Add a product</button></div>
+        </div>
+        <div id="products-body"></div>
+      </div>
+
+      <div class="tabpanel" id="tab-orders">
+        <div class="ph">
+          <div><div class="ph-title" style="font-size:.95rem;">Orders</div><div class="ph-sub">Market-day, phone and email orders — one seller each</div></div>
+          <div class="ph-acts"><button class="btn btn-g" onclick="newOrder()">+ Take an order</button></div>
+        </div>
+        <div id="orders-body"></div>
+      </div>
+    </div>
+
+    <!-- ══ SEASON EDITOR ══ -->
+    <div id="panel-season-edit" style="display:none;">
+      <div class="ph">
+        <div><div class="ph-title" id="se-title">New pop-up season</div><div class="ph-sub">When the store is open, where things are collected, and the terms buyers see</div></div>
+        <div class="ph-acts"><button class="btn btn-s" onclick="backFromSeasonEdit()">← Back</button></div>
+      </div>
+      <div class="card">
+        <div class="f-grid">
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Season name *</div><input class="f-i" id="se-name" placeholder="e.g. Summer market 2026–27"></div>
+          <div class="f-f"><div class="f-l">Opens</div><input class="f-i" id="se-opens" type="date"></div>
+          <div class="f-f"><div class="f-l">Closes</div><input class="f-i" id="se-closes" type="date"></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Coordinator</div><input class="f-i" id="se-coord" placeholder="Who is running this pop-up"></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Collection points</div><textarea class="f-i" id="se-points" rows="2" placeholder="e.g. Community hall, Saturdays 9–11am · The Saturday market stall"></textarea>
+            <div class="f-hint">Where buyers pick things up. One per line is fine.</div></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Terms buyers see</div><textarea class="f-i" id="se-terms" rows="3" placeholder="Refunds, collection deadlines, who to contact about an order…"></textarea>
+            <div class="f-hint">Say clearly that each seller is paid directly and handles their own refunds — because they are, and they do.</div></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Internal notes</div><textarea class="f-i" id="se-notes" rows="2"></textarea></div>
+        </div>
+        <div class="form-acts">
+          <button class="btn btn-g" id="se-save" onclick="saveSeason()">Save season</button>
+          <button class="btn btn-r" id="se-del" style="display:none;" onclick="deleteSeason()">Delete</button>
+          <span id="se-msg" class="msg"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SELLER EDITOR ══ -->
+    <div id="panel-seller" style="display:none;">
+      <div class="ph">
+        <div><div class="ph-title" id="sl-title">New seller</div><div class="ph-sub">Who they are, what they sell, and how they get paid — directly</div></div>
+        <div class="ph-acts"><button class="btn btn-s" onclick="backToListTab('sellers')">← Back to sellers</button></div>
+      </div>
+      <div class="money-rule">
+        <b>Never enter bank or card details here.</b> The only payment information this register holds is the seller's own
+        <b>https:// payment link</b> (their payment page, their online store, their invoicing link) or a note that they take payment
+        themselves. The village never receives their money, so it never needs their account details — and the field will refuse
+        anything that is not a web address.
+      </div>
+      <div class="card">
+        <div class="f-grid">
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Seller name *</div><input class="f-i" id="sl-name" placeholder="e.g. Wild Fig Mobile Cafe"></div>
+          <div class="f-f"><div class="f-l">Seller type</div><select class="f-i" id="sl-type"></select></div>
+          <div class="f-f"><div class="f-l">ABN <span style="font-weight:400;color:#9ca3af;">(if they have one)</span></div><input class="f-i" id="sl-abn"></div>
+          <div class="f-f"><div class="f-l">Contact name</div><input class="f-i" id="sl-cname"></div>
+          <div class="f-f"><div class="f-l">Contact email</div><input class="f-i" id="sl-email" type="email"></div>
+          <div class="f-f"><div class="f-l">Contact phone</div><input class="f-i" id="sl-phone"></div>
+          <div class="f-f"><div class="f-l">Logo image URL</div><input class="f-i" id="sl-logo" placeholder="https://…"></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">About this seller</div><textarea class="f-i" id="sl-about" rows="2" placeholder="A line or two the community will read"></textarea></div>
+        </div>
+        <div class="card-t" style="margin-top:16px;">How this seller gets paid — directly</div>
+        <div class="f-grid">
+          <div class="f-f"><div class="f-l">Payment method</div><select class="f-i" id="sl-paymethod"></select></div>
+          <div class="f-f"><div class="f-l">Their own payment link (https)</div><input class="f-i" id="sl-paylink" placeholder="https://…">
+            <div class="f-hint">The seller's own payment or store page. Not a bank account. Not the village's anything.</div></div>
+          <div class="f-f"><div class="f-l">How things are collected</div><select class="f-i" id="sl-fulfil"></select></div>
+          <div class="f-f"><div class="f-l">Their delivery fee ($)</div><input class="f-i" id="sl-fee" type="number" min="0" step="0.5"></div>
+          <div class="f-f" style="grid-column:1/-1;" id="sl-confirm-wrap">
+            <label style="display:flex;gap:7px;align-items:flex-start;font-size:11.5px;">
+              <input type="checkbox" id="sl-confirmed" style="margin-top:2px;">
+              <span><b>Payment arrangement confirmed</b> — the committee has checked this seller is paid directly and the village handles none of their money. Required before the seller can go Live.</span>
+            </label>
+          </div>
+          <div class="f-f" style="grid-column:1/-1;" id="sl-steward-wrap">
+            <div class="f-l">Seller steward — sign-in email(s)</div><input class="f-i" id="sl-steward" placeholder="maker@example.com">
+            <div class="f-hint">A steward with this sign-in email manages <b>only this seller's</b> listing and orders — the same way service stewards manage their own service listing. Comma-separate for more than one.</div>
+          </div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Internal notes</div><textarea class="f-i" id="sl-notes" rows="2"></textarea></div>
+        </div>
+        <div class="form-acts">
+          <button class="btn btn-g" id="sl-save" onclick="saveSeller()">Save seller</button>
+          <select class="f-i" id="sl-status" style="max-width:150px;display:none;" onchange="setSellerStatus(this.value)"></select>
+          <button class="btn btn-r" id="sl-del" style="display:none;" onclick="deleteSeller()">Delete</button>
+          <span id="sl-msg" class="msg"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PRODUCT EDITOR ══ -->
+    <div id="panel-product" style="display:none;">
+      <div class="ph">
+        <div><div class="ph-title" id="p-title">Add a product</div><div class="ph-sub">One item in a seller's range for this season</div></div>
+        <div class="ph-acts"><button class="btn btn-s" onclick="backToSeason('products')">← Back to products</button></div>
+      </div>
+      <div class="card">
+        <div class="f-grid">
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Product name *</div><input class="f-i" id="p-name" placeholder="e.g. Smiths Lake tea towel"></div>
+          <div class="f-f"><div class="f-l">Seller *</div><select class="f-i" id="p-seller"></select></div>
+          <div class="f-f"><div class="f-l">Category</div><select class="f-i" id="p-cat"></select></div>
+          <div class="f-f"><div class="f-l">Price ($) *</div><input class="f-i" id="p-price" type="number" min="0" step="0.5">
+            <div class="f-hint">0 is fine for a free or “pay what you like” item.</div></div>
+          <div class="f-f"><div class="f-l">Stock</div><input class="f-i" id="p-stock" type="number" min="0" step="1"></div>
+          <div class="f-f"><div class="f-l">How it is collected</div><select class="f-i" id="p-fulfil"></select></div>
+          <div class="f-f"><div class="f-l">Sort order</div><input class="f-i" id="p-sort" type="number" step="1" placeholder="100"></div>
+          <div class="f-f"><div class="f-l">Image URL</div><input class="f-i" id="p-img" placeholder="https://…"></div>
+          <div class="f-f"><div class="f-l">SKU</div><input class="f-i" id="p-sku"></div>
+          <div class="f-f" style="grid-column:1/-1;">
+            <label style="display:flex;gap:7px;align-items:center;font-size:11.5px;">
+              <input type="checkbox" id="p-unlimited"><span><b>Unlimited stock</b> — made to order, or a service</span>
+            </label>
+          </div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Description</div><textarea class="f-i" id="p-desc" rows="3"></textarea></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Internal notes</div><textarea class="f-i" id="p-notes" rows="2"></textarea></div>
+        </div>
+        <div class="form-acts">
+          <button class="btn btn-g" id="p-save" onclick="saveProduct()">Save product</button>
+          <select class="f-i" id="p-status" style="max-width:150px;display:none;" onchange="setProductStatus(this.value)"></select>
+          <button class="btn btn-r" id="p-del" style="display:none;" onclick="deleteProduct()">Delete</button>
+          <span id="p-msg" class="msg"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ORDER EDITOR ══ -->
+    <div id="panel-order" style="display:none;">
+      <div class="ph">
+        <div><div class="ph-title" id="or-title">Take an order</div><div class="ph-sub">One order, one seller — the buyer pays that seller directly</div></div>
+        <div class="ph-acts"><button class="btn btn-s" onclick="backToSeason('orders')">← Back to orders</button></div>
+      </div>
+      <div class="card">
+        <div class="f-grid">
+          <div class="f-f"><div class="f-l">Seller *</div><select class="f-i" id="or-seller" onchange="renderOrderLines()"></select>
+            <div class="f-hint">Changing the seller clears the items — an order can only hold one seller's products.</div></div>
+          <div class="f-f"><div class="f-l">Placed</div><input class="f-i" id="or-placed" type="date"></div>
+          <div class="f-f"><div class="f-l">Buyer name *</div><input class="f-i" id="or-bname"></div>
+          <div class="f-f"><div class="f-l">Buyer email</div><input class="f-i" id="or-bemail" type="email"></div>
+          <div class="f-f"><div class="f-l">Buyer phone</div><input class="f-i" id="or-bphone"></div>
+          <div class="f-f"><div class="f-l">How it is collected</div><select class="f-i" id="or-fulfil"></select></div>
+          <div class="f-f"><div class="f-l">Delivery fee ($)</div><input class="f-i" id="or-fee" type="number" min="0" step="0.5" oninput="recalcTotals()"></div>
+          <div class="f-f"><div class="f-l">Collection point</div><input class="f-i" id="or-point"></div>
+        </div>
+
+        <div class="card-t" style="margin-top:16px;">Items</div>
+        <div id="or-lines"></div>
+        <button class="btn btn-s" onclick="addLine()">+ Add item</button>
+        <div class="totals" id="or-totals"></div>
+
+        <div class="f-f" style="margin-top:14px;"><div class="f-l">Notes</div><textarea class="f-i" id="or-notes" rows="2"></textarea></div>
+        <div id="or-pay-box" style="display:none;" class="money-rule">
+          <b>Payment.</b> The buyer pays <span id="or-pay-seller"></span> directly<span id="or-pay-link"></span>. Once that seller
+          confirms the money has arrived, mark the order <b>Paid — confirmed by seller</b> below. The village never receives it, so the
+          platform never marks an order paid by itself.
+        </div>
+        <div class="form-acts">
+          <button class="btn btn-g" id="or-save" onclick="saveOrder()">Save order</button>
+          <select class="f-i" id="or-pay" style="max-width:210px;display:none;" onchange="setOrderPayment(this.value)"></select>
+          <select class="f-i" id="or-fs" style="max-width:170px;display:none;" onchange="setOrderFulfilment(this.value)"></select>
+          <button class="btn btn-r" id="or-del" style="display:none;" onclick="deleteOrder()">Delete</button>
+          <span id="or-msg" class="msg"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="vf-toast" id="toast"></div>
+
+<script>
+  /* ── State ─────────────────────────────────────────────────────────── */
+  let currentUser = null;
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let VOCAB = {}, IS_ADMIN = false, SCOPED = false;
+  let seasons = [], sellers = [];
+  let SEASON = null, PRODUCTS = [], ORDERS = [], SUMMARY = null;
+  let editSeasonId = '', editSellerId = '', editProductId = '', editOrderId = '';
+  let orderLines = [];
+
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', () => { location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+  function escHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3500); }
+  const fmt$ = n => (n == null ? '—' : '$' + Number(n).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  const fmtN = n => (n == null ? '—' : Number(n).toLocaleString('en-AU'));
+  const stClass = s => 'st-' + String(s || '').replace(/[^A-Za-z]/g, '');
+  const fmtDate = d => (d ? new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+  function setMsg(id, text, ok) {
+    const el = document.getElementById(id);
+    el.textContent = text || '';
+    el.className = 'msg' + (text ? (ok ? ' ok' : ' err') : '');
+  }
+  function fill(sel, list, value, placeholder) {
+    const el = document.getElementById(sel);
+    el.innerHTML = (placeholder ? '<option value="">' + placeholder + '</option>' : '') +
+      (list || []).map(o => '<option' + (o === value ? ' selected' : '') + '>' + escHtml(o) + '</option>').join('');
+  }
+  const val = id => document.getElementById(id).value;
+  const setVal = (id, v) => { document.getElementById(id).value = (v == null ? '' : v); };
+  const sellerById = id => sellers.find(s => s.id === id);
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+    loadVillages();
+    loadList();
+  }
+
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const d = await r.json();
+      const villages = (d.villages || []).filter(v => v.status === 'live');
+      if (!villages.length) return;
+      if (!villages.some(v => v.name === VILLAGE)) VILLAGE = villages[0].name;
+      sel.innerHTML = villages.map(v => '<option value="' + escHtml(v.name) + '"' + (v.name === VILLAGE ? ' selected' : '') + '>' + escHtml(v.name) + '</option>').join('');
+    } catch (e) {}
+    sel.onchange = () => {
+      VILLAGE = sel.value;
+      localStorage.setItem('vf_active_village', VILLAGE);
+      SEASON = null; showList(); loadList();
+    };
+  }
+
+  /* ── Panels ────────────────────────────────────────────────────────── */
+  const PANELS = ['panel-list', 'panel-season', 'panel-season-edit', 'panel-seller', 'panel-product', 'panel-order'];
+  function show(which) {
+    PANELS.forEach(p => { document.getElementById(p).style.display = (p === which ? 'block' : 'none'); });
+    window.scrollTo(0, 0);
+  }
+  function showList() { show('panel-list'); }
+  function showListTab(name) {
+    document.querySelectorAll('#panel-list .tab').forEach(b => b.classList.toggle('on', b.getAttribute('data-tab') === name));
+    document.querySelectorAll('#panel-list .tabpanel').forEach(p => p.classList.toggle('on', p.id === 'ltab-' + name));
+  }
+  function backToListTab(tab) { show('panel-list'); showListTab(tab); }
+  function showTab(name) {
+    document.querySelectorAll('#panel-season .tab').forEach(b => b.classList.toggle('on', b.getAttribute('data-tab') === name));
+    document.querySelectorAll('#panel-season .tabpanel').forEach(p => p.classList.toggle('on', p.id === 'tab-' + name));
+  }
+  function backToSeason(tab) { show('panel-season'); if (tab) showTab(tab); }
+  function backFromSeasonEdit() { if (SEASON) backToSeason('overview'); else showList(); }
+
+  async function post(url, payload, msgId, okMsg) {
+    try {
+      const r = await fetch(url, { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, ...payload }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Request failed');
+      if (msgId && okMsg) setMsg(msgId, okMsg, true);
+      return d;
+    } catch (e) {
+      if (msgId) setMsg(msgId, '⚠️ ' + e.message, false); else showToast('⚠️ ' + e.message);
+      return null;
+    }
+  }
+
+  /* ── List ──────────────────────────────────────────────────────────── */
+  async function loadList() {
+    document.getElementById('list-sub').textContent = VILLAGE + ' — seasons and the seller register';
+    try {
+      const r = await fetch('/api/store-admin?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not load the pop-up store');
+      seasons = d.seasons || []; sellers = d.sellers || [];
+      VOCAB = Object.assign(VOCAB, d.vocab || {});
+      IS_ADMIN = !!d.isAdmin; SCOPED = !!d.scoped;
+      document.getElementById('new-season-btn').style.display = IS_ADMIN ? '' : 'none';
+      document.getElementById('new-seller-btn').style.display = IS_ADMIN ? '' : 'none';
+      renderList();
+    } catch (e) {
+      document.getElementById('season-list').innerHTML = '<div class="empty">⚠️ ' + escHtml(e.message) + '</div>';
+    }
+  }
+
+  function renderList() {
+    const open = seasons.filter(s => s.status === 'Open');
+    const live = sellers.filter(s => s.status === 'Live');
+    const orders = seasons.reduce((t, s) => t + (s.orders || 0), 0);
+    const ordersOpen = seasons.reduce((t, s) => t + (s.ordersOpen || 0), 0);
+    document.getElementById('list-stats').innerHTML =
+      '<div class="stat"><div class="n">' + open.length + '</div><div class="l">Seasons open</div></div>' +
+      '<div class="stat"><div class="n">' + live.length + ' / ' + sellers.length + '</div><div class="l">Sellers live</div></div>' +
+      '<div class="stat"><div class="n">' + orders + '</div><div class="l">Orders all time</div></div>' +
+      '<div class="stat"><div class="n">' + ordersOpen + '</div><div class="l">Still to fulfil</div></div>';
+
+    const sEl = document.getElementById('season-list');
+    if (!seasons.length) {
+      sEl.innerHTML = '<div class="empty">' + (IS_ADMIN
+        ? 'No pop-up seasons yet — create one with “+ New season”, then add the sellers who will trade in it.'
+        : 'No pop-up seasons yet. A village admin creates the season; you will see it here once it exists.') + '</div>';
+    } else {
+      const order = VOCAB.seasonStatuses || ['Draft', 'Open', 'Closed', 'Archived'];
+      sEl.innerHTML = order.map(st => {
+        const rows = seasons.filter(s => s.status === st);
+        if (!rows.length) return '';
+        return '<div class="grp-title">' + escHtml(st) + ' (' + rows.length + ')</div>' + rows.map(s => {
+          const period = s.opens ? fmtDate(s.opens) + (s.closes ? ' – ' + fmtDate(s.closes) : ' onwards') : 'No dates set';
+          const meta = [period, s.coordinator ? 'Coordinator: ' + s.coordinator : ''].filter(Boolean).join(' · ');
+          return '<div class="g-row" onclick="openSeason(\'' + s.id + '\')">' +
+            '<div><div class="g-name">' + escHtml(s.name) + '</div><div class="g-meta">' + escHtml(meta) + '</div></div>' +
+            '<div class="g-amt"><div class="a">' + (s.productsActive || 0) + '</div><div class="l">products live</div></div>' +
+            '<div class="g-amt"><div class="a">' + (s.ordersOpen || 0) + ' / ' + (s.orders || 0) + '</div><div class="l">to fulfil</div></div>' +
+            '<span class="pill ' + stClass(s.status) + '">' + escHtml(s.status) + '</span>' +
+          '</div>';
+        }).join('');
+      }).join('');
+    }
+
+    const slEl = document.getElementById('seller-list');
+    if (!sellers.length) {
+      slEl.innerHTML = '<div class="empty">' + (SCOPED
+        ? 'You are not listed as the steward for any seller yet — ask the village admin to add your sign-in email to a seller.'
+        : 'No sellers yet. Add the local makers, businesses and community groups who will trade in your pop-up.') + '</div>';
+      return;
+    }
+    const order = VOCAB.sellerStatuses || [];
+    slEl.innerHTML = order.map(st => {
+      const rows = sellers.filter(s => s.status === st);
+      if (!rows.length) return '';
+      return '<div class="grp-title">' + escHtml(st) + ' (' + rows.length + ')</div>' + rows.map(s => {
+        const pay = s.paymentMethod
+          ? s.paymentMethod + (s.paymentConfirmed ? ' · ✓ confirmed' : ' · not yet confirmed')
+          : '⚠️ payment arrangement not recorded';
+        const meta = [s.sellerType, s.contactName, pay].filter(Boolean).join(' · ');
+        return '<div class="g-row" onclick="openSeller(\'' + s.id + '\')">' +
+          '<div><div class="g-name">' + escHtml(s.name) + '</div><div class="g-meta">' + escHtml(meta) + '</div></div>' +
+          '<span class="pill ' + stClass(s.status) + '">' + escHtml(s.status) + '</span>' +
+        '</div>';
+      }).join('');
+    }).join('');
+  }
+
+  /* ── Season detail ─────────────────────────────────────────────────── */
+  async function openSeason(id, keepTab) {
+    setMsg('s-msg', '');
+    try {
+      const r = await fetch('/api/store-admin?village=' + encodeURIComponent(VILLAGE) + '&season=' + encodeURIComponent(id), { headers: await authHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not load that season');
+      SEASON = d.season; sellers = d.sellers || sellers; PRODUCTS = d.products || []; ORDERS = d.orders || [];
+      SUMMARY = d.summary; VOCAB = Object.assign(VOCAB, d.vocab || {});
+      IS_ADMIN = !!d.isAdmin; SCOPED = !!d.scoped;
+      renderSeason();
+      show('panel-season');
+      if (keepTab) showTab(keepTab);
+    } catch (e) { showToast('⚠️ ' + e.message); }
+  }
+
+  function renderSeason() {
+    document.getElementById('s-title').textContent = SEASON.name;
+    const period = SEASON.opens ? fmtDate(SEASON.opens) + (SEASON.closes ? ' – ' + fmtDate(SEASON.closes) : ' onwards') : 'No dates set';
+    document.getElementById('s-sub').textContent = [SEASON.status, period, VILLAGE].filter(Boolean).join(' · ');
+    fill('s-status', VOCAB.seasonStatuses || [], SEASON.status);
+    document.getElementById('s-status').disabled = !IS_ADMIN;
+
+    const su = SUMMARY;
+    document.getElementById('s-stats').innerHTML =
+      '<div class="stat"><div class="n">' + su.sellersLive + '</div><div class="l">Sellers live</div></div>' +
+      '<div class="stat"><div class="n">' + su.productsActive + '</div><div class="l">Products active</div></div>' +
+      '<div class="stat"><div class="n">' + su.ordersOpen + ' / ' + su.orders + '</div><div class="l">Orders to fulfil</div></div>' +
+      '<div class="stat"><div class="n">' + fmt$(su.paidValue) + '</div><div class="l">Sellers reported paid</div></div>';
+
+    const kv = [
+      ['Status', SEASON.status],
+      ['Period', period],
+      ['Coordinator', SEASON.coordinator || '—'],
+      ['Collection points', SEASON.collectionPoints || '—'],
+      ['Orders awaiting payment', fmtN(su.awaitingPayment)],
+      ['Last updated by', SEASON.lastUpdatedBy || '—'],
+    ];
+    document.getElementById('s-kv').innerHTML = kv.map(([k, v]) => '<dt>' + escHtml(k) + '</dt><dd>' + escHtml(v) + '</dd>').join('');
+    const tc = document.getElementById('s-terms-card');
+    tc.style.display = SEASON.terms ? 'block' : 'none';
+    document.getElementById('s-terms').textContent = SEASON.terms || '';
+
+    renderProducts();
+    renderOrders();
+  }
+
+  async function setSeasonStatus(status) {
+    const d = await post('/api/store-admin', { kind: 'season', action: 'status', pageId: SEASON.id, status }, 's-msg', 'Season: ' + status + ' ✓');
+    if (d) { await loadList(); openSeason(SEASON.id, 'overview'); }
+  }
+
+  async function exportOrders() {
+    try {
+      const r = await fetch('/api/store-orders?village=' + encodeURIComponent(VILLAGE) + '&season=' + encodeURIComponent(SEASON.id) + '&format=csv', { headers: await authHeaders() });
+      if (!r.ok) throw new Error('Export failed (' + r.status + ')');
+      const blob = await r.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'popup-store-' + (SEASON.name || 'season').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60) + '.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      showToast('⬇ Orders exported');
+    } catch (e) { showToast('⚠️ ' + e.message); }
+  }
+
+  /* ── Season editor ─────────────────────────────────────────────────── */
+  function newSeason() {
+    editSeasonId = '';
+    ['se-name','se-opens','se-closes','se-coord','se-points','se-terms','se-notes'].forEach(id => setVal(id, ''));
+    document.getElementById('se-title').textContent = 'New pop-up season';
+    document.getElementById('se-del').style.display = 'none';
+    setMsg('se-msg', '');
+    show('panel-season-edit');
+  }
+  function editSeason() {
+    editSeasonId = SEASON.id;
+    setVal('se-name', SEASON.name); setVal('se-opens', SEASON.opens); setVal('se-closes', SEASON.closes);
+    setVal('se-coord', SEASON.coordinator); setVal('se-points', SEASON.collectionPoints);
+    setVal('se-terms', SEASON.terms); setVal('se-notes', SEASON.notes);
+    document.getElementById('se-title').textContent = SEASON.name;
+    document.getElementById('se-del').style.display = IS_ADMIN ? '' : 'none';
+    setMsg('se-msg', '');
+    show('panel-season-edit');
+  }
+  async function saveSeason() {
+    const btn = document.getElementById('se-save');
+    btn.disabled = true;
+    const d = await post('/api/store-admin', {
+      kind: 'season', action: 'save', pageId: editSeasonId || undefined,
+      name: val('se-name'), opens: val('se-opens'), closes: val('se-closes'),
+      coordinator: val('se-coord'), collectionPoints: val('se-points'),
+      terms: val('se-terms'), notes: val('se-notes'),
+    }, 'se-msg', 'Saved ✓');
+    btn.disabled = false;
+    if (d) { editSeasonId = d.pageId; await loadList(); openSeason(d.pageId, 'overview'); }
+  }
+  async function deleteSeason() {
+    if (!confirm('Delete "' + SEASON.name + '"?\n\nIt moves to Notion trash (recoverable). Its products and orders are NOT deleted — an order is a trading record. Consider Archived instead.')) return;
+    const d = await post('/api/store-admin', { kind: 'season', action: 'delete', pageId: editSeasonId }, 'se-msg');
+    if (d) { showToast('🗑 Season deleted'); SEASON = null; showList(); loadList(); }
+  }
+
+  /* ── Seller editor ─────────────────────────────────────────────────── */
+  function sellerFormChrome(isNew) {
+    document.getElementById('sl-confirm-wrap').style.display = IS_ADMIN ? 'block' : 'none';
+    document.getElementById('sl-steward-wrap').style.display = IS_ADMIN ? 'block' : 'none';
+    document.getElementById('sl-status').style.display = (!isNew && IS_ADMIN) ? '' : 'none';
+    document.getElementById('sl-del').style.display = (!isNew && IS_ADMIN) ? '' : 'none';
+  }
+  function newSeller() {
+    editSellerId = '';
+    ['sl-name','sl-abn','sl-cname','sl-email','sl-phone','sl-logo','sl-about','sl-paylink','sl-fee','sl-steward','sl-notes'].forEach(id => setVal(id, ''));
+    document.getElementById('sl-confirmed').checked = false;
+    fill('sl-type', VOCAB.sellerTypes || [], '', '— not set —');
+    fill('sl-paymethod', VOCAB.paymentMethods || [], '', '— not set —');
+    fill('sl-fulfil', VOCAB.fulfilmentTypes || [], '', '— not set —');
+    document.getElementById('sl-title').textContent = 'New seller';
+    sellerFormChrome(true);
+    setMsg('sl-msg', '');
+    show('panel-seller');
+  }
+  function openSeller(id) {
+    const s = sellerById(id);
+    if (!s) return;
+    editSellerId = id;
+    setVal('sl-name', s.name); setVal('sl-abn', s.abn); setVal('sl-cname', s.contactName);
+    setVal('sl-email', s.contactEmail); setVal('sl-phone', s.contactPhone); setVal('sl-logo', s.logoUrl);
+    setVal('sl-about', s.about); setVal('sl-paylink', s.paymentLink); setVal('sl-fee', s.deliveryFee);
+    setVal('sl-steward', s.stewardEmail); setVal('sl-notes', s.notes);
+    document.getElementById('sl-confirmed').checked = !!s.paymentConfirmed;
+    fill('sl-type', VOCAB.sellerTypes || [], s.sellerType, '— not set —');
+    fill('sl-paymethod', VOCAB.paymentMethods || [], s.paymentMethod, '— not set —');
+    fill('sl-fulfil', VOCAB.fulfilmentTypes || [], s.fulfilment, '— not set —');
+    document.getElementById('sl-title').textContent = s.name;
+    fill('sl-status', VOCAB.sellerStatuses || [], s.status);
+    sellerFormChrome(false);
+    setMsg('sl-msg', s.approvedBy ? 'Approved by ' + s.approvedBy : '', true);
+    show('panel-seller');
+  }
+  async function saveSeller() {
+    const btn = document.getElementById('sl-save');
+    btn.disabled = true;
+    const d = await post('/api/store-admin', {
+      kind: 'seller', action: 'save', pageId: editSellerId || undefined,
+      name: val('sl-name'), sellerType: val('sl-type'), abn: val('sl-abn'),
+      contactName: val('sl-cname'), contactEmail: val('sl-email'), contactPhone: val('sl-phone'),
+      logoUrl: val('sl-logo'), about: val('sl-about'),
+      paymentMethod: val('sl-paymethod'), paymentLink: val('sl-paylink'),
+      paymentConfirmed: document.getElementById('sl-confirmed').checked,
+      fulfilment: val('sl-fulfil'), deliveryFee: val('sl-fee'),
+      stewardEmail: val('sl-steward'), notes: val('sl-notes'),
+    }, 'sl-msg', 'Saved ✓');
+    btn.disabled = false;
+    if (d) { editSellerId = d.pageId; await loadList(); openSeller(d.pageId); }
+  }
+  async function setSellerStatus(status) {
+    const d = await post('/api/store-admin', { kind: 'seller', action: 'status', pageId: editSellerId, status }, 'sl-msg', 'Seller: ' + status + ' ✓');
+    if (d) { await loadList(); openSeller(editSellerId); }
+  }
+  async function deleteSeller() {
+    const s = sellerById(editSellerId);
+    if (!confirm('Delete "' + (s ? s.name : 'this seller') + '"?\n\nIt moves to Notion trash (recoverable). Their products and past orders are NOT deleted. Consider Closed instead.')) return;
+    const d = await post('/api/store-admin', { kind: 'seller', action: 'delete', pageId: editSellerId }, 'sl-msg');
+    if (d) { showToast('🗑 Seller deleted'); await loadList(); backToListTab('sellers'); }
+  }
+
+  /* ── Products ──────────────────────────────────────────────────────── */
+  function renderProducts() {
+    const el = document.getElementById('products-body');
+    if (!PRODUCTS.length) {
+      el.innerHTML = '<div class="empty">No products in this season yet. Add a seller\'s first item with “+ Add a product”.</div>';
+      return;
+    }
+    // Grouped by seller — that is how a coordinator thinks about a market.
+    const bySeller = {};
+    PRODUCTS.forEach(p => { (bySeller[p.seller] = bySeller[p.seller] || []).push(p); });
+    el.innerHTML = Object.keys(bySeller).map(sid => {
+      const s = sellerById(sid);
+      const rows = bySeller[sid].slice().sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100));
+      const head = s
+        ? escHtml(s.name) + ' <span class="pill ' + stClass(s.status) + '">' + escHtml(s.status) + '</span>'
+        : '(seller no longer in the register)';
+      return '<div class="grp-title">' + head + ' · ' + rows.length + ' item' + (rows.length === 1 ? '' : 's') + '</div>' +
+        '<div class="card" style="padding:6px 10px;"><table class="tbl"><thead><tr>' +
+        '<th>Product</th><th>Category</th><th>Price</th><th>Stock</th><th>Collected</th><th>Status</th>' +
+        '</tr></thead><tbody>' + rows.map(p =>
+          '<tr style="cursor:pointer;" onclick="openProduct(\'' + p.id + '\')">' +
+            '<td><b>' + escHtml(p.name) + '</b>' + (p.sku ? '<div style="font-size:10.5px;color:#9ca3af;">' + escHtml(p.sku) + '</div>' : '') + '</td>' +
+            '<td>' + escHtml(p.category || '—') + '</td>' +
+            '<td>' + fmt$(p.price) + '</td>' +
+            '<td>' + (p.unlimitedStock ? 'unlimited' : (p.stock == null ? '—' : fmtN(p.stock))) + '</td>' +
+            '<td>' + escHtml(p.fulfilment || '—') + '</td>' +
+            '<td><span class="pill ' + stClass(p.status) + '">' + escHtml(p.status) + '</span></td>' +
+          '</tr>').join('') + '</tbody></table></div>';
+    }).join('');
+  }
+
+  function tradingSellers() { return sellers.filter(s => s.status === 'Live'); }
+
+  function newProduct() {
+    editProductId = '';
+    ['p-name','p-price','p-stock','p-sort','p-img','p-sku','p-desc','p-notes'].forEach(id => setVal(id, ''));
+    document.getElementById('p-unlimited').checked = false;
+    const sel = document.getElementById('p-seller');
+    const list = sellers.slice().sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    sel.innerHTML = '<option value="">— pick a seller —</option>' +
+      list.map(s => '<option value="' + escHtml(s.id) + '">' + escHtml(s.name) + (s.status === 'Live' ? '' : ' (' + escHtml(s.status) + ')') + '</option>').join('');
+    fill('p-cat', VOCAB.productCategories || [], '', '— not set —');
+    fill('p-fulfil', VOCAB.fulfilmentTypes || [], '', '— not set —');
+    setVal('p-sort', '100');
+    document.getElementById('p-title').textContent = 'Add a product';
+    document.getElementById('p-status').style.display = 'none';
+    document.getElementById('p-del').style.display = 'none';
+    setMsg('p-msg', '');
+    show('panel-product');
+  }
+
+  function openProduct(id) {
+    const p = PRODUCTS.find(x => x.id === id);
+    if (!p) return;
+    newProduct();
+    editProductId = id;
+    document.getElementById('p-seller').value = p.seller;
+    setVal('p-name', p.name); setVal('p-price', p.price); setVal('p-stock', p.stock);
+    setVal('p-sort', p.sort); setVal('p-img', p.imageUrl); setVal('p-sku', p.sku);
+    setVal('p-desc', p.description); setVal('p-notes', p.notes);
+    document.getElementById('p-unlimited').checked = !!p.unlimitedStock;
+    fill('p-cat', VOCAB.productCategories || [], p.category, '— not set —');
+    fill('p-fulfil', VOCAB.fulfilmentTypes || [], p.fulfilment, '— not set —');
+    document.getElementById('p-title').textContent = p.name;
+    fill('p-status', VOCAB.productStatuses || [], p.status);
+    document.getElementById('p-status').style.display = '';
+    document.getElementById('p-del').style.display = IS_ADMIN ? '' : 'none';
+    setMsg('p-msg', '');
+  }
+
+  async function saveProduct() {
+    const btn = document.getElementById('p-save');
+    btn.disabled = true;
+    const d = await post('/api/store-catalogue', {
+      action: 'save', pageId: editProductId || undefined,
+      seller: val('p-seller'), season: SEASON.id,
+      name: val('p-name'), category: val('p-cat'), price: val('p-price'),
+      stock: val('p-stock'), unlimitedStock: document.getElementById('p-unlimited').checked,
+      fulfilment: val('p-fulfil'), imageUrl: val('p-img'), sku: val('p-sku'),
+      sort: val('p-sort'), description: val('p-desc'), notes: val('p-notes'),
+    }, 'p-msg', 'Saved ✓');
+    btn.disabled = false;
+    if (d) { editProductId = d.pageId; await openSeason(SEASON.id, 'products'); }
+  }
+  async function setProductStatus(status) {
+    const d = await post('/api/store-catalogue', { action: 'status', pageId: editProductId, status }, 'p-msg', 'Status: ' + status + ' ✓');
+    if (d) { await openSeason(SEASON.id, 'products'); }
+  }
+  async function deleteProduct() {
+    const p = PRODUCTS.find(x => x.id === editProductId);
+    if (!confirm('Delete "' + (p ? p.name : 'this product') + '"?\n\nIt moves to Notion trash (recoverable). Past orders keep their own copy of the name and price, so the trading record is safe. Withdrawn keeps the listing.')) return;
+    const d = await post('/api/store-catalogue', { action: 'delete', pageId: editProductId }, 'p-msg');
+    if (d) { showToast('🗑 Product deleted'); await openSeason(SEASON.id, 'products'); }
+  }
+
+  /* ── Orders ────────────────────────────────────────────────────────── */
+  function renderOrders() {
+    const el = document.getElementById('orders-body');
+    if (!ORDERS.length) {
+      el.innerHTML = '<div class="empty">No orders yet. Log market-day, phone and email orders here so stock, pickup and payment all stay in one place.</div>';
+      return;
+    }
+    el.innerHTML = '<div class="card" style="padding:6px 10px;"><table class="tbl"><thead><tr>' +
+      '<th>Order</th><th>Placed</th><th>Seller</th><th>Buyer</th><th>Items</th><th>Total</th><th>Payment</th><th>Fulfilment</th>' +
+      '</tr></thead><tbody>' + ORDERS.map(o => {
+        const s = sellerById(o.seller);
+        const items = (o.items || []).reduce((t, i) => t + Number(i.qty || 0), 0);
+        return '<tr style="cursor:pointer;" onclick="openOrder(\'' + o.id + '\')">' +
+          '<td><b>' + escHtml(o.ref) + '</b></td>' +
+          '<td>' + escHtml(fmtDate(o.placedDate) || '—') + '</td>' +
+          '<td>' + escHtml(s ? s.name : '(removed)') + '</td>' +
+          '<td>' + escHtml(o.buyerName || '—') + '<div style="font-size:10.5px;color:#9ca3af;">' + escHtml(o.buyerEmail || '') + '</div></td>' +
+          '<td>' + items + '</td>' +
+          '<td><b>' + fmt$(o.total) + '</b></td>' +
+          '<td><span class="pill ' + stClass(o.paymentStatus) + '">' + escHtml(o.paymentStatus) + '</span></td>' +
+          '<td><span class="pill ' + stClass(o.fulfilmentStatus) + '">' + escHtml(o.fulfilmentStatus) + '</span></td>' +
+        '</tr>';
+      }).join('') + '</tbody></table></div>' +
+      '<div class="note">“Paid — confirmed by seller” is exactly what it says: the <b>seller</b> told the committee the money arrived in ' +
+      '<b>their</b> account. The village never receives it, so the platform never marks an order paid on its own, and these totals are ' +
+      'not village income.</div>';
+  }
+
+  function orderFormChrome(isNew) {
+    document.getElementById('or-pay').style.display = isNew ? 'none' : '';
+    document.getElementById('or-fs').style.display = isNew ? 'none' : '';
+    document.getElementById('or-del').style.display = (!isNew && IS_ADMIN) ? '' : 'none';
+  }
+
+  function newOrder() {
+    editOrderId = '';
+    orderLines = [{ productId: '', qty: 1 }];
+    ['or-bname','or-bemail','or-bphone','or-fee','or-point','or-notes'].forEach(id => setVal(id, ''));
+    setVal('or-placed', new Date().toISOString().slice(0, 10));
+    const sel = document.getElementById('or-seller');
+    const list = tradingSellers().slice().sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    sel.innerHTML = '<option value="">— pick a seller —</option>' +
+      list.map(s => '<option value="' + escHtml(s.id) + '">' + escHtml(s.name) + '</option>').join('');
+    sel.disabled = false;
+    fill('or-fulfil', VOCAB.fulfilmentTypes || [], '', '— as the seller usually does —');
+    setVal('or-point', SEASON.collectionPoints ? String(SEASON.collectionPoints).split('\n')[0] : '');
+    document.getElementById('or-title').textContent = 'Take an order';
+    orderFormChrome(true);
+    setMsg('or-msg', '');
+    renderOrderLines();
+    show('panel-order');
+  }
+
+  function openOrder(id) {
+    const o = ORDERS.find(x => x.id === id);
+    if (!o) return;
+    newOrder();
+    editOrderId = id;
+    orderLines = (o.items || []).map(i => ({ productId: i.productId, qty: i.qty }));
+    if (!orderLines.length) orderLines = [{ productId: '', qty: 1 }];
+    const sel = document.getElementById('or-seller');
+    // An existing order's seller is fixed: one order, one seller, and its items
+    // are already that seller's. Changing it would be a different order.
+    if (![...sel.options].some(op => op.value === o.seller)) {
+      const s = sellerById(o.seller);
+      sel.insertAdjacentHTML('beforeend', '<option value="' + escHtml(o.seller) + '">' + escHtml(s ? s.name : '(seller removed)') + '</option>');
+    }
+    sel.value = o.seller;
+    sel.disabled = true;
+    setVal('or-placed', o.placedDate); setVal('or-bname', o.buyerName);
+    setVal('or-bemail', o.buyerEmail); setVal('or-bphone', o.buyerPhone);
+    setVal('or-fee', o.deliveryFee); setVal('or-point', o.collectionPoint); setVal('or-notes', o.notes);
+    fill('or-fulfil', VOCAB.fulfilmentTypes || [], o.fulfilment, '— as the seller usually does —');
+    document.getElementById('or-title').textContent = 'Order ' + o.ref;
+    fill('or-pay', VOCAB.orderPaymentStatuses || [], o.paymentStatus);
+    fill('or-fs', VOCAB.orderFulfilmentStatuses || [], o.fulfilmentStatus);
+    orderFormChrome(false);
+    setMsg('or-msg', '');
+    renderOrderLines();
+  }
+
+  function addLine() { orderLines.push({ productId: '', qty: 1 }); renderOrderLines(); }
+  function removeLine(i) { orderLines.splice(i, 1); if (!orderLines.length) orderLines.push({ productId: '', qty: 1 }); renderOrderLines(); }
+  function setLine(i, field, v) { orderLines[i][field] = v; renderOrderLines(); }
+
+  function renderOrderLines() {
+    const sellerId = val('or-seller');
+    // Only this seller's ACTIVE products can be ordered — the money invariant
+    // and the approval gate, expressed in the picker itself.
+    const avail = PRODUCTS.filter(p => p.seller === sellerId && p.status === 'Active');
+    // A seller change invalidates existing lines.
+    orderLines.forEach(l => { if (l.productId && !avail.some(p => p.id === l.productId)) l.productId = ''; });
+
+    const el = document.getElementById('or-lines');
+    if (!sellerId) {
+      el.innerHTML = '<div class="f-hint">Pick a seller first — an order can only hold one seller\'s products.</div>';
+      document.getElementById('or-totals').innerHTML = '';
+      document.getElementById('or-pay-box').style.display = 'none';
+      return;
+    }
+    if (!avail.length) {
+      el.innerHTML = '<div class="f-hint">⚠️ That seller has no <b>Active</b> products in this season yet — add or activate one on the Products tab first.</div>';
+    } else {
+      el.innerHTML = orderLines.map((l, i) =>
+        '<div class="line">' +
+          '<select class="f-i" onchange="setLine(' + i + ', \'productId\', this.value)">' +
+            '<option value="">— pick an item —</option>' +
+            avail.map(p => '<option value="' + escHtml(p.id) + '"' + (p.id === l.productId ? ' selected' : '') + '>' +
+              escHtml(p.name) + ' — ' + fmt$(p.price) + (p.unlimitedStock ? '' : (p.stock == null ? '' : ' (' + p.stock + ' left)')) +
+            '</option>').join('') +
+          '</select>' +
+          '<input class="f-i qty" type="number" min="1" step="1" value="' + (l.qty || 1) + '" onchange="setLine(' + i + ', \'qty\', this.value)">' +
+          '<button class="btn btn-s" onclick="removeLine(' + i + ')">Remove</button>' +
+        '</div>').join('');
+    }
+    recalcTotals();
+
+    const s = sellerById(sellerId);
+    const box = document.getElementById('or-pay-box');
+    if (s) {
+      box.style.display = 'block';
+      document.getElementById('or-pay-seller').textContent = s.name;
+      document.getElementById('or-pay-link').innerHTML = s.paymentLink
+        ? ' — <a href="' + escHtml(s.paymentLink) + '" target="_blank" rel="noopener noreferrer" style="color:#0f5c48;">their payment link</a>'
+        : (s.paymentMethod ? ' (' + escHtml(s.paymentMethod).toLowerCase() + ')' : '');
+    } else { box.style.display = 'none'; }
+  }
+
+  /** Client-side preview only — the server re-prices every order from the product rows. */
+  function recalcTotals() {
+    const sellerId = val('or-seller');
+    let subtotal = 0;
+    orderLines.forEach(l => {
+      const p = PRODUCTS.find(x => x.id === l.productId);
+      if (p && p.seller === sellerId) subtotal += Number(p.price || 0) * Math.max(1, Number(l.qty) || 1);
+    });
+    const feeRaw = val('or-fee');
+    const s = sellerById(sellerId);
+    const fee = feeRaw === '' ? Number((s && s.deliveryFee) || 0) : Number(feeRaw || 0);
+    document.getElementById('or-totals').innerHTML =
+      'Subtotal ' + fmt$(subtotal) + ' &nbsp;·&nbsp; delivery ' + fmt$(fee) +
+      '<br><span class="big">' + fmt$(Math.round((subtotal + fee) * 100) / 100) + '</span>' +
+      '<div class="f-hint">Checked again on the server from the product prices — this is a preview.</div>';
+  }
+
+  async function saveOrder() {
+    const btn = document.getElementById('or-save');
+    btn.disabled = true;
+    const items = orderLines.filter(l => l.productId).map(l => ({ productId: l.productId, qty: l.qty }));
+    const d = await post('/api/store-orders', {
+      action: 'save', pageId: editOrderId || undefined,
+      seller: val('or-seller'), season: SEASON.id,
+      buyerName: val('or-bname'), buyerEmail: val('or-bemail'), buyerPhone: val('or-bphone'),
+      items, fulfilment: val('or-fulfil'), deliveryFee: val('or-fee'),
+      collectionPoint: val('or-point'), placedDate: val('or-placed'), notes: val('or-notes'),
+    }, 'or-msg', 'Saved ✓');
+    btn.disabled = false;
+    if (d) { editOrderId = d.pageId; await openSeason(SEASON.id, 'orders'); }
+  }
+
+  async function setOrderPayment(paymentStatus) {
+    const d = await post('/api/store-orders', { action: 'payment', pageId: editOrderId, paymentStatus }, 'or-msg', 'Payment: ' + paymentStatus + ' ✓');
+    if (d) { await openSeason(SEASON.id, 'orders'); }
+  }
+  async function setOrderFulfilment(fulfilmentStatus) {
+    const d = await post('/api/store-orders', { action: 'fulfil', pageId: editOrderId, fulfilmentStatus }, 'or-msg', 'Fulfilment: ' + fulfilmentStatus + ' ✓');
+    if (d) { await openSeason(SEASON.id, 'orders'); }
+  }
+  async function deleteOrder() {
+    const o = ORDERS.find(x => x.id === editOrderId);
+    if (!confirm('Delete order ' + (o ? o.ref : '') + '?\n\nIt moves to Notion trash (recoverable). Cancelling keeps the record — better for the trading history.')) return;
+    const d = await post('/api/store-orders', { action: 'delete', pageId: editOrderId }, 'or-msg');
+    if (d) { showToast('🗑 Order deleted'); await openSeason(SEASON.id, 'orders'); }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Recovery Support — VillageFirst</title>
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<script src="/admin/admin-nav.js" defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f6f5; min-height: 100vh; color: #1e293b; font-size: 13px; }
+  .topbar { background: linear-gradient(135deg, #0f4c3a 0%, #15795f 60%, #0f8f80 100%); display: flex; align-items: center; padding: 0 16px; height: 46px; gap: 10px; }
+  .topbar-brand { color: #fff; font-weight: 800; font-size: 13px; }
+  .topbar-sp { flex: 1; }
+  .topbar-user { font-size: 11px; color: rgba(255,255,255,.6); }
+  .topbar-logout { background: none; border: 1px solid rgba(255,255,255,.25); color: rgba(255,255,255,.7); font-size: 11px; padding: 3px 10px; border-radius: 5px; cursor: pointer; }
+  .village-select { font-size: 11px; color: #c7eedd; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.3); border-radius: 5px; padding: 3px 8px; font-family: inherit; }
+  .village-select option { color: #1f2937; }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 1.4rem 1rem 3rem; }
+  .ph { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .ph-title { font-size: 1.05rem; font-weight: 700; color: #143d2e; }
+  .ph-sub { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+  .ph-acts { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { padding: 6px 13px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
+  .btn-g { background: #0f8f80; color: #fff; }
+  .btn-g:hover { background: #0c7568; }
+  .btn-s { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+  .btn-r { background: #fee2e2; color: #dc2626; }
+  .btn-xs { padding: 3px 9px; font-size: 10.5px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center; }
+  .stat .n { font-size: 20px; font-weight: 900; color: #143d2e; }
+  .stat .l { font-size: 10.5px; color: #6b7280; font-weight: 600; margin-top: 3px; }
+  .stat.warn .n { color: #b91c1c; }
+
+  .grp-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #64748b; margin: 16px 0 8px; }
+  .g-row { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .g-row:hover { border-color: #0f8f80; }
+  .g-name { font-weight: 700; color: #0f172a; }
+  .g-meta { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .g-amt { margin-left: auto; text-align: right; }
+  .g-amt .a { font-weight: 800; color: #143d2e; }
+  .g-amt .l { font-size: 10px; color: #9ca3af; }
+  .pill { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+
+  /* Event status */
+  .st-Standby { background: #f1f5f9; color: #475569; }
+  .st-Activerecovery { background: #fee2e2; color: #b91c1c; }
+  .st-Monitoring { background: #fef3c7; color: #92400e; }
+  .st-Closed { background: #dcfce7; color: #166534; }
+  /* Need status */
+  .st-Logged { background: #f1f5f9; color: #475569; }
+  .st-Triaged { background: #e0e7ff; color: #3730a3; }
+  .st-Matched { background: #dbeafe; color: #1d4ed8; }
+  .st-Inprogress { background: #fef3c7; color: #92400e; }
+  .st-Referred { background: #f3e8ff; color: #6b21a8; }
+  .st-Withdrawn { background: #f3f4f6; color: #6b7280; }
+  /* Offer status */
+  .st-Offered { background: #f1f5f9; color: #475569; }
+  .st-Verified { background: #e0e7ff; color: #3730a3; }
+  .st-Allocated { background: #dbeafe; color: #1d4ed8; }
+  .st-Delivered { background: #dcfce7; color: #166534; }
+  .st-Declined { background: #f3f4f6; color: #6b7280; }
+  /* Priority */
+  .pr-Critical { background: #fee2e2; color: #b91c1c; }
+  .pr-High { background: #ffedd5; color: #c2410c; }
+  .pr-Medium { background: #fef3c7; color: #92400e; }
+  .pr-Low { background: #f1f5f9; color: #475569; }
+
+  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; }
+  .card + .card { margin-top: 12px; }
+  .card-t { font-size: 12px; font-weight: 800; color: #143d2e; margin-bottom: 10px; }
+  .f-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .f-f { margin-bottom: 4px; }
+  .f-l { font-size: 10px; font-weight: 700; color: #374151; margin-bottom: 3px; }
+  .f-i { width: 100%; border: 1.5px solid #e2e8f0; border-radius: 5px; padding: 7px 9px; font-size: 12px; background: #fff; outline: none; font-family: inherit; color: #1e293b; }
+  .f-i:focus { border-color: #0f8f80; }
+  textarea.f-i { resize: vertical; }
+  .f-hint { font-size: 10px; color: #9ca3af; margin-top: 3px; }
+  .form-acts { display: flex; gap: 8px; margin-top: 14px; align-items: center; flex-wrap: wrap; }
+  .msg { font-size: 11px; font-weight: 600; }
+  .msg.ok { color: #16a34a; } .msg.err { color: #dc2626; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab { font-size: 12px; font-weight: 600; color: #4b5563; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 5px 14px; cursor: pointer; font-family: inherit; }
+  .tab:hover { background: #f0fdf6; }
+  .tab.on { background: #0f5c48; color: #fff; border-color: #0f5c48; font-weight: 700; }
+  .tabpanel { display: none; } .tabpanel.on { display: block; }
+
+  .empty { text-align: center; padding: 36px 16px; color: #9ca3af; }
+  .note { font-size: 11.5px; color: #6b7280; margin-top: 14px; line-height: 1.5; }
+  .privacy { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 10px 12px; font-size: 11.5px; color: #9a3412; line-height: 1.5; margin-bottom: 14px; }
+  .redacted { color: #9ca3af; font-style: italic; }
+  .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 12px; }
+  .kv dt { color: #6b7280; } .kv dd { font-weight: 600; color: #0f172a; }
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.tbl th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #64748b; padding: 6px 8px; border-bottom: 1px solid #e2e8f0; }
+  table.tbl td { padding: 7px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  table.tbl tr:hover td { background: #f9fafb; }
+  .match-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .match-col { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; }
+  .m-row { border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 10px; margin-bottom: 7px; cursor: pointer; }
+  .m-row:hover { border-color: #0f8f80; }
+  .m-row.sel { border-color: #0f5c48; background: #f0fdf6; box-shadow: 0 0 0 1px #0f5c48 inset; }
+  .m-row .t { font-weight: 700; font-size: 12px; }
+  .m-row .s { font-size: 10.5px; color: #6b7280; margin-top: 2px; }
+  .chiplist { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+  .chip { font-size: 10px; background: #e6f7f0; color: #0f5c48; border: 1px solid #b6e3d0; border-radius: 12px; padding: 2px 8px; }
+  .chip button { border: none; background: none; color: #0f5c48; cursor: pointer; font-weight: 800; padding: 0 0 0 4px; font-family: inherit; }
+
+  .vf-toast { position: fixed; bottom: 20px; right: 20px; background: #0f172a; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 12px; opacity: 0; transition: opacity .3s; z-index: 999; }
+  .vf-toast.show { opacity: 1; }
+  .auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1rem; text-align: center; padding: 1rem; }
+  .auth-btn { background: #15795f; color: #fff; border: none; border-radius: 8px; padding: .75rem 2rem; font-size: .95rem; font-weight: 700; cursor: pointer; }
+  @media (max-width: 760px) { .f-grid, .match-wrap { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+
+<div id="auth-screen" class="auth-screen">
+  <div style="font-size:2.4rem;">🌱</div>
+  <h1 style="font-size:1.2rem;color:#143d2e;">Recovery Support</h1>
+  <p style="font-size:.85rem;color:#6b7280;max-width:400px;">Coordinated recovery in the weeks after a fire, flood or storm — who needs what, who has offered help, and the evidence that supports a recovery-funding claim. Sign in to continue.</p>
+  <button class="auth-btn" onclick="netlifyIdentity.open('login')">Sign in</button>
+</div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-brand">🌱 VillageFirst · Recovery Support</div>
+    <select id="village-select" class="village-select" aria-label="Village"><option>Smiths Lake</option></select>
+    <div class="topbar-sp"></div>
+    <span class="topbar-user" id="user-email"></span>
+    <button class="topbar-logout" onclick="netlifyIdentity.logout()">Sign out</button>
+  </div>
+
+  <div class="wrap">
+
+    <!-- ══ EVENTS LIST ══ -->
+    <div id="panel-list">
+      <div class="ph">
+        <div><div class="ph-title">Recovery events</div><div class="ph-sub" id="list-sub">Every recovery this village has run</div></div>
+        <div class="ph-acts"><button class="btn btn-g" onclick="newEvent()">+ New recovery event</button></div>
+      </div>
+      <div class="stats" id="list-stats"></div>
+      <div id="event-list"><div class="empty">Loading…</div></div>
+      <div class="note">A <b>recovery event</b> is one fire, flood or storm. Open it on <b>Standby</b> before an event or as it unfolds,
+      move it to <b>Active recovery</b> while the work is happening, <b>Monitoring</b> as things wind down, then <b>Closed</b>.
+      Inside an event you keep the <b>needs register</b> (who needs what) and the <b>offers of help</b>, match one to the other,
+      and export the whole thing as evidence for a recovery-funding claim.</div>
+    </div>
+
+    <!-- ══ EVENT DETAIL ══ -->
+    <div id="panel-event" style="display:none;">
+      <div class="ph">
+        <div><div class="ph-title" id="ev-title">—</div><div class="ph-sub" id="ev-sub"></div></div>
+        <div class="ph-acts">
+          <select class="f-i" id="ev-status" style="max-width:170px;" onchange="setEventStatus(this.value)"></select>
+          <button class="btn btn-s" onclick="editEvent()">Edit details</button>
+          <button class="btn btn-s" onclick="exportRegister()">⬇ Export evidence (CSV)</button>
+          <button class="btn btn-s" onclick="showList()">← All events</button>
+        </div>
+      </div>
+      <div id="ev-msg" class="msg" style="margin-bottom:10px;"></div>
+
+      <div class="tabs">
+        <button class="tab on" data-tab="overview" onclick="showTab('overview')">Overview</button>
+        <button class="tab" data-tab="needs" onclick="showTab('needs')">Needs</button>
+        <button class="tab" data-tab="offers" onclick="showTab('offers')">Offers of help</button>
+        <button class="tab" data-tab="matching" onclick="showTab('matching')">Matching</button>
+        <button class="tab" data-tab="evidence" onclick="showTab('evidence')">Evidence</button>
+      </div>
+
+      <!-- Overview -->
+      <div class="tabpanel on" id="tab-overview">
+        <div class="stats" id="ev-stats"></div>
+        <div class="card">
+          <div class="card-t">The event</div>
+          <dl class="kv" id="ev-kv"></dl>
+        </div>
+        <div class="card" id="ev-summary-card" style="display:none;">
+          <div class="card-t">Summary</div>
+          <div id="ev-summary" style="font-size:12.5px;line-height:1.6;white-space:pre-wrap;"></div>
+        </div>
+      </div>
+
+      <!-- Needs -->
+      <div class="tabpanel" id="tab-needs">
+        <div class="privacy" id="needs-privacy"></div>
+        <div class="ph">
+          <div><div class="ph-title" style="font-size:.95rem;">Needs register</div><div class="ph-sub">One row per household or site — what they need, how urgent, who is on it</div></div>
+          <div class="ph-acts"><button class="btn btn-g" onclick="newNeed()">+ Log a need</button></div>
+        </div>
+        <div id="needs-body"></div>
+      </div>
+
+      <!-- Offers -->
+      <div class="tabpanel" id="tab-offers">
+        <div class="ph">
+          <div><div class="ph-title" style="font-size:.95rem;">Offers of help</div><div class="ph-sub">Hands, machinery, transport, a spare room, a trade skill — logged once, matched to needs</div></div>
+          <div class="ph-acts"><button class="btn btn-g" onclick="newOffer()">+ Log an offer</button></div>
+        </div>
+        <div id="offers-body"></div>
+      </div>
+
+      <!-- Matching -->
+      <div class="tabpanel" id="tab-matching">
+        <div class="ph">
+          <div><div class="ph-title" style="font-size:.95rem;">Match help to needs</div><div class="ph-sub" id="match-sub">Pick a need on the left, then tick the offers that will cover it</div></div>
+        </div>
+        <div class="match-wrap">
+          <div class="match-col">
+            <div class="card-t">Needs still open</div>
+            <div id="match-needs"></div>
+          </div>
+          <div class="match-col">
+            <div class="card-t" id="match-offers-t">Offers available</div>
+            <div id="match-offers"></div>
+          </div>
+        </div>
+        <div class="note">Matching an offer moves the need to <b>Matched</b> and the offer to <b>Allocated</b> automatically — and never drags
+        either backwards from work already under way. Unmatching the last offer puts them back to <b>Triaged</b> / <b>Verified</b>.</div>
+      </div>
+
+      <!-- Evidence -->
+      <div class="tabpanel" id="tab-evidence">
+        <div id="evidence-body"></div>
+      </div>
+    </div>
+
+    <!-- ══ EVENT EDITOR ══ -->
+    <div id="panel-event-edit" style="display:none;">
+      <div class="ph">
+        <div><div class="ph-title" id="ee-title">New recovery event</div><div class="ph-sub">The event header — hazard, period, coordinator and the hour rate used to value effort</div></div>
+        <div class="ph-acts"><button class="btn btn-s" onclick="backFromEventEdit()">← Back</button></div>
+      </div>
+      <div class="card">
+        <div class="f-grid">
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Event name *</div><input class="f-i" id="e-name" placeholder="e.g. October 2026 east coast low">
+            <div class="f-hint">Name it the way the community will say it — the date and the hazard.</div></div>
+          <div class="f-f"><div class="f-l">Hazard</div><select class="f-i" id="e-hazard"></select></div>
+          <div class="f-f"><div class="f-l">Coordinator</div><input class="f-i" id="e-coord" placeholder="Who is running the recovery"></div>
+          <div class="f-f"><div class="f-l">Recovery started</div><input class="f-i" id="e-start" type="date"></div>
+          <div class="f-f"><div class="f-l">Recovery closed</div><input class="f-i" id="e-closed" type="date"></div>
+          <div class="f-f"><div class="f-l">Households affected</div><input class="f-i" id="e-hh" type="number" min="0" step="1"></div>
+          <div class="f-f"><div class="f-l">Volunteer hour rate ($/hr)</div><input class="f-i" id="e-rate" type="number" min="0" step="1" placeholder="e.g. 45">
+            <div class="f-hint">Used to value recovery hours as <i>indicative</i> evidence. Use the rate your funding body accepts.</div></div>
+          <div class="f-f"><div class="f-l">Declaration reference</div><input class="f-i" id="e-decl" placeholder="e.g. AGRN 1234, or the council/agency reference">
+            <div class="f-hint">The disaster declaration or agency reference a funding claim will quote.</div></div>
+          <div class="f-f"><div class="f-l">Linked project <span style="font-weight:400;color:#9ca3af;">(optional)</span></div><select class="f-i" id="e-proj"><option value="">— none —</option></select>
+            <div class="f-hint">Ties the recovery to a project in the Projects console, so rebuild work carries one funding story.</div></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Summary</div><textarea class="f-i" id="e-summary" rows="3" placeholder="What happened, what the community faced, how the recovery was run…"></textarea></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Internal notes</div><textarea class="f-i" id="e-notes" rows="2"></textarea></div>
+        </div>
+        <div class="form-acts">
+          <button class="btn btn-g" id="e-save" onclick="saveEvent()">Save event</button>
+          <button class="btn btn-r" id="e-del" style="display:none;" onclick="deleteEvent()">Delete</button>
+          <span id="e-msg" class="msg"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ NEED EDITOR ══ -->
+    <div id="panel-need" style="display:none;">
+      <div class="ph">
+        <div><div class="ph-title" id="n-title">Log a need</div><div class="ph-sub">What is needed, how urgent, and who to reach</div></div>
+        <div class="ph-acts"><button class="btn btn-s" onclick="backToEvent('needs')">← Back to needs</button></div>
+      </div>
+      <div class="privacy">
+        <b>Privacy.</b> This row holds a resident's details. It is visible only to this village's admin, Emergency Coordinator and
+        stewards, is never published to the website, and is never shared with another village.
+        Tick <b>Sensitive</b> and the contact block is withheld from steward-level users by the server — so a steward can still
+        coordinate the work without seeing the household's address and phone number.
+      </div>
+      <div class="card">
+        <div class="f-grid">
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">What is needed *</div><input class="f-i" id="n-name" placeholder="e.g. Clear fallen tree blocking the driveway"></div>
+          <div class="f-f"><div class="f-l">Category</div><select class="f-i" id="n-cat"></select></div>
+          <div class="f-f"><div class="f-l">Priority</div><select class="f-i" id="n-pri"></select></div>
+          <div class="f-f"><div class="f-l">People affected</div><input class="f-i" id="n-people" type="number" min="0" step="1"></div>
+          <div class="f-f"><div class="f-l">Target date</div><input class="f-i" id="n-target" type="date"></div>
+          <div class="f-f"><div class="f-l">Assigned to</div><input class="f-i" id="n-assigned" placeholder="Who is looking after this"></div>
+          <div class="f-f"><div class="f-l">Logged</div><input class="f-i" id="n-logged" type="date"></div>
+        </div>
+        <div class="card-t" style="margin-top:16px;">Contact <span id="n-redacted-note" style="display:none;font-weight:600;color:#c2410c;">— withheld from your role, and left untouched when you save</span></div>
+        <div class="f-grid" id="n-contact-grid">
+          <div class="f-f"><div class="f-l">Contact name</div><input class="f-i" id="n-cname"></div>
+          <div class="f-f"><div class="f-l">Phone</div><input class="f-i" id="n-phone"></div>
+          <div class="f-f"><div class="f-l">Email</div><input class="f-i" id="n-email" type="email"></div>
+          <div class="f-f"><div class="f-l">Location / address</div><input class="f-i" id="n-loc"></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Access notes</div><textarea class="f-i" id="n-access" rows="2" placeholder="Gate code, dog on site, road cut, best time to call…"></textarea></div>
+          <div class="f-f" style="grid-column:1/-1;" id="n-sens-wrap">
+            <label style="display:flex;gap:7px;align-items:flex-start;font-size:11.5px;">
+              <input type="checkbox" id="n-sensitive" style="margin-top:2px;">
+              <span><b>Sensitive</b> — withhold the contact block from steward-level users (vulnerability, safety or privacy reasons)</span>
+            </label>
+          </div>
+        </div>
+        <div class="card-t" style="margin-top:16px;">Effort &amp; help received <span style="font-weight:600;color:#6b7280;">— this is what becomes funding evidence</span></div>
+        <div class="f-grid">
+          <div class="f-f"><div class="f-l">Recovery hours contributed</div><input class="f-i" id="n-hours" type="number" min="0" step="0.5">
+            <div class="f-hint">Hours worked on this need. Valued at the event's hour rate.</div></div>
+          <div class="f-f"><div class="f-l">People helping</div><input class="f-i" id="n-helpers" type="number" min="0" step="1"></div>
+          <div class="f-f"><div class="f-l">Value of donated goods &amp; services ($)</div><input class="f-i" id="n-value" type="number" min="0" step="1">
+            <div class="f-hint">Materials, machinery time, a trade's labour — what it would have cost.</div></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Notes</div><textarea class="f-i" id="n-notes" rows="3"></textarea></div>
+        </div>
+        <div class="form-acts">
+          <button class="btn btn-g" id="n-save" onclick="saveNeed()">Save need</button>
+          <select class="f-i" id="n-status" style="max-width:150px;display:none;" onchange="setNeedStatus(this.value)"></select>
+          <button class="btn btn-r" id="n-del" style="display:none;" onclick="deleteNeed()">Delete</button>
+          <span id="n-msg" class="msg"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ OFFER EDITOR ══ -->
+    <div id="panel-offer" style="display:none;">
+      <div class="ph">
+        <div><div class="ph-title" id="o-title">Log an offer of help</div><div class="ph-sub">What is on offer, from whom, and when it is available</div></div>
+        <div class="ph-acts"><button class="btn btn-s" onclick="backToEvent('offers')">← Back to offers</button></div>
+      </div>
+      <div class="card">
+        <div class="f-grid">
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">What is offered *</div><input class="f-i" id="o-name" placeholder="e.g. Tractor + slasher, weekends"></div>
+          <div class="f-f"><div class="f-l">Type</div><select class="f-i" id="o-type"></select></div>
+          <div class="f-f"><div class="f-l">Offered by</div><input class="f-i" id="o-by" placeholder="Name or business"></div>
+          <div class="f-f"><div class="f-l">Phone</div><input class="f-i" id="o-phone"></div>
+          <div class="f-f"><div class="f-l">Email</div><input class="f-i" id="o-email" type="email"></div>
+          <div class="f-f"><div class="f-l">Available from</div><input class="f-i" id="o-from" type="date"></div>
+          <div class="f-f"><div class="f-l">Available until</div><input class="f-i" id="o-until" type="date"></div>
+          <div class="f-f"><div class="f-l">Capacity</div><input class="f-i" id="o-cap" placeholder="e.g. 2 utes + trailer · sleeps 4 · 8 hrs a week"></div>
+          <div class="f-f"><div class="f-l">Estimated value ($)</div><input class="f-i" id="o-val" type="number" min="0" step="1">
+            <div class="f-hint">What this would have cost to hire or buy — counts toward the evidence total once delivered.</div></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Description</div><textarea class="f-i" id="o-desc" rows="2"></textarea></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Tickets, licences &amp; insurance</div><textarea class="f-i" id="o-comp" rows="2" placeholder="Chainsaw ticket, machinery licence, public liability — note what has been sighted"></textarea>
+            <div class="f-hint">Check before you send anyone onto a damaged site with machinery.</div></div>
+          <div class="f-f" style="grid-column:1/-1;"><div class="f-l">Notes</div><textarea class="f-i" id="o-notes" rows="2"></textarea></div>
+        </div>
+        <div class="form-acts">
+          <button class="btn btn-g" id="o-save" onclick="saveOffer()">Save offer</button>
+          <select class="f-i" id="o-status" style="max-width:150px;display:none;" onchange="setOfferStatus(this.value)"></select>
+          <button class="btn btn-r" id="o-del" style="display:none;" onclick="deleteOffer()">Delete</button>
+          <span id="o-msg" class="msg"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="vf-toast" id="toast"></div>
+
+<script>
+  /* ── State ─────────────────────────────────────────────────────────── */
+  let currentUser = null;
+  let VILLAGE = localStorage.getItem('vf_active_village') || 'Smiths Lake';
+  let events = [], projects = [];
+  let VOCAB = {};
+  let EV = null, NEEDS = [], OFFERS = [], ROLLUP = null, CAN_SENSITIVE = false;
+  let editEventId = '', editNeedId = '', editOfferId = '';
+  let matchNeedId = '';
+
+  netlifyIdentity.on('init', u => { if (u) { currentUser = u; showApp(); } });
+  netlifyIdentity.on('login', u => { currentUser = u; netlifyIdentity.close(); showApp(); });
+  netlifyIdentity.on('logout', () => { location.reload(); });
+
+  async function authHeaders() {
+    let token = null;
+    try { const u = netlifyIdentity.currentUser(); if (u) token = await u.jwt(); } catch (e) {}
+    return { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) };
+  }
+  function escHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3500); }
+  const fmt$ = n => (n == null ? '—' : '$' + Number(n).toLocaleString('en-AU'));
+  const fmtN = n => (n == null ? '—' : Number(n).toLocaleString('en-AU'));
+  const stClass = s => 'st-' + String(s || '').replace(/[^A-Za-z]/g, '');
+  function fmtDate(d) {
+    if (!d) return '';
+    return new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  function setMsg(id, text, ok) {
+    const el = document.getElementById(id);
+    el.textContent = text || '';
+    el.className = 'msg' + (text ? (ok ? ' ok' : ' err') : '');
+  }
+  function fill(sel, list, value, placeholder) {
+    const el = document.getElementById(sel);
+    el.innerHTML = (placeholder ? '<option value="">' + placeholder + '</option>' : '') +
+      (list || []).map(o => '<option' + (o === value ? ' selected' : '') + '>' + escHtml(o) + '</option>').join('');
+  }
+  const val = id => document.getElementById(id).value;
+  const setVal = (id, v) => { document.getElementById(id).value = (v == null ? '' : v); };
+
+  function showApp() {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('user-email').textContent = currentUser?.email || '';
+    loadVillages();
+    loadProjects();
+    loadEvents();
+  }
+
+  async function loadVillages() {
+    const sel = document.getElementById('village-select');
+    try {
+      const r = await fetch('/api/village-list', { headers: await authHeaders() });
+      const d = await r.json();
+      const villages = (d.villages || []).filter(v => v.status === 'live');
+      if (!villages.length) return;
+      if (!villages.some(v => v.name === VILLAGE)) VILLAGE = villages[0].name;
+      sel.innerHTML = villages.map(v => '<option value="' + escHtml(v.name) + '"' + (v.name === VILLAGE ? ' selected' : '') + '>' + escHtml(v.name) + '</option>').join('');
+    } catch (e) {}
+    sel.onchange = () => {
+      VILLAGE = sel.value;
+      localStorage.setItem('vf_active_village', VILLAGE);
+      EV = null; showList(); loadProjects(); loadEvents();
+    };
+  }
+
+  // Projects are optional context — a recovery can be linked to one so rebuild
+  // work carries a single funding story. A village without the Projects module
+  // simply sees an empty list.
+  async function loadProjects() {
+    projects = [];
+    try {
+      const r = await fetch('/api/projects-list?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      if (r.ok) { const d = await r.json(); projects = d.projects || []; }
+    } catch (e) {}
+  }
+  function buildProjectOptions(current) {
+    const sel = document.getElementById('e-proj');
+    const sorted = projects.slice().sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    sel.innerHTML = '<option value="">— none —</option>' +
+      sorted.map(p => '<option value="' + escHtml(p.slug) + '">' + escHtml(p.name) + '</option>').join('');
+    if (current && ![...sel.options].some(o => o.value === current)) {
+      sel.insertAdjacentHTML('beforeend', '<option value="' + escHtml(current) + '">' + escHtml(current) + ' (not in the project list)</option>');
+    }
+    sel.value = current || '';
+  }
+
+  /* ── Events list ───────────────────────────────────────────────────── */
+  async function loadEvents() {
+    document.getElementById('list-sub').textContent = VILLAGE + ' — every recovery this village has run';
+    try {
+      const r = await fetch('/api/recovery-admin?village=' + encodeURIComponent(VILLAGE), { headers: await authHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not load recovery events');
+      events = d.events || [];
+      VOCAB = Object.assign(VOCAB, d.vocab || {});
+      renderEventList(d.orphanNeeds || 0);
+    } catch (e) {
+      document.getElementById('event-list').innerHTML = '<div class="empty">⚠️ ' + escHtml(e.message) + '</div>';
+    }
+  }
+
+  function renderEventList(orphans) {
+    const active = events.filter(e => e.status === 'Active recovery');
+    const openNeeds = events.reduce((s, e) => s + (e.needsOpen || 0), 0);
+    const offers = events.reduce((s, e) => s + (e.offersTotal || 0), 0);
+    document.getElementById('list-stats').innerHTML =
+      '<div class="stat"><div class="n">' + events.length + '</div><div class="l">Recovery events</div></div>' +
+      '<div class="stat' + (active.length ? ' warn' : '') + '"><div class="n">' + active.length + '</div><div class="l">Active now</div></div>' +
+      '<div class="stat' + (openNeeds ? ' warn' : '') + '"><div class="n">' + openNeeds + '</div><div class="l">Needs still open</div></div>' +
+      '<div class="stat"><div class="n">' + offers + '</div><div class="l">Offers of help</div></div>';
+
+    const el = document.getElementById('event-list');
+    if (!events.length) {
+      el.innerHTML = '<div class="empty">No recovery events yet. When a fire, flood or storm hits, open one here — or open one now on <b>Standby</b> so the register is ready before you need it.</div>';
+      return;
+    }
+    const order = VOCAB.eventStatuses || ['Standby', 'Active recovery', 'Monitoring', 'Closed'];
+    el.innerHTML = order.map(st => {
+      const rows = events.filter(e => e.status === st);
+      if (!rows.length) return '';
+      return '<div class="grp-title">' + escHtml(st) + ' (' + rows.length + ')</div>' + rows.map(e => {
+        const period = e.startDate ? fmtDate(e.startDate) + (e.closedDate ? ' – ' + fmtDate(e.closedDate) : ' – ongoing') : 'No dates set';
+        const meta = [e.hazard, period, e.coordinator ? 'Coordinator: ' + e.coordinator : ''].filter(Boolean).join(' · ');
+        return '<div class="g-row" onclick="openEvent(\'' + e.id + '\')">' +
+          '<div><div class="g-name">' + escHtml(e.name) + '</div><div class="g-meta">' + escHtml(meta) + '</div></div>' +
+          '<div class="g-amt"><div class="a">' + (e.needsOpen || 0) + ' / ' + (e.needsTotal || 0) + '</div><div class="l">needs open</div></div>' +
+          '<div class="g-amt"><div class="a">' + (e.offersTotal || 0) + '</div><div class="l">offers</div></div>' +
+          '<span class="pill ' + stClass(e.status) + '">' + escHtml(e.status) + '</span>' +
+        '</div>';
+      }).join('');
+    }).join('') + (orphans ? '<div class="note">⚠️ ' + orphans + ' need(s) are not attached to any current recovery event — most likely their event was deleted. Nothing is lost: they are still in the Notion register.</div>' : '');
+  }
+
+  /* ── Panels ────────────────────────────────────────────────────────── */
+  const PANELS = ['panel-list', 'panel-event', 'panel-event-edit', 'panel-need', 'panel-offer'];
+  function show(which) {
+    PANELS.forEach(p => { document.getElementById(p).style.display = (p === which ? 'block' : 'none'); });
+    window.scrollTo(0, 0);
+  }
+  function showList() { show('panel-list'); }
+  function showTab(name) {
+    document.querySelectorAll('#panel-event .tab').forEach(b => b.classList.toggle('on', b.getAttribute('data-tab') === name));
+    document.querySelectorAll('#panel-event .tabpanel').forEach(p => p.classList.toggle('on', p.id === 'tab-' + name));
+  }
+  function backToEvent(tab) { show('panel-event'); if (tab) showTab(tab); }
+  function backFromEventEdit() { if (EV) backToEvent('overview'); else showList(); }
+
+  /* ── Event detail ──────────────────────────────────────────────────── */
+  async function openEvent(id, keepTab) {
+    setMsg('ev-msg', '');
+    try {
+      const r = await fetch('/api/recovery-admin?village=' + encodeURIComponent(VILLAGE) + '&event=' + encodeURIComponent(id), { headers: await authHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Could not load that recovery event');
+      EV = d.event; NEEDS = d.needs || []; OFFERS = d.offers || []; ROLLUP = d.rollup;
+      CAN_SENSITIVE = !!d.canSeeSensitive;
+      VOCAB = Object.assign(VOCAB, d.vocab || {});
+      renderEvent();
+      show('panel-event');
+      if (keepTab) showTab(keepTab);
+    } catch (e) { showToast('⚠️ ' + e.message); }
+  }
+
+  function renderEvent() {
+    document.getElementById('ev-title').textContent = EV.name;
+    const period = EV.startDate ? fmtDate(EV.startDate) + (EV.closedDate ? ' – ' + fmtDate(EV.closedDate) : ' – ongoing') : 'No dates set';
+    document.getElementById('ev-sub').textContent = [EV.hazard, period, VILLAGE].filter(Boolean).join(' · ');
+    fill('ev-status', VOCAB.eventStatuses || [], EV.status);
+
+    const r = ROLLUP;
+    document.getElementById('ev-stats').innerHTML =
+      '<div class="stat' + (r.needsOpen ? ' warn' : '') + '"><div class="n">' + r.needsOpen + '</div><div class="l">Needs open</div></div>' +
+      '<div class="stat"><div class="n">' + r.needsClosed + '</div><div class="l">Needs closed</div></div>' +
+      '<div class="stat"><div class="n">' + r.offersOpen + '</div><div class="l">Offers available</div></div>' +
+      '<div class="stat"><div class="n">' + fmt$(r.indicativeTotal) + '</div><div class="l">Indicative evidence</div></div>';
+
+    const kv = [
+      ['Status', EV.status],
+      ['Hazard', EV.hazard || '—'],
+      ['Period', period],
+      ['Coordinator', EV.coordinator || '—'],
+      ['Households affected', fmtN(EV.householdsAffected)],
+      ['Hour rate', EV.hourRate ? fmt$(EV.hourRate) + ' / hr' : 'not set'],
+      ['Declaration reference', EV.declarationRef || '—'],
+      ['Linked project', EV.project || '—'],
+      ['Last updated by', EV.lastUpdatedBy || '—'],
+    ];
+    document.getElementById('ev-kv').innerHTML = kv.map(([k, v]) => '<dt>' + escHtml(k) + '</dt><dd>' + escHtml(v) + '</dd>').join('');
+    const sc = document.getElementById('ev-summary-card');
+    sc.style.display = EV.summary ? 'block' : 'none';
+    document.getElementById('ev-summary').textContent = EV.summary || '';
+
+    renderNeeds();
+    renderOffers();
+    renderMatching();
+    renderEvidence();
+  }
+
+  async function setEventStatus(status) {
+    const d = await post('/api/recovery-admin', { action: 'status', pageId: EV.id, status }, 'ev-msg', 'Status: ' + status + ' ✓');
+    if (d) { await loadEvents(); openEvent(EV.id, 'overview'); }
+  }
+
+  async function post(url, payload, msgId, okMsg) {
+    try {
+      const r = await fetch(url, { method: 'POST', headers: await authHeaders(), body: JSON.stringify({ village: VILLAGE, ...payload }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Request failed');
+      if (msgId && okMsg) setMsg(msgId, okMsg, true);
+      return d;
+    } catch (e) {
+      if (msgId) setMsg(msgId, '⚠️ ' + e.message, false); else showToast('⚠️ ' + e.message);
+      return null;
+    }
+  }
+
+  async function exportRegister() {
+    // The CSV is served with a Content-Disposition, but the endpoint needs the
+    // Identity token — so fetch it with auth and hand the browser a blob.
+    try {
+      const r = await fetch('/api/recovery-admin?village=' + encodeURIComponent(VILLAGE) + '&event=' + encodeURIComponent(EV.id) + '&format=csv', { headers: await authHeaders() });
+      if (!r.ok) throw new Error('Export failed (' + r.status + ')');
+      const blob = await r.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'recovery-' + (EV.name || 'event').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60) + '.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      showToast('⬇ Evidence exported');
+    } catch (e) { showToast('⚠️ ' + e.message); }
+  }
+
+  /* ── Event editor ──────────────────────────────────────────────────── */
+  function newEvent() {
+    editEventId = '';
+    ['e-name','e-coord','e-start','e-closed','e-hh','e-rate','e-decl','e-summary','e-notes'].forEach(id => setVal(id, ''));
+    fill('e-hazard', VOCAB.hazards || [], '', '— not set —');
+    buildProjectOptions('');
+    document.getElementById('ee-title').textContent = 'New recovery event';
+    document.getElementById('e-del').style.display = 'none';
+    setMsg('e-msg', '');
+    show('panel-event-edit');
+  }
+
+  function editEvent() {
+    editEventId = EV.id;
+    setVal('e-name', EV.name); setVal('e-coord', EV.coordinator);
+    setVal('e-start', EV.startDate); setVal('e-closed', EV.closedDate);
+    setVal('e-hh', EV.householdsAffected); setVal('e-rate', EV.hourRate);
+    setVal('e-decl', EV.declarationRef); setVal('e-summary', EV.summary); setVal('e-notes', EV.notes);
+    fill('e-hazard', VOCAB.hazards || [], EV.hazard, '— not set —');
+    buildProjectOptions(EV.project);
+    document.getElementById('ee-title').textContent = EV.name;
+    document.getElementById('e-del').style.display = '';
+    setMsg('e-msg', '');
+    show('panel-event-edit');
+  }
+
+  async function saveEvent() {
+    const btn = document.getElementById('e-save');
+    btn.disabled = true;
+    const d = await post('/api/recovery-admin', {
+      action: 'save', pageId: editEventId || undefined,
+      name: val('e-name'), hazard: val('e-hazard'), coordinator: val('e-coord'),
+      startDate: val('e-start'), closedDate: val('e-closed'),
+      householdsAffected: val('e-hh'), hourRate: val('e-rate'),
+      declarationRef: val('e-decl'), project: val('e-proj'),
+      summary: val('e-summary'), notes: val('e-notes'),
+    }, 'e-msg', 'Saved ✓');
+    btn.disabled = false;
+    if (d) { editEventId = d.pageId; await loadEvents(); openEvent(d.pageId, 'overview'); }
+  }
+
+  async function deleteEvent() {
+    if (!confirm('Delete "' + EV.name + '"?\n\nIt moves to Notion trash (recoverable). Its needs and offers are NOT deleted — a recovery record is evidence. Consider Closed instead.')) return;
+    const d = await post('/api/recovery-admin', { action: 'delete', pageId: editEventId }, 'e-msg');
+    if (d) { showToast('🗑 Recovery event deleted'); EV = null; showList(); loadEvents(); }
+  }
+
+  /* ── Needs ─────────────────────────────────────────────────────────── */
+  function renderNeeds() {
+    document.getElementById('needs-privacy').innerHTML = CAN_SENSITIVE
+      ? '<b>Privacy.</b> You can see contact details on every need, including those marked Sensitive. Nothing here is ever published, and it is never shared with another village.'
+      : '<b>Privacy.</b> Needs marked <b>Sensitive</b> have their contact details withheld from your role by the server — you can still coordinate the work. Ask the village admin or Emergency Coordinator if you need to reach the household.';
+
+    const el = document.getElementById('needs-body');
+    if (!NEEDS.length) { el.innerHTML = '<div class="empty">No needs logged yet — add the first with “Log a need”.</div>'; return; }
+    const order = VOCAB.needStatuses || [];
+    const priOrder = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+    el.innerHTML = order.map(st => {
+      const rows = NEEDS.filter(n => n.status === st).sort((a, b) => (priOrder[a.priority] ?? 9) - (priOrder[b.priority] ?? 9));
+      if (!rows.length) return '';
+      return '<div class="grp-title">' + escHtml(st) + ' (' + rows.length + ')</div>' +
+        '<div class="card" style="padding:6px 10px;"><table class="tbl"><thead><tr>' +
+        '<th>Need</th><th>Category</th><th>Priority</th><th>Contact</th><th>Target</th><th>Assigned</th><th>Hours</th><th>Help $</th><th>Matched</th>' +
+        '</tr></thead><tbody>' + rows.map(n => {
+          const contact = n.redacted
+            ? '<span class="redacted">withheld</span>'
+            : escHtml([n.contactName, n.contactPhone].filter(Boolean).join(' · ') || '—');
+          return '<tr style="cursor:pointer;" onclick="openNeed(\'' + n.id + '\')">' +
+            '<td><b>' + escHtml(n.name) + '</b>' + (n.sensitive ? ' <span class="pill pr-High">sensitive</span>' : '') +
+              (n.location && !n.redacted ? '<div style="font-size:10.5px;color:#6b7280;">' + escHtml(n.location) + '</div>' : '') + '</td>' +
+            '<td>' + escHtml(n.category || '—') + '</td>' +
+            '<td><span class="pill pr-' + escHtml(n.priority) + '">' + escHtml(n.priority) + '</span></td>' +
+            '<td>' + contact + '</td>' +
+            '<td>' + escHtml(fmtDate(n.targetDate) || '—') + '</td>' +
+            '<td>' + escHtml(n.assignedTo || '—') + '</td>' +
+            '<td>' + (n.hoursContributed == null ? '—' : fmtN(n.hoursContributed)) + '</td>' +
+            '<td>' + (n.helpValue == null ? '—' : fmt$(n.helpValue)) + '</td>' +
+            '<td>' + ((n.matchedOffers || []).length || '—') + '</td>' +
+          '</tr>';
+        }).join('') + '</tbody></table></div>';
+    }).join('');
+  }
+
+  function newNeed() {
+    editNeedId = '';
+    ['n-name','n-people','n-target','n-assigned','n-cname','n-phone','n-email','n-loc','n-access','n-hours','n-helpers','n-value','n-notes'].forEach(id => setVal(id, ''));
+    setVal('n-logged', new Date().toISOString().slice(0, 10));
+    document.getElementById('n-sensitive').checked = false;
+    fill('n-cat', VOCAB.needCategories || [], '', '— not set —');
+    fill('n-pri', VOCAB.needPriorities || [], 'Medium');
+    document.getElementById('n-title').textContent = 'Log a need';
+    document.getElementById('n-status').style.display = 'none';
+    document.getElementById('n-del').style.display = 'none';
+    document.getElementById('n-redacted-note').style.display = 'none';
+    document.getElementById('n-sens-wrap').style.display = CAN_SENSITIVE ? 'block' : 'none';
+    setMsg('n-msg', '');
+    show('panel-need');
+  }
+
+  function openNeed(id) {
+    const n = NEEDS.find(x => x.id === id);
+    if (!n) return;
+    editNeedId = id;
+    setVal('n-name', n.name); setVal('n-people', n.peopleAffected); setVal('n-target', n.targetDate);
+    setVal('n-assigned', n.assignedTo); setVal('n-logged', n.loggedDate);
+    setVal('n-cname', n.redacted ? '' : n.contactName); setVal('n-phone', n.contactPhone);
+    setVal('n-email', n.contactEmail); setVal('n-loc', n.redacted ? '' : n.location);
+    setVal('n-access', n.accessNotes);
+    setVal('n-hours', n.hoursContributed); setVal('n-helpers', n.peopleHelping); setVal('n-value', n.helpValue);
+    setVal('n-notes', n.notes);
+    document.getElementById('n-sensitive').checked = !!n.sensitive;
+    fill('n-cat', VOCAB.needCategories || [], n.category, '— not set —');
+    fill('n-pri', VOCAB.needPriorities || [], n.priority);
+    document.getElementById('n-title').textContent = n.name;
+    fill('n-status', VOCAB.needStatuses || [], n.status);
+    document.getElementById('n-status').style.display = '';
+    document.getElementById('n-del').style.display = '';
+    // A redacted need's contact fields are read-only-ish: the server preserves
+    // them on save, and we say so rather than pretending the blanks are real.
+    document.getElementById('n-redacted-note').style.display = n.redacted ? 'inline' : 'none';
+    ['n-cname','n-phone','n-email','n-loc','n-access'].forEach(id => { document.getElementById(id).disabled = !!n.redacted; });
+    document.getElementById('n-sens-wrap').style.display = CAN_SENSITIVE ? 'block' : 'none';
+    setMsg('n-msg', '');
+    show('panel-need');
+  }
+
+  async function saveNeed() {
+    const btn = document.getElementById('n-save');
+    btn.disabled = true;
+    const d = await post('/api/recovery-register', {
+      kind: 'need', action: 'save', pageId: editNeedId || undefined, event: EV.id,
+      name: val('n-name'), category: val('n-cat'), priority: val('n-pri'),
+      peopleAffected: val('n-people'), targetDate: val('n-target'), assignedTo: val('n-assigned'),
+      loggedDate: val('n-logged'),
+      contactName: val('n-cname'), contactPhone: val('n-phone'), contactEmail: val('n-email'),
+      location: val('n-loc'), accessNotes: val('n-access'),
+      sensitive: document.getElementById('n-sensitive').checked,
+      hoursContributed: val('n-hours'), peopleHelping: val('n-helpers'), helpValue: val('n-value'),
+      notes: val('n-notes'),
+    }, 'n-msg', 'Saved ✓');
+    btn.disabled = false;
+    if (d) { editNeedId = d.pageId; await openEvent(EV.id, 'needs'); }
+  }
+
+  async function setNeedStatus(status) {
+    const d = await post('/api/recovery-register', { kind: 'need', action: 'status', pageId: editNeedId, status }, 'n-msg', 'Status: ' + status + ' ✓');
+    if (d) { await openEvent(EV.id, 'needs'); }
+  }
+
+  async function deleteNeed() {
+    const n = NEEDS.find(x => x.id === editNeedId);
+    if (!confirm('Delete "' + (n ? n.name : 'this need') + '"?\n\nIt moves to Notion trash (recoverable). Withdrawn or Referred keeps the record — better for the evidence trail.')) return;
+    const d = await post('/api/recovery-register', { kind: 'need', action: 'delete', pageId: editNeedId }, 'n-msg');
+    if (d) { showToast('🗑 Need deleted'); await openEvent(EV.id, 'needs'); }
+  }
+
+  /* ── Offers ────────────────────────────────────────────────────────── */
+  function renderOffers() {
+    const el = document.getElementById('offers-body');
+    if (!OFFERS.length) { el.innerHTML = '<div class="empty">No offers logged yet. When someone says “what can I do?”, log it here so it can be matched to a real need.</div>'; return; }
+    const order = VOCAB.offerStatuses || [];
+    el.innerHTML = order.map(st => {
+      const rows = OFFERS.filter(o => o.status === st);
+      if (!rows.length) return '';
+      return '<div class="grp-title">' + escHtml(st) + ' (' + rows.length + ')</div>' + rows.map(o => {
+        const when = o.availableFrom ? fmtDate(o.availableFrom) + (o.availableUntil ? ' – ' + fmtDate(o.availableUntil) : ' onwards') : 'Any time';
+        const meta = [o.offerType, o.offeredBy, o.capacity, when].filter(Boolean).join(' · ');
+        return '<div class="g-row" onclick="openOffer(\'' + o.id + '\')">' +
+          '<div><div class="g-name">' + escHtml(o.name) + '</div><div class="g-meta">' + escHtml(meta) + '</div>' +
+            ((o.matchedNeeds || []).length ? '<div class="chiplist">' + o.matchedNeeds.map(m => '<span class="chip">' + escHtml(m.title) + '</span>').join('') + '</div>' : '') +
+          '</div>' +
+          '<div class="g-amt"><div class="a">' + (o.estimatedValue == null ? '—' : fmt$(o.estimatedValue)) + '</div><div class="l">est. value</div></div>' +
+          '<span class="pill ' + stClass(o.status) + '">' + escHtml(o.status) + '</span>' +
+        '</div>';
+      }).join('');
+    }).join('');
+  }
+
+  function newOffer() {
+    editOfferId = '';
+    ['o-name','o-by','o-phone','o-email','o-from','o-until','o-cap','o-val','o-desc','o-comp','o-notes'].forEach(id => setVal(id, ''));
+    fill('o-type', VOCAB.offerTypes || [], '', '— not set —');
+    document.getElementById('o-title').textContent = 'Log an offer of help';
+    document.getElementById('o-status').style.display = 'none';
+    document.getElementById('o-del').style.display = 'none';
+    setMsg('o-msg', '');
+    show('panel-offer');
+  }
+
+  function openOffer(id) {
+    const o = OFFERS.find(x => x.id === id);
+    if (!o) return;
+    editOfferId = id;
+    setVal('o-name', o.name); setVal('o-by', o.offeredBy); setVal('o-phone', o.contactPhone);
+    setVal('o-email', o.contactEmail); setVal('o-from', o.availableFrom); setVal('o-until', o.availableUntil);
+    setVal('o-cap', o.capacity); setVal('o-val', o.estimatedValue); setVal('o-desc', o.description);
+    setVal('o-comp', o.complianceNotes); setVal('o-notes', o.notes);
+    fill('o-type', VOCAB.offerTypes || [], o.offerType, '— not set —');
+    document.getElementById('o-title').textContent = o.name;
+    fill('o-status', VOCAB.offerStatuses || [], o.status);
+    document.getElementById('o-status').style.display = '';
+    document.getElementById('o-del').style.display = '';
+    setMsg('o-msg', '');
+    show('panel-offer');
+  }
+
+  async function saveOffer() {
+    const btn = document.getElementById('o-save');
+    btn.disabled = true;
+    const d = await post('/api/recovery-register', {
+      kind: 'offer', action: 'save', pageId: editOfferId || undefined, event: EV.id,
+      name: val('o-name'), offerType: val('o-type'), offeredBy: val('o-by'),
+      contactPhone: val('o-phone'), contactEmail: val('o-email'),
+      availableFrom: val('o-from'), availableUntil: val('o-until'),
+      capacity: val('o-cap'), estimatedValue: val('o-val'),
+      description: val('o-desc'), complianceNotes: val('o-comp'), notes: val('o-notes'),
+    }, 'o-msg', 'Saved ✓');
+    btn.disabled = false;
+    if (d) { editOfferId = d.pageId; await openEvent(EV.id, 'offers'); }
+  }
+
+  async function setOfferStatus(status) {
+    const d = await post('/api/recovery-register', { kind: 'offer', action: 'status', pageId: editOfferId, status }, 'o-msg', 'Status: ' + status + ' ✓');
+    if (d) { await openEvent(EV.id, 'offers'); }
+  }
+
+  async function deleteOffer() {
+    const o = OFFERS.find(x => x.id === editOfferId);
+    if (!confirm('Delete "' + (o ? o.name : 'this offer') + '"?\n\nIt moves to Notion trash (recoverable). Withdrawn or Declined keeps the record.')) return;
+    const d = await post('/api/recovery-register', { kind: 'offer', action: 'delete', pageId: editOfferId }, 'o-msg');
+    if (d) { showToast('🗑 Offer deleted'); await openEvent(EV.id, 'offers'); }
+  }
+
+  /* ── Matching ──────────────────────────────────────────────────────── */
+  function renderMatching() {
+    const openNeeds = NEEDS.filter(n => ['Logged', 'Triaged', 'Matched', 'In progress'].includes(n.status));
+    if (matchNeedId && !openNeeds.some(n => n.id === matchNeedId)) matchNeedId = '';
+    const nEl = document.getElementById('match-needs');
+    if (!openNeeds.length) {
+      nEl.innerHTML = '<div class="empty" style="padding:20px;">Nothing open to match — every need is closed, referred or withdrawn.</div>';
+      document.getElementById('match-offers').innerHTML = '';
+      document.getElementById('match-offers-t').textContent = 'Offers available';
+      return;
+    }
+    const priOrder = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+    nEl.innerHTML = openNeeds.slice().sort((a, b) => (priOrder[a.priority] ?? 9) - (priOrder[b.priority] ?? 9)).map(n =>
+      '<div class="m-row' + (n.id === matchNeedId ? ' sel' : '') + '" onclick="pickMatchNeed(\'' + n.id + '\')">' +
+        '<div class="t">' + escHtml(n.name) + '</div>' +
+        '<div class="s"><span class="pill pr-' + escHtml(n.priority) + '">' + escHtml(n.priority) + '</span> ' +
+          escHtml([n.category, n.status].filter(Boolean).join(' · ')) + '</div>' +
+        ((n.matchedOffers || []).length ? '<div class="chiplist">' + n.matchedOffers.map(m => '<span class="chip">' + escHtml(m.title) + '</span>').join('') + '</div>' : '') +
+      '</div>').join('');
+
+    const oEl = document.getElementById('match-offers');
+    if (!matchNeedId) {
+      document.getElementById('match-offers-t').textContent = 'Offers available';
+      oEl.innerHTML = '<div class="empty" style="padding:20px;">Pick a need on the left.</div>';
+      return;
+    }
+    const need = NEEDS.find(n => n.id === matchNeedId);
+    document.getElementById('match-offers-t').textContent = 'Offers for “' + (need ? need.name : '') + '”';
+    const usable = OFFERS.filter(o => ['Offered', 'Verified', 'Allocated', 'Delivered'].includes(o.status));
+    if (!usable.length) { oEl.innerHTML = '<div class="empty" style="padding:20px;">No offers logged yet.</div>'; return; }
+    const linked = new Set((need.matchedOffers || []).map(m => m.id));
+    oEl.innerHTML = usable.map(o => {
+      const on = linked.has(o.id);
+      const when = o.availableFrom ? fmtDate(o.availableFrom) + (o.availableUntil ? ' – ' + fmtDate(o.availableUntil) : ' onwards') : 'Any time';
+      return '<div class="m-row' + (on ? ' sel' : '') + '" onclick="toggleMatch(\'' + o.id + '\', ' + (on ? 'false' : 'true') + ')">' +
+        '<div class="t">' + (on ? '✓ ' : '') + escHtml(o.name) + '</div>' +
+        '<div class="s">' + escHtml([o.offerType, o.offeredBy, o.capacity, when].filter(Boolean).join(' · ')) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function pickMatchNeed(id) { matchNeedId = (matchNeedId === id ? '' : id); renderMatching(); }
+
+  async function toggleMatch(offerId, on) {
+    const d = await post('/api/recovery-register', { action: 'match', needId: matchNeedId, offerId, on });
+    if (d) { showToast(on ? '🔗 Offer allocated' : 'Unmatched'); await openEvent(EV.id, 'matching'); }
+  }
+
+  /* ── Evidence ──────────────────────────────────────────────────────── */
+  function renderEvidence() {
+    const r = ROLLUP;
+    const rateNote = r.hourRate
+      ? fmtN(r.hours) + ' hrs × ' + fmt$(r.hourRate) + '/hr'
+      : fmtN(r.hours) + ' hrs — <b>no hour rate set</b>, so hours are not valued yet (set one in “Edit details”)';
+    document.getElementById('evidence-body').innerHTML =
+      '<div class="card"><div class="card-t">What this recovery took — indicative evidence</div>' +
+      '<table class="tbl"><tbody>' +
+        row('Needs logged', fmtN(r.needsTotal)) +
+        row('Needs closed', fmtN(r.needsClosed)) +
+        row('Needs still open', fmtN(r.needsOpen) + (r.needsCritical ? ' <span class="pill pr-Critical">' + r.needsCritical + ' critical</span>' : '')) +
+        row('People affected', fmtN(r.peopleAffected)) +
+        row('Offers of help received', fmtN(r.offersTotal)) +
+        row('Offers delivered', fmtN(r.offersDelivered)) +
+        row('Recovery hours logged against needs', rateNote) +
+        row('<b>Valued volunteer effort</b>', '<b>' + fmt$(r.hoursValue) + '</b>') +
+        row('<b>Value of donated goods &amp; services</b>', '<b>' + fmt$(r.helpValue) + '</b>') +
+        row('<b>Value of delivered offers</b>', '<b>' + fmt$(r.deliveredValue) + '</b>') +
+        '<tr><td style="padding-top:12px;font-size:13px;"><b>Indicative total</b></td><td style="padding-top:12px;font-size:15px;font-weight:900;color:#143d2e;">' + fmt$(r.indicativeTotal) + '</td></tr>' +
+      '</tbody></table></div>' +
+      (r.ledger.available
+        ? '<div class="card"><div class="card-t">Cross-check — Volunteer hub</div>' +
+          '<table class="tbl"><tbody>' +
+            row('Confirmed volunteer hours in the same period', fmtN(r.ledger.hours)) +
+            row('Working bees / activities', fmtN(r.ledger.activities)) +
+          '</tbody></table>' +
+          '<div class="note" style="margin-top:8px;">These are hours the <b>Volunteer hub</b> confirmed between ' +
+          escHtml(fmtDate(EV.startDate) || 'the start') + ' and ' + escHtml(fmtDate(EV.closedDate) || 'today') + '. ' +
+          'They are shown as a cross-check and are <b>deliberately not added</b> to the total above — a village that runs its recovery ' +
+          'working bees through the Volunteer hub will see the effort there, one that doorknocks will see it in the needs register. ' +
+          'Counting both would double-count the same work.</div></div>'
+        : '') +
+      '<div class="note"><b>Read this before you quote a number.</b> Everything above is <b>indicative</b>: it is evidence to support a ' +
+      'recovery-funding claim, not an audited figure. Hours and values are what your coordinators recorded at the time, which is exactly ' +
+      'what a funding body wants — a contemporaneous record. Money actually received still belongs in the ' +
+      '<a href="/admin/contrib/" style="color:#0f8f80;">Contributions portal</a>; nothing here is written into it, so a donation can never ' +
+      'be counted twice. Use <b>⬇ Export evidence (CSV)</b> to attach the full register to a claim.</div>';
+  }
+  function row(k, v) { return '<tr><td style="color:#6b7280;width:60%;">' + k + '</td><td>' + v + '</td></tr>'; }
+</script>
+</body>
+</html>
