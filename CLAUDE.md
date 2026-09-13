@@ -283,6 +283,79 @@ The spine that ties **grants + co-contribution budget/schedule + volunteer group
 - **Two-way Project Hub link:** link a project to existing public Project-Hub cards (multi) AND/OR tick "Show as a Project Hub card" → DRAFT content page (hidden until you add photos in Notion + Publish website). Respects publicity-gating (drafts, never auto-live).
 - **v1 valuation is READ-ONLY:** volunteer hours read live from Confirmed/Pushed activities, valued at the hour rate for an INDICATIVE co-contribution figure — nothing written back to the schedule (no double count); the formal push-to-Contributions is a later pass. **"Volunteer hours per card = the co-contribution currency for a project and a grant" (Greg).**
 
+## Resilience Recovery Support (/admin/recovery/, added Sep 2026)
+Coordinated recovery in the weeks after a fire, flood or storm — announced on village1st.com.au
+as LAUNCHING SOON (that repo's PR #12, 17 → 19 modules) and built here. Module id `recovery`.
+- **Spine:** a **Recovery Event** (one fire/flood/storm), tabs Overview · Needs · Offers ·
+  Matching · Evidence — structurally the Projects console.
+- **Three registers** (`_recovery.js`, env → Notion search → auto-create, the grant-admin.js
+  pattern): `📋 VF Recovery Events` (hazard, Status Standby→Active recovery→Monitoring→Closed,
+  period, `Declaration Ref` for an AGRN, coordinator, `Hour Rate`, `Project` slug),
+  `🌱 VF Recovery Needs` (category, priority, Status Logged→Triaged→Matched→In progress→Closed
+  /Referred/Withdrawn, contact block, `Sensitive`, `Hours Contributed`, `Help Value`,
+  `Matched Offers` JSON), `🤝 VF Recovery Offers` (type, capacity, availability,
+  `Estimated Value`, `Compliance Notes` for machinery tickets, `Matched Needs` JSON).
+  Env overrides: `NOTION_VF_RECOVERY_{EVENTS,NEEDS,OFFERS}_DB_ID`.
+- **Functions:** `recovery-admin` (events save/status/delete + the drill-in aggregator +
+  `&format=csv` evidence export), `recovery-register` (needs & offers save/status/delete, and
+  `match` which links BOTH sides in one call and advances each workflow without dragging
+  either backwards).
+- **⚠️ PRIVACY — the most sensitive data on the platform.** A need row holds a resident's name,
+  address, phone and often why they are vulnerable. NO public surface; roles `admin·emergency·
+  steward`, never viewer; a need flagged **Sensitive** has its contact block withheld from
+  steward-level users **by the server** (`redactNeed`), and a steward saving a form they were
+  served redacted **PRESERVES** the real values rather than blanking them. Any future resident
+  intake must go through the fail-closed `isModulePublic()` gate.
+- **Evidence is READ-ONLY** — same invariant as `_projects.js` v1. Recovery hours are valued at
+  the event's hour rate for an INDICATIVE figure; nothing is written back into Contributions or
+  the volunteer ledger, so a roll-up can never double-count. Volunteer-hub hours confirmed in
+  the same window (`ledgerHoursInWindow`) are shown as a **cross-check beside** the total and
+  deliberately NOT added — a village that runs recovery working bees through the Volunteer hub
+  sees the effort there, one that doorknocks sees it in the needs register.
+- **Plan: in EVERY plan, deliberately** — no `MODULE_MIN_PLAN` entry in `_entitlements.js`, no
+  `minPackage` on the tile. Same precedent as the Grant Portal, different reason: a village must
+  never be locked out of coordinating its own recovery by its subscription tier, and it completes
+  the preparedness→response→recovery arc `profile` + `emergency` already give every Starter
+  village. To price it as Growth, add `recovery: 'growth'` + a tile `minPackage` — two lines.
+
+## Online Pop-Up Store (/admin/popup/, added Sep 2026)
+A pop-up shopfront for local makers, markets and community fundraising ranges. Module id
+`popup`, **Growth** plan. Grounded in
+`~/AgilityOpsBizAI/AOB/villagefirst/docs/shop/VillageFirst-Village-Commercial-Module-Marketplace-Architecture-v2.html`.
+- **Spine:** a **Season** — that IS the pop-up (open it, close it) — tabs Overview · Products ·
+  Orders, plus a seller register.
+- **Four registers** (`_store.js`, same auto-create pattern): `🛍 VF Store Seasons`,
+  `🏪 VF Store Sellers` (Status Invited→Onboarding→Approved→Live→Suspended→Closed, seller type
+  incl. Cornerstone range, `Payment Method`, `Payment Link`, `Payment Confirmed`,
+  `Steward Email`), `📦 VF Store Products`, `🧾 VF Store Orders`. Env overrides:
+  `NOTION_VF_STORE_{SEASONS,SELLERS,PRODUCTS,ORDERS}_DB_ID`.
+- **Functions:** `store-admin` (seasons + sellers + the drill-in aggregator), `store-catalogue`
+  (products), `store-orders` (orders, payment, fulfilment, `&format=csv`).
+- **⛔ THE MONEY INVARIANT — enforced in code, not just copy. Do not break this.** Every seller
+  is paid DIRECTLY; the village never holds, pools or forwards a seller's money. (1)
+  `sanitisePaymentLink()` accepts an **https URL and nothing else**, so a BSB or account number
+  cannot be stored even by mistake — never add a bank-details field. (2) **ONE SELLER PER
+  ORDER**, enforced by `priceOrder()`, which also re-prices every order from the product rows
+  and ignores any client-supplied price; a basket spanning two sellers would force the platform
+  to split and forward funds, which is the payment-facilitator behaviour that attracts
+  AFSL/AUSTRAC obligations in Australia. (3) Payment status reads **"Paid — confirmed by
+  seller"** because the platform never receives the money and so never asserts that it did.
+  This is what keeps the VF↔AOB merchant separation intact (see the top of this file).
+- **Why it ships without the payment rail:** the v2 doc's §10 open decision (Stripe Connect
+  direct vs each-vendor-BYO processor) is NOT needed — a seller trades from day one on their own
+  payment link, and a rail can be added later without changing this data model. Nothing here
+  touches money, so nothing here needs the legal review a rail will.
+- **The one gate:** a seller can only go **Live** once the committee has recorded the payment
+  method, the https link where the method needs one, AND ticked `Payment Confirmed`. Until then
+  products cannot go Active and no orders can be taken — server-enforced in `store-admin.js`
+  (status) and `store-catalogue.js` (Active).
+- **Seller stewards:** a steward named in `Steward Email` manages ONLY that seller's listing and
+  orders (`sellerScope`) — the Services-directory pattern.
+- **No public storefront yet** (publicity gate). `popup` is pre-listed in `_villages.js`
+  `PUBLICLY_GATED` + `village-modules.js` `TOGGLABLE`, so the resident-facing storefront is
+  **fail-CLOSED from its first day**; the tile carries no `publicToggle` chip until that page
+  exists.
+
 ## Steward Identity self-heal + non-destructive Remove (Session 21, Aug 2026)
 Committee stewards hit a raw Netlify Identity `{code:404,"user not found"}` because the `/admin/` Access "Remove" HARD-DELETED the Identity account (`identity-admin.js`), orphaning a signed-in steward's browser session. Fixes: (1) **self-healing sign-in** on `/admin/` + `/admin/volunteers/my/` (a dead session clears itself → clean login, not raw JSON: `recoverFromDeadSession`/`clearDeadSession` + `netlifyIdentity.on('error')` + `authHeaders` catch); (2) **"Remove" now REVOKES roles** (`revoke`, keeps the account) for confirmed users, `delete` only cancels pending invites; (3) **"Resend invite"** (`reinvite`); (4) invite/recovery links bounce to `/admin/` (was `/survey-admin/`), `is:inline`. **Rule: never hard-delete an auth account to remove access — revoke roles, or you orphan live sessions.**
 
