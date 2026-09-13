@@ -2,11 +2,11 @@
  * member-join.js — POST /api/member-join   (PUBLIC, no auth)
  *
  * PPCA membership application form on /membership/ writes straight to the
- * VF Members DB (the PPCA member register) as an Applied entry. Mirrors the
- * contrib-pledge pattern — the only unauthenticated writer to that DB, so it
- * is deliberately narrow:
- *   - always Status = Applied  (committee approves / marks Paid in Notion)
- *   - "Logged by" is stamped "public form" (+ email), never trusted input
+ * member register as an Applied entry. Mirrors the contrib-pledge pattern —
+ * the only unauthenticated writer to that register, so it is deliberately
+ * narrow:
+ *   - always status = Applied  (the committee approves / marks Paid in /admin/)
+ *   - "logged_by" is stamped "public form" (+ email), never trusted input
  *   - a honeypot field ("website") must be empty, or we silently accept-and-drop
  *   - all fields are length-capped; fee is derived server-side from the type,
  *     never taken from the client
@@ -17,41 +17,23 @@
  * membershipType ∈ Individual ($10) | Household ($20).
  * Membership year runs 1 July – 30 June; derived from today's date.
  *
+ * The register lives in Supabase behind deny-by-default RLS (migration 0013);
+ * this function reaches it with the service role, which is exactly why it is
+ * kept this narrow — it can only ever INSERT an Applied row.
+ *
  * OPTIONAL email notification to PPCA (env-gated, fail-open) — reuses the
  * VillageFirst Resend account vars from contrib-pledge:
  *   VF_RESEND_API_KEY / VF_PLEDGE_NOTIFY_TO / VF_PLEDGE_FROM
  */
 
-// Rate-limit guard for api.notion.com. Side-effect import — see the file.
-import './_notion-guard.js';
 import { getModuleRecipients } from './_villages.js';
-
-const NOTION_VERSION = '2022-06-28';
-const MEMBERS_DB_ID = process.env.NOTION_MEMBERS_DB_ID || '494becca311c4d668a0f7f2750c08a74';
-
-const MEMBERSHIP_FEES = { Individual: 10, Household: 20 };
-const PAYMENT_METHODS = ['Bank transfer', 'Cash at meeting', 'Notify when online payments open'];
-const RESIDENT_CATEGORIES = [
-  'Permanent Resident',
-  'Holiday Home Owner',
-  'Renter',
-  'Visitor / Prospective Resident',
-  'Local Business',
-];
-
-function corsHeaders() {
-  return { 'Content-Type': 'application/json' };
-}
+import {
+  MEMBERSHIP_FEES, PAYMENT_METHODS, RESIDENT_CATEGORIES, membershipYear,
+  createMember, slugVillage, clean, jsonResp,
+} from './_members.js';
 
 function esc(s) {
   return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-}
-
-/** Membership year label for a date: 1 July–30 June, e.g. "2026-27". */
-function membershipYear(d) {
-  const y = d.getUTCFullYear();
-  const startYear = d.getUTCMonth() >= 6 ? y : y - 1; // months 0-indexed; 6 = July
-  return `${startYear}-${String((startYear + 1) % 100).padStart(2, '0')}`;
 }
 
 /** Notify PPCA of a new application. Env-gated and fail-open like notifyPledge. */
@@ -75,7 +57,7 @@ async function notifyApplication(m, context) {
 
   const html = `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2937;">
     <h2 style="color:#15795f;">🪪 New membership application — ${esc(m.village)}</h2>
-    <p>Someone just applied to join ${process.env.VILLAGE_ENTITY_SHORT || process.env.VILLAGE_NAME || 'PPCA'} via the website. The application is in the VF Members register with Status = Applied.</p>
+    <p>Someone just applied to join ${process.env.VILLAGE_ENTITY_SHORT || process.env.VILLAGE_NAME || 'PPCA'} via the website. The application is in the member register with Status = Applied — review it in <a href="${process.env.URL || 'https://villagefirst.org.au'}/admin/members/">Admin → Membership</a>.</p>
     <table style="border-collapse:collapse;font-size:14px;">${rows}</table>
   </div>`;
 
@@ -89,37 +71,25 @@ async function notifyApplication(m, context) {
 }
 
 export const handler = async (event, context) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: corsHeaders(), body: JSON.stringify({ error: 'POST only' }) };
-  }
+  if (event.httpMethod !== 'POST') return jsonResp(405, { error: 'POST only' });
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch {
-    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Invalid request' }) };
+    return jsonResp(400, { error: 'Invalid request' });
   }
 
   // Honeypot — real people leave this empty. Pretend success so bots don't learn.
-  if ((body.website || '').trim()) {
-    return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ ok: true }) };
-  }
+  if ((body.website || '').trim()) return jsonResp(200, { ok: true });
 
   const firstName = (body.firstName || '').trim().slice(0, 100);
   const lastName = (body.lastName || '').trim().slice(0, 100);
   const email = (body.email || '').trim().slice(0, 200);
   const address = (body.address || '').trim().slice(0, 300);
-  if (!firstName || !lastName) {
-    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Please give us your first and last name.' }) };
-  }
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Please give us a valid email address.' }) };
-  }
-  if (!address) {
-    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Please give us your residential address — the member register requires it.' }) };
-  }
+  if (!firstName || !lastName) return jsonResp(400, { error: 'Please give us your first and last name.' });
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonResp(400, { error: 'Please give us a valid email address.' });
+  if (!address) return jsonResp(400, { error: 'Please give us your residential address — the member register requires it.' });
   const membershipType = Object.hasOwn(MEMBERSHIP_FEES, body.membershipType) ? body.membershipType : null;
-  if (!membershipType) {
-    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Please choose a membership type.' }) };
-  }
+  if (!membershipType) return jsonResp(400, { error: 'Please choose a membership type.' });
 
   const fee = MEMBERSHIP_FEES[membershipType];
   const phone = (body.phone || '').trim().slice(0, 50);
@@ -134,44 +104,29 @@ export const handler = async (event, context) => {
   const year = membershipYear(now);
   const fullName = `${firstName} ${lastName}`;
 
-  const properties = {
-    'Member': { title: [{ text: { content: fullName } }] },
-    'First Name': { rich_text: [{ text: { content: firstName } }] },
-    'Last Name': { rich_text: [{ text: { content: lastName } }] },
-    'Email': { email },
-    'Phone': phone ? { phone_number: phone } : { phone_number: null },
-    'Residential Address': { rich_text: [{ text: { content: address } }] },
-    'Postal Address': { rich_text: postalAddress ? [{ text: { content: postalAddress } }] : [] },
-    'Membership Type': { select: { name: membershipType } },
-    'Fee': { number: fee },
-    'Resident Category': residentCategory ? { select: { name: residentCategory } } : { select: null },
-    'Membership Year': { select: { name: year } },
-    'Payment Method': { select: { name: paymentMethod } },
-    'Status': { select: { name: 'Applied' } },
-    'Stay Connected': { checkbox: stayConnected },
-    'Date Applied': { date: { start: date } },
-    'Village': { rich_text: [{ text: { content: village } }] },
-    'Note': { rich_text: note ? [{ text: { content: note } }] : [] },
-    'Logged by': { rich_text: [{ text: { content: `public form (${email})`.slice(0, 200) } }] },
-  };
-
   try {
-    const res = await fetch('https://api.notion.com/v1/pages', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
-        'Notion-Version': NOTION_VERSION,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ parent: { database_id: MEMBERS_DB_ID }, properties }),
+    await createMember({
+      village_id: slugVillage(village),
+      first_name: firstName,
+      last_name: lastName,
+      email,
+      phone: phone || null,
+      residential_address: address,
+      postal_address: postalAddress || null,
+      membership_type: membershipType,
+      fee,
+      resident_category: residentCategory,
+      membership_year: year,
+      payment_method: paymentMethod,
+      status: 'Applied',                                   // the ONLY status this path can write
+      stay_connected: stayConnected,
+      date_applied: date,
+      note: clean(note, 2000),
+      logged_by: `public form (${email})`.slice(0, 200),
     });
-    if (!res.ok) {
-      const detail = await res.text();
-      throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
-    }
     await notifyApplication({ fullName, membershipType, fee, year, email, phone, address, paymentMethod, stayConnected, village, date }, context);
-    return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ ok: true, fee, year, paymentMethod }) };
+    return jsonResp(200, { ok: true, fee, year, paymentMethod });
   } catch (err) {
-    return { statusCode: 502, headers: corsHeaders(), body: JSON.stringify({ error: 'Sorry — we could not record your application just now. Please try again shortly.' }) };
+    return jsonResp(502, { error: 'Sorry — we could not record your application just now. Please try again shortly.' });
   }
 };

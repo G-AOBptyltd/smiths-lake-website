@@ -571,7 +571,7 @@
   async function doDelete() {
     const it = items.find(x => x.id === openId);
     if (!it) return;
-    if (!confirm('Permanently remove this register row for ' + it.name + ' (' + (it.year || 'no year') + ')?\n\nIt moves to Notion\'s trash (recoverable there). For members who have left, use Lapsed instead.')) return;
+    if (!confirm('Permanently remove this register row for ' + it.name + ' (' + (it.year || 'no year') + ')?\n\nIt is archived, not destroyed, and can be restored. For members who have left, use Lapsed instead.')) return;
     try {
       await callUpdate({ action: 'delete' }, 'm-status-msg');
       openId = null;

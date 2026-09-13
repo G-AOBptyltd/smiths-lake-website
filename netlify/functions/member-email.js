@@ -2,8 +2,9 @@
  * member-email.js — POST /api/member-email
  *
  * Sends a templated membership email to ONE member via the VillageFirst Resend
- * account, then stamps "Last Email" on their register row. Body:
+ * account, then stamps last_email on their register row. Body:
  *   { village?, pageId, template }   template ∈ welcome | renewal
+ *   (`pageId` is the row's uuid — the name is kept so /admin/members/ is unchanged.)
  *
  * Templates:
  *   welcome — "your membership is approved" (+ how to pay if not yet Paid)
@@ -20,11 +21,7 @@
  */
 
 import { requireRole } from './_auth.js';
-import { notionHeaders, ensureMemberSchema, getMemberPage, MEMBERSHIP_FEES, nextMembershipYear } from './_members.js';
-
-function corsHeaders() {
-  return { 'Content-Type': 'application/json' };
-}
+import { getMemberPage, patchMember, MEMBERSHIP_FEES, nextMembershipYear, jsonResp, today } from './_members.js';
 
 function esc(s) {
   return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -80,40 +77,30 @@ function buildEmail(template, member, orgName, payInstructions) {
 }
 
 export const handler = async (event, context) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: corsHeaders(), body: JSON.stringify({ error: 'POST only' }) };
-  }
+  if (event.httpMethod !== 'POST') return jsonResp(405, { error: 'POST only' });
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch {
-    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Invalid JSON' }) };
+    return jsonResp(400, { error: 'Invalid JSON' });
   }
 
   const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const auth = requireRole(context, { village, anyOf: ['admin'] });
-  if (!auth.ok) {
-    return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };
-  }
+  if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
 
   const { pageId, template } = body;
   if (!pageId || !['welcome', 'renewal'].includes(template)) {
-    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'pageId and a valid template are required' }) };
+    return jsonResp(400, { error: 'pageId and a valid template are required' });
   }
 
   const key = process.env.VF_RESEND_API_KEY;
-  if (!key) {
-    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Email is not configured yet (VF_RESEND_API_KEY missing)' }) };
-  }
+  if (!key) return jsonResp(400, { error: 'Email is not configured yet (VF_RESEND_API_KEY missing)' });
 
   try {
-    const target = await getMemberPage(pageId);
-    if (!target.ok) {
-      return { statusCode: target.status, headers: corsHeaders(), body: JSON.stringify({ error: target.error }) };
-    }
+    const target = await getMemberPage(pageId, village);
+    if (!target.ok) return jsonResp(target.status, { error: target.error });
     const member = target.member;
-    if (!member.email) {
-      return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'This member has no email address on file' }) };
-    }
+    if (!member.email) return jsonResp(400, { error: 'This member has no email address on file' });
 
     const orgName = process.env.VF_MEMBER_ORG_NAME || 'Pacific Palms Community Association (PPCA)';
     const payInstructions = process.env.VF_MEMBER_PAY_INSTRUCTIONS || '';
@@ -125,13 +112,7 @@ export const handler = async (event, context) => {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from,
-        to: [member.email],
-        ...(replyTo ? { reply_to: replyTo } : {}),
-        subject,
-        html,
-      }),
+      body: JSON.stringify({ from, to: [member.email], ...(replyTo ? { reply_to: replyTo } : {}), subject, html }),
     });
     if (!res.ok) {
       const detail = await res.text();
@@ -139,16 +120,12 @@ export const handler = async (event, context) => {
     }
 
     // Stamp the register so the committee can see what was last sent and when.
-    await ensureMemberSchema();
-    const stampText = `${template} sent ${new Date().toISOString().slice(0, 10)} by ${auth.user.email || 'admin'}`;
-    await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
-      method: 'PATCH',
-      headers: notionHeaders(),
-      body: JSON.stringify({ properties: { 'Last Email': { rich_text: [{ text: { content: stampText.slice(0, 200) } }] } } }),
-    }).catch(() => { /* the email went — a failed stamp must not report failure */ });
+    // The email went — a failed stamp must not report failure.
+    const stampText = `${template} sent ${today()} by ${auth.user.email || 'admin'}`;
+    await patchMember(pageId, village, { last_email: stampText.slice(0, 200) }).catch(() => {});
 
-    return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ ok: true, sent: template, to: member.email }) };
+    return jsonResp(200, { ok: true, sent: template, to: member.email });
   } catch (err) {
-    return { statusCode: 502, headers: corsHeaders(), body: JSON.stringify({ error: err.message }) };
+    return jsonResp(502, { error: err.message });
   }
 };
