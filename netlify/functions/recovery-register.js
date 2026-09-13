@@ -5,7 +5,7 @@
  * POST /api/recovery-register { village?, kind:'need'|'offer', action, ... }
  *   save    { pageId?, event, ...fields }
  *   status  { pageId, status }
- *   delete  { pageId }                       village ADMIN only (Notion trash)
+ *   delete  { pageId }                       village ADMIN only (soft delete)
  *   match   { needId, offerId, on: bool }    kind is ignored — links BOTH sides
  *
  * Reading happens through /api/recovery-admin?event=… (one round trip returns
@@ -17,21 +17,23 @@
  * need's contact block is withheld from stewards on READ (see _recovery.js
  * redactNeed) and, so a steward can never blank it out by saving a form they
  * were served redacted, is PRESERVED rather than overwritten on WRITE.
+ *
+ * Records live in Supabase, behind deny-by-default RLS — see _recovery.js.
  */
 
 import {
+  T_EVENTS, T_NEEDS, T_OFFERS,
   NEED_STATUSES, NEED_CATEGORIES, NEED_PRIORITIES, NEED_OPEN,
   OFFER_STATUSES, OFFER_TYPES,
-  jsonResp, rtChunks, num, dateOrNull, today,
+  jsonResp, clean, int, money, dateOrNull, today, slugVillage,
   getRow, createRow, patchRow, archiveRow, stampFor,
-  parseNeed, parseOffer, parseEvent, canSeeSensitive, requireRecoveryRole,
+  canSeeSensitive, requireRecoveryRole,
 } from './_recovery.js';
 import { requireRole } from './_auth.js';
 
 const VILLAGE_OF = (v) => v || process.env.VILLAGE_NAME || 'Smiths Lake';
-const clean = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
 
-/** Keep a matched-pair list unique by id, and small enough for one rich_text. */
+/** Keep a matched-pair list unique by id, and bounded. */
 function toggleLink(list, entry, on) {
   const without = (list || []).filter((x) => x && x.id !== entry.id);
   if (!on) return without;
@@ -51,16 +53,15 @@ export const handler = async (event, context) => {
   if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
   const stamp = stampFor(auth.user);
   const kind = body.kind === 'offer' ? 'offer' : 'need';
-  const register = kind === 'offer' ? 'offers' : 'needs';
-  const parse = kind === 'offer' ? parseOffer : parseNeed;
+  const table = kind === 'offer' ? T_OFFERS : T_NEEDS;
   const label = kind === 'offer' ? 'Offer of help' : 'Need';
 
   try {
     /* ── MATCH: an offer is allocated to a need (both sides, one call) ── */
     if (body.action === 'match') {
-      const need = await getRow('needs', body.needId, village, parseNeed);
+      const need = await getRow(T_NEEDS, body.needId, village);
       if (!need) return jsonResp(404, { error: 'Need not found' });
-      const offer = await getRow('offers', body.offerId, village, parseOffer);
+      const offer = await getRow(T_OFFERS, body.offerId, village);
       if (!offer) return jsonResp(404, { error: 'Offer not found' });
       if (need.event && offer.event && need.event !== offer.event) {
         return jsonResp(400, { error: 'That need and that offer belong to different recovery events' });
@@ -70,19 +71,19 @@ export const handler = async (event, context) => {
       const nextNeedLinks = toggleLink(need.matchedOffers, { id: offer.id, title: offer.name }, on);
       const nextOfferLinks = toggleLink(offer.matchedNeeds, { id: need.id, title: need.name }, on);
 
-      const needProps = { 'Matched Offers': { rich_text: rtChunks(JSON.stringify(nextNeedLinks)) }, ...stamp };
-      const offerProps = { 'Matched Needs': { rich_text: rtChunks(JSON.stringify(nextOfferLinks)) }, ...stamp };
+      const needValues = { matched_offers: nextNeedLinks, ...stamp };
+      const offerValues = { matched_needs: nextOfferLinks, ...stamp };
       // Matching moves the workflow on by itself — that is the whole value of
       // matching — but never drags a row BACKWARDS from work already done.
       if (on) {
-        if (['Logged', 'Triaged'].includes(need.status)) needProps['Status'] = { select: { name: 'Matched' } };
-        if (['Offered', 'Verified'].includes(offer.status)) offerProps['Status'] = { select: { name: 'Allocated' } };
+        if (['Logged', 'Triaged'].includes(need.status)) needValues.status = 'Matched';
+        if (['Offered', 'Verified'].includes(offer.status)) offerValues.status = 'Allocated';
       } else {
-        if (need.status === 'Matched' && !nextNeedLinks.length) needProps['Status'] = { select: { name: 'Triaged' } };
-        if (offer.status === 'Allocated' && !nextOfferLinks.length) offerProps['Status'] = { select: { name: 'Verified' } };
+        if (need.status === 'Matched' && !nextNeedLinks.length) needValues.status = 'Triaged';
+        if (offer.status === 'Allocated' && !nextOfferLinks.length) offerValues.status = 'Verified';
       }
-      await patchRow(need.id, needProps);
-      await patchRow(offer.id, offerProps);
+      await patchRow(T_NEEDS, need.id, village, needValues);
+      await patchRow(T_OFFERS, offer.id, village, offerValues);
       return jsonResp(200, { ok: true, matchedOffers: nextNeedLinks, matchedNeeds: nextOfferLinks });
     }
 
@@ -99,48 +100,46 @@ export const handler = async (event, context) => {
       // An event id is required so nothing is ever logged into the void.
       const eventId = clean(body.event, 60);
       if (!eventId) return jsonResp(400, { error: 'Pick the recovery event this belongs to' });
-      const ev = await getRow('events', eventId, village, parseEvent);
+      const ev = await getRow(T_EVENTS, eventId, village);
       if (!ev) return jsonResp(404, { error: 'Recovery event not found for this village' });
 
-      const existing = body.pageId ? await getRow(register, body.pageId, village, parse) : null;
+      const existing = body.pageId ? await getRow(table, body.pageId, village) : null;
       if (body.pageId && !existing) return jsonResp(404, { error: `${label} not found` });
 
-      let properties;
+      let values;
       if (kind === 'offer') {
         if (body.offerType && !OFFER_TYPES.includes(body.offerType)) return jsonResp(400, { error: 'Unknown offer type' });
-        properties = {
-          'Offer': { title: [{ text: { content: name } }] },
-          'Village': { rich_text: rtChunks(village.slice(0, 100)) },
-          'Event': { rich_text: rtChunks(ev.id) },
-          'Offer Type': body.offerType ? { select: { name: body.offerType } } : { select: null },
-          'Offered By': { rich_text: rtChunks(clean(body.offeredBy, 200)) },
-          'Contact Phone': { rich_text: rtChunks(clean(body.contactPhone, 60)) },
-          'Contact Email': { rich_text: rtChunks(clean(body.contactEmail, 200)) },
-          'Description': { rich_text: rtChunks(clean(body.description, 4000)) },
-          'Capacity': { rich_text: rtChunks(clean(body.capacity, 400)) },
-          'Available From': dateOrNull(body.availableFrom),
-          'Available Until': dateOrNull(body.availableUntil),
-          'Estimated Value': { number: num(body.estimatedValue) },
-          'Compliance Notes': { rich_text: rtChunks(clean(body.complianceNotes, 2000)) },
-          'Notes': { rich_text: rtChunks(clean(body.notes, 4000)) },
+        values = {
+          name,
+          event_id: ev.id,
+          offer_type: body.offerType || null,
+          offered_by: clean(body.offeredBy, 200),
+          contact_phone: clean(body.contactPhone, 60),
+          contact_email: clean(body.contactEmail, 200),
+          description: clean(body.description, 4000),
+          capacity: clean(body.capacity, 400),
+          available_from: dateOrNull(body.availableFrom),
+          available_until: dateOrNull(body.availableUntil),
+          estimated_value: money(body.estimatedValue),
+          compliance_notes: clean(body.complianceNotes, 2000),
+          notes: clean(body.notes, 4000),
           ...stamp,
         };
       } else {
         if (body.category && !NEED_CATEGORIES.includes(body.category)) return jsonResp(400, { error: 'Unknown category' });
         if (body.priority && !NEED_PRIORITIES.includes(body.priority)) return jsonResp(400, { error: 'Unknown priority' });
-        properties = {
-          'Need': { title: [{ text: { content: name } }] },
-          'Village': { rich_text: rtChunks(village.slice(0, 100)) },
-          'Event': { rich_text: rtChunks(ev.id) },
-          'Category': body.category ? { select: { name: body.category } } : { select: null },
-          'Priority': { select: { name: NEED_PRIORITIES.includes(body.priority) ? body.priority : 'Medium' } },
-          'People Affected': { number: num(body.peopleAffected) },
-          'Target Date': dateOrNull(body.targetDate),
-          'Assigned To': { rich_text: rtChunks(clean(body.assignedTo, 200)) },
-          'Hours Contributed': { number: num(body.hoursContributed) },
-          'People Helping': { number: num(body.peopleHelping) },
-          'Help Value': { number: num(body.helpValue) },
-          'Notes': { rich_text: rtChunks(clean(body.notes, 4000)) },
+        values = {
+          name,
+          event_id: ev.id,
+          category: body.category || null,
+          priority: NEED_PRIORITIES.includes(body.priority) ? body.priority : 'Medium',
+          people_affected: int(body.peopleAffected),
+          target_date: dateOrNull(body.targetDate),
+          assigned_to: clean(body.assignedTo, 200),
+          hours_contributed: money(body.hoursContributed),
+          people_helping: int(body.peopleHelping),
+          help_value: money(body.helpValue),
+          notes: clean(body.notes, 4000),
           ...stamp,
         };
 
@@ -151,24 +150,27 @@ export const handler = async (event, context) => {
         const allowSensitive = canSeeSensitive(auth.user, village);
         const wasSensitive = existing ? existing.sensitive : false;
         if (allowSensitive || !wasSensitive) {
-          properties['Contact Name'] = { rich_text: rtChunks(clean(body.contactName, 200)) };
-          properties['Contact Phone'] = { rich_text: rtChunks(clean(body.contactPhone, 60)) };
-          properties['Contact Email'] = { rich_text: rtChunks(clean(body.contactEmail, 200)) };
-          properties['Location'] = { rich_text: rtChunks(clean(body.location, 400)) };
-          properties['Access Notes'] = { rich_text: rtChunks(clean(body.accessNotes, 2000)) };
+          values.contact_name = clean(body.contactName, 200);
+          values.contact_phone = clean(body.contactPhone, 60);
+          values.contact_email = clean(body.contactEmail, 200);
+          values.location = clean(body.location, 400);
+          values.access_notes = clean(body.accessNotes, 2000);
         }
         // Only admin/emergency may raise or lower the Sensitive flag.
-        if (allowSensitive) properties['Sensitive'] = { checkbox: body.sensitive === true || body.sensitive === 'true' };
+        if (allowSensitive) values.sensitive = body.sensitive === true || body.sensitive === 'true';
       }
 
       if (existing) {
-        await patchRow(existing.id, properties);
+        await patchRow(table, existing.id, village, values);
         return jsonResp(200, { ok: true, pageId: existing.id });
       }
-      properties['Status'] = { select: { name: kind === 'offer' ? 'Offered' : 'Logged' } };
-      properties['Logged By'] = { rich_text: rtChunks(auth.user.email || 'admin') };
-      if (kind === 'need') properties['Logged Date'] = { date: { start: body.loggedDate || today() } };
-      const pageId = await createRow(register, properties);
+      const pageId = await createRow(table, {
+        ...values,
+        village_id: slugVillage(village),
+        status: kind === 'offer' ? 'Offered' : 'Logged',
+        logged_by: auth.user.email || 'admin',
+        ...(kind === 'need' ? { logged_date: dateOrNull(body.loggedDate) || today() } : {}),
+      });
       return jsonResp(200, { ok: true, pageId });
     }
 
@@ -176,18 +178,18 @@ export const handler = async (event, context) => {
     if (body.action === 'status') {
       const allowed = kind === 'offer' ? OFFER_STATUSES : NEED_STATUSES;
       if (!allowed.includes(body.status)) return jsonResp(400, { error: 'Unknown status' });
-      const existing = await getRow(register, body.pageId, village, parse);
+      const existing = await getRow(table, body.pageId, village);
       if (!existing) return jsonResp(404, { error: `${label} not found` });
-      const props = { 'Status': { select: { name: body.status } }, ...stamp };
+      const values = { status: body.status, ...stamp };
       if (kind === 'need' && body.status === 'Closed' && !existing.closedDate) {
-        props['Closed Date'] = { date: { start: today() } };
+        values.closed_date = today();
       }
       // Reopening a closed need clears the closed stamp, so "closed" always
       // means closed and the roll-up cannot count a reopened need as finished.
       if (kind === 'need' && NEED_OPEN.includes(body.status) && existing.closedDate) {
-        props['Closed Date'] = { date: null };
+        values.closed_date = null;
       }
-      await patchRow(body.pageId, props);
+      await patchRow(table, body.pageId, village, values);
       return jsonResp(200, { ok: true });
     }
 
@@ -201,9 +203,9 @@ export const handler = async (event, context) => {
             : 'Only a village admin can delete — mark the need Withdrawn or Referred instead to keep the record',
         });
       }
-      const existing = await getRow(register, body.pageId, village, parse);
+      const existing = await getRow(table, body.pageId, village);
       if (!existing) return jsonResp(404, { error: `${label} not found` });
-      await archiveRow(body.pageId);
+      await archiveRow(table, body.pageId, village);
       return jsonResp(200, { ok: true });
     }
 

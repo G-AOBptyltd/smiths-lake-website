@@ -2,11 +2,11 @@
  * store-admin.js — Pop-Up Store seasons and the seller register.
  *
  * GET  /api/store-admin?village=                 → { seasons, sellers, vocab, scope }
- * GET  /api/store-admin?village=&season=<pageId> → { season, sellers, products, orders, summary }
+ * GET  /api/store-admin?village=&season=<id>     → { season, sellers, products, orders, summary }
  * POST /api/store-admin { village?, kind:'season'|'seller', action, ... }
  *   save    { pageId?, ...fields }
  *   status  { pageId, status }
- *   delete  { pageId }      village ADMIN only (Notion trash)
+ *   delete  { pageId }      village ADMIN only (soft delete — recoverable)
  *
  * Roles: admin | steward (Growth plan). A steward sees and edits only the
  * sellers they are named on (Steward Email) — the Services-directory pattern.
@@ -14,19 +14,21 @@
  *
  * ⛔ Money: a seller's payment link is sanitised to an https URL and nothing
  * else, and the village never holds a seller's funds. See _store.js header.
+ * Records live in Supabase behind deny-by-default RLS.
  */
 
 import {
+  T_SEASONS, T_SELLERS, T_PRODUCTS, T_ORDERS,
   SEASON_STATUSES, SELLER_STATUSES, SELLER_TYPES, PAYMENT_METHODS, FULFILMENT_TYPES,
   PRODUCT_CATEGORIES, PRODUCT_STATUSES, ORDER_PAYMENT_STATUSES, ORDER_FULFILMENT_STATUSES,
   ORDER_OPEN_FULFILMENT,
-  jsonResp, rtChunks, clean, money, dateOrNull, today, slugify, sanitisePaymentLink,
+  jsonResp, clean, money, dateOrNull, today, slugify, slugVillage, sanitisePaymentLink,
   queryVillage, getRow, createRow, patchRow, archiveRow, stampFor, requireStore, sellerScope,
-  parseSeason, parseSeller, parseProduct, parseOrder,
 } from './_store.js';
 import { requireRole } from './_auth.js';
 
 const VILLAGE_OF = (v) => v || process.env.VILLAGE_NAME || 'Smiths Lake';
+const PAID = 'Paid — confirmed by seller';
 
 const VOCAB = {
   seasonStatuses: SEASON_STATUSES,
@@ -51,29 +53,28 @@ export const handler = async (event, context) => {
     const isAdmin = requireRole(context, { village, anyOf: ['admin'] }).ok;
 
     try {
-      const [seasonPages, sellerPages] = await Promise.all([
-        queryVillage('seasons', village, [{ property: 'Opens', direction: 'descending' }]),
-        queryVillage('sellers', village, [{ property: 'Seller', direction: 'ascending' }]),
+      const [seasonRows, allSellers] = await Promise.all([
+        queryVillage(T_SEASONS, village, 'opens.desc.nullslast'),
+        queryVillage(T_SELLERS, village, 'name.asc'),
       ]);
-      const allSellers = sellerPages.map(parseSeller);
       const scope = sellerScope(auth.user, village, allSellers, isAdmin);
       const sellers = scope ? allSellers.filter((s) => scope.has(s.id)) : allSellers;
 
       // One season, in full: its sellers, their range, and its orders.
       if (q.season) {
-        const season = await getRow('seasons', q.season, village, parseSeason);
+        const season = await getRow(T_SEASONS, q.season, village);
         if (!season) return jsonResp(404, { error: 'Season not found' });
-        const [productPages, orderPages] = await Promise.all([
-          queryVillage('products', village, [{ property: 'Sort', direction: 'ascending' }]),
-          queryVillage('orders', village, [{ property: 'Placed Date', direction: 'descending' }]),
+        const [allProducts, allOrders] = await Promise.all([
+          queryVillage(T_PRODUCTS, village, 'sort.asc.nullslast'),
+          queryVillage(T_ORDERS, village, 'placed_date.desc.nullslast'),
         ]);
-        let products = productPages.map(parseProduct).filter((p) => p.season === season.id);
-        let orders = orderPages.map(parseOrder).filter((o) => o.season === season.id);
+        let products = allProducts.filter((p) => p.season === season.id);
+        let orders = allOrders.filter((o) => o.season === season.id);
         if (scope) {
           products = products.filter((p) => scope.has(p.seller));
           orders = orders.filter((o) => scope.has(o.seller));
         }
-        const paid = orders.filter((o) => o.paymentStatus === 'Paid — confirmed by seller');
+        const paid = orders.filter((o) => o.paymentStatus === PAID);
         return jsonResp(200, {
           season, sellers, products, orders, vocab: VOCAB, isAdmin, scoped: !!scope,
           summary: {
@@ -90,13 +91,11 @@ export const handler = async (event, context) => {
       }
 
       // The list view: seasons with counts, plus the seller register.
-      const [productPages, orderPages] = await Promise.all([
-        queryVillage('products', village),
-        queryVillage('orders', village),
+      const [products, orders] = await Promise.all([
+        queryVillage(T_PRODUCTS, village),
+        queryVillage(T_ORDERS, village),
       ]);
-      const products = productPages.map(parseProduct);
-      const orders = orderPages.map(parseOrder);
-      const seasons = seasonPages.map(parseSeason).map((s) => ({
+      const seasons = seasonRows.map((s) => ({
         ...s,
         sellersLive: sellers.filter((sel) => sel.status === 'Live').length,
         productsActive: products.filter((p) => p.season === s.id && p.status === 'Active' && (!scope || scope.has(p.seller))).length,
@@ -134,44 +133,45 @@ export const handler = async (event, context) => {
         if (body.opens && body.closes && body.closes < body.opens) {
           return jsonResp(400, { error: 'The season closes before it opens — check the dates' });
         }
-        const properties = {
-          'Season': { title: [{ text: { content: name } }] },
-          'Village': { rich_text: rtChunks(village.slice(0, 100)) },
-          'Opens': dateOrNull(body.opens),
-          'Closes': dateOrNull(body.closes),
-          'Collection Points': { rich_text: rtChunks(clean(body.collectionPoints, 2000)) },
-          'Terms': { rich_text: rtChunks(clean(body.terms, 4000)) },
-          'Coordinator': { rich_text: rtChunks(clean(body.coordinator, 200)) },
-          'Notes': { rich_text: rtChunks(clean(body.notes, 4000)) },
+        const values = {
+          name,
+          opens: dateOrNull(body.opens),
+          closes: dateOrNull(body.closes),
+          collection_points: clean(body.collectionPoints, 2000),
+          terms: clean(body.terms, 4000),
+          coordinator: clean(body.coordinator, 200),
+          notes: clean(body.notes, 4000),
           ...stamp,
         };
         if (body.pageId) {
-          const existing = await getRow('seasons', body.pageId, village, parseSeason);
+          const existing = await getRow(T_SEASONS, body.pageId, village);
           if (!existing) return jsonResp(404, { error: 'Season not found' });
-          await patchRow(body.pageId, properties);
+          await patchRow(T_SEASONS, body.pageId, village, values);
           return jsonResp(200, { ok: true, pageId: body.pageId });
         }
-        properties['Status'] = { select: { name: 'Draft' } };
-        properties['Logged By'] = { rich_text: rtChunks(auth.user.email || 'admin') };
-        return jsonResp(200, { ok: true, pageId: await createRow('seasons', properties) });
+        const pageId = await createRow(T_SEASONS, {
+          ...values, village_id: slugVillage(village), status: 'Draft',
+          logged_by: auth.user.email || 'admin',
+        });
+        return jsonResp(200, { ok: true, pageId });
       }
 
       if (body.action === 'status') {
         if (!SEASON_STATUSES.includes(body.status)) return jsonResp(400, { error: 'Unknown status' });
-        const existing = await getRow('seasons', body.pageId, village, parseSeason);
+        const existing = await getRow(T_SEASONS, body.pageId, village);
         if (!existing) return jsonResp(404, { error: 'Season not found' });
-        const props = { 'Status': { select: { name: body.status } }, ...stamp };
-        if (body.status === 'Open' && !existing.opens) props['Opens'] = { date: { start: today() } };
-        if (body.status === 'Closed' && !existing.closes) props['Closes'] = { date: { start: today() } };
-        await patchRow(body.pageId, props);
+        const values = { status: body.status, ...stamp };
+        if (body.status === 'Open' && !existing.opens) values.opens = today();
+        if (body.status === 'Closed' && !existing.closes) values.closes = today();
+        await patchRow(T_SEASONS, body.pageId, village, values);
         return jsonResp(200, { ok: true });
       }
 
       if (body.action === 'delete') {
-        const existing = await getRow('seasons', body.pageId, village, parseSeason);
+        const existing = await getRow(T_SEASONS, body.pageId, village);
         if (!existing) return jsonResp(404, { error: 'Season not found' });
         // Products and orders are NOT cascaded — an order is a trading record.
-        await archiveRow(body.pageId);
+        await archiveRow(T_SEASONS, body.pageId, village);
         return jsonResp(200, { ok: true });
       }
 
@@ -179,7 +179,7 @@ export const handler = async (event, context) => {
     }
 
     /* ── SELLERS ────────────────────────────────────────────────────────── */
-    const existing = body.pageId ? await getRow('sellers', body.pageId, village, parseSeller) : null;
+    const existing = body.pageId ? await getRow(T_SELLERS, body.pageId, village) : null;
     if (body.pageId && !existing) return jsonResp(404, { error: 'Seller not found' });
 
     // A steward may only touch a seller they are named on.
@@ -200,7 +200,7 @@ export const handler = async (event, context) => {
       // The money invariant, enforced: only an https link survives. Anything
       // else (a BSB, an account number, a secret pasted by mistake) is dropped
       // and the caller is told why, rather than silently stored.
-      const rawLink = clean(body.paymentLink, 500);
+      const rawLink = String(body.paymentLink || '').trim();
       const paymentLink = sanitisePaymentLink(rawLink);
       if (rawLink && !paymentLink) {
         return jsonResp(400, {
@@ -208,39 +208,40 @@ export const handler = async (event, context) => {
         });
       }
 
-      const properties = {
-        'Seller': { title: [{ text: { content: name } }] },
-        'Village': { rich_text: rtChunks(village.slice(0, 100)) },
-        'Slug': { rich_text: rtChunks(slugify(body.slug || name)) },
-        'Seller Type': body.sellerType ? { select: { name: body.sellerType } } : { select: null },
-        'Contact Name': { rich_text: rtChunks(clean(body.contactName, 200)) },
-        'Contact Email': { rich_text: rtChunks(clean(body.contactEmail, 200)) },
-        'Contact Phone': { rich_text: rtChunks(clean(body.contactPhone, 60)) },
-        'ABN': { rich_text: rtChunks(clean(body.abn, 40)) },
-        'About': { rich_text: rtChunks(clean(body.about, 4000)) },
-        'Logo URL': { url: sanitisePaymentLink(body.logoUrl) || null },
-        'Payment Method': body.paymentMethod ? { select: { name: body.paymentMethod } } : { select: null },
-        'Payment Link': { url: paymentLink || null },
-        'Fulfilment': body.fulfilment ? { select: { name: body.fulfilment } } : { select: null },
-        'Delivery Fee': { number: money(body.deliveryFee) },
-        'Notes': { rich_text: rtChunks(clean(body.notes, 4000)) },
+      const values = {
+        name,
+        slug: slugify(body.slug || name),
+        seller_type: body.sellerType || null,
+        contact_name: clean(body.contactName, 200),
+        contact_email: clean(body.contactEmail, 200),
+        contact_phone: clean(body.contactPhone, 60),
+        abn: clean(body.abn, 40),
+        about: clean(body.about, 4000),
+        logo_url: sanitisePaymentLink(body.logoUrl) || null,
+        payment_method: body.paymentMethod || null,
+        payment_link: paymentLink || null,
+        fulfilment: body.fulfilment || null,
+        delivery_fee: money(body.deliveryFee),
+        notes: clean(body.notes, 4000),
         ...stamp,
       };
       // Who stewards a seller, and whether the committee has confirmed the
       // seller can be paid directly, are the committee's calls — not a steward's.
       if (isAdmin) {
-        properties['Steward Email'] = { rich_text: rtChunks(clean(body.stewardEmail, 400)) };
-        properties['Payment Confirmed'] = { checkbox: body.paymentConfirmed === true || body.paymentConfirmed === 'true' };
+        values.steward_email = clean(body.stewardEmail, 400);
+        values.payment_confirmed = body.paymentConfirmed === true || body.paymentConfirmed === 'true';
       }
 
       if (existing) {
-        await patchRow(existing.id, properties);
+        await patchRow(T_SELLERS, existing.id, village, values);
         return jsonResp(200, { ok: true, pageId: existing.id });
       }
       if (!isAdmin) return jsonResp(403, { error: 'Only a village admin can add a new seller to the register' });
-      properties['Status'] = { select: { name: 'Invited' } };
-      properties['Logged By'] = { rich_text: rtChunks(auth.user.email || 'admin') };
-      return jsonResp(200, { ok: true, pageId: await createRow('sellers', properties) });
+      const pageId = await createRow(T_SELLERS, {
+        ...values, village_id: slugVillage(village), status: 'Invited',
+        logged_by: auth.user.email || 'admin',
+      });
+      return jsonResp(200, { ok: true, pageId });
     }
 
     if (body.action === 'status') {
@@ -261,18 +262,18 @@ export const handler = async (event, context) => {
           return jsonResp(400, { error: 'Tick “payment arrangement confirmed” first — the committee needs to have checked the seller is paid directly' });
         }
       }
-      const props = { 'Status': { select: { name: body.status } }, ...stamp };
+      const values = { status: body.status, ...stamp };
       if (['Approved', 'Live'].includes(body.status) && !existing.approvedBy) {
-        props['Approved By'] = { rich_text: rtChunks(`${auth.user.email || 'admin'} · ${today()}`) };
+        values.approved_by = `${auth.user.email || 'admin'} · ${today()}`;
       }
-      await patchRow(body.pageId, props);
+      await patchRow(T_SELLERS, body.pageId, village, values);
       return jsonResp(200, { ok: true });
     }
 
     if (body.action === 'delete') {
       if (!isAdmin) return jsonResp(403, { error: 'Only a village admin can delete — mark the seller Closed instead to keep the record' });
       if (!existing) return jsonResp(404, { error: 'Seller not found' });
-      await archiveRow(body.pageId);
+      await archiveRow(T_SELLERS, body.pageId, village);
       return jsonResp(200, { ok: true });
     }
 

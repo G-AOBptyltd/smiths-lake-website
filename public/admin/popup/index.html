@@ -643,7 +643,7 @@
     if (d) { editSeasonId = d.pageId; await loadList(); openSeason(d.pageId, 'overview'); }
   }
   async function deleteSeason() {
-    if (!confirm('Delete "' + SEASON.name + '"?\n\nIt moves to Notion trash (recoverable). Its products and orders are NOT deleted — an order is a trading record. Consider Archived instead.')) return;
+    if (!confirm('Delete "' + SEASON.name + '"?\n\nIt is archived, not destroyed, and can be restored. Its products and orders are NOT deleted — an order is a trading record. Consider Archived instead.')) return;
     const d = await post('/api/store-admin', { kind: 'season', action: 'delete', pageId: editSeasonId }, 'se-msg');
     if (d) { showToast('🗑 Season deleted'); SEASON = null; showList(); loadList(); }
   }
@@ -707,7 +707,7 @@
   }
   async function deleteSeller() {
     const s = sellerById(editSellerId);
-    if (!confirm('Delete "' + (s ? s.name : 'this seller') + '"?\n\nIt moves to Notion trash (recoverable). Their products and past orders are NOT deleted. Consider Closed instead.')) return;
+    if (!confirm('Delete "' + (s ? s.name : 'this seller') + '"?\n\nIt is archived, not destroyed, and can be restored. Their products and past orders are NOT deleted. Consider Closed instead.')) return;
     const d = await post('/api/store-admin', { kind: 'seller', action: 'delete', pageId: editSellerId }, 'sl-msg');
     if (d) { showToast('🗑 Seller deleted'); await loadList(); backToListTab('sellers'); }
   }
@@ -802,7 +802,7 @@
   }
   async function deleteProduct() {
     const p = PRODUCTS.find(x => x.id === editProductId);
-    if (!confirm('Delete "' + (p ? p.name : 'this product') + '"?\n\nIt moves to Notion trash (recoverable). Past orders keep their own copy of the name and price, so the trading record is safe. Withdrawn keeps the listing.')) return;
+    if (!confirm('Delete "' + (p ? p.name : 'this product') + '"?\n\nIt is archived, not destroyed, and can be restored. Past orders keep their own copy of the name and price, so the trading record is safe. Withdrawn keeps the listing.')) return;
     const d = await post('/api/store-catalogue', { action: 'delete', pageId: editProductId }, 'p-msg');
     if (d) { showToast('🗑 Product deleted'); await openSeason(SEASON.id, 'products'); }
   }
@@ -977,7 +977,7 @@
   }
   async function deleteOrder() {
     const o = ORDERS.find(x => x.id === editOrderId);
-    if (!confirm('Delete order ' + (o ? o.ref : '') + '?\n\nIt moves to Notion trash (recoverable). Cancelling keeps the record — better for the trading history.')) return;
+    if (!confirm('Delete order ' + (o ? o.ref : '') + '?\n\nIt is archived, not destroyed, and can be restored. Cancelling keeps the record — better for the trading history.')) return;
     const d = await post('/api/store-orders', { action: 'delete', pageId: editOrderId }, 'or-msg');
     if (d) { showToast('🗑 Order deleted'); await openSeason(SEASON.id, 'orders'); }
   }

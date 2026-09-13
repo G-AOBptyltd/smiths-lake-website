@@ -7,7 +7,7 @@
  *               items:[{productId, qty}], fulfilment?, collectionPoint?, notes? }
  *   payment   { pageId, paymentStatus }      what the SELLER reported
  *   fulfil    { pageId, fulfilmentStatus }
- *   delete    { pageId }                     village ADMIN only (Notion trash)
+ *   delete    { pageId }                     village ADMIN only (soft delete)
  *
  * ⛔ Money: `payment` records what the seller told the committee. The platform
  * never receives, holds or forwards a seller's money, so it never asserts a
@@ -21,16 +21,14 @@
  * or a stock figure from the client is never trusted.
  *
  * Roles: admin | steward (Growth plan); a steward is scoped to the sellers they
- * steward. In this phase orders are entered by the committee or the seller
- * (market day, phone, email); a resident-facing storefront is a later phase and
- * would post here through the fail-closed isModulePublic() gate.
+ * steward. Buyer contact details live in Supabase behind deny-by-default RLS.
  */
 
 import {
+  T_SEASONS, T_SELLERS, T_PRODUCTS, T_ORDERS,
   ORDER_PAYMENT_STATUSES, ORDER_FULFILMENT_STATUSES, ORDER_OPEN_FULFILMENT, FULFILMENT_TYPES,
-  jsonResp, rtChunks, clean, money, today, orderRef, priceOrder, csvCell,
+  jsonResp, clean, money, today, slugVillage, orderRef, priceOrder, csvCell,
   queryVillage, getRow, createRow, patchRow, archiveRow, stampFor, requireStore, sellerScope,
-  parseOrder, parseSeller, parseSeason, parseProduct,
 } from './_store.js';
 import { requireRole } from './_auth.js';
 
@@ -89,17 +87,16 @@ export const handler = async (event, context) => {
     if (!q.season) return jsonResp(400, { error: 'Which season? Pass ?season=<id>' });
 
     try {
-      const season = await getRow('seasons', q.season, village, parseSeason);
+      const season = await getRow(T_SEASONS, q.season, village);
       if (!season) return jsonResp(404, { error: 'Season not found' });
-      const [orderPages, sellerPages] = await Promise.all([
-        queryVillage('orders', village, [{ property: 'Placed Date', direction: 'ascending' }]),
-        queryVillage('sellers', village),
+      const [allOrders, allSellers] = await Promise.all([
+        queryVillage(T_ORDERS, village, 'placed_date.asc.nullslast'),
+        queryVillage(T_SELLERS, village),
       ]);
-      const allSellers = sellerPages.map(parseSeller);
       const scope = sellerScope(auth.user, village, allSellers, isAdmin);
       const sellers = scope ? allSellers.filter((s) => scope.has(s.id)) : allSellers;
       const sellersById = Object.fromEntries(sellers.map((s) => [s.id, s]));
-      const orders = orderPages.map(parseOrder)
+      const orders = allOrders
         .filter((o) => o.season === season.id)
         .filter((o) => !scope || scope.has(o.seller));
 
@@ -132,12 +129,12 @@ export const handler = async (event, context) => {
   const stamp = stampFor(auth.user);
 
   try {
-    const existing = body.pageId ? await getRow('orders', body.pageId, village, parseOrder) : null;
+    const existing = body.pageId ? await getRow(T_ORDERS, body.pageId, village) : null;
     if (body.pageId && !existing) return jsonResp(404, { error: 'Order not found' });
 
     // Everything below is scoped to the order's seller.
     if (existing) {
-      const owner = await getRow('sellers', existing.seller, village, parseSeller);
+      const owner = await getRow(T_SELLERS, existing.seller, village);
       if (owner && !mayManageSeller(auth.user, owner, isAdmin)) {
         return jsonResp(403, { error: 'You can only work on orders for the sellers you are the steward for' });
       }
@@ -150,9 +147,9 @@ export const handler = async (event, context) => {
       if (!sellerId) return jsonResp(400, { error: 'Pick the seller — one order belongs to exactly one seller' });
       if (!seasonId) return jsonResp(400, { error: 'Pick the pop-up season' });
 
-      const seller = await getRow('sellers', sellerId, village, parseSeller);
+      const seller = await getRow(T_SELLERS, sellerId, village);
       if (!seller) return jsonResp(404, { error: 'Seller not found for this village' });
-      const season = await getRow('seasons', seasonId, village, parseSeason);
+      const season = await getRow(T_SEASONS, seasonId, village);
       if (!season) return jsonResp(404, { error: 'Season not found for this village' });
       if (!mayManageSeller(auth.user, seller, isAdmin)) {
         return jsonResp(403, { error: 'You can only take orders for the sellers you are the steward for' });
@@ -163,52 +160,55 @@ export const handler = async (event, context) => {
 
       // Re-price from the PRODUCT rows — a price or total from the client is
       // never trusted, and a basket spanning two sellers is refused.
-      const productPages = await queryVillage('products', village);
-      const products = productPages.map(parseProduct).filter((p) => p.season === season.id);
+      const allProducts = await queryVillage(T_PRODUCTS, village);
+      const products = allProducts.filter((p) => p.season === season.id);
       const priced = priceOrder(body.items, products, seller);
       if (priced.error) return jsonResp(400, { error: priced.error });
 
       const deliveryFee = money(body.deliveryFee) ?? (seller.deliveryFee || 0);
       const total = Math.round((priced.subtotal + Number(deliveryFee || 0)) * 100) / 100;
 
-      const properties = {
-        'Village': { rich_text: rtChunks(village.slice(0, 100)) },
-        'Seller': { rich_text: rtChunks(seller.id) },
-        'Season': { rich_text: rtChunks(season.id) },
-        'Buyer Name': { rich_text: rtChunks(buyerName) },
-        'Buyer Email': { rich_text: rtChunks(clean(body.buyerEmail, 200)) },
-        'Buyer Phone': { rich_text: rtChunks(clean(body.buyerPhone, 60)) },
-        'Items': { rich_text: rtChunks(JSON.stringify(priced.items)) },
-        'Subtotal': { number: priced.subtotal },
-        'Delivery Fee': { number: money(deliveryFee) },
-        'Total': { number: total },
-        'Payment Method': seller.paymentMethod ? { select: { name: seller.paymentMethod } } : { select: null },
-        'Fulfilment': { select: { name: FULFILMENT_TYPES.includes(body.fulfilment) ? body.fulfilment : (seller.fulfilment || 'Pickup at collection point') } },
-        'Collection Point': { rich_text: rtChunks(clean(body.collectionPoint, 400)) },
-        'Notes': { rich_text: rtChunks(clean(body.notes, 4000)) },
+      const values = {
+        seller_id: seller.id,
+        season_id: season.id,
+        buyer_name: buyerName,
+        buyer_email: clean(body.buyerEmail, 200),
+        buyer_phone: clean(body.buyerPhone, 60),
+        items: priced.items,
+        subtotal: priced.subtotal,
+        delivery_fee: money(deliveryFee),
+        total,
+        payment_method: seller.paymentMethod || null,
+        fulfilment: FULFILMENT_TYPES.includes(body.fulfilment) ? body.fulfilment : (seller.fulfilment || 'Pickup at collection point'),
+        collection_point: clean(body.collectionPoint, 400),
+        notes: clean(body.notes, 4000),
         ...stamp,
       };
 
       if (existing) {
-        await patchRow(existing.id, properties);
+        await patchRow(T_ORDERS, existing.id, village, values);
         return jsonResp(200, { ok: true, pageId: existing.id, total });
       }
       if (seller.status !== 'Live') {
         return jsonResp(400, { error: `“${seller.name}” is ${seller.status}, not Live — a seller has to be Live before orders can be taken` });
       }
-      properties['Order'] = { title: [{ text: { content: orderRef(village) } }] };
-      properties['Payment Status'] = { select: { name: 'Awaiting payment' } };
-      properties['Fulfilment Status'] = { select: { name: 'New' } };
-      properties['Placed Date'] = { date: { start: body.placedDate || today() } };
-      properties['Logged By'] = { rich_text: rtChunks(auth.user.email || 'admin') };
-      return jsonResp(200, { ok: true, pageId: await createRow('orders', properties), total });
+      const pageId = await createRow(T_ORDERS, {
+        ...values,
+        village_id: slugVillage(village),
+        ref: orderRef(village),
+        payment_status: 'Awaiting payment',
+        fulfilment_status: 'New',
+        placed_date: body.placedDate ? String(body.placedDate).slice(0, 10) : today(),
+        logged_by: auth.user.email || 'admin',
+      });
+      return jsonResp(200, { ok: true, pageId, total });
     }
 
     /* ── PAYMENT (what the seller reported) ────────────────────────────── */
     if (body.action === 'payment') {
       if (!ORDER_PAYMENT_STATUSES.includes(body.paymentStatus)) return jsonResp(400, { error: 'Unknown payment status' });
       if (!existing) return jsonResp(404, { error: 'Order not found' });
-      await patchRow(body.pageId, { 'Payment Status': { select: { name: body.paymentStatus } }, ...stamp });
+      await patchRow(T_ORDERS, body.pageId, village, { payment_status: body.paymentStatus, ...stamp });
       return jsonResp(200, { ok: true });
     }
 
@@ -216,18 +216,18 @@ export const handler = async (event, context) => {
     if (body.action === 'fulfil') {
       if (!ORDER_FULFILMENT_STATUSES.includes(body.fulfilmentStatus)) return jsonResp(400, { error: 'Unknown fulfilment status' });
       if (!existing) return jsonResp(404, { error: 'Order not found' });
-      const props = { 'Fulfilment Status': { select: { name: body.fulfilmentStatus } }, ...stamp };
+      const values = { fulfilment_status: body.fulfilmentStatus, ...stamp };
       const done = ['Collected', 'Completed'].includes(body.fulfilmentStatus);
-      if (done && !existing.completedDate) props['Completed Date'] = { date: { start: today() } };
-      if (ORDER_OPEN_FULFILMENT.includes(body.fulfilmentStatus) && existing.completedDate) props['Completed Date'] = { date: null };
-      await patchRow(body.pageId, props);
+      if (done && !existing.completedDate) values.completed_date = today();
+      if (ORDER_OPEN_FULFILMENT.includes(body.fulfilmentStatus) && existing.completedDate) values.completed_date = null;
+      await patchRow(T_ORDERS, body.pageId, village, values);
       return jsonResp(200, { ok: true });
     }
 
     if (body.action === 'delete') {
       if (!isAdmin) return jsonResp(403, { error: 'Only a village admin can delete — cancel the order instead to keep the record' });
       if (!existing) return jsonResp(404, { error: 'Order not found' });
-      await archiveRow(body.pageId);
+      await archiveRow(T_ORDERS, body.pageId, village);
       return jsonResp(200, { ok: true });
     }
 
