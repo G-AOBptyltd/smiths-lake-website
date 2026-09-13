@@ -3,15 +3,19 @@
  *
  * A pop-up store is a SEASON: the village opens it, local sellers list their
  * range, orders come in, the season closes. Four registers, the Season as the
- * spine (same shape as Projects and Recovery):
+ * spine (the same shape as Projects and Recovery):
  *
- *   🛍 VF Store Seasons    the pop-up itself — opens, closes, pickup points
- *   🏪 VF Store Sellers    the seller register + approval lifecycle
- *   📦 VF Store Products   a seller's range for a season
- *   🧾 VF Store Orders     one order = ONE seller (see below)
+ *   store_seasons    the pop-up itself — opens, closes, pickup points
+ *   store_sellers    the seller register + approval lifecycle
+ *   store_products   a seller's range for a season
+ *   store_orders     one order = ONE seller (see below)
  *
- * Each DB resolves env var → Notion search by title → auto-create under the
- * Contributions DB's parent page, so a new village needs no manual Notion setup.
+ * ── STORAGE: SUPABASE, NOT NOTION (changed 13 Sep 2026) ─────────────────────
+ * Like the Recovery module, this first shipped on Notion to match the
+ * grants/projects pattern, and moved the same day before any real row existed.
+ * An ORDER carries a buyer's name, email and phone, and a SELLER carries a
+ * contact's details and ABN — personal data belongs in the Sydney Supabase
+ * project behind deny-by-default RLS, not in a shared Notion workspace.
  *
  * ══ THE MONEY INVARIANT — DO NOT BREAK THIS ═════════════════════════════════
  * Every seller keeps their own money. The platform NEVER holds, pools, routes
@@ -20,7 +24,8 @@
  *   1. A seller record stores only a seller-supplied PAYMENT LINK or a
  *      "how to pay me" method. Never bank account details, never card data,
  *      never an API key, never a platform balance. sanitisePaymentLink() below
- *      refuses anything that is not an https URL.
+ *      refuses anything that is not an https URL, and migration 0011
+ *      deliberately gives the table no column to put one in.
  *   2. Payment status on an order is a record of what the SELLER told us
  *      ("Paid — confirmed by seller"). The platform never asserts that it
  *      received money, because it never does.
@@ -40,22 +45,23 @@
 
 import { requireRole } from './_auth.js';
 import { requireEntitlement } from './_entitlements.js';
+import {
+  selectVillage, selectOne, insertRow, updateRow, archiveRowById,
+  slugVillage, clean, num, money, int, dateOrNull, today, jsonResp, csvCell, stampBy,
+} from './_supa.js';
 
-const NOTION_VERSION = '2022-06-28';
-const CONTRIB_DB_ID = process.env.NOTION_CONTRIB_DB_ID || '6d182a0d4f0c42c2879f13753e355861';
+export { jsonResp, csvCell, clean, num, money, int, dateOrNull, today, slugVillage };
 
-export const SEASONS_DB_TITLE = '🛍 VF Store Seasons';
-export const SELLERS_DB_TITLE = '🏪 VF Store Sellers';
-export const PRODUCTS_DB_TITLE = '📦 VF Store Products';
-export const ORDERS_DB_TITLE = '🧾 VF Store Orders';
+export const T_SEASONS = 'store_seasons';
+export const T_SELLERS = 'store_sellers';
+export const T_PRODUCTS = 'store_products';
+export const T_ORDERS = 'store_orders';
 
-/* ── Vocabulary ─────────────────────────────────────────────────────────── */
+/* ── Vocabulary (mirrored by CHECK constraints in migration 0011) ────────── */
 
 export const SEASON_STATUSES = ['Draft', 'Open', 'Closed', 'Archived'];
 
 export const SELLER_STATUSES = ['Invited', 'Onboarding', 'Approved', 'Live', 'Suspended', 'Closed'];
-// A seller may only have products shown while they are Live.
-export const SELLER_TRADING = ['Live'];
 export const SELLER_TYPES = [
   'Local business', 'Maker or artisan', 'Community group fundraiser',
   'Farm or produce', 'Cornerstone range', 'Other',
@@ -79,53 +85,7 @@ export const ORDER_PAYMENT_STATUSES = ['Awaiting payment', 'Paid — confirmed b
 export const ORDER_FULFILMENT_STATUSES = ['New', 'Packed', 'Ready for pickup', 'Collected', 'Shipped', 'Completed', 'Cancelled'];
 export const ORDER_OPEN_FULFILMENT = ['New', 'Packed', 'Ready for pickup', 'Shipped'];
 
-/* ── Notion plumbing ────────────────────────────────────────────────────── */
-
-export function notionHeaders() {
-  return {
-    Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
-    'Notion-Version': NOTION_VERSION,
-    'Content-Type': 'application/json',
-  };
-}
-
-export function jsonResp(statusCode, obj) {
-  return { statusCode, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) };
-}
-
-export function rtChunks(s) {
-  const out = [];
-  s = String(s == null ? '' : s);
-  for (let i = 0; i < s.length && out.length < 90; i += 1900) out.push({ text: { content: s.slice(i, i + 1900) } });
-  return out;
-}
-
-export const rtText = (prop) => (prop?.rich_text || []).map((t) => t.plain_text).join('');
-export const titleText = (prop) => (prop?.title || []).map((t) => t.plain_text).join('');
-const selName = (prop) => prop?.select?.name || '';
-const numOf = (prop) => (prop?.number ?? null);
-const dateOf = (prop) => prop?.date?.start || '';
-const urlOf = (prop) => prop?.url || '';
-
-export function rtJson(prop, fallback) {
-  try { const v = JSON.parse(rtText(prop) || 'null'); return v == null ? fallback : v; } catch (_) { return fallback; }
-}
-
-export function num(v) {
-  if (v === '' || v == null) return null;
-  const n = Number(v);
-  return Number.isFinite(n) && n >= 0 ? n : null;
-}
-
-/** Money, rounded to cents — never trust a float from a form. */
-export function money(v) {
-  const n = num(v);
-  return n == null ? null : Math.round(n * 100) / 100;
-}
-
-export const dateOrNull = (v) => (v ? { date: { start: v } } : { date: null });
-export const today = () => new Date().toISOString().slice(0, 10);
-export const clean = (v, max) => String(v == null ? '' : v).trim().slice(0, max);
+/* ── Value helpers ──────────────────────────────────────────────────────── */
 
 export function slugify(s) {
   return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
@@ -133,12 +93,12 @@ export function slugify(s) {
 
 /**
  * A seller's payment link must be an https URL and nothing else. This is the
- * code half of the money invariant: it makes it impossible to smuggle a BSB,
- * an account number or an API secret into the field by mistake.
+ * code half of the money invariant: it makes it impossible to smuggle a BSB, an
+ * account number or an API secret into the field by mistake.
  * Returns '' for anything it will not accept.
  */
 export function sanitisePaymentLink(v) {
-  const s = clean(v, 500);
+  const s = String(v == null ? '' : v).trim().slice(0, 500);
   if (!s) return '';
   let u;
   try { u = new URL(s); } catch (_) { return ''; }
@@ -146,303 +106,128 @@ export function sanitisePaymentLink(v) {
   return u.toString().slice(0, 500);
 }
 
-const opts = (list) => ({ select: { options: list.map((name) => ({ name })) } });
-const AUDIT = { 'Logged By': { rich_text: {} }, 'Last Updated By': { rich_text: {} } };
+/* ── Row mappers ────────────────────────────────────────────────────────── */
 
-/* ── Schemas ────────────────────────────────────────────────────────────── */
+const jsonArr = (v) => (Array.isArray(v) ? v : []);
+const numOrNull = (v) => (v == null ? null : Number(v));
 
-const SEASON_SCHEMA = () => ({
-  'Season': { title: {} },
-  'Village': { rich_text: {} },
-  'Status': opts(SEASON_STATUSES),
-  'Opens': { date: {} },
-  'Closes': { date: {} },
-  'Collection Points': { rich_text: {} },
-  'Terms': { rich_text: {} },
-  'Coordinator': { rich_text: {} },
-  'Notes': { rich_text: {} },
-  ...AUDIT,
-});
+export function parseSeason(r) {
+  return {
+    id: r.id,
+    name: r.name || '',
+    village: r.village_id || '',
+    status: r.status || 'Draft',
+    opens: r.opens || '',
+    closes: r.closes || '',
+    collectionPoints: r.collection_points || '',
+    terms: r.terms || '',
+    coordinator: r.coordinator || '',
+    notes: r.notes || '',
+    loggedBy: r.logged_by || '',
+    lastUpdatedBy: r.last_updated_by || '',
+  };
+}
 
-const SELLER_SCHEMA = () => ({
-  'Seller': { title: {} },
-  'Village': { rich_text: {} },
-  'Slug': { rich_text: {} },
-  'Status': opts(SELLER_STATUSES),
-  'Seller Type': opts(SELLER_TYPES),
-  'Contact Name': { rich_text: {} },
-  'Contact Email': { rich_text: {} },
-  'Contact Phone': { rich_text: {} },
-  'ABN': { rich_text: {} },
-  'About': { rich_text: {} },
-  'Logo URL': { url: {} },
-  // How THIS seller takes money. The village never holds it — see the header.
-  'Payment Method': opts(PAYMENT_METHODS),
-  'Payment Link': { url: {} },
-  'Payment Confirmed': { checkbox: {} },   // the committee has seen the seller can be paid directly
-  'Fulfilment': opts(FULFILMENT_TYPES),
-  'Delivery Fee': { number: { format: 'australian_dollar' } },
-  'Steward Email': { rich_text: {} },      // the Identity user who manages this seller's own listing
-  'Approved By': { rich_text: {} },
-  'Notes': { rich_text: {} },
-  ...AUDIT,
-});
+export function parseSeller(r) {
+  return {
+    id: r.id,
+    name: r.name || '',
+    village: r.village_id || '',
+    slug: r.slug || '',
+    status: r.status || 'Invited',
+    sellerType: r.seller_type || '',
+    contactName: r.contact_name || '',
+    contactEmail: r.contact_email || '',
+    contactPhone: r.contact_phone || '',
+    abn: r.abn || '',
+    about: r.about || '',
+    logoUrl: r.logo_url || '',
+    paymentMethod: r.payment_method || '',
+    paymentLink: r.payment_link || '',
+    paymentConfirmed: r.payment_confirmed === true,
+    fulfilment: r.fulfilment || '',
+    deliveryFee: numOrNull(r.delivery_fee),
+    stewardEmail: r.steward_email || '',
+    approvedBy: r.approved_by || '',
+    notes: r.notes || '',
+    loggedBy: r.logged_by || '',
+    lastUpdatedBy: r.last_updated_by || '',
+  };
+}
 
-const PRODUCT_SCHEMA = () => ({
-  'Product': { title: {} },
-  'Village': { rich_text: {} },
-  'Seller': { rich_text: {} },             // the seller's page id
-  'Season': { rich_text: {} },             // the season's page id
-  'Status': opts(PRODUCT_STATUSES),
-  'Category': opts(PRODUCT_CATEGORIES),
-  'Description': { rich_text: {} },
-  'Price': { number: { format: 'australian_dollar' } },
-  'Stock': { number: {} },
-  'Unlimited Stock': { checkbox: {} },
-  'Fulfilment': opts(FULFILMENT_TYPES),
-  'Image URL': { url: {} },
-  'SKU': { rich_text: {} },
-  'Sort': { number: {} },
-  'Notes': { rich_text: {} },
-  ...AUDIT,
-});
+export function parseProduct(r) {
+  return {
+    id: r.id,
+    name: r.name || '',
+    village: r.village_id || '',
+    seller: r.seller_id || '',
+    season: r.season_id || '',
+    status: r.status || 'Draft',
+    category: r.category || '',
+    description: r.description || '',
+    price: numOrNull(r.price),
+    stock: numOrNull(r.stock),
+    unlimitedStock: r.unlimited_stock === true,
+    fulfilment: r.fulfilment || '',
+    imageUrl: r.image_url || '',
+    sku: r.sku || '',
+    sort: numOrNull(r.sort),
+    notes: r.notes || '',
+    lastUpdatedBy: r.last_updated_by || '',
+  };
+}
 
-const ORDER_SCHEMA = () => ({
-  'Order': { title: {} },                  // human order reference
-  'Village': { rich_text: {} },
-  'Seller': { rich_text: {} },             // ONE seller per order — the money invariant
-  'Season': { rich_text: {} },
-  'Buyer Name': { rich_text: {} },
-  'Buyer Email': { rich_text: {} },
-  'Buyer Phone': { rich_text: {} },
-  'Items': { rich_text: {} },              // JSON [{ productId, title, qty, unitPrice }]
-  'Subtotal': { number: { format: 'australian_dollar' } },
-  'Delivery Fee': { number: { format: 'australian_dollar' } },
-  'Total': { number: { format: 'australian_dollar' } },
-  'Payment Status': opts(ORDER_PAYMENT_STATUSES),
-  'Payment Method': opts(PAYMENT_METHODS),
-  'Fulfilment Status': opts(ORDER_FULFILMENT_STATUSES),
-  'Fulfilment': opts(FULFILMENT_TYPES),
-  'Collection Point': { rich_text: {} },
-  'Placed Date': { date: {} },
-  'Completed Date': { date: {} },
-  'Notes': { rich_text: {} },
-  ...AUDIT,
-});
+export function parseOrder(r) {
+  return {
+    id: r.id,
+    ref: r.ref || '',
+    village: r.village_id || '',
+    seller: r.seller_id || '',
+    season: r.season_id || '',
+    buyerName: r.buyer_name || '',
+    buyerEmail: r.buyer_email || '',
+    buyerPhone: r.buyer_phone || '',
+    items: jsonArr(r.items),
+    subtotal: numOrNull(r.subtotal),
+    deliveryFee: numOrNull(r.delivery_fee),
+    total: numOrNull(r.total),
+    paymentStatus: r.payment_status || 'Awaiting payment',
+    paymentMethod: r.payment_method || '',
+    fulfilmentStatus: r.fulfilment_status || 'New',
+    fulfilment: r.fulfilment || '',
+    collectionPoint: r.collection_point || '',
+    placedDate: r.placed_date || '',
+    completedDate: r.completed_date || '',
+    notes: r.notes || '',
+    loggedBy: r.logged_by || '',
+    lastUpdatedBy: r.last_updated_by || '',
+  };
+}
 
-const REGISTERS = {
-  seasons: { title: SEASONS_DB_TITLE, query: 'VF Store Seasons', env: 'NOTION_VF_STORE_SEASONS_DB_ID', schema: SEASON_SCHEMA },
-  sellers: { title: SELLERS_DB_TITLE, query: 'VF Store Sellers', env: 'NOTION_VF_STORE_SELLERS_DB_ID', schema: SELLER_SCHEMA },
-  products: { title: PRODUCTS_DB_TITLE, query: 'VF Store Products', env: 'NOTION_VF_STORE_PRODUCTS_DB_ID', schema: PRODUCT_SCHEMA },
-  orders: { title: ORDERS_DB_TITLE, query: 'VF Store Orders', env: 'NOTION_VF_STORE_ORDERS_DB_ID', schema: ORDER_SCHEMA },
+const PARSERS = {
+  [T_SEASONS]: parseSeason, [T_SELLERS]: parseSeller,
+  [T_PRODUCTS]: parseProduct, [T_ORDERS]: parseOrder,
 };
 
-const cache = {};
+/* ── Data access ────────────────────────────────────────────────────────── */
 
-async function findDbByTitle(title, query) {
-  const res = await fetch('https://api.notion.com/v1/search', {
-    method: 'POST', headers: notionHeaders(),
-    body: JSON.stringify({ query, filter: { property: 'object', value: 'database' }, page_size: 20 }),
-  });
-  if (!res.ok) return null;
-  const hits = (await res.json()).results || [];
-  const hit = hits.find((d) => titleText(d) === title && !d.archived);
-  return hit ? hit.id : null;
+export async function queryVillage(table, village, order) {
+  const rows = await selectVillage(table, village, { order });
+  return rows.map(PARSERS[table]);
 }
 
-async function createDb(title, properties) {
-  const res = await fetch(`https://api.notion.com/v1/databases/${CONTRIB_DB_ID}`, { headers: notionHeaders() });
-  if (!res.ok) throw new Error(`Could not resolve a parent page for ${title}`);
-  const parent = (await res.json()).parent || {};
-  if (parent.type !== 'page_id') throw new Error(`Contributions DB has no page parent — set the ${title} DB id explicitly`);
-  const cr = await fetch('https://api.notion.com/v1/databases', {
-    method: 'POST', headers: notionHeaders(),
-    body: JSON.stringify({ parent: { type: 'page_id', page_id: parent.page_id }, title: [{ text: { content: title } }], properties }),
-  });
-  if (!cr.ok) throw new Error(`Could not create ${title} (Notion ${cr.status})`);
-  return (await cr.json()).id;
+/** One row, proven to belong to this village (the cross-tenant guard). */
+export async function getRow(table, id, village) {
+  const row = await selectOne(table, id, village);
+  return row ? PARSERS[table](row) : null;
 }
 
-export async function dbId(which) {
-  const reg = REGISTERS[which];
-  if (!reg) throw new Error(`Unknown store register "${which}"`);
-  if (cache[which]) return cache[which];
-  const fromEnv = process.env[reg.env];
-  if (fromEnv) { cache[which] = fromEnv; return cache[which]; }
-  let id = await findDbByTitle(reg.title, reg.query);
-  if (!id) id = await createDb(reg.title, reg.schema());
-  cache[which] = id;
-  return id;
-}
-
-/* ── Parsers ────────────────────────────────────────────────────────────── */
-
-export function parseSeason(p) {
-  const props = p.properties || {};
-  return {
-    id: p.id,
-    name: titleText(props['Season']),
-    village: rtText(props['Village']),
-    status: selName(props['Status']) || 'Draft',
-    opens: dateOf(props['Opens']),
-    closes: dateOf(props['Closes']),
-    collectionPoints: rtText(props['Collection Points']),
-    terms: rtText(props['Terms']),
-    coordinator: rtText(props['Coordinator']),
-    notes: rtText(props['Notes']),
-    loggedBy: rtText(props['Logged By']),
-    lastUpdatedBy: rtText(props['Last Updated By']),
-  };
-}
-
-export function parseSeller(p) {
-  const props = p.properties || {};
-  return {
-    id: p.id,
-    name: titleText(props['Seller']),
-    village: rtText(props['Village']),
-    slug: rtText(props['Slug']),
-    status: selName(props['Status']) || 'Invited',
-    sellerType: selName(props['Seller Type']),
-    contactName: rtText(props['Contact Name']),
-    contactEmail: rtText(props['Contact Email']),
-    contactPhone: rtText(props['Contact Phone']),
-    abn: rtText(props['ABN']),
-    about: rtText(props['About']),
-    logoUrl: urlOf(props['Logo URL']),
-    paymentMethod: selName(props['Payment Method']),
-    paymentLink: urlOf(props['Payment Link']),
-    paymentConfirmed: props['Payment Confirmed']?.checkbox === true,
-    fulfilment: selName(props['Fulfilment']),
-    deliveryFee: numOf(props['Delivery Fee']),
-    stewardEmail: rtText(props['Steward Email']),
-    approvedBy: rtText(props['Approved By']),
-    notes: rtText(props['Notes']),
-    loggedBy: rtText(props['Logged By']),
-    lastUpdatedBy: rtText(props['Last Updated By']),
-  };
-}
-
-export function parseProduct(p) {
-  const props = p.properties || {};
-  return {
-    id: p.id,
-    name: titleText(props['Product']),
-    village: rtText(props['Village']),
-    seller: rtText(props['Seller']),
-    season: rtText(props['Season']),
-    status: selName(props['Status']) || 'Draft',
-    category: selName(props['Category']),
-    description: rtText(props['Description']),
-    price: numOf(props['Price']),
-    stock: numOf(props['Stock']),
-    unlimitedStock: props['Unlimited Stock']?.checkbox === true,
-    fulfilment: selName(props['Fulfilment']),
-    imageUrl: urlOf(props['Image URL']),
-    sku: rtText(props['SKU']),
-    sort: numOf(props['Sort']),
-    notes: rtText(props['Notes']),
-    lastUpdatedBy: rtText(props['Last Updated By']),
-  };
-}
-
-export function parseOrder(p) {
-  const props = p.properties || {};
-  return {
-    id: p.id,
-    ref: titleText(props['Order']),
-    village: rtText(props['Village']),
-    seller: rtText(props['Seller']),
-    season: rtText(props['Season']),
-    buyerName: rtText(props['Buyer Name']),
-    buyerEmail: rtText(props['Buyer Email']),
-    buyerPhone: rtText(props['Buyer Phone']),
-    items: rtJson(props['Items'], []),
-    subtotal: numOf(props['Subtotal']),
-    deliveryFee: numOf(props['Delivery Fee']),
-    total: numOf(props['Total']),
-    paymentStatus: selName(props['Payment Status']) || 'Awaiting payment',
-    paymentMethod: selName(props['Payment Method']),
-    fulfilmentStatus: selName(props['Fulfilment Status']) || 'New',
-    fulfilment: selName(props['Fulfilment']),
-    collectionPoint: rtText(props['Collection Point']),
-    placedDate: dateOf(props['Placed Date']),
-    completedDate: dateOf(props['Completed Date']),
-    notes: rtText(props['Notes']),
-    loggedBy: rtText(props['Logged By']),
-    lastUpdatedBy: rtText(props['Last Updated By']),
-  };
-}
-
-/* ── Queries ────────────────────────────────────────────────────────────── */
-
-export async function queryVillage(which, village, sorts) {
-  const id = await dbId(which);
-  const out = [];
-  let cursor;
-  do {
-    const res = await fetch(`https://api.notion.com/v1/databases/${id}/query`, {
-      method: 'POST', headers: notionHeaders(),
-      body: JSON.stringify({
-        filter: { property: 'Village', rich_text: { equals: village } },
-        ...(sorts ? { sorts } : {}),
-        ...(cursor ? { start_cursor: cursor } : {}),
-      }),
-    });
-    if (!res.ok) throw new Error(`Notion responded ${res.status}`);
-    const data = await res.json();
-    (data.results || []).forEach((p) => out.push(p));
-    cursor = data.has_more ? data.next_cursor : null;
-  } while (cursor);
-  return out;
-}
-
-/** Fetch one row and prove it is in `which` register AND in `village`. */
-export async function getRow(which, pageId, village, parse) {
-  if (!pageId) return null;
-  const id = await dbId(which);
-  const res = await fetch(`https://api.notion.com/v1/pages/${pageId}`, { headers: notionHeaders() });
-  if (!res.ok) return null;
-  const page = await res.json();
-  if (page.archived) return null;
-  if ((page.parent?.database_id || '').replace(/-/g, '') !== String(id).replace(/-/g, '')) return null;
-  const row = parse(page);
-  if (village && row.village !== village) return null;
-  return row;
-}
-
-export async function createRow(which, properties) {
-  const id = await dbId(which);
-  const res = await fetch('https://api.notion.com/v1/pages', {
-    method: 'POST', headers: notionHeaders(),
-    body: JSON.stringify({ parent: { database_id: id }, properties }),
-  });
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
-  }
-  return (await res.json()).id;
-}
-
-export async function patchRow(pageId, properties) {
-  const res = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
-    method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ properties }),
-  });
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
-  }
-}
-
-export async function archiveRow(pageId) {
-  const res = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
-    method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ archived: true }),
-  });
-  if (!res.ok) throw new Error(`Notion responded ${res.status}`);
-}
+export async function createRow(table, values) { return insertRow(table, values); }
+export async function patchRow(table, id, village, values) { return updateRow(table, id, village, values); }
+export async function archiveRow(table, id, village) { return archiveRowById(table, id, village); }
 
 export function stampFor(user) {
-  return { 'Last Updated By': { rich_text: rtChunks(`${user?.email || 'admin'} · ${today()}`) } };
+  return { last_updated_by: stampBy(user) };
 }
 
 /* ── Order maths ────────────────────────────────────────────────────────── */
@@ -450,7 +235,7 @@ export function stampFor(user) {
 /**
  * Re-price an order from the PRODUCT rows, never from the client. Returns the
  * priced items plus the totals, and refuses a basket that spans two sellers
- * (the money invariant) or names a product from another village.
+ * (the money invariant) or a product that is not on sale.
  */
 export function priceOrder(rawItems, products, seller) {
   const items = [];
@@ -514,8 +299,3 @@ export function sellerScope(user, village, sellers, isAdmin) {
       .map((s) => s.id)
   );
 }
-
-export const csvCell = (v) => {
-  const s = String(v == null ? '' : v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};

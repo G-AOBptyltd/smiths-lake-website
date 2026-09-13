@@ -270,8 +270,9 @@
         <div class="ph-acts"><button class="btn btn-s" onclick="backToEvent('needs')">← Back to needs</button></div>
       </div>
       <div class="privacy">
-        <b>Privacy.</b> This row holds a resident's details. It is visible only to this village's admin, Emergency Coordinator and
-        stewards, is never published to the website, and is never shared with another village.
+        <b>Privacy.</b> This row holds a resident's details. It is stored in the platform's Australian database (Sydney), not in the content system, is visible only to
+        this village's admin, Emergency Coordinator and stewards, is never published to the website, and is never
+        shared with another village.
         Tick <b>Sensitive</b> and the contact block is withheld from steward-level users by the server — so a steward can still
         coordinate the work without seeing the household's address and phone number.
       </div>
@@ -486,7 +487,7 @@
           '<span class="pill ' + stClass(e.status) + '">' + escHtml(e.status) + '</span>' +
         '</div>';
       }).join('');
-    }).join('') + (orphans ? '<div class="note">⚠️ ' + orphans + ' need(s) are not attached to any current recovery event — most likely their event was deleted. Nothing is lost: they are still in the Notion register.</div>' : '');
+    }).join('') + (orphans ? '<div class="note">⚠️ ' + orphans + ' need(s) are not attached to any current recovery event — most likely their event was deleted. Nothing is lost: they are still in the register.</div>' : '');
   }
 
   /* ── Panels ────────────────────────────────────────────────────────── */
@@ -630,7 +631,7 @@
   }
 
   async function deleteEvent() {
-    if (!confirm('Delete "' + EV.name + '"?\n\nIt moves to Notion trash (recoverable). Its needs and offers are NOT deleted — a recovery record is evidence. Consider Closed instead.')) return;
+    if (!confirm('Delete "' + EV.name + '"?\n\nIt is archived, not destroyed, and can be restored. Its needs and offers are NOT deleted — a recovery record is evidence. Consider Closed instead.')) return;
     const d = await post('/api/recovery-admin', { action: 'delete', pageId: editEventId }, 'e-msg');
     if (d) { showToast('🗑 Recovery event deleted'); EV = null; showList(); loadEvents(); }
   }
@@ -638,7 +639,7 @@
   /* ── Needs ─────────────────────────────────────────────────────────── */
   function renderNeeds() {
     document.getElementById('needs-privacy').innerHTML = CAN_SENSITIVE
-      ? '<b>Privacy.</b> You can see contact details on every need, including those marked Sensitive. Nothing here is ever published, and it is never shared with another village.'
+      ? '<b>Privacy.</b> You can see contact details on every need, including those marked Sensitive. These records live in the platform\'s Australian database (Sydney) — never published, never shared with another village.'
       : '<b>Privacy.</b> Needs marked <b>Sensitive</b> have their contact details withheld from your role by the server — you can still coordinate the work. Ask the village admin or Emergency Coordinator if you need to reach the household.';
 
     const el = document.getElementById('needs-body');
@@ -739,7 +740,7 @@
 
   async function deleteNeed() {
     const n = NEEDS.find(x => x.id === editNeedId);
-    if (!confirm('Delete "' + (n ? n.name : 'this need') + '"?\n\nIt moves to Notion trash (recoverable). Withdrawn or Referred keeps the record — better for the evidence trail.')) return;
+    if (!confirm('Delete "' + (n ? n.name : 'this need') + '"?\n\nIt is archived, not destroyed, and can be restored. Withdrawn or Referred keeps the record — better for the evidence trail.')) return;
     const d = await post('/api/recovery-register', { kind: 'need', action: 'delete', pageId: editNeedId }, 'n-msg');
     if (d) { showToast('🗑 Need deleted'); await openEvent(EV.id, 'needs'); }
   }
@@ -816,7 +817,7 @@
 
   async function deleteOffer() {
     const o = OFFERS.find(x => x.id === editOfferId);
-    if (!confirm('Delete "' + (o ? o.name : 'this offer') + '"?\n\nIt moves to Notion trash (recoverable). Withdrawn or Declined keeps the record.')) return;
+    if (!confirm('Delete "' + (o ? o.name : 'this offer') + '"?\n\nIt is archived, not destroyed, and can be restored. Withdrawn or Declined keeps the record.')) return;
     const d = await post('/api/recovery-register', { kind: 'offer', action: 'delete', pageId: editOfferId }, 'o-msg');
     if (d) { showToast('🗑 Offer deleted'); await openEvent(EV.id, 'offers'); }
   }

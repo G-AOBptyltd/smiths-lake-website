@@ -5,7 +5,7 @@
  *   save    { pageId?, seller, season, name, category?, description?, price,
  *             stock?, unlimitedStock?, fulfilment?, imageUrl?, sku?, sort?, notes? }
  *   status  { pageId, status }   Draft | Active | Sold out | Withdrawn
- *   delete  { pageId }          village ADMIN only (Notion trash)
+ *   delete  { pageId }          village ADMIN only (soft delete — recoverable)
  *
  * Reading happens through /api/store-admin?season=… (one round trip returns the
  * season, its sellers, products and orders), so this endpoint is write-only.
@@ -18,10 +18,10 @@
  */
 
 import {
+  T_SELLERS, T_SEASONS, T_PRODUCTS,
   PRODUCT_STATUSES, PRODUCT_CATEGORIES, FULFILMENT_TYPES,
-  jsonResp, rtChunks, clean, money, num, slugify, sanitisePaymentLink,
+  jsonResp, clean, money, int, slugify, slugVillage, sanitisePaymentLink,
   getRow, createRow, patchRow, archiveRow, stampFor, requireStore,
-  parseProduct, parseSeller, parseSeason,
 } from './_store.js';
 import { requireRole } from './_auth.js';
 
@@ -49,7 +49,7 @@ export const handler = async (event, context) => {
   const stamp = stampFor(auth.user);
 
   try {
-    const existing = body.pageId ? await getRow('products', body.pageId, village, parseProduct) : null;
+    const existing = body.pageId ? await getRow(T_PRODUCTS, body.pageId, village) : null;
     if (body.pageId && !existing) return jsonResp(404, { error: 'Product not found' });
 
     /* ── SAVE ──────────────────────────────────────────────────────────── */
@@ -62,9 +62,9 @@ export const handler = async (event, context) => {
       if (!sellerId) return jsonResp(400, { error: 'Pick the seller this product belongs to' });
       if (!seasonId) return jsonResp(400, { error: 'Pick the pop-up season this product is listed in' });
 
-      const seller = await getRow('sellers', sellerId, village, parseSeller);
+      const seller = await getRow(T_SELLERS, sellerId, village);
       if (!seller) return jsonResp(404, { error: 'Seller not found for this village' });
-      const season = await getRow('seasons', seasonId, village, parseSeason);
+      const season = await getRow(T_SEASONS, seasonId, village);
       if (!season) return jsonResp(404, { error: 'Season not found for this village' });
       if (!mayManageSeller(auth.user, seller, isAdmin)) {
         return jsonResp(403, { error: 'You can only list products for the sellers you are the steward for' });
@@ -75,38 +75,39 @@ export const handler = async (event, context) => {
       const price = money(body.price);
       if (price == null) return jsonResp(400, { error: 'Give the product a price (0 is fine for a free or “donation” item)' });
 
-      const properties = {
-        'Product': { title: [{ text: { content: name } }] },
-        'Village': { rich_text: rtChunks(village.slice(0, 100)) },
-        'Seller': { rich_text: rtChunks(seller.id) },
-        'Season': { rich_text: rtChunks(season.id) },
-        'Category': body.category ? { select: { name: body.category } } : { select: null },
-        'Description': { rich_text: rtChunks(clean(body.description, 4000)) },
-        'Price': { number: price },
-        'Stock': { number: num(body.stock) },
-        'Unlimited Stock': { checkbox: body.unlimitedStock === true || body.unlimitedStock === 'true' },
-        'Fulfilment': body.fulfilment ? { select: { name: body.fulfilment } } : { select: null },
-        'Image URL': { url: sanitisePaymentLink(body.imageUrl) || null },
-        'SKU': { rich_text: rtChunks(clean(body.sku, 60) || slugify(name).slice(0, 40)) },
-        'Sort': { number: num(body.sort) ?? 100 },
-        'Notes': { rich_text: rtChunks(clean(body.notes, 2000)) },
+      const values = {
+        name,
+        seller_id: seller.id,
+        season_id: season.id,
+        category: body.category || null,
+        description: clean(body.description, 4000),
+        price,
+        stock: int(body.stock),
+        unlimited_stock: body.unlimitedStock === true || body.unlimitedStock === 'true',
+        fulfilment: body.fulfilment || null,
+        image_url: sanitisePaymentLink(body.imageUrl) || null,
+        sku: clean(body.sku, 60) || slugify(name).slice(0, 40),
+        sort: int(body.sort) ?? 100,
+        notes: clean(body.notes, 2000),
         ...stamp,
       };
 
       if (existing) {
-        await patchRow(existing.id, properties);
+        await patchRow(T_PRODUCTS, existing.id, village, values);
         return jsonResp(200, { ok: true, pageId: existing.id });
       }
-      properties['Status'] = { select: { name: 'Draft' } };
-      properties['Logged By'] = { rich_text: rtChunks(auth.user.email || 'admin') };
-      return jsonResp(200, { ok: true, pageId: await createRow('products', properties) });
+      const pageId = await createRow(T_PRODUCTS, {
+        ...values, village_id: slugVillage(village), status: 'Draft',
+        logged_by: auth.user.email || 'admin',
+      });
+      return jsonResp(200, { ok: true, pageId });
     }
 
     /* ── STATUS ────────────────────────────────────────────────────────── */
     if (body.action === 'status') {
       if (!PRODUCT_STATUSES.includes(body.status)) return jsonResp(400, { error: 'Unknown status' });
       if (!existing) return jsonResp(404, { error: 'Product not found' });
-      const seller = await getRow('sellers', existing.seller, village, parseSeller);
+      const seller = await getRow(T_SELLERS, existing.seller, village);
       if (!seller) return jsonResp(404, { error: 'That product’s seller is no longer in the register' });
       if (!mayManageSeller(auth.user, seller, isAdmin)) {
         return jsonResp(403, { error: 'You can only change products for the sellers you are the steward for' });
@@ -117,7 +118,7 @@ export const handler = async (event, context) => {
       if (body.status === 'Active' && seller.status !== 'Live') {
         return jsonResp(400, { error: `“${seller.name}” is ${seller.status}, not Live — a seller has to be Live before their products can go Active` });
       }
-      await patchRow(body.pageId, { 'Status': { select: { name: body.status } }, ...stamp });
+      await patchRow(T_PRODUCTS, body.pageId, village, { status: body.status, ...stamp });
       return jsonResp(200, { ok: true });
     }
 
@@ -125,9 +126,9 @@ export const handler = async (event, context) => {
     if (body.action === 'delete') {
       if (!isAdmin) return jsonResp(403, { error: 'Only a village admin can delete — mark the product Withdrawn instead to keep the record' });
       if (!existing) return jsonResp(404, { error: 'Product not found' });
-      // Past orders keep a title + price snapshot in their Items JSON, so
+      // Past orders keep a title + price snapshot in their items JSON, so
       // deleting a product never corrupts the trading record.
-      await archiveRow(body.pageId);
+      await archiveRow(T_PRODUCTS, body.pageId, village);
       return jsonResp(200, { ok: true });
     }
 

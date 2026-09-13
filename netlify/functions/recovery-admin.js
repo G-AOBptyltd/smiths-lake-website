@@ -2,28 +2,28 @@
  * recovery-admin.js — Recovery Events + the evidence roll-up.
  *
  * GET  /api/recovery-admin?village=                  → { events }
- * GET  /api/recovery-admin?village=&event=<pageId>    → { event, needs, offers, rollup }
+ * GET  /api/recovery-admin?village=&event=<id>        → { event, needs, offers, rollup }
  * GET  /api/recovery-admin?village=&event=&format=csv → the register as CSV (acquittal evidence)
  * POST /api/recovery-admin { village?, action, ... }
  *   save    { pageId?, name, hazard?, startDate?, closedDate?, declarationRef?,
  *             coordinator?, householdsAffected?, hourRate?, project?, summary?, notes? }
  *   status  { pageId, status }   Standby | Active recovery | Monitoring | Closed
- *   delete  { pageId }           village ADMIN only (Notion trash)
+ *   delete  { pageId }           village ADMIN only (soft delete — recoverable)
  *
  * Roles: admin | emergency | steward may read and save; only admin | emergency
- * may change an event's status or delete (a steward works inside an event, they
- * do not open or close one).
+ * may change an event's status or open one (a steward works inside an event,
+ * they do not open or close one). Records live in Supabase — see _recovery.js.
  *
  * Not plan-gated by design — see _recovery.js requireRecoveryRole().
  */
 
 import {
+  T_EVENTS, T_NEEDS, T_OFFERS,
   EVENT_STATUSES, HAZARD_TYPES, NEED_STATUSES, NEED_CATEGORIES,
-  NEED_PRIORITIES, OFFER_STATUSES, OFFER_TYPES,
-  jsonResp, rtChunks, num, dateOrNull, today,
+  NEED_PRIORITIES, NEED_OPEN, OFFER_STATUSES, OFFER_TYPES,
+  jsonResp, clean, int, money, dateOrNull, today, csvCell, slugVillage,
   queryVillage, getRow, createRow, patchRow, archiveRow, stampFor,
-  parseEvent, parseNeed, parseOffer, redactNeed, canSeeSensitive,
-  ledgerHoursInWindow, rollUp, requireRecoveryRole, csvCell,
+  redactNeed, canSeeSensitive, ledgerHoursInWindow, rollUp, requireRecoveryRole,
 } from './_recovery.js';
 import { requireRole } from './_auth.js';
 
@@ -91,16 +91,16 @@ export const handler = async (event, context) => {
     try {
       // The whole picture for one event: its needs, offers and evidence.
       if (q.event) {
-        const ev = await getRow('events', q.event, village, parseEvent);
+        const ev = await getRow(T_EVENTS, q.event, village);
         if (!ev) return jsonResp(404, { error: 'Recovery event not found' });
 
         const allowSensitive = canSeeSensitive(auth.user, village);
-        const [needPages, offerPages] = await Promise.all([
-          queryVillage('needs', village, [{ property: 'Logged Date', direction: 'ascending' }]),
-          queryVillage('offers', village, [{ property: 'Available From', direction: 'ascending' }]),
+        const [allNeeds, allOffers] = await Promise.all([
+          queryVillage(T_NEEDS, village, 'logged_date.asc.nullslast'),
+          queryVillage(T_OFFERS, village, 'available_from.asc.nullslast'),
         ]);
-        const needs = needPages.map(parseNeed).filter((n) => n.event === ev.id);
-        const offers = offerPages.map(parseOffer).filter((o) => o.event === ev.id);
+        const needs = allNeeds.filter((n) => n.event === ev.id);
+        const offers = allOffers.filter((o) => o.event === ev.id);
         const ledger = await ledgerHoursInWindow(village, ev.startDate, ev.closedDate);
         const rollup = rollUp(ev, needs, offers, ledger);
         const safeNeeds = needs.map((n) => redactNeed(n, allowSensitive));
@@ -128,26 +128,24 @@ export const handler = async (event, context) => {
       }
 
       // The event list, plus a light per-event count so the list is useful at a glance.
-      const [eventPages, needPages, offerPages] = await Promise.all([
-        queryVillage('events', village, [{ property: 'Start Date', direction: 'descending' }]),
-        queryVillage('needs', village),
-        queryVillage('offers', village),
+      const [eventRows, needs, offers] = await Promise.all([
+        queryVillage(T_EVENTS, village, 'start_date.desc.nullslast'),
+        queryVillage(T_NEEDS, village),
+        queryVillage(T_OFFERS, village),
       ]);
-      const needs = needPages.map(parseNeed);
-      const offers = offerPages.map(parseOffer);
-      const events = eventPages.map(parseEvent).map((ev) => {
+      const events = eventRows.map((ev) => {
         const mine = needs.filter((n) => n.event === ev.id);
         return {
           ...ev,
           needsTotal: mine.length,
-          needsOpen: mine.filter((n) => ['Logged', 'Triaged', 'Matched', 'In progress'].includes(n.status)).length,
+          needsOpen: mine.filter((n) => NEED_OPEN.includes(n.status)).length,
           offersTotal: offers.filter((o) => o.event === ev.id).length,
         };
       });
       return jsonResp(200, {
         events,
-        // Rows logged before an event existed, or whose event was deleted — they
-        // would otherwise be invisible, and in a recovery nothing may go missing.
+        // Rows whose event was deleted — they would otherwise be invisible, and
+        // in a recovery nothing may go missing.
         orphanNeeds: needs.filter((n) => !n.event || !events.some((ev) => ev.id === n.event)).length,
         vocab: { eventStatuses: EVENT_STATUSES, hazards: HAZARD_TYPES },
       });
@@ -170,38 +168,40 @@ export const handler = async (event, context) => {
 
   try {
     if (body.action === 'save') {
-      const name = String(body.name || '').trim().slice(0, 200);
+      const name = clean(body.name, 200);
       if (!name) return jsonResp(400, { error: 'The recovery event needs a name — e.g. “October 2026 east coast low”' });
       if (body.hazard && !HAZARD_TYPES.includes(body.hazard)) return jsonResp(400, { error: 'Unknown hazard type' });
 
-      const properties = {
-        'Event': { title: [{ text: { content: name } }] },
-        'Village': { rich_text: rtChunks(village.slice(0, 100)) },
-        'Hazard': body.hazard ? { select: { name: body.hazard } } : { select: null },
-        'Start Date': dateOrNull(body.startDate),
-        'Closed Date': dateOrNull(body.closedDate),
-        'Declaration Ref': { rich_text: rtChunks(String(body.declarationRef || '').trim().slice(0, 200)) },
-        'Coordinator': { rich_text: rtChunks(String(body.coordinator || '').trim().slice(0, 200)) },
-        'Households Affected': { number: num(body.householdsAffected) },
-        'Hour Rate': { number: num(body.hourRate) },
-        'Project': { rich_text: rtChunks(String(body.project || '').trim().slice(0, 200)) },
-        'Summary': { rich_text: rtChunks(String(body.summary || '').trim().slice(0, 4000)) },
-        'Notes': { rich_text: rtChunks(String(body.notes || '').trim().slice(0, 4000)) },
+      const values = {
+        name,
+        hazard: body.hazard || null,
+        start_date: dateOrNull(body.startDate),
+        closed_date: dateOrNull(body.closedDate),
+        declaration_ref: clean(body.declarationRef, 200),
+        coordinator: clean(body.coordinator, 200),
+        households_affected: int(body.householdsAffected),
+        hour_rate: money(body.hourRate),
+        project: clean(body.project, 200),
+        summary: clean(body.summary, 4000),
+        notes: clean(body.notes, 4000),
         ...stamp,
       };
 
       if (body.pageId) {
-        const existing = await getRow('events', body.pageId, village, parseEvent);
+        const existing = await getRow(T_EVENTS, body.pageId, village);
         if (!existing) return jsonResp(404, { error: 'Recovery event not found' });
-        await patchRow(body.pageId, properties);
+        await patchRow(T_EVENTS, body.pageId, village, values);
         return jsonResp(200, { ok: true, pageId: body.pageId });
       }
       // Opening a recovery is the coordinator's call, not a steward's.
       const opener = requireRole(context, { village, anyOf: ['admin', 'emergency'] });
       if (!opener.ok) return jsonResp(403, { error: 'Only a village admin or the Emergency Coordinator can open a recovery event' });
-      properties['Status'] = { select: { name: 'Standby' } };
-      properties['Logged By'] = { rich_text: rtChunks(auth.user.email || 'admin') };
-      const pageId = await createRow('events', properties);
+      const pageId = await createRow(T_EVENTS, {
+        ...values,
+        village_id: slugVillage(village),
+        status: 'Standby',
+        logged_by: auth.user.email || 'admin',
+      });
       return jsonResp(200, { ok: true, pageId });
     }
 
@@ -209,24 +209,24 @@ export const handler = async (event, context) => {
       if (!EVENT_STATUSES.includes(body.status)) return jsonResp(400, { error: 'Unknown status' });
       const owner = requireRole(context, { village, anyOf: ['admin', 'emergency'] });
       if (!owner.ok) return jsonResp(403, { error: 'Only a village admin or the Emergency Coordinator can change a recovery event’s status' });
-      const existing = await getRow('events', body.pageId, village, parseEvent);
+      const existing = await getRow(T_EVENTS, body.pageId, village);
       if (!existing) return jsonResp(404, { error: 'Recovery event not found' });
-      const props = { 'Status': { select: { name: body.status } }, ...stamp };
+      const values = { status: body.status, ...stamp };
       // Stamp the workflow dates the first time each stage is reached.
-      if (body.status === 'Active recovery' && !existing.startDate) props['Start Date'] = { date: { start: today() } };
-      if (body.status === 'Closed' && !existing.closedDate) props['Closed Date'] = { date: { start: today() } };
-      await patchRow(body.pageId, props);
+      if (body.status === 'Active recovery' && !existing.startDate) values.start_date = today();
+      if (body.status === 'Closed' && !existing.closedDate) values.closed_date = today();
+      await patchRow(T_EVENTS, body.pageId, village, values);
       return jsonResp(200, { ok: true });
     }
 
     if (body.action === 'delete') {
       const adminOnly = requireRole(context, { village, anyOf: ['admin'] });
       if (!adminOnly.ok) return jsonResp(403, { error: 'Only a village admin can delete — close the event instead to keep the record' });
-      const existing = await getRow('events', body.pageId, village, parseEvent);
+      const existing = await getRow(T_EVENTS, body.pageId, village);
       if (!existing) return jsonResp(404, { error: 'Recovery event not found' });
       // Needs and offers are NOT cascaded — a recovery record is evidence. They
       // surface as orphans in the list so nothing silently disappears.
-      await archiveRow(body.pageId);
+      await archiveRow(T_EVENTS, body.pageId, village);
       return jsonResp(200, { ok: true });
     }
 

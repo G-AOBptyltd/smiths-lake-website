@@ -5,26 +5,34 @@
  * WHO NEEDS WHAT, and WHO HAS OFFERED HELP — and it keeps the paper trail that
  * turns that effort into evidence for recovery funding.
  *
- * Three registers, one Recovery Event as the spine (same shape as the Projects
- * system of record, where a Project is the spine):
+ * Three registers, one Recovery Event as the spine (the same shape as the
+ * Projects system of record, where a Project is the spine):
  *
- *   📋 VF Recovery Events   the event header — hazard, status, dates, coordinator
- *   🌱 VF Recovery Needs    the recovery register — a need per household/site
- *   🤝 VF Recovery Offers   offers of help, equipment, accommodation, skills
+ *   recovery_events   the event header — hazard, status, dates, coordinator
+ *   recovery_needs    the recovery register — a need per household/site
+ *   recovery_offers   offers of help, equipment, accommodation, skills
  *
- * Each DB resolves env var → Notion search by title → auto-create under the
- * same parent page as the Contributions DB (the grant-admin.js pattern), so a
- * new village needs zero manual Notion setup.
+ * ── STORAGE: SUPABASE, NOT NOTION (changed 13 Sep 2026) ─────────────────────
+ * This module first shipped storing its registers in Notion, to match the
+ * grants/projects modules it was modelled on. That was the wrong call and was
+ * reversed the same day, before any real record existed. A recovery NEED
+ * carries a resident's name, address, phone and often the reason they are
+ * vulnerable — the most sensitive data the platform holds — and that belongs in
+ * the Sydney Supabase project behind deny-by-default RLS, alongside volunteers
+ * and subscribers, not in a shared Notion workspace.
+ *
+ * "Build it like the grants module" was an instruction about UI and code shape.
+ * It was not a reason to put a new class of data in the same store. If a future
+ * module carries personal data, it goes here — see _supa.js.
  *
  * ── PRIVACY (read this before touching needs) ────────────────────────────────
- * A need row is the most sensitive data on the platform: a resident's name,
- * address, phone and, often, why they are vulnerable. So:
- *   - there is NO public surface in this phase — admin console only;
+ *   - there is NO public surface — admin console only;
  *   - roles are admin | emergency | steward (the coordinator and the people
  *     doing the doorknocking), never viewer;
  *   - a need marked Sensitive has its contact block withheld from steward-level
  *     users by the SERVER (redactNeed below) — not merely hidden in the UI;
- *   - nothing here is ever written to a public Notion page or the built site.
+ *   - the tables are RLS-enabled with no policies, so nothing but the service
+ *     role can reach them, and every endpoint re-checks role + village first.
  * Any future resident-facing intake must go through the fail-closed
  * isModulePublic() gate, exactly as Events and Bookings do.
  *
@@ -37,17 +45,21 @@
 
 import { requireRole, hasRole } from './_auth.js';
 import { ACTIVITIES_DB_ID, queryAll as vfQueryAll, parseActivity } from './_stewards.js';
+import {
+  selectVillage, selectOne, insertRow, updateRow, archiveRowById,
+  slugVillage, clean, num, money, int, dateOrNull, today, jsonResp, csvCell, stampBy,
+} from './_supa.js';
 
-const NOTION_VERSION = '2022-06-28';
-const CONTRIB_DB_ID = process.env.NOTION_CONTRIB_DB_ID || '6d182a0d4f0c42c2879f13753e355861';
+export { jsonResp, csvCell, clean, num, money, int, dateOrNull, today };
 
-export const EVENTS_DB_TITLE = '📋 VF Recovery Events';
-export const NEEDS_DB_TITLE = '🌱 VF Recovery Needs';
-export const OFFERS_DB_TITLE = '🤝 VF Recovery Offers';
+export const T_EVENTS = 'recovery_events';
+export const T_NEEDS = 'recovery_needs';
+export const T_OFFERS = 'recovery_offers';
 
 /* ── Vocabulary ─────────────────────────────────────────────────────────────
  * Deliberately plain-language and hazard-agnostic: the same register serves a
- * bushfire, a flood and a storm. Statuses read left-to-right as a workflow. */
+ * bushfire, a flood and a storm. These lists are mirrored by CHECK constraints
+ * in migration 0011 — change one and you must change the other. */
 
 export const EVENT_STATUSES = ['Standby', 'Active recovery', 'Monitoring', 'Closed'];
 export const HAZARD_TYPES = [
@@ -56,7 +68,6 @@ export const HAZARD_TYPES = [
 ];
 
 export const NEED_STATUSES = ['Logged', 'Triaged', 'Matched', 'In progress', 'Closed', 'Referred', 'Withdrawn'];
-// Statuses that still need someone's attention (drives the console's counters).
 export const NEED_OPEN = ['Logged', 'Triaged', 'Matched', 'In progress'];
 export const NEED_PRIORITIES = ['Critical', 'High', 'Medium', 'Low'];
 export const NEED_CATEGORIES = [
@@ -73,247 +84,122 @@ export const OFFER_TYPES = [
   'Materials & supplies', 'Financial', 'Other',
 ];
 
-/* ── Notion plumbing ──────────────────────────────────────────────────────── */
+/* ── Row mappers (snake_case column → camelCase field) ───────────────────── */
 
-export function notionHeaders() {
+const jsonArr = (v) => (Array.isArray(v) ? v : []);
+const numOrNull = (v) => (v == null ? null : Number(v));
+
+export function parseEvent(r) {
   return {
-    Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
-    'Notion-Version': NOTION_VERSION,
-    'Content-Type': 'application/json',
+    id: r.id,
+    name: r.name || '',
+    village: r.village_id || '',
+    hazard: r.hazard || '',
+    status: r.status || 'Standby',
+    startDate: r.start_date || '',
+    closedDate: r.closed_date || '',
+    declarationRef: r.declaration_ref || '',
+    coordinator: r.coordinator || '',
+    householdsAffected: numOrNull(r.households_affected),
+    hourRate: numOrNull(r.hour_rate),
+    project: r.project || '',
+    summary: r.summary || '',
+    notes: r.notes || '',
+    loggedBy: r.logged_by || '',
+    lastUpdatedBy: r.last_updated_by || '',
   };
 }
 
-export function jsonResp(statusCode, obj) {
-  return { statusCode, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) };
-}
-
-/** Notion caps each rich_text item at 2000 chars — chunk long strings. */
-export function rtChunks(s) {
-  const out = [];
-  s = String(s == null ? '' : s);
-  for (let i = 0; i < s.length && out.length < 90; i += 1900) out.push({ text: { content: s.slice(i, i + 1900) } });
-  return out;
-}
-
-export const rtText = (prop) => (prop?.rich_text || []).map((t) => t.plain_text).join('');
-export const titleText = (prop) => (prop?.title || []).map((t) => t.plain_text).join('');
-const selName = (prop) => prop?.select?.name || '';
-const numOf = (prop) => (prop?.number ?? null);
-const dateOf = (prop) => prop?.date?.start || '';
-
-export function rtJson(prop, fallback) {
-  try { const v = JSON.parse(rtText(prop) || 'null'); return v == null ? fallback : v; } catch (_) { return fallback; }
-}
-
-/** A number when it is a sane non-negative number, else null. */
-export function num(v) {
-  if (v === '' || v == null) return null;
-  const n = Number(v);
-  return Number.isFinite(n) && n >= 0 ? n : null;
-}
-
-export const dateOrNull = (v) => (v ? { date: { start: v } } : { date: null });
-export const today = () => new Date().toISOString().slice(0, 10);
-
-/** One select option list, ready for a Notion schema. */
-const opts = (list) => ({ select: { options: list.map((name) => ({ name })) } });
-
-/* ── DB resolution: env → search → create ─────────────────────────────────── */
-
-const cache = {};   // title → id, for the life of the function instance
-
-async function findDbByTitle(title, query) {
-  const res = await fetch('https://api.notion.com/v1/search', {
-    method: 'POST', headers: notionHeaders(),
-    body: JSON.stringify({ query, filter: { property: 'object', value: 'database' }, page_size: 20 }),
-  });
-  if (!res.ok) return null;
-  const hits = (await res.json()).results || [];
-  const hit = hits.find((d) => titleText(d) === title && !d.archived);
-  return hit ? hit.id : null;
-}
-
-/** The Contributions DB's parent page — where every VF register lives. */
-async function registerParentPage(what) {
-  const res = await fetch(`https://api.notion.com/v1/databases/${CONTRIB_DB_ID}`, { headers: notionHeaders() });
-  if (!res.ok) throw new Error(`Could not resolve a parent page for the ${what}`);
-  const parent = (await res.json()).parent || {};
-  if (parent.type !== 'page_id') throw new Error(`Contributions DB has no page parent — set the ${what} DB id explicitly`);
-  return parent.page_id;
-}
-
-async function createDb(title, properties) {
-  const parentId = await registerParentPage(title);
-  const res = await fetch('https://api.notion.com/v1/databases', {
-    method: 'POST', headers: notionHeaders(),
-    body: JSON.stringify({ parent: { type: 'page_id', page_id: parentId }, title: [{ text: { content: title } }], properties }),
-  });
-  if (!res.ok) throw new Error(`Could not create ${title} (Notion ${res.status})`);
-  return (await res.json()).id;
-}
-
-const AUDIT = { 'Logged By': { rich_text: {} }, 'Last Updated By': { rich_text: {} } };
-
-const EVENT_SCHEMA = () => ({
-  'Event': { title: {} },
-  'Village': { rich_text: {} },
-  'Hazard': opts(HAZARD_TYPES),
-  'Status': opts(EVENT_STATUSES),
-  'Start Date': { date: {} },
-  'Closed Date': { date: {} },
-  'Declaration Ref': { rich_text: {} },     // e.g. an AGRN / disaster declaration number
-  'Coordinator': { rich_text: {} },
-  'Households Affected': { number: {} },
-  'Hour Rate': { number: { format: 'australian_dollar' } },
-  'Project': { rich_text: {} },             // slug of the Projects-SoR project, if any
-  'Summary': { rich_text: {} },
-  'Notes': { rich_text: {} },
-  ...AUDIT,
-});
-
-const NEED_SCHEMA = () => ({
-  'Need': { title: {} },
-  'Village': { rich_text: {} },
-  'Event': { rich_text: {} },               // the event's page id
-  'Category': opts(NEED_CATEGORIES),
-  'Priority': opts(NEED_PRIORITIES),
-  'Status': opts(NEED_STATUSES),
-  'Contact Name': { rich_text: {} },
-  'Contact Phone': { rich_text: {} },
-  'Contact Email': { rich_text: {} },
-  'Location': { rich_text: {} },
-  'Access Notes': { rich_text: {} },
-  'People Affected': { number: {} },
-  'Sensitive': { checkbox: {} },            // withholds the contact block from stewards
-  'Logged Date': { date: {} },
-  'Target Date': { date: {} },
-  'Closed Date': { date: {} },
-  'Assigned To': { rich_text: {} },
-  'Matched Offers': { rich_text: {} },      // JSON [{ id, title }]
-  'Hours Contributed': { number: {} },      // recovery effort against THIS need
-  'People Helping': { number: {} },
-  'Help Value': { number: { format: 'australian_dollar' } },  // donated goods/services, valued
-  'Notes': { rich_text: {} },
-  ...AUDIT,
-});
-
-const OFFER_SCHEMA = () => ({
-  'Offer': { title: {} },
-  'Village': { rich_text: {} },
-  'Event': { rich_text: {} },
-  'Offer Type': opts(OFFER_TYPES),
-  'Status': opts(OFFER_STATUSES),
-  'Offered By': { rich_text: {} },
-  'Contact Phone': { rich_text: {} },
-  'Contact Email': { rich_text: {} },
-  'Description': { rich_text: {} },
-  'Capacity': { rich_text: {} },            // "2 utes + trailer", "sleeps 4", "8 hrs/week"
-  'Available From': { date: {} },
-  'Available Until': { date: {} },
-  'Estimated Value': { number: { format: 'australian_dollar' } },
-  'Compliance Notes': { rich_text: {} },    // tickets/licences/insurance for machinery
-  'Matched Needs': { rich_text: {} },       // JSON [{ id, title }]
-  'Notes': { rich_text: {} },
-  ...AUDIT,
-});
-
-const REGISTERS = {
-  events: { title: EVENTS_DB_TITLE, query: 'VF Recovery Events', env: 'NOTION_VF_RECOVERY_EVENTS_DB_ID', schema: EVENT_SCHEMA },
-  needs: { title: NEEDS_DB_TITLE, query: 'VF Recovery Needs', env: 'NOTION_VF_RECOVERY_NEEDS_DB_ID', schema: NEED_SCHEMA },
-  offers: { title: OFFERS_DB_TITLE, query: 'VF Recovery Offers', env: 'NOTION_VF_RECOVERY_OFFERS_DB_ID', schema: OFFER_SCHEMA },
-};
-
-/** dbId('needs') → the Notion database id, creating the register if needed. */
-export async function dbId(which) {
-  const reg = REGISTERS[which];
-  if (!reg) throw new Error(`Unknown recovery register "${which}"`);
-  if (cache[which]) return cache[which];
-  const fromEnv = process.env[reg.env];
-  if (fromEnv) { cache[which] = fromEnv; return cache[which]; }
-  let id = await findDbByTitle(reg.title, reg.query);
-  if (!id) id = await createDb(reg.title, reg.schema());
-  cache[which] = id;
-  return id;
-}
-
-/* ── Parsers ──────────────────────────────────────────────────────────────── */
-
-export function parseEvent(p) {
-  const props = p.properties || {};
+export function parseNeed(r) {
   return {
-    id: p.id,
-    name: titleText(props['Event']),
-    village: rtText(props['Village']),
-    hazard: selName(props['Hazard']),
-    status: selName(props['Status']) || 'Standby',
-    startDate: dateOf(props['Start Date']),
-    closedDate: dateOf(props['Closed Date']),
-    declarationRef: rtText(props['Declaration Ref']),
-    coordinator: rtText(props['Coordinator']),
-    householdsAffected: numOf(props['Households Affected']),
-    hourRate: numOf(props['Hour Rate']),
-    project: rtText(props['Project']),
-    summary: rtText(props['Summary']),
-    notes: rtText(props['Notes']),
-    loggedBy: rtText(props['Logged By']),
-    lastUpdatedBy: rtText(props['Last Updated By']),
+    id: r.id,
+    name: r.name || '',
+    village: r.village_id || '',
+    event: r.event_id || '',
+    category: r.category || '',
+    priority: r.priority || 'Medium',
+    status: r.status || 'Logged',
+    contactName: r.contact_name || '',
+    contactPhone: r.contact_phone || '',
+    contactEmail: r.contact_email || '',
+    location: r.location || '',
+    accessNotes: r.access_notes || '',
+    peopleAffected: numOrNull(r.people_affected),
+    sensitive: r.sensitive === true,
+    loggedDate: r.logged_date || '',
+    targetDate: r.target_date || '',
+    closedDate: r.closed_date || '',
+    assignedTo: r.assigned_to || '',
+    matchedOffers: jsonArr(r.matched_offers),
+    hoursContributed: numOrNull(r.hours_contributed),
+    peopleHelping: numOrNull(r.people_helping),
+    helpValue: numOrNull(r.help_value),
+    notes: r.notes || '',
+    loggedBy: r.logged_by || '',
+    lastUpdatedBy: r.last_updated_by || '',
   };
 }
 
-export function parseNeed(p) {
-  const props = p.properties || {};
+export function parseOffer(r) {
   return {
-    id: p.id,
-    name: titleText(props['Need']),
-    village: rtText(props['Village']),
-    event: rtText(props['Event']),
-    category: selName(props['Category']),
-    priority: selName(props['Priority']) || 'Medium',
-    status: selName(props['Status']) || 'Logged',
-    contactName: rtText(props['Contact Name']),
-    contactPhone: rtText(props['Contact Phone']),
-    contactEmail: rtText(props['Contact Email']),
-    location: rtText(props['Location']),
-    accessNotes: rtText(props['Access Notes']),
-    peopleAffected: numOf(props['People Affected']),
-    sensitive: props['Sensitive']?.checkbox === true,
-    loggedDate: dateOf(props['Logged Date']),
-    targetDate: dateOf(props['Target Date']),
-    closedDate: dateOf(props['Closed Date']),
-    assignedTo: rtText(props['Assigned To']),
-    matchedOffers: rtJson(props['Matched Offers'], []),
-    hoursContributed: numOf(props['Hours Contributed']),
-    peopleHelping: numOf(props['People Helping']),
-    helpValue: numOf(props['Help Value']),
-    notes: rtText(props['Notes']),
-    loggedBy: rtText(props['Logged By']),
-    lastUpdatedBy: rtText(props['Last Updated By']),
+    id: r.id,
+    name: r.name || '',
+    village: r.village_id || '',
+    event: r.event_id || '',
+    offerType: r.offer_type || '',
+    status: r.status || 'Offered',
+    offeredBy: r.offered_by || '',
+    contactPhone: r.contact_phone || '',
+    contactEmail: r.contact_email || '',
+    description: r.description || '',
+    capacity: r.capacity || '',
+    availableFrom: r.available_from || '',
+    availableUntil: r.available_until || '',
+    estimatedValue: numOrNull(r.estimated_value),
+    complianceNotes: r.compliance_notes || '',
+    matchedNeeds: jsonArr(r.matched_needs),
+    notes: r.notes || '',
+    loggedBy: r.logged_by || '',
+    lastUpdatedBy: r.last_updated_by || '',
   };
 }
 
-export function parseOffer(p) {
-  const props = p.properties || {};
-  return {
-    id: p.id,
-    name: titleText(props['Offer']),
-    village: rtText(props['Village']),
-    event: rtText(props['Event']),
-    offerType: selName(props['Offer Type']),
-    status: selName(props['Status']) || 'Offered',
-    offeredBy: rtText(props['Offered By']),
-    contactPhone: rtText(props['Contact Phone']),
-    contactEmail: rtText(props['Contact Email']),
-    description: rtText(props['Description']),
-    capacity: rtText(props['Capacity']),
-    availableFrom: dateOf(props['Available From']),
-    availableUntil: dateOf(props['Available Until']),
-    estimatedValue: numOf(props['Estimated Value']),
-    complianceNotes: rtText(props['Compliance Notes']),
-    matchedNeeds: rtJson(props['Matched Needs'], []),
-    notes: rtText(props['Notes']),
-    loggedBy: rtText(props['Logged By']),
-    lastUpdatedBy: rtText(props['Last Updated By']),
-  };
+const PARSERS = { [T_EVENTS]: parseEvent, [T_NEEDS]: parseNeed, [T_OFFERS]: parseOffer };
+
+/* ── Data access ─────────────────────────────────────────────────────────── */
+
+/** Every live row of a register for one village, already parsed. */
+export async function queryVillage(table, village, order) {
+  const rows = await selectVillage(table, village, { order });
+  return rows.map(PARSERS[table]);
+}
+
+/**
+ * One row, proven to belong to this village. Every write path calls this first —
+ * it is what stops one village from editing another's record by guessing a uuid.
+ */
+export async function getRow(table, id, village) {
+  const row = await selectOne(table, id, village);
+  return row ? PARSERS[table](row) : null;
+}
+
+export async function createRow(table, values) {
+  return insertRow(table, values);
+}
+
+export async function patchRow(table, id, village, values) {
+  return updateRow(table, id, village, values);
+}
+
+export async function archiveRow(table, id, village) {
+  return archiveRowById(table, id, village);
+}
+
+export { slugVillage };
+
+/** Audit stamp for a write. */
+export function stampFor(user) {
+  return { last_updated_by: stampBy(user) };
 }
 
 /* ── Privacy ──────────────────────────────────────────────────────────────── */
@@ -345,97 +231,21 @@ export function redactNeed(need, allowed) {
   };
 }
 
-/* ── Queries ──────────────────────────────────────────────────────────────── */
-
-/** Every row of `which` for one village, oldest first, following pagination. */
-export async function queryVillage(which, village, sorts) {
-  const id = await dbId(which);
-  const out = [];
-  let cursor;
-  do {
-    const res = await fetch(`https://api.notion.com/v1/databases/${id}/query`, {
-      method: 'POST', headers: notionHeaders(),
-      body: JSON.stringify({
-        filter: { property: 'Village', rich_text: { equals: village } },
-        ...(sorts ? { sorts } : {}),
-        ...(cursor ? { start_cursor: cursor } : {}),
-      }),
-    });
-    if (!res.ok) throw new Error(`Notion responded ${res.status}`);
-    const data = await res.json();
-    (data.results || []).forEach((p) => out.push(p));
-    cursor = data.has_more ? data.next_cursor : null;
-  } while (cursor);
-  return out;
-}
-
-/**
- * Fetch one row and prove it belongs to `which` register AND to `village`.
- * Every write path goes through this — it is what stops one village from
- * editing another's record by guessing a page id.
- */
-export async function getRow(which, pageId, village, parse) {
-  if (!pageId) return null;
-  const id = await dbId(which);
-  const res = await fetch(`https://api.notion.com/v1/pages/${pageId}`, { headers: notionHeaders() });
-  if (!res.ok) return null;
-  const page = await res.json();
-  if (page.archived) return null;
-  if ((page.parent?.database_id || '').replace(/-/g, '') !== String(id).replace(/-/g, '')) return null;
-  const row = parse(page);
-  if (village && row.village !== village) return null;
-  return row;
-}
-
-/** Archive (Notion trash — recoverable). */
-export async function archiveRow(pageId) {
-  const res = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
-    method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ archived: true }),
-  });
-  if (!res.ok) throw new Error(`Notion responded ${res.status}`);
-}
-
-export async function patchRow(pageId, properties) {
-  const res = await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
-    method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ properties }),
-  });
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
-  }
-  return res;
-}
-
-export async function createRow(which, properties) {
-  const id = await dbId(which);
-  const res = await fetch('https://api.notion.com/v1/pages', {
-    method: 'POST', headers: notionHeaders(),
-    body: JSON.stringify({ parent: { database_id: id }, properties }),
-  });
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
-  }
-  return (await res.json()).id;
-}
-
-/** "someone@example.org · 2026-09-13" — the audit stamp every write carries. */
-export function stampFor(user) {
-  return { 'Last Updated By': { rich_text: rtChunks(`${user?.email || 'admin'} · ${today()}`) } };
-}
-
 /* ── Evidence roll-up (READ-ONLY) ─────────────────────────────────────────── */
 
 /**
- * Volunteer-hub hours confirmed inside the recovery window, as a cross-check
- * on the effort logged against needs. Two DIFFERENT measures, deliberately
- * reported side by side and never summed:
+ * Volunteer-hub hours confirmed inside the recovery window, as a cross-check on
+ * the effort logged against needs. Two DIFFERENT measures, deliberately reported
+ * side by side and never summed:
  *   - needs effort   → hours a coordinator logged against a recovery need
  *   - ledger hours   → hours the Volunteer hub confirmed in the same window
  * A village that runs its working bees through the Volunteer hub will see the
  * work in the second figure; one that doorknocks will see it in the first.
  * Nothing is written back either way (no double counting — the same rule
  * _projects.js follows for its indicative valuation).
+ *
+ * Still reads the Notion activity ledger, because that is where the volunteer
+ * hub's confirmed hours live today; it carries no resident PII of its own.
  */
 export async function ledgerHoursInWindow(village, fromDate, toDate) {
   if (!ACTIVITIES_DB_ID || !fromDate) return { hours: 0, activities: 0, available: false };
@@ -458,7 +268,7 @@ export async function ledgerHoursInWindow(village, fromDate, toDate) {
 /**
  * Roll a recovery event's needs and offers into the figures a recovery-funding
  * acquittal actually asks for. Pure — takes rows, returns numbers, so it is
- * testable without Notion.
+ * testable without a database.
  */
 export function rollUp(event, needs, offers, ledger) {
   const rate = Number(event?.hourRate) > 0 ? Number(event.hourRate) : 0;
@@ -486,8 +296,8 @@ export function rollUp(event, needs, offers, ledger) {
     helpValue,
     deliveredValue,
     // The single number a funding body asks for: valued volunteer effort plus
-    // the value of donated goods and services. Labelled INDICATIVE everywhere
-    // it is shown — it is evidence to support a claim, not an audited figure.
+    // the value of donated goods and services. Labelled INDICATIVE everywhere it
+    // is shown — evidence to support a claim, not an audited figure.
     indicativeTotal: Math.round(hours * rate) + helpValue + deliveredValue,
     ledger: ledger || { hours: 0, activities: 0, available: false },
   };
@@ -505,8 +315,3 @@ export function rollUp(event, needs, offers, ledger) {
 export function requireRecoveryRole(context, village, anyOf) {
   return requireRole(context, { village, anyOf: anyOf || ['admin', 'emergency', 'steward'] });
 }
-
-export const csvCell = (v) => {
-  const s = String(v == null ? '' : v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-};
