@@ -145,6 +145,8 @@ const DEFAULT_MODULE_ROLES = {
   ads: ['admin'],
   volunteers: ['admin', 'steward'],
   bookings: ['admin'],
+  recovery: ['admin', 'emergency', 'steward'],
+  popup: ['admin', 'steward'],
 };
 
 // Which role levels may see `module` in this village (per-role matrix override,
@@ -214,7 +216,10 @@ export async function getModuleRecipients({ village, module, context }) {
  * opposite of everything else here) via the admin-hub toggle. Modules not in
  * this list are always public once shipped.
  */
-const PUBLICLY_GATED = ['events', 'bookings'];
+// 'popup' is listed ahead of its resident-facing storefront so that surface is
+// fail-CLOSED the day it ships: a village must switch it on deliberately, and
+// until then isModulePublic('popup') is false. The admin console is unaffected.
+const PUBLICLY_GATED = ['events', 'bookings', 'popup'];
 
 export async function isModulePublic(village, module) {
   if (!PUBLICLY_GATED.includes(module)) return true;

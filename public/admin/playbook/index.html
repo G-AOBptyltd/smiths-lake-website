@@ -104,6 +104,16 @@
       <div class="pb-name">Advertising Playbook</div>
       <div class="pb-desc">Local business placements &amp; sponsorships — tiers, dates and fees.</div>
     </a>
+    <a class="pb-card" href="#recovery">
+      <div class="pb-icon">🌱</div>
+      <div class="pb-name">Recovery Support Playbook</div>
+      <div class="pb-desc">Run the weeks after a fire, flood or storm — the needs register, offers of help, matching, and the funding evidence.</div>
+    </a>
+    <a class="pb-card" href="#popup">
+      <div class="pb-icon">🛍</div>
+      <div class="pb-name">Pop-Up Store Playbook</div>
+      <div class="pb-desc">Open a season, approve sellers who keep their own money, list a range and fulfil orders.</div>
+    </a>
     <a class="pb-card" href="#publishing">
       <div class="pb-icon">🌐</div>
       <div class="pb-name">Publishing Playbook</div>
@@ -475,6 +485,82 @@
     </ol>
 
     <div class="tip">💡 One login works across every console — Surveys, News Desk, Projects, Publish — and the village picker follows them between consoles.</div>
+  </div>
+
+  <div class="guide" id="recovery">
+    <h2>🌱 Recovery Support Playbook</h2>
+    <div class="g-sub">The weeks after a fire, flood or storm — who needs what, who has offered help, and the record that supports a recovery-funding claim. Console: <a href="/admin/recovery/">Admin → Recovery support</a></div>
+
+    <h3>The one idea to understand</h3>
+    <p>A <b>recovery event</b> (e.g. "October 2026 east coast low") is the spine. Hanging off it are two registers: the <b>needs</b> (one row per household or site — what they need, how urgent, who is on it) and the <b>offers of help</b> (hands, machinery, a spare room, a trade skill). You <b>match</b> one to the other, and everything your coordinators record along the way becomes the <b>evidence</b> a funding body asks for.</p>
+
+    <h3>Before anything happens — set it up on Standby</h3>
+    <ol>
+      <li>Open <a href="/admin/recovery/">Recovery support</a> → <b>+ New recovery event</b>. You can create one on <b>Standby</b> before a season, so the register is ready rather than being built in the first frantic week.</li>
+      <li>Set the <b>volunteer hour rate</b> now. It is what turns recorded hours into a dollar figure later, and it is far easier to agree calmly than mid-recovery. Use the rate your funding body accepts.</li>
+      <li>Fill in the <b>coordinator</b> — one named person the community and the council can ask for.</li>
+    </ol>
+
+    <h3>When an event happens</h3>
+    <ol>
+      <li>Move the event to <b>Active recovery</b>. The start date stamps itself the first time you do.</li>
+      <li><b>Log needs</b> as they come in — from a phone call, a doorknock, a recovery hub table. Give each one a <b>priority</b>; Critical sorts to the top of every list.</li>
+      <li><b>Log offers</b> the moment someone says "what can I do?". An offer logged is an offer you can find again three days later.</li>
+      <li>On the <b>Matching</b> tab, pick a need on the left and tick the offers that will cover it. The need moves to <b>Matched</b> and the offer to <b>Allocated</b> automatically.</li>
+      <li>As work happens, record the <b>hours contributed</b> and the <b>value of donated goods &amp; services</b> on the need, then close it. This is the single most valuable habit — see the tip below.</li>
+    </ol>
+
+    <h3>Privacy — the part that matters most</h3>
+    <ul>
+      <li>A need holds a real person's name, address and phone, and often why they are vulnerable. It is visible <b>only</b> to this village's Village Admin, Emergency Coordinator and Stewards. It is never published to the website and never shared with another village.</li>
+      <li>Tick <b>Sensitive</b> on a need and the contact block is withheld from Steward-level users <i>by the server</i> — a steward can still coordinate the work without seeing the household's details. Only a Village Admin or the Emergency Coordinator can see or change them.</li>
+      <li>Prefer <b>Withdrawn</b> or <b>Referred</b> over Delete. A recovery record is evidence.</li>
+    </ul>
+
+    <h3>Turning effort into funding evidence</h3>
+    <ul>
+      <li>The <b>Evidence</b> tab adds up needs logged and closed, people affected, offers delivered, recovery hours valued at your hour rate, and the value of donated goods and services.</li>
+      <li><b>⬇ Export evidence (CSV)</b> gives you the summary plus the full needs and offers registers — attach it to a claim.</li>
+      <li>If your village runs recovery working bees through the <a href="/admin/volunteers/">Volunteer hub</a>, those confirmed hours appear as a <b>cross-check</b>, shown beside the total and deliberately not added to it — counting both would double-count the same work.</li>
+      <li>Money actually received still belongs in the <a href="/admin/contrib/">Contributions portal</a>. Nothing here writes into it, so a donation can never be counted twice.</li>
+    </ul>
+
+    <div class="tip">💡 Record hours and values <i>as the work happens</i>, not months later. A contemporaneous record made at the time is exactly what a funding body wants, and it is the difference between a claim that is paid and one that is argued about. Everything the Evidence tab shows is <b>indicative</b> — evidence to support a claim, not an audited figure.</div>
+  </div>
+
+  <div class="guide" id="popup">
+    <h2>🛍 Pop-Up Store Playbook</h2>
+    <div class="g-sub">A pop-up shopfront for local makers, markets and community fundraising ranges. Console: <a href="/admin/popup/">Admin → Online pop-up store</a></div>
+
+    <h3>The one idea to understand — whose money it is</h3>
+    <p>Every seller is paid <b>directly</b> by the buyer, into the seller's own account, through the seller's own payment link or arrangement. The village <b>never holds, pools or forwards a seller's money</b>. So the takings you see here are <b>not village income</b>, the committee is not acting as a payment service, and each seller handles their own refunds. One order always belongs to <b>one seller</b> — that is what keeps settlement clean.</p>
+    <p><b>Never enter bank or card details in this console.</b> The only payment information it holds is a seller's own <code>https://</code> link. The field refuses anything else.</p>
+
+    <h3>Open a season</h3>
+    <ol>
+      <li>A <b>season</b> is one pop-up: a summer market, a Christmas fundraiser, a one-weekend art trail. Open <a href="/admin/popup/">Pop-up store</a> → <b>+ New season</b>. It starts as a <b>Draft</b>.</li>
+      <li>Add the <b>collection points</b> (where buyers pick things up) and the <b>terms buyers see</b>. Say plainly in the terms that each seller is paid directly and handles their own refunds — because they are, and they do.</li>
+      <li>Set it <b>Open</b> when trading starts and <b>Closed</b> when the season ends. Closing changes nothing about the records: orders stay as a trading history.</li>
+    </ol>
+
+    <h3>Add sellers — and the one gate that matters</h3>
+    <ol>
+      <li><b>+ New seller</b> on the Sellers tab. Record who they are, what they sell, and <b>how they take payment</b>.</li>
+      <li>Work them along <b>Invited → Onboarding → Approved → Live</b>. A seller can only go <b>Live</b> once you have recorded their payment method, their own https payment link where the method needs one, and ticked <b>payment arrangement confirmed</b>.</li>
+      <li>Until a seller is Live, their products cannot go <b>Active</b> and no orders can be taken. That is the safeguard, and it is enforced on the server — not just hidden in the screen.</li>
+      <li>To let a seller manage their own listing, put their sign-in email in <b>Seller steward</b>. They then see <b>only their own</b> seller, products and orders — the same way service stewards manage their own service listing.</li>
+    </ol>
+
+    <h3>List a range and take orders</h3>
+    <ol>
+      <li>On <b>Products</b>, add each item with a price, stock (or tick <b>unlimited</b> for made-to-order) and how it is collected. Products start as <b>Draft</b> — set them <b>Active</b> to make them sellable.</li>
+      <li>On <b>Orders</b>, <b>+ Take an order</b> for market-day, phone and email orders. Pick the seller, then their items; the total is recalculated on the server from the product prices, so a typo can never change what is owed.</li>
+      <li>Tell the buyer to pay that seller — the order screen shows the seller's own payment link. When the <b>seller</b> confirms the money arrived, set the order to <b>Paid — confirmed by seller</b>.</li>
+      <li>Work fulfilment along <b>New → Packed → Ready for pickup → Collected</b> (or Shipped → Completed).</li>
+      <li><b>⬇ Export orders (CSV)</b> gives the committee the season's orders plus per-seller totals.</li>
+    </ol>
+
+    <div class="tip">💡 "Paid — confirmed by seller" means exactly that: the <b>seller</b> told you the money landed in <b>their</b> account. The platform never marks an order paid by itself, because it never receives the money. If a buyer disputes a payment or wants a refund, they deal with the seller — and the season's terms should say so.</div>
   </div>
 
 </div>
