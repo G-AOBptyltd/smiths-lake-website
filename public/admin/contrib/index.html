@@ -462,7 +462,7 @@
   async function lifeAction(id, action) {
     const it = items.find(x => x.id === id);
     if (!it) return;
-    if (action === 'archive' && !confirm('Archive this entry for ' + (it.contributor || 'this contributor') + '? It stays in Notion and in the Ledger (greyed out), excluded from the totals — Restore it anytime.')) return;
+    if (action === 'archive' && !confirm('Archive this entry for ' + (it.contributor || 'this contributor') + '? It stays in the Ledger (greyed out), excluded from the totals and the public board — Restore it anytime.')) return;
     try {
       const r = await fetch('/api/contrib-lifecycle', {
         method: 'POST', headers: await authHeaders(),
@@ -477,7 +477,7 @@
   async function deleteContrib(id) {
     const it = items.find(x => x.id === id);
     if (!it) return;
-    if (!confirm('Permanently remove this contribution from ' + (it.contributor || 'this contributor') + '?\n\nIt will be moved to Notion\'s trash (recoverable there) and disappear from the Ledger immediately.')) return;
+    if (!confirm('Remove this contribution from ' + (it.contributor || 'this contributor') + '?\n\nLedger entries are never hard-deleted: it will be archived (greyed out, excluded from totals) and can be restored.')) return;
     try {
       const r = await fetch('/api/contrib-lifecycle', {
         method: 'POST', headers: await authHeaders(),

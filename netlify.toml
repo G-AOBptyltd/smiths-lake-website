@@ -471,6 +471,12 @@
   to = "/.netlify/functions/contrib-lifecycle"
   status = 200
 
+# One-time Notion → Supabase ledger migration (super-admin; GET = dry run, POST = commit)
+[[redirects]]
+  from = "/api/contrib-migrate"
+  to = "/.netlify/functions/contrib-migrate"
+  status = 200
+
 # Co-Contribution Schedule & Project Budget API
 [[redirects]]
   from = "/api/cocon-get"

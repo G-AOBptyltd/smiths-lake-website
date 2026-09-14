@@ -1,10 +1,10 @@
 /**
  * contrib-save.js — POST /api/contrib-save
  *
- * Records a single contribution in the VF Contributions DB.
+ * Records (or corrects) a single contribution in the ledger.
  * Body: {
  *   village?: string,          // defaults to "Smiths Lake"
- *   pageId?: string,           // present = update, absent = create
+ *   pageId?: string,           // present = update, absent = create (row uuid)
  *   contributor: string,       // who gave it (required)
  *   type: string,              // Money | Payment | Gift | Time in kind | Donated service
  *   amount?: number,           // dollar value (money/payment/gift)
@@ -12,106 +12,63 @@
  *   note?: string,             // what it was for
  *   date?: string,             // YYYY-MM-DD (defaults to today)
  *   status?: string,           // Received | Pledged | Thanked (defaults Received)
- *   contact?: string           // optional email/phone of contributor
+ *   contact?: string,          // optional email/phone of contributor
+ *   showPublicly?: boolean,    // supporters-board opt-in (needs the contributor's OK)
+ *   displayName?: string       // how they'd like to be thanked
  * }
  *
- * Auth: village admin / steward / super-admin (same model as News Desk).
- * The recording admin's email is stamped into "Logged by" from the verified JWT.
+ * Auth: village admin / treasurer / steward / super-admin (same model as News Desk).
+ * Storage: Supabase (Phase 3 of the PII plan) — see _contrib.js. The row is
+ * fetched WITH the village predicate before any update, so an admin JWT from
+ * one village can't touch another village's entry.
+ *
+ * Audit: a create stamps logged_by with the recording admin's verified JWT
+ * email; an update leaves logged_by as the original recorder and stamps
+ * last_updated_by instead (the Notion version overwrote "Logged by" on edit).
  */
 
 import { requireRole } from './_auth.js';
 import { requireEntitlement } from './_entitlements.js';
-
-const NOTION_VERSION = '2022-06-28';
-const CONTRIB_DB_ID = process.env.NOTION_CONTRIB_DB_ID || '6d182a0d4f0c42c2879f13753e355861';
-
-const VALID_TYPES = ['Money', 'Payment', 'Gift', 'Time in kind', 'Donated service'];
-const VALID_STATUS = ['Received', 'Pledged', 'Thanked'];
-
-function corsHeaders() {
-  return { 'Content-Type': 'application/json' };
-}
-
-function notionHeaders() {
-  return {
-    Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
-    'Notion-Version': NOTION_VERSION,
-    'Content-Type': 'application/json',
-  };
-}
+import {
+  CONTRIB_STATUSES, contributionValues,
+  getContribution, createContribution, patchContribution,
+  slugVillage, jsonResp, stampBy,
+} from './_contrib.js';
 
 export const handler = async (event, context) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, headers: corsHeaders(), body: JSON.stringify({ error: 'POST only' }) };
-  }
+  if (event.httpMethod !== 'POST') return jsonResp(405, { error: 'POST only' });
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch {
-    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Invalid JSON' }) };
+    return jsonResp(400, { error: 'Invalid JSON' });
   }
 
   const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer', 'steward'] });
-  if (!auth.ok) {
-    return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };
-  }
+  if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
   const ent = await requireEntitlement(village, 'contrib');
-  if (!ent.ok) return { statusCode: ent.status, headers: corsHeaders(), body: JSON.stringify({ error: ent.error }) };
+  if (!ent.ok) return jsonResp(ent.status, { error: ent.error });
 
   const contributor = (body.contributor || '').trim();
-  if (!contributor) {
-    return { statusCode: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'A contributor name is required' }) };
-  }
+  if (!contributor) return jsonResp(400, { error: 'A contributor name is required' });
 
-  const type = VALID_TYPES.includes(body.type) ? body.type : 'Money';
-  const status = VALID_STATUS.includes(body.status) ? body.status : 'Received';
-  const note = (body.note || '').trim();
-  const contact = (body.contact || '').trim();
-  const date = body.date || new Date().toISOString().slice(0, 10);
-  const amount = Number(body.amount);
-  const hours = Number(body.hours);
-  const showPublicly = body.showPublicly === true || body.showPublicly === 'true';
-  const displayName = (body.displayName || '').trim().slice(0, 60);
-
-  const properties = {
-    'Contributor': { title: [{ text: { content: contributor.slice(0, 200) } }] },
-    'Type': { select: { name: type } },
-    'Status': { select: { name: status } },
-    'Note': { rich_text: note ? [{ text: { content: note.slice(0, 2000) } }] : [] },
-    'Contact': { rich_text: contact ? [{ text: { content: contact.slice(0, 200) } }] : [] },
-    'Date': { date: { start: date } },
-    'Logged by': { rich_text: [{ text: { content: (auth.user.email || '').slice(0, 200) } }] },
-    'Village': { rich_text: [{ text: { content: village.slice(0, 100) } }] },
-    'Amount': { number: Number.isFinite(amount) && amount > 0 ? amount : null },
-    'Hours': { number: Number.isFinite(hours) && hours > 0 ? hours : null },
-    // Public supporters board opt-in — only with the contributor's permission.
-    'Show Publicly': { checkbox: showPublicly },
-    'Display Name': { rich_text: displayName ? [{ text: { content: displayName } }] : [] },
-  };
+  const status = CONTRIB_STATUSES.includes(body.status) ? body.status : 'Received';
+  const values = { ...contributionValues({ ...body, contributor }), status };
 
   try {
-    let res;
     if (body.pageId) {
-      res = await fetch(`https://api.notion.com/v1/pages/${body.pageId}`, {
-        method: 'PATCH',
-        headers: notionHeaders(),
-        body: JSON.stringify({ properties }),
-      });
-    } else {
-      res = await fetch('https://api.notion.com/v1/pages', {
-        method: 'POST',
-        headers: notionHeaders(),
-        body: JSON.stringify({ parent: { database_id: CONTRIB_DB_ID }, properties }),
-      });
+      const existing = await getContribution(body.pageId, village);
+      if (!existing) return jsonResp(404, { error: 'Contribution not found' });
+      await patchContribution(body.pageId, village, { ...values, last_updated_by: stampBy(auth.user) });
+      return jsonResp(200, { ok: true, pageId: existing.id });
     }
-
-    if (!res.ok) {
-      const detail = await res.text();
-      throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
-    }
-    const page = await res.json();
-    return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ ok: true, pageId: page.id }) };
+    const id = await createContribution({
+      village_id: slugVillage(village),
+      ...values,
+      logged_by: (auth.user.email || '').slice(0, 200),
+    });
+    return jsonResp(200, { ok: true, pageId: id });
   } catch (err) {
-    return { statusCode: 502, headers: corsHeaders(), body: JSON.stringify({ error: err.message }) };
+    return jsonResp(502, { error: err.message });
   }
 };

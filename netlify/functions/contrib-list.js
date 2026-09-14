@@ -1,83 +1,34 @@
 /**
  * contrib-list.js — GET /api/contrib-list?village=Smiths Lake
  *
- * Returns recent contributions plus headline totals for the portal dashboard.
- * Auth: village admin / steward / super-admin.
+ * Returns the ledger (newest first) plus headline totals for the portal
+ * dashboard. Auth: village admin / treasurer / super-admin.
  *
- * Multi-village: village param filters the "Village" text column; v1 stores
- * every village in one Contributions DB. When the network grows, resolve a
- * per-village DB id from the Villages registry here (mirrors the News Desk).
+ * Archived entries are INCLUDED in `items` with archived:true — the ledger
+ * shows them greyed out with a Restore button — but excluded from every
+ * headline total. Pass ?archived=0 to leave them out entirely.
+ *
+ * Storage: Supabase (Phase 3 of the PII plan). Rows carry village_id (the
+ * tenant slug) and every query filters on it — see _contrib.js.
  */
 
 import { requireRole } from './_auth.js';
-
-const NOTION_VERSION = '2022-06-28';
-const CONTRIB_DB_ID = process.env.NOTION_CONTRIB_DB_ID || '6d182a0d4f0c42c2879f13753e355861';
-
-function corsHeaders() {
-  return { 'Content-Type': 'application/json' };
-}
-
-function parseItem(page) {
-  const p = page.properties || {};
-  return {
-    id: page.id,
-    contributor: p.Contributor?.title?.[0]?.plain_text || '(no name)',
-    type: p.Type?.select?.name || '',
-    amount: p.Amount?.number ?? null,
-    hours: p.Hours?.number ?? null,
-    note: (p.Note?.rich_text || []).map(t => t.plain_text).join(''),
-    contact: (p.Contact?.rich_text || []).map(t => t.plain_text).join(''),
-    status: p.Status?.select?.name || '',
-    archived: p.Status?.select?.name === 'Archived',
-    date: p.Date?.date?.start || null,
-    loggedBy: (p['Logged by']?.rich_text || []).map(t => t.plain_text).join(''),
-    village: (p.Village?.rich_text || []).map(t => t.plain_text).join(''),
-    showPublicly: p['Show Publicly']?.checkbox === true,
-    displayName: (p['Display Name']?.rich_text || []).map(t => t.plain_text).join(''),
-  };
-}
+import { listContributions, jsonResp } from './_contrib.js';
 
 export const handler = async (event, context) => {
-  if (event.httpMethod !== 'GET') {
-    return { statusCode: 405, headers: corsHeaders(), body: JSON.stringify({ error: 'GET only' }) };
-  }
+  if (event.httpMethod !== 'GET') return jsonResp(405, { error: 'GET only' });
 
-  const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
+  const qs = event.queryStringParameters || {};
+  const village = qs.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const auth = requireRole(context, { village, anyOf: ['admin', 'treasurer'] });
-  if (!auth.ok) {
-    return { statusCode: auth.status, headers: corsHeaders(), body: JSON.stringify({ error: auth.error }) };
-  }
+  if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
+
+  const includeArchived = !['0', 'false', 'no'].includes(String(qs.archived || '').toLowerCase());
 
   try {
-    const results = [];
-    let cursor = undefined;
-    do {
-      const res = await fetch(`https://api.notion.com/v1/databases/${CONTRIB_DB_ID}/query`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
-          'Notion-Version': NOTION_VERSION,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          filter: { property: 'Village', rich_text: { equals: village } },
-          sorts: [{ property: 'Date', direction: 'descending' }],
-          page_size: 100,
-          ...(cursor ? { start_cursor: cursor } : {}),
-        }),
-      });
-      if (!res.ok) throw new Error(`Notion responded ${res.status}`);
-      const data = await res.json();
-      results.push(...data.results);
-      cursor = data.has_more ? data.next_cursor : undefined;
-    } while (cursor);
-
-    const items = results.map(parseItem);
+    const items = await listContributions(village, { includeArchived });
 
     // Headline totals — received money vs pledged, plus hours in kind.
-    // Archived entries stay in `items` (so the Ledger can still show/restore
-    // them) but are excluded from every headline total.
     const totals = { count: 0, moneyReceived: 0, moneyPledged: 0, hours: 0 };
     for (const it of items) {
       if (it.archived) continue;
@@ -90,9 +41,10 @@ export const handler = async (event, context) => {
     }
     totals.moneyReceived = Math.round(totals.moneyReceived * 100) / 100;
     totals.moneyPledged = Math.round(totals.moneyPledged * 100) / 100;
+    totals.hours = Math.round(totals.hours * 100) / 100;
 
-    return { statusCode: 200, headers: corsHeaders(), body: JSON.stringify({ items, totals }) };
+    return jsonResp(200, { items, totals });
   } catch (err) {
-    return { statusCode: 502, headers: corsHeaders(), body: JSON.stringify({ error: err.message }) };
+    return jsonResp(502, { error: err.message });
   }
 };

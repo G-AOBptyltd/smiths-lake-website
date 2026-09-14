@@ -4,20 +4,25 @@
  * Powers the public supporters board, the front-page card, and the ticker.
  * PRIVACY IS THE WHOLE POINT OF THIS FILE:
  *   - Only contributors who ticked "Show Publicly" are ever NAMED.
- *   - We NEVER return amounts, contact details, notes, or "Logged by".
+ *   - We NEVER return amounts, contact details, notes, or "Logged by". The
+ *     query itself selects only the columns below — `contact` never even
+ *     leaves the database for this endpoint.
  *   - Names are display-safe: the opt-in "Display Name" if given, else the
  *     contributor's first name + last initial ("Jane S.").
  *   - Anonymous aggregate totals count everyone (opted-in or not) — that's the
  *     "community thermometer", and it exposes no individual.
  *   - Tiers are computed server-side from a blended score so the board can rank
  *     playfully WITHOUT publishing exact dollar figures.
+ *
+ * Storage: Supabase (Phase 3 of the PII plan) — see _contrib.js. Archived
+ * entries are excluded (the Notion version counted them; a small fix).
  */
 
-// Rate-limit guard for api.notion.com. Side-effect import — see the file.
-import './_notion-guard.js';
+import { listContributions } from './_contrib.js';
 
-const NOTION_VERSION = '2022-06-28';
-const CONTRIB_DB_ID = process.env.NOTION_CONTRIB_DB_ID || '6d182a0d4f0c42c2879f13753e355861';
+// The ONLY columns this endpoint reads. Adding `contact` or `note` here would
+// be a privacy bug even though neither is returned.
+const PUBLIC_SELECT = 'id,type,status,amount,hours,date,show_publicly,display_name,contributor';
 
 // Blended "support score" → playful tier. Hours are valued at $25 for ranking
 // only; no dollar figure is ever shown publicly.
@@ -56,27 +61,7 @@ export const handler = async (event) => {
   const monthLabel = new Date().toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
 
   try {
-    const results = [];
-    let cursor = undefined;
-    do {
-      const res = await fetch(`https://api.notion.com/v1/databases/${CONTRIB_DB_ID}/query`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
-          'Notion-Version': NOTION_VERSION,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          filter: { property: 'Village', rich_text: { equals: village } },
-          page_size: 100,
-          ...(cursor ? { start_cursor: cursor } : {}),
-        }),
-      });
-      if (!res.ok) throw new Error(`Notion responded ${res.status}`);
-      const data = await res.json();
-      results.push(...data.results);
-      cursor = data.has_more ? data.next_cursor : undefined;
-    } while (cursor);
+    const items = await listContributions(village, { select: PUBLIC_SELECT });
 
     const totals = {
       monthRaised: 0, monthHours: 0, monthSupporters: 0,
@@ -85,13 +70,9 @@ export const handler = async (event) => {
     const monthList = [];
     const allList = [];
 
-    for (const page of results) {
-      const p = page.properties || {};
-      const type = p.Type?.select?.name || '';
-      const status = p.Status?.select?.name || '';
-      const amount = p.Amount?.number;
-      const hours = p.Hours?.number;
-      const date = p.Date?.date?.start || '';
+    for (const it of items) {
+      const { type, status, amount, hours } = it;
+      const date = it.date || '';
       const isPledge = status === 'Pledged';
       const inMonth = date.startsWith(monthPrefix);
 
@@ -107,13 +88,10 @@ export const handler = async (event) => {
       }
 
       // Named supporters — opt-in only.
-      if (p['Show Publicly']?.checkbox === true) {
+      if (it.showPublicly === true) {
         const score = (Number.isFinite(amount) ? amount : 0) + (Number.isFinite(hours) ? hours : 0) * HOUR_VALUE;
         const supporter = {
-          name: safeName(
-            (p['Display Name']?.rich_text || []).map((t) => t.plain_text).join(''),
-            p.Contributor?.title?.[0]?.plain_text
-          ),
+          name: safeName(it.displayName, it.contributor === '(no name)' ? '' : it.contributor),
           tier: tierFor(score),
           type,
           score,
@@ -130,6 +108,8 @@ export const handler = async (event) => {
 
     totals.monthRaised = Math.round(totals.monthRaised);
     totals.allRaised = Math.round(totals.allRaised);
+    totals.monthHours = Math.round(totals.monthHours * 100) / 100;
+    totals.allHours = Math.round(totals.allHours * 100) / 100;
 
     return {
       statusCode: 200,
