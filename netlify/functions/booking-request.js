@@ -6,6 +6,11 @@
  * committee confirms or declines from /admin/bookings/ (a clash does NOT
  * auto-reject; the committee decides).
  *
+ * The facility is read from Notion (content); the booking row is written to
+ * Supabase behind deny-by-default RLS (migration 0014). This function reaches
+ * it with the service role, which is exactly why it is kept this narrow — it
+ * can only ever INSERT a Requested row.
+ *
  * Body: { village?, facilityId, date (YYYY-MM-DD), startTime ("09:00"),
  *         endTime ("17:00"), firstName, lastName, email, phone?, purpose,
  *         attendees?, note?, website? }
@@ -14,8 +19,9 @@
  */
 
 import {
-  BOOKINGS_DB_ID, FACILITIES_DB_ID, notionHeaders, jsonResp, notProvisioned,
-  rtChunks, queryAll, parseBooking, getFacility, overlaps, OCCUPYING,
+  FACILITIES_DB_ID, jsonResp, notProvisioned,
+  listBookings, createBooking, getFacility, overlaps, OCCUPYING,
+  slugVillage, clean, today,
 } from './_bookings.js';
 // Rate-limit guard for api.notion.com. Side-effect import — see the file.
 import './_notion-guard.js';
@@ -54,7 +60,7 @@ async function notifyCommittee(b, clash, context) {
 
 export const handler = async (event, context) => {
   if (event.httpMethod !== 'POST') return jsonResp(405, { error: 'POST only' });
-  if (!BOOKINGS_DB_ID || !FACILITIES_DB_ID) return notProvisioned();
+  if (!FACILITIES_DB_ID) return notProvisioned();
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch {
@@ -96,46 +102,30 @@ export const handler = async (event, context) => {
 
   try {
     // Clash check (flagged to the committee, never auto-rejected).
-    const dayBookings = (await queryAll(BOOKINGS_DB_ID, {
-      and: [
-        { property: 'Village', rich_text: { equals: village } },
-        { property: 'Date', date: { on_or_after: date } },
-        { property: 'Date', date: { before: new Date(new Date(date).getTime() + 86400000).toISOString().slice(0, 10) } },
-      ],
-    })).map(parseBooking);
+    const nextDay = new Date(new Date(date).getTime() + 86400000).toISOString().slice(0, 10);
+    const dayBookings = await listBookings(village, { from: date, before: nextDay });
     const clash = dayBookings.some((b) =>
       OCCUPYING.includes(b.status) &&
       b.facilityId === facility.id.replace(/-/g, '') &&
       overlaps(b.start, b.end, start, end));
 
-    const res = await fetch('https://api.notion.com/v1/pages', {
-      method: 'POST',
-      headers: notionHeaders(),
-      body: JSON.stringify({
-        parent: { database_id: BOOKINGS_DB_ID },
-        properties: {
-          'Booking': { title: [{ text: { content: `${facility.name} — ${fullName} — ${date}`.slice(0, 200) } }] },
-          'Village': { rich_text: rtChunks(village) },
-          'Facility': { rich_text: rtChunks(facility.name) },
-          'Facility ID': { rich_text: rtChunks(facility.id.replace(/-/g, '')) },
-          'Date': { date: { start, end } },
-          'Name': { rich_text: rtChunks(fullName) },
-          'Email': { email },
-          'Phone': phone ? { phone_number: phone } : { phone_number: null },
-          'Purpose': { rich_text: rtChunks(purpose) },
-          'Attendees': { number: Number.isFinite(attendees) && attendees > 0 ? Math.round(attendees) : null },
-          'Status': { select: { name: 'Requested' } },
-          'Bond': { number: facility.bond },
-          'Note': { rich_text: rtChunks(note) },
-          'Logged By': { rich_text: rtChunks(`public form (${email})`) },
-          'Date Requested': { date: { start: new Date().toISOString().slice(0, 10) } },
-        },
-      }),
+    await createBooking({
+      village_id: slugVillage(village),
+      facility_id: facility.id.replace(/-/g, ''),
+      facility_title: facility.name.slice(0, 200),
+      start_at: start,
+      end_at: end,
+      name: fullName,
+      email,
+      phone: phone || null,
+      purpose,
+      attendees: Number.isFinite(attendees) && attendees > 0 ? Math.round(attendees) : null,
+      status: 'Requested',                                  // the ONLY status this path can write
+      bond: facility.bond,
+      note: clean(note, 2000),
+      logged_by: `public form (${email})`.slice(0, 200),
+      date_requested: today(),
     });
-    if (!res.ok) {
-      const detail = await res.text();
-      throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
-    }
     await notifyCommittee({ village, facility: facility.name, date, startTime, endTime, fullName, email, phone, purpose, attendees: body.attendees }, clash, context);
     return jsonResp(200, { ok: true });
   } catch (err) {

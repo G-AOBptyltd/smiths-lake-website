@@ -1,13 +1,25 @@
 /**
  * _events.js — shared helpers for the Events & ticketing module.
  *
- * Two Notion DBs (siblings of the other VF DBs, shared across villages and
- * scoped by the Village column — the platform pattern):
- *   🎟 VF Events      — one row per event; Status Draft → Published → Closed /
- *                       Cancelled / Completed. Only Published events appear on
- *                       the public page.
- *   🙌 VF Event RSVPs — one row per registration (a party of N seats).
- *                       Status Registered | Waitlist | Cancelled | Attended.
+ * Two stores, deliberately split by data class:
+ *   🎟 VF Events (NOTION)  — one row per event; Status Draft → Published →
+ *                            Closed / Cancelled / Completed. Committee-authored
+ *                            content, no personal data — stays in the CMS.
+ *                            Shared across villages, scoped by the Village column.
+ *   event_rsvps (SUPABASE) — one row per registration (a party of N seats).
+ *                            Status Registered | Waitlist | Cancelled | Attended.
+ *
+ * ── RSVPs: SUPABASE, NOT NOTION (Phase 2 of the PII plan, 14 Sep 2026) ──────
+ * An RSVP is PUBLIC INTAKE — a resident's name, email and phone typed into a
+ * form on the website — so it lives in the Sydney Supabase project behind
+ * deny-by-default RLS (migration 0014), not in the shared Notion workspace.
+ * Cut over with NOTHING to migrate: the Notion "VF Event RSVPs" register held
+ * zero rows on the day. NOTION_VF_EVENT_RSVPS_DB_ID is retired.
+ *
+ * parseRsvp() returns the same field names the Notion version did, so
+ * /admin/events/ needed no functional change. `pageId` in request bodies is
+ * now the row's uuid; rows reference their event by its dashless Notion page
+ * id, exactly as the Notion register did.
  *
  * v1 is the pre-Tyro model the committee chose: RSVP + capacity + pay at the
  * door (price is display text; payments recorded at check-in). True online
@@ -16,13 +28,20 @@
 
 // Rate-limit guard for api.notion.com. Side-effect import — see the file.
 import './_notion-guard.js';
+import {
+  selectVillage, selectOne, insertRow, updateRow, archiveRowById,
+  slugVillage, clean, money, int, dateOrNull, today, jsonResp, stampBy,
+} from './_supa.js';
+
+export { slugVillage, clean, money, int, dateOrNull, today, jsonResp, stampBy };
 
 const NOTION_VERSION = '2022-06-28';
 
 export const EVENTS_DB_ID = process.env.NOTION_VF_EVENTS_DB_ID || '3bfd508adfc1814488d5f68e3f6e99b7';
-export const RSVPS_DB_ID = process.env.NOTION_VF_EVENT_RSVPS_DB_ID || '3bfd508adfc181068154e994dfb5f285';
+export const T_RSVPS = 'event_rsvps';
 
 export const EVENT_STATUSES = ['Draft', 'Published', 'Closed', 'Cancelled', 'Completed'];
+// Mirrored by a CHECK constraint in migration 0014 — change one, change both.
 export const RSVP_STATUSES = ['Registered', 'Waitlist', 'Cancelled', 'Attended'];
 // RSVP statuses that consume capacity.
 export const COUNTED = ['Registered', 'Attended'];
@@ -33,10 +52,6 @@ export function notionHeaders() {
     'Notion-Version': NOTION_VERSION,
     'Content-Type': 'application/json',
   };
-}
-
-export function jsonResp(statusCode, obj) {
-  return { statusCode, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) };
 }
 
 export function notProvisioned() {
@@ -51,6 +66,8 @@ export const rtChunks = (str) => {
   return out;
 };
 export const rtText = (prop) => (prop?.rich_text || []).map((t) => t.plain_text).join('');
+
+/* ── Events (Notion) ─────────────────────────────────────────────────────── */
 
 export async function queryAll(dbId, filter, sorts) {
   const results = [];
@@ -94,38 +111,6 @@ export function parseEvent(page) {
   };
 }
 
-export function parseRsvp(page) {
-  const p = page.properties || {};
-  return {
-    id: page.id,
-    title: p.RSVP?.title?.[0]?.plain_text || '(rsvp)',
-    village: rtText(p.Village),
-    eventId: rtText(p['Event ID']).replace(/-/g, ''),
-    event: rtText(p.Event),
-    name: rtText(p.Name),
-    firstName: rtText(p['First Name']),
-    lastName: rtText(p['Last Name']),
-    email: p.Email?.email || '',
-    phone: p.Phone?.phone_number || '',
-    seats: p.Seats?.number ?? 1,
-    status: p.Status?.select?.name || 'Registered',
-    message: rtText(p.Message),
-    amountPaid: p['Amount Paid']?.number ?? null,
-    paymentDate: p['Payment Date']?.date?.start || null,
-    dateRsvpd: p['Date RSVPd']?.date?.start || null,
-    loggedBy: rtText(p['Logged By']),
-    lastUpdatedBy: rtText(p['Last Updated By']),
-    lastEmail: rtText(p['Last Email']),
-  };
-}
-
-/** Seats taken (Registered + Attended) for an event from its RSVP rows. */
-export function seatsTaken(rsvps, eventId) {
-  const key = String(eventId).replace(/-/g, '');
-  return rsvps.filter((r) => r.eventId === key && COUNTED.includes(r.status))
-    .reduce((s, r) => s + (r.seats || 1), 0);
-}
-
 export async function getEvent(pageId) {
   const res = await fetch(`https://api.notion.com/v1/pages/${pageId}`, { headers: notionHeaders() });
   if (!res.ok) return null;
@@ -135,11 +120,75 @@ export async function getEvent(pageId) {
   return parseEvent(page);
 }
 
-export async function getRsvp(pageId) {
-  const res = await fetch(`https://api.notion.com/v1/pages/${pageId}`, { headers: notionHeaders() });
-  if (!res.ok) return null;
-  const page = await res.json();
-  const parent = page.parent?.database_id?.replace(/-/g, '');
-  if (parent !== RSVPS_DB_ID.replace(/-/g, '')) return null;
-  return parseRsvp(page);
+/* ── RSVPs (Supabase) ────────────────────────────────────────────────────── */
+
+const numOrNull = (v) => (v == null ? null : Number(v));
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const dashless = (id) => String(id || '').replace(/-/g, '');
+
+/** Row → the object the console and the mailers have always received. */
+export function parseRsvp(r) {
+  const firstName = r.first_name || '';
+  const lastName = r.last_name || '';
+  const fullName = `${firstName} ${lastName}`.trim();
+  const eventTitle = r.event_title || '';
+  return {
+    id: r.id,
+    title: fullName || eventTitle ? `${fullName} — ${eventTitle}` : '(rsvp)',
+    village: r.village_id || '',
+    eventId: dashless(r.event_id),
+    event: eventTitle,
+    name: fullName,
+    firstName,
+    lastName,
+    email: r.email || '',
+    phone: r.phone || '',
+    seats: r.seats ?? 1,
+    status: r.status || 'Registered',
+    message: r.message || '',
+    amountPaid: numOrNull(r.amount_paid),
+    paymentDate: r.payment_date || null,
+    dateRsvpd: r.date_rsvpd || null,
+    loggedBy: r.logged_by || '',
+    lastUpdatedBy: r.last_updated_by || '',
+    lastEmail: r.last_email || '',
+  };
 }
+
+/** Seats taken (Registered + Attended) for an event from its parsed RSVP rows. */
+export function seatsTaken(rsvps, eventId) {
+  const key = dashless(eventId);
+  return rsvps.filter((r) => r.eventId === key && COUNTED.includes(r.status))
+    .reduce((s, r) => s + (r.seats || 1), 0);
+}
+
+/** Every live RSVP for one village, oldest registration first (the door-list order). */
+export async function listRsvps(village) {
+  const rows = await selectVillage(T_RSVPS, village, { order: 'date_rsvpd.asc,created_at.asc' });
+  return rows.map(parseRsvp);
+}
+
+/** Every live RSVP for one event in one village — the capacity check's input. */
+export async function listRsvpsForEvent(village, eventId) {
+  const rows = await selectVillage(T_RSVPS, village, {
+    order: 'date_rsvpd.asc,created_at.asc',
+    extra: `event_id=eq.${encodeURIComponent(dashless(eventId))}`,
+  });
+  return rows.map(parseRsvp);
+}
+
+/**
+ * One RSVP, proven to belong to `village`. Replaces the Notion parent-database
+ * check: without the village predicate an admin JWT from one village could read
+ * or patch another village's registration by guessing a uuid. Returns null
+ * (→ 404) for a malformed id rather than letting PostgREST reject it as a 502.
+ */
+export async function getRsvp(id, village) {
+  if (!UUID_RE.test(String(id || ''))) return null;
+  const row = await selectOne(T_RSVPS, id, village);
+  return row ? parseRsvp(row) : null;
+}
+
+export async function createRsvp(values) { return insertRow(T_RSVPS, values); }
+export async function patchRsvp(id, village, values) { return updateRow(T_RSVPS, id, village, values); }
+export async function archiveRsvp(id, village) { return archiveRowById(T_RSVPS, id, village); }

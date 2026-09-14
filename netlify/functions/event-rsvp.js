@@ -8,13 +8,19 @@
  * A confirmation email goes to the registrant (env-gated, fail-open) and the
  * committee is notified.
  *
+ * The event itself is read from Notion (content); the RSVP row is written to
+ * Supabase behind deny-by-default RLS (migration 0014). This function reaches
+ * it with the service role, which is exactly why it is kept this narrow — it
+ * can only ever INSERT a Registered/Waitlist row, decided here from capacity.
+ *
  * Body: { village?, eventId, firstName, lastName, email, phone?, seats?,
  *         message?, website? }
  */
 
 import {
-  RSVPS_DB_ID, EVENTS_DB_ID, notionHeaders, jsonResp, notProvisioned,
-  rtChunks, queryAll, parseRsvp, getEvent, seatsTaken,
+  EVENTS_DB_ID, jsonResp, notProvisioned,
+  getEvent, listRsvpsForEvent, createRsvp, seatsTaken,
+  slugVillage, clean, today,
 } from './_events.js';
 // Rate-limit guard for api.notion.com. Side-effect import — see the file.
 import './_notion-guard.js';
@@ -80,7 +86,7 @@ async function sendEmails({ ev, fullName, email, seats, waitlisted, village, con
 
 export const handler = async (event, context) => {
   if (event.httpMethod !== 'POST') return jsonResp(405, { error: 'POST only' });
-  if (!EVENTS_DB_ID || !RSVPS_DB_ID) return notProvisioned();
+  if (!EVENTS_DB_ID) return notProvisioned();
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch {
@@ -113,42 +119,24 @@ export const handler = async (event, context) => {
     // Capacity check at write time (server-derived, never from the client).
     let waitlisted = false;
     if (ev.capacity != null) {
-      const rsvps = (await queryAll(RSVPS_DB_ID, {
-        and: [
-          { property: 'Village', rich_text: { equals: village } },
-          { property: 'Event ID', rich_text: { equals: ev.id.replace(/-/g, '') } },
-        ],
-      })).map(parseRsvp);
+      const rsvps = await listRsvpsForEvent(village, ev.id);
       waitlisted = seatsTaken(rsvps, ev.id) + seats > ev.capacity;
     }
 
-    const res = await fetch('https://api.notion.com/v1/pages', {
-      method: 'POST',
-      headers: notionHeaders(),
-      body: JSON.stringify({
-        parent: { database_id: RSVPS_DB_ID },
-        properties: {
-          'RSVP': { title: [{ text: { content: `${fullName} — ${ev.name}`.slice(0, 200) } }] },
-          'Village': { rich_text: rtChunks(village) },
-          'Event ID': { rich_text: rtChunks(ev.id.replace(/-/g, '')) },
-          'Event': { rich_text: rtChunks(ev.name) },
-          'Name': { rich_text: rtChunks(fullName) },
-          'First Name': { rich_text: rtChunks(firstName) },
-          'Last Name': { rich_text: rtChunks(lastName) },
-          'Email': { email },
-          'Phone': phone ? { phone_number: phone } : { phone_number: null },
-          'Seats': { number: seats },
-          'Status': { select: { name: waitlisted ? 'Waitlist' : 'Registered' } },
-          'Message': { rich_text: rtChunks(message) },
-          'Date RSVPd': { date: { start: new Date().toISOString().slice(0, 10) } },
-          'Logged By': { rich_text: rtChunks(`public form (${email})`) },
-        },
-      }),
+    await createRsvp({
+      village_id: slugVillage(village),
+      event_id: ev.id.replace(/-/g, ''),
+      event_title: ev.name.slice(0, 200),
+      first_name: firstName,
+      last_name: lastName,
+      email,
+      phone: phone || null,
+      seats,
+      status: waitlisted ? 'Waitlist' : 'Registered',       // the ONLY statuses this path can write
+      message: clean(message, 1000),
+      date_rsvpd: today(),
+      logged_by: `public form (${email})`.slice(0, 200),
     });
-    if (!res.ok) {
-      const detail = await res.text();
-      throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
-    }
     await sendEmails({ ev, fullName, email, seats, waitlisted, village, context });
     return jsonResp(200, { ok: true, status: waitlisted ? 'Waitlist' : 'Registered', seats });
   } catch (err) {

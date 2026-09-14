@@ -1,8 +1,10 @@
 /**
  * booking-email.js — POST /api/booking-email   (admin)
  *
- * Sends a templated booking email to the requester and stamps "Last Email".
- * Body: { village?, pageId, template }   template ∈ confirmed | declined
+ * Sends a templated booking email to the requester and stamps last_email on
+ * the booking row (Supabase). Body: { village?, pageId, template }
+ *   template ∈ confirmed | declined
+ *   (`pageId` is the row's uuid — the name is kept so /admin/bookings/ is unchanged.)
  *
  *   confirmed — booking confirmed + fee/bond + how to pay (bank details from
  *               VF_BOOKING_PAY_INSTRUCTIONS, falling back to
@@ -13,7 +15,7 @@
  */
 
 import { requireRole } from './_auth.js';
-import { notionHeaders, jsonResp, rtChunks, getBooking, getFacility } from './_bookings.js';
+import { jsonResp, getBooking, patchBooking, getFacility, today } from './_bookings.js';
 
 function esc(s) {
   return String(s || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
@@ -88,8 +90,8 @@ export const handler = async (event, context) => {
   if (!key) return jsonResp(400, { error: 'Email is not configured yet (VF_RESEND_API_KEY missing)' });
 
   try {
-    const booking = await getBooking(pageId);
-    if (!booking || booking.village !== village) return jsonResp(404, { error: 'Booking not found' });
+    const booking = await getBooking(pageId, village);
+    if (!booking) return jsonResp(404, { error: 'Booking not found' });
     if (!booking.email) return jsonResp(400, { error: 'This booking has no email address on file' });
 
     const facility = booking.facilityId ? await getFacility(booking.facilityId).catch(() => null) : null;
@@ -109,11 +111,10 @@ export const handler = async (event, context) => {
       throw new Error(`Resend responded ${res.status}: ${detail.slice(0, 200)}`);
     }
 
-    const stampText = `${template} sent ${new Date().toISOString().slice(0, 10)} by ${auth.user.email || 'admin'}`;
-    await fetch(`https://api.notion.com/v1/pages/${pageId}`, {
-      method: 'PATCH', headers: notionHeaders(),
-      body: JSON.stringify({ properties: { 'Last Email': { rich_text: rtChunks(stampText.slice(0, 200)) } } }),
-    }).catch(() => { /* the email went — a failed stamp must not report failure */ });
+    // Stamp the row so the committee can see what was last sent and when.
+    // The email went — a failed stamp must not report failure.
+    const stampText = `${template} sent ${today()} by ${auth.user.email || 'admin'}`;
+    await patchBooking(booking.id, village, { last_email: stampText.slice(0, 200) }).catch(() => {});
 
     return jsonResp(200, { ok: true, sent: template, to: booking.email });
   } catch (err) {

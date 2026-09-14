@@ -2,32 +2,39 @@
  * event-admin.js — the committee's events endpoint.
  *
  * GET  /api/event-admin?village=       → { events, rsvps }        (admin)
+ *        events come from Notion (content), rsvps from Supabase (PII)
  * POST /api/event-admin { village?, action, ... }                 (admin)
  *   save         { pageId?, name, description?, date, startTime?, endTime?,
  *                  location?, capacity?, price?, organiser?, note? }
- *                 create (Draft) or update an event
+ *                 create (Draft) or update an event                   (Notion)
  *   eventStatus  { pageId, status }    Draft | Published | Closed | Cancelled | Completed
  *   rsvpStatus   { pageId, status }    Registered | Waitlist | Cancelled | Attended
  *                 (promoting a waitlisted party re-checks capacity — override
- *                  with force:true)
- *   rsvpPayment  { pageId, amountPaid?, paymentDate? }   door takings
+ *                  with force:true)                                    (Supabase)
+ *   rsvpPayment  { pageId, amountPaid?, paymentDate? }   door takings  (Supabase)
  *   delete       { pageId, kind: 'event'|'rsvp' }        SUPER-ADMIN only
+ *                 an event goes to Notion's trash; an RSVP is soft-deleted
+ *                 (archived_at — recoverable)
  *
- * RSVP contact details are PII → village ADMIN only. Writes stamp Last Updated By.
+ * For RSVPs `pageId` is the row's uuid — the name is kept so /admin/events/ is
+ * unchanged. RSVP contact details are PII → village ADMIN only. Writes stamp
+ * Last Updated By. The target RSVP is fetched WITH the village predicate before
+ * any write, so an admin JWT from one village can't touch another village's.
  */
 
 import { requireRole, getRoles } from './_auth.js';
 import { requireEntitlement } from './_entitlements.js';
 import {
-  EVENTS_DB_ID, RSVPS_DB_ID, notionHeaders, jsonResp, notProvisioned, rtChunks,
-  queryAll, parseEvent, parseRsvp, getEvent, getRsvp, seatsTaken,
-  EVENT_STATUSES, RSVP_STATUSES,
+  EVENTS_DB_ID, notionHeaders, jsonResp, notProvisioned, rtChunks,
+  queryAll, parseEvent, getEvent, seatsTaken,
+  listRsvps, listRsvpsForEvent, getRsvp, patchRsvp, archiveRsvp,
+  EVENT_STATUSES, RSVP_STATUSES, money, dateOrNull, today, stampBy,
 } from './_events.js';
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export const handler = async (event, context) => {
-  if (!EVENTS_DB_ID || !RSVPS_DB_ID) return notProvisioned();
+  if (!EVENTS_DB_ID) return notProvisioned();
 
   if (event.httpMethod === 'GET') {
     const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
@@ -36,13 +43,12 @@ export const handler = async (event, context) => {
     const ent = await requireEntitlement(village, 'events');
     if (!ent.ok) return jsonResp(ent.status, { error: ent.error });
     try {
-      const [eventPages, rsvpPages] = await Promise.all([
+      const [eventPages, rsvps] = await Promise.all([
         queryAll(EVENTS_DB_ID, { property: 'Village', rich_text: { equals: village } },
           [{ property: 'Date', direction: 'descending' }]),
-        queryAll(RSVPS_DB_ID, { property: 'Village', rich_text: { equals: village } },
-          [{ property: 'Date RSVPd', direction: 'ascending' }]),
+        listRsvps(village),
       ]);
-      return jsonResp(200, { events: eventPages.map(parseEvent), rsvps: rsvpPages.map(parseRsvp) });
+      return jsonResp(200, { events: eventPages.map(parseEvent), rsvps });
     } catch (err) {
       return jsonResp(502, { error: err.message });
     }
@@ -58,7 +64,9 @@ export const handler = async (event, context) => {
   const village = body.village || process.env.VILLAGE_NAME || 'Smiths Lake';
   const auth = requireRole(context, { village, anyOf: ['admin'] });
   if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
-  const stamp = { 'Last Updated By': { rich_text: rtChunks(`${auth.user.email || 'admin'} · ${new Date().toISOString().slice(0, 10)}`) } };
+  // The same audit stamp in each store's dialect.
+  const stamp = { 'Last Updated By': { rich_text: rtChunks(stampBy(auth.user)) } };   // Notion (events)
+  const rsvpStamp = { last_updated_by: stampBy(auth.user) };                            // Supabase (rsvps)
 
   try {
     if (body.action === 'save') {
@@ -118,44 +126,30 @@ export const handler = async (event, context) => {
 
     if (body.action === 'rsvpStatus') {
       if (!RSVP_STATUSES.includes(body.status)) return jsonResp(400, { error: 'Unknown status' });
-      const rsvp = await getRsvp(body.pageId);
-      if (!rsvp || rsvp.village !== village) return jsonResp(404, { error: 'RSVP not found' });
+      const rsvp = await getRsvp(body.pageId, village);
+      if (!rsvp) return jsonResp(404, { error: 'RSVP not found' });
       // Promoting off the waitlist re-checks capacity so the door list stays honest.
       if (rsvp.status === 'Waitlist' && ['Registered', 'Attended'].includes(body.status) && body.force !== true) {
         const ev = await getEvent(rsvp.eventId).catch(() => null);
         if (ev && ev.capacity != null) {
-          const rsvps = (await queryAll(RSVPS_DB_ID, {
-            and: [
-              { property: 'Village', rich_text: { equals: village } },
-              { property: 'Event ID', rich_text: { equals: rsvp.eventId } },
-            ],
-          })).map(parseRsvp);
+          const rsvps = await listRsvpsForEvent(village, rsvp.eventId);
           if (seatsTaken(rsvps, rsvp.eventId) + (rsvp.seats || 1) > ev.capacity) {
             return jsonResp(409, { error: `Still full — promoting this party of ${rsvp.seats || 1} would exceed capacity. Use force to override.`, canForce: true });
           }
         }
       }
-      const res = await fetch(`https://api.notion.com/v1/pages/${body.pageId}`, {
-        method: 'PATCH', headers: notionHeaders(),
-        body: JSON.stringify({ properties: { 'Status': { select: { name: body.status } }, ...stamp } }),
-      });
-      if (!res.ok) throw new Error(`Notion responded ${res.status}`);
+      await patchRsvp(rsvp.id, village, { status: body.status, ...rsvpStamp });
       return jsonResp(200, { ok: true });
     }
 
     if (body.action === 'rsvpPayment') {
-      const rsvp = await getRsvp(body.pageId);
-      if (!rsvp || rsvp.village !== village) return jsonResp(404, { error: 'RSVP not found' });
-      const amount = Number(body.amountPaid);
-      const res = await fetch(`https://api.notion.com/v1/pages/${body.pageId}`, {
-        method: 'PATCH', headers: notionHeaders(),
-        body: JSON.stringify({ properties: {
-          'Amount Paid': { number: Number.isFinite(amount) && amount >= 0 ? amount : null },
-          'Payment Date': { date: { start: body.paymentDate || new Date().toISOString().slice(0, 10) } },
-          ...stamp,
-        } }),
+      const rsvp = await getRsvp(body.pageId, village);
+      if (!rsvp) return jsonResp(404, { error: 'RSVP not found' });
+      await patchRsvp(rsvp.id, village, {
+        amount_paid: money(body.amountPaid),
+        payment_date: dateOrNull(body.paymentDate) || today(),
+        ...rsvpStamp,
       });
-      if (!res.ok) throw new Error(`Notion responded ${res.status}`);
       return jsonResp(200, { ok: true });
     }
 
@@ -163,12 +157,18 @@ export const handler = async (event, context) => {
       if (!getRoles(auth.user).includes('super-admin')) {
         return jsonResp(403, { error: 'Only the super-admin can delete — use Cancelled instead' });
       }
-      const target = body.kind === 'event' ? await getEvent(body.pageId) : await getRsvp(body.pageId);
-      if (!target || target.village !== village) return jsonResp(404, { error: 'Not found' });
-      const res = await fetch(`https://api.notion.com/v1/pages/${body.pageId}`, {
-        method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ archived: true }),
-      });
-      if (!res.ok) throw new Error(`Notion responded ${res.status}`);
+      if (body.kind === 'event') {
+        const target = await getEvent(body.pageId);
+        if (!target || target.village !== village) return jsonResp(404, { error: 'Not found' });
+        const res = await fetch(`https://api.notion.com/v1/pages/${body.pageId}`, {
+          method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ archived: true }),
+        });
+        if (!res.ok) throw new Error(`Notion responded ${res.status}`);
+        return jsonResp(200, { ok: true });
+      }
+      const rsvp = await getRsvp(body.pageId, village);
+      if (!rsvp) return jsonResp(404, { error: 'Not found' });
+      await archiveRsvp(rsvp.id, village);
       return jsonResp(200, { ok: true });
     }
 
