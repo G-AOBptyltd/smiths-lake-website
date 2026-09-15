@@ -52,17 +52,15 @@ if ((import.meta.env.PUBLIC_ABOUT_SOURCE || 'builtin') === 'notion') {
         )}
       </div>
       
-      <form 
-        name="contact" 
-        method="POST" 
-        data-netlify="true" 
-        netlify-honeypot="bot-field"
-        class="contact-form"
-      >
-        <!-- Hidden fields for Netlify -->
-        <input type="hidden" name="form-name" value="contact" />
-        <p class="hidden">
-          <label>Don't fill this out: <input name="bot-field" /></label>
+      <!-- Enquiries post to /api/enquiry-submit → the `enquiries` table in the
+           Sydney Supabase project (migration 0020). They used to go to NETLIFY
+           FORMS and nowhere else: a US-hosted store outside this site's privacy
+           policy, with no retention control and no queue the committee could
+           work. Same fields, same honeypot; the honeypot is now named "website"
+           to match every other public writer on the platform. -->
+      <form class="contact-form" id="contact-form" novalidate>
+        <p class="hidden" aria-hidden="true">
+          <label>Don't fill this out: <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
         </p>
         
         <div class="form-group">
@@ -124,9 +122,22 @@ if ((import.meta.env.PUBLIC_ABOUT_SOURCE || 'builtin') === 'notion') {
         </div>
         
         <div class="form-group">
-          <button type="submit" class="btn btn--primary btn--lg">Send Message</button>
+          <button type="submit" class="btn btn--primary btn--lg" id="contact-submit">Send Message</button>
+          <p class="form-status" id="contact-status" role="status" aria-live="polite"></p>
         </div>
+
+        <p class="collection-notice">
+          We collect your name, email and message so a committee member can reply, and we
+          keep it only as long as the enquiry is open. It is stored securely in Australia and
+          never sold or shared. <a href="/privacy/">Privacy Policy</a>
+        </p>
       </form>
+
+      <div class="contact-sent" id="contact-sent" hidden>
+        <div class="sent-tick" aria-hidden="true">✓</div>
+        <h2>Message sent — thank you</h2>
+        <p>A committee member will be in touch. If it's urgent, please come along to the next meeting.</p>
+      </div>
       
       <aside class="contact-info">
         <h2>Other Ways to Reach Us</h2>
@@ -197,5 +208,109 @@ if ((import.meta.env.PUBLIC_ABOUT_SOURCE || 'builtin') === 'notion') {
   .contact-info p:last-child {
     margin-bottom: 0;
   }
+
+  .collection-notice {
+    font-size: var(--text-sm);
+    color: var(--color-gray-600);
+    line-height: 1.6;
+    margin: var(--space-4) 0 0;
+  }
+
+  .form-status {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-gray-600);
+    margin: var(--space-2) 0 0;
+    min-height: 1.2em;
+  }
+
+  .form-status.is-err {
+    color: #b91c1c;
+  }
+
+  .contact-sent {
+    background: var(--color-off-white);
+    padding: var(--space-8);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-10);
+    text-align: center;
+  }
+
+  .sent-tick {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #16a34a;
+    color: white;
+    font-size: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-4);
+  }
+
+  [hidden] { display: none !important; }
 </style>
 
+<script>
+  /**
+   * Contact enquiries → /api/enquiry-submit (Supabase `enquiries`), replacing
+   * the Netlify Forms POST. Inline success, so nobody leaves the page to be
+   * told "thank you". The <select> sends BOTH halves: its value as `category`
+   * (the stable key) and its visible label as `subject` (what a human reads in
+   * the notification email).
+   */
+  const form = document.getElementById('contact-form') as HTMLFormElement | null;
+  const statusEl = document.getElementById('contact-status');
+  const submitBtn = document.getElementById('contact-submit') as HTMLButtonElement | null;
+  const sent = document.getElementById('contact-sent');
+
+  function setStatus(msg: string, isErr: boolean) {
+    if (!statusEl) return;
+    statusEl.textContent = msg;
+    statusEl.className = 'form-status' + (isErr ? ' is-err' : '');
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const name = String(fd.get('name') || '').trim();
+    const email = String(fd.get('email') || '').trim();
+    const message = String(fd.get('message') || '').trim();
+    const select = document.getElementById('subject') as HTMLSelectElement | null;
+
+    if (!name) { setStatus('Please add your name.', true); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setStatus('Please add a valid email address.', true); return; }
+    if (!select?.value) { setStatus('Please choose a subject.', true); return; }
+    if (!message) { setStatus('Please add your message.', true); return; }
+
+    if (submitBtn) submitBtn.disabled = true;
+    setStatus('Sending…', false);
+
+    try {
+      const r = await fetch('/api/enquiry-submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          village: import.meta.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake',
+          kind: 'contact',
+          name,
+          email,
+          phone: String(fd.get('phone') || '').trim(),
+          subject: select.options[select.selectedIndex]?.text || select.value,
+          category: select.value,
+          message,
+          sourcePage: '/contact/',
+          website: String(fd.get('website') || ''),   // honeypot
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
+      form.hidden = true;
+      if (sent) sent.hidden = false;
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : 'Something went wrong. Please try again.', true);
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  });
+</script>

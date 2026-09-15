@@ -48,6 +48,7 @@
   .ichip { font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:12px; background:#eef1ee; color:#4b5563; }
   .ichip.lc { background:#e3f4e8; color:#1c6b3a; border:1px solid #b7e0c4; }
   .since { color:var(--muted); font-size:12px; flex:0 0 auto; }
+  .consent { color:var(--muted); font-size:12px; flex:0 0 auto; }
   .empty { color:var(--muted); padding:22px 16px; text-align:center; }
   .notice { background:#fff8e6; border:1px solid #f0d69a; border-radius:12px; padding:14px 16px; color:#5a4300; }
   /* Super-admin only — plumbing, hidden from committee admins entirely */
@@ -89,6 +90,7 @@
       <div class="stats">
         <div class="stat"><b id="c-total">0</b><span>subscribers</span></div>
         <div class="stat"><b id="c-sub">0</b><span>receiving updates</span></div>
+        <div class="stat"><b id="c-pending">0</b><span>pending confirmation</span></div>
         <div class="stat"><b id="c-unsub">0</b><span>opted out</span></div>
       </div>
       <div class="toolbar">
@@ -96,6 +98,7 @@
         <select id="filter" onchange="render()">
           <option value="">Everyone</option>
           <option value="subscribed">Receiving updates</option>
+          <option value="pending">Pending confirmation</option>
           <option value="unsubscribed">Opted out</option>
         </select>
         <select id="ifilter" onchange="render()"><option value="">All interests</option></select>
@@ -175,6 +178,7 @@
       const c = d.counts || {};
       document.getElementById('c-total').textContent = c.total || 0;
       document.getElementById('c-sub').textContent = c.subscribed || 0;
+      document.getElementById('c-pending').textContent = c.pending || 0;
       document.getElementById('c-unsub').textContent = c.unsubscribed || 0;
       render();
     } catch (_) { showNotice('Could not load the list — please try again.'); }
@@ -182,8 +186,24 @@
 
   function statusChip(s) {
     if (s === 'subscribed') return '<span class="chip sub">receiving</span>';
+    if (s === 'pending') return '<span class="chip other">awaiting confirmation</span>';
     if (s === 'unsubscribed') return '<span class="chip unsub">opted out</span>';
     return '<span class="chip other">' + esc(s) + '</span>';
+  }
+
+  // The consent record migration 0020 added: when they agreed, and on which
+  // form. Blank for a row that predates the columns and was never re-consented.
+  const CONSENT_LABEL = {
+    'stay-connected': 'updates form',
+    'membership': 'membership form',
+    'volunteer': 'volunteer form',
+    'import': 'imported list',
+  };
+  function consentCell(s) {
+    if (!s.consentAt && !s.consentMethod) return '<span class="consent">—</span>';
+    const when = s.consentAt ? fmtDate(s.consentAt) : '';
+    const how = s.consentMethod ? (CONSENT_LABEL[s.consentMethod] || s.consentMethod) : '';
+    return '<span class="consent">' + esc([when, how].filter(Boolean).join(' · ')) + '</span>';
   }
 
   function filtered() {
@@ -211,14 +231,16 @@
         '<div class="em">' + contact + '</div>' +
         (interests ? '<div class="ichips">' + interests + '</div>' : '') + '</div>' +
         '<span class="since">' + (s.since ? fmtDate(s.since) : '') + '</span>' +
+        consentCell(s) +
         statusChip(s.status) +
       '</div>';
     }).join('');
   }
 
   function exportCsv() {
-    const rows = [['Name', 'Email', 'Phone', 'Status', 'Interests', 'Since']].concat(
-      filtered().map(s => [s.name, s.email, s.phone, s.status, (s.interests || []).join('; '), s.since ? fmtDate(s.since) : ''])
+    const rows = [['Name', 'Email', 'Phone', 'Status', 'Interests', 'Since', 'Confirmed', 'Consent given', 'Consent form']].concat(
+      filtered().map(s => [s.name, s.email, s.phone, s.status, (s.interests || []).join('; '), s.since ? fmtDate(s.since) : '',
+        s.confirmed ? 'Yes' : 'No', s.consentAt ? fmtDate(s.consentAt) : '', s.consentMethod || ''])
     );
     const csv = rows.map(r => r.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(',')).join('\r\n');
     const a = document.createElement('a');

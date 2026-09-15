@@ -85,24 +85,34 @@ const entityShort = villageConfig.entityShort;
 
 <script>
   /**
-   * Fire-and-forget post to the existing Netlify `newsletter` form so the
-   * Zapier → Mailchimp zap picks the volunteer up without any zap changes.
-   * Field names must stay exactly as the newsletter form defines them
-   * (same pattern as the membership form's Stay-Connected re-post).
+   * The exact sentence beside the "Also send me community updates" box, which
+   * is submitted as consentText so the stored consent record is what the
+   * volunteer read. Keep this string and the label in the markup identical.
    */
-  function joinStayConnected(first: string, last: string, email: string) {
-    const params = new URLSearchParams({
-      'form-name': 'newsletter',
-      'first-name': first,
-      'last-name': last,
-      'email': email,
-      'resident-type': '',
-      'privacy-consent': 'on',
-    });
-    fetch('/', {
+  const UPDATES_CONSENT = 'Also send me community updates (you can unsubscribe anytime)';
+
+  /**
+   * Fire-and-forget signup to the community updates list, ONLY when the box is
+   * ticked. It used to re-post the Netlify `newsletter` form with a
+   * FABRICATED privacy-consent:'on' — a consent value the volunteer was never
+   * shown. Now the wording travels with the signup (method:'volunteer').
+   * Best-effort — a mailing-list hiccup must never fail a volunteer signup.
+   */
+  function joinStayConnected(first: string, last: string, email: string, village: string, honeypot: string) {
+    fetch('/api/subscribe', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        village,
+        firstName: first,
+        lastName: last,
+        email,
+        consentText: UPDATES_CONSENT,
+        sourcePage: location.pathname,
+        method: 'volunteer',
+        website: honeypot,          // pass the honeypot through, so a bot that
+                                    // fills every field is dropped here too
+      }),
     }).catch(() => { /* best-effort — never blocks the signup */ });
   }
 
@@ -140,7 +150,9 @@ const entityShort = villageConfig.entityShort;
           joinStayConnected(
             String(payload.firstName || '').trim(),
             String(payload.lastName || '').trim(),
-            String(payload.email || '').trim()
+            String(payload.email || '').trim(),
+            String(payload.village || ''),
+            String(payload.website || '')
           );
         }
         form.hidden = true;

@@ -8,6 +8,7 @@
 import Layout from '../../layouts/BaseLayout.astro';
 import SectionHero from '../../components/SectionHero.astro';
 import SponsorStrip from '../../components/SponsorStrip.astro';
+import StayConnected from '../../components/StayConnected.astro';
 import { fetchNotionContent } from '../../lib/notion-unified.js';
 import { fetchSectionSettingsBySlug } from '../../lib/notion-section-settings.js';
 import { generateSlug, resolveItemUrl, getSectionColour, getSectionDisplayName } from '../../lib/notion-detail-pages.js';
@@ -286,21 +287,13 @@ const listItems = newsItems.filter((i: any) => !featuredSet.has(i));
             </div>
 
             <aside class="sidebar" aria-label="Community links">
-              <!-- Newsletter signup (posts to existing Netlify 'newsletter' form) -->
+              <!-- Community updates signup — the shared StayConnected form,
+                   which posts to /api/subscribe (consent recorded as data,
+                   double opt-in). Replaced the Netlify `newsletter` form. -->
               <div class="side-card">
                 <h3>📬 Stay Connected</h3>
                 <p>Get community news and updates delivered to your inbox.</p>
-                <form name="newsletter" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/thank-you/" class="side-form">
-                  <input type="hidden" name="form-name" value="newsletter" />
-                  <p class="hidden-field"><label>Don't fill this out: <input name="bot-field" /></label></p>
-                  <input type="text" name="first-name" class="side-input" placeholder="First name" required autocomplete="given-name" aria-label="First name" />
-                  <input type="email" name="email" class="side-input" placeholder="Email address" required autocomplete="email" aria-label="Email address" />
-                  <label class="side-consent">
-                    <input type="checkbox" name="privacy-consent" required />
-                    <span>I agree to receive community updates and can unsubscribe anytime. <a href="/privacy/">Privacy</a></span>
-                  </label>
-                  <button type="submit" class="side-btn">Subscribe</button>
-                </form>
+                <StayConnected variant="card" sourcePage="/news/" />
               </div>
 
               <!-- Have your say -->

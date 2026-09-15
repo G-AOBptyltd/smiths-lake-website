@@ -8,11 +8,16 @@
  *
  * Online card payment for memberships arrives with Tyro Pay Online on
  * /contribute/ — until then the form captures how the applicant wants to pay.
- * The optional "Stay Connected" opt-in also posts to the existing Netlify
- * `newsletter` form so the Zapier → Mailchimp zap keeps working untouched.
+ *
+ * The optional "Stay Connected" opt-in posts to /api/subscribe with
+ * method:'membership' and the consent sentence the applicant actually saw. It
+ * used to re-post the Netlify `newsletter` form with a FABRICATED
+ * privacy-consent:'on' — a consent value nobody was ever shown. That is
+ * precisely what Phase 2 of the PII plan set out to stop.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
+import StayConnected from '../components/StayConnected.astro';
 import { village } from '../config/village.js';
 
 // Tyro Pay Online is a PPCA (Smiths Lake) merchant arrangement — every other
@@ -140,8 +145,14 @@ const isDefaultVillage = village.name === 'Smiths Lake';
               <input type="checkbox" name="privacyConsent" required />
               <span>I agree to {village.entityShort} storing my details to manage my membership. <a href="/privacy/">Privacy Policy</a> <span class="req-mark">*</span></span>
             </label>
+            <!-- Deliberately NOT pre-ticked (16 Sep 2026). A pre-ticked box
+                 records as "consent" something the person never actually did,
+                 which is the weakest possible evidence — and the point of
+                 storing consent_text/consent_at is that the record can be
+                 relied on. Someone joining the association can still opt in
+                 with one click. -->
             <label class="optin-check">
-              <input type="checkbox" name="stayConnected" checked />
+              <input type="checkbox" name="stayConnected" />
               <span>Also send me community updates (you can unsubscribe anytime).</span>
             </label>
           </div>
@@ -181,55 +192,10 @@ const isDefaultVillage = village.name === 'Smiths Lake';
           You can unsubscribe anytime.
         </p>
 
-        <form
-          name="newsletter"
-          method="POST"
-          data-netlify="true"
-          netlify-honeypot="bot-field"
-          class="updates-form"
-        >
-          <input type="hidden" name="form-name" value="newsletter" />
-          <p class="hp" aria-hidden="true">
-            <label>Don't fill this out: <input name="bot-field" /></label>
-          </p>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="u-first" class="form-label form-label--required">First name</label>
-              <input type="text" id="u-first" name="first-name" class="form-input" required autocomplete="given-name" />
-            </div>
-            <div class="form-group">
-              <label for="u-last" class="form-label">Last name <span class="hint">(optional)</span></label>
-              <input type="text" id="u-last" name="last-name" class="form-input" autocomplete="family-name" />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="u-email" class="form-label form-label--required">Email address</label>
-              <input type="email" id="u-email" name="email" class="form-input" required autocomplete="email" />
-            </div>
-            <div class="form-group">
-              <label for="u-resident" class="form-label">I am a… <span class="hint">(optional)</span></label>
-              <select id="u-resident" name="resident-type" class="form-input">
-                <option value="">Please select…</option>
-                <option value="permanent">Permanent Resident</option>
-                <option value="holiday">Holiday Home Owner</option>
-                <option value="renter">Renter</option>
-                <option value="visitor">Visitor / Prospective Resident</option>
-                <option value="business">Local Business</option>
-              </select>
-            </div>
-          </div>
-
-          <label class="optin-check updates-consent">
-            <input type="checkbox" name="privacy-consent" required />
-            <span>I agree to receive community updates and understand I can unsubscribe anytime. <a href="/privacy/">Privacy Policy</a> <span class="req-mark">*</span></span>
-          </label>
-
-          <div class="form-group">
-            <button type="submit" class="btn btn--primary">Sign me up</button>
-          </div>
+        <!-- The shared StayConnected form (variant full) — posts to
+             /api/subscribe: consent stored as data, double opt-in, and a
+             first-party unsubscribe. Replaced the Netlify `newsletter` form. -->
+        <StayConnected variant="full" sourcePage="/membership/#updates" />
         </form>
       </div>
 
@@ -374,33 +340,36 @@ const isDefaultVillage = village.name === 'Smiths Lake';
     statusEl.className = 'form-status' + (isErr ? ' is-err' : '');
   }
 
-  // The membership resident categories map onto the existing newsletter form's values.
-  const RESIDENT_MAP: Record<string, string> = {
-    'Permanent Resident': 'permanent',
-    'Holiday Home Owner': 'holiday',
-    'Renter': 'renter',
-    'Visitor / Prospective Resident': 'visitor',
-    'Local Business': 'business',
-  };
+  /**
+   * The exact sentence beside the "Also send me community updates" box. It is
+   * submitted as consentText so the stored consent record is what the person
+   * read — keep this string and the label in the markup identical.
+   */
+  const STAY_CONNECTED_CONSENT =
+    'Also send me community updates (you can unsubscribe anytime).';
 
   /**
-   * Fire-and-forget post to the existing Netlify `newsletter` form so the
-   * Zapier → Mailchimp zap picks the member up without any zap changes.
-   * Field names must stay exactly as the newsletter form defines them.
+   * Fire-and-forget signup to the community updates list. No resident-type
+   * translation any more: the mailing list now uses the member register's own
+   * vocabulary, so the value passes straight through.
+   * Best-effort — a mailing-list hiccup must never fail a membership application.
    */
-  function joinStayConnected(first: string, last: string, email: string, resident: string) {
-    const params = new URLSearchParams({
-      'form-name': 'newsletter',
-      'first-name': first,
-      'last-name': last,
-      'email': email,
-      'resident-type': RESIDENT_MAP[resident] || '',
-      'privacy-consent': 'on',
-    });
-    fetch('/', {
+  function joinStayConnected(first: string, last: string, email: string, resident: string, honeypot: string) {
+    fetch('/api/subscribe', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        village: import.meta.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake',
+        firstName: first,
+        lastName: last,
+        email,
+        residentType: resident,
+        consentText: STAY_CONNECTED_CONSENT,
+        sourcePage: '/membership/',
+        method: 'membership',
+        website: honeypot,          // pass the honeypot through, so a bot that
+                                    // fills every field is dropped here too
+      }),
     }).catch(() => { /* best-effort — never blocks the application */ });
   }
 
@@ -455,7 +424,7 @@ const isDefaultVillage = village.name === 'Smiths Lake';
       const out = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(out.error || 'Something went wrong. Please try again.');
 
-      if (stayConnected) joinStayConnected(firstName, lastName, email, residentCategory);
+      if (stayConnected) joinStayConnected(firstName, lastName, email, residentCategory, payload.website);
 
       form.style.display = 'none';
       const success = document.getElementById('join-success');
