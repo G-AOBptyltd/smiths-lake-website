@@ -35,8 +35,9 @@
 
 import {
   jsonResp, normPath, queryAll, notionHeaders,
-  ACTIVITIES_DB_ID, VOLUNTEERS_DB_ID, STEWARDS_DB_ID,
-  parseActivity, parseVolunteer, parseSteward, rtChunks,
+  ACTIVITIES_DB_ID, VOLUNTEERS_DB_ID,
+  parseActivity, parseVolunteer, rtChunks,
+  listStewards, patchSteward,
 } from './_stewards.js';
 import { PROJECTS_DB, parseProject } from './_projects.js';
 import { requireRole, getRoles } from './_auth.js';
@@ -95,12 +96,14 @@ export const handler = async (event, context) => {
     // ── Notion side ──────────────────────────────────────────────────────
     const villageFilter = { property: 'Village', rich_text: { equals: village } };
 
-    const [actRows, volRows, stwRows, projRows] = [
+    const [actRows, volRows, projRows] = [
       ACTIVITIES_DB_ID ? await queryAll(ACTIVITIES_DB_ID, villageFilter) : [],
       VOLUNTEERS_DB_ID ? await queryAll(VOLUNTEERS_DB_ID, villageFilter) : [],
-      STEWARDS_DB_ID ? await queryAll(STEWARDS_DB_ID, villageFilter) : [],
       PROJECTS_DB ? await queryAll(PROJECTS_DB, villageFilter) : [],
     ];
+    // The steward register lives in Supabase (PII plan Phase 3b). Removed
+    // stewards are included: a Restore later must not bring back the old slug.
+    const stwRows = vappConfigured() ? await listStewards(village) : [];
 
     // The canonical card's display title, taken from something already using
     // it, so the merged records read the way the rest of the system does.
@@ -112,7 +115,7 @@ export const handler = async (event, context) => {
     const activities = actRows.map(parseActivity).filter((a) => normPath(a.cardPath) === fromPath);
     const volunteers = volRows.map(parseVolunteer)
       .filter((v) => (v.cards || []).some((c) => normPath(c.path) === fromPath));
-    const stewards = stwRows.map(parseSteward)
+    const stewards = stwRows
       .filter((s) => (s.cards || []).some((c) => normPath(c.path) === fromPath));
     const projects = projRows.map(parseProject)
       .filter((pr) => (pr.volunteerGroups || []).some((g) => normPath(g?.path || g) === fromPath));
@@ -120,7 +123,7 @@ export const handler = async (event, context) => {
     const activityHours = Math.round(activities.reduce((s, a) => s + (Number(a.totalHours) || 0), 0) * 100) / 100;
 
     // ── Supabase side ────────────────────────────────────────────────────
-    const counts = { hours: 0, attendance: 0, rsvpsGroup: 0, rsvpsActivity: 0, volunteers: 0, groupLinks: 0, roles: 0 };
+    const counts = { stewards: stewards.length, hours: 0, attendance: 0, rsvpsGroup: 0, rsvpsActivity: 0, volunteers: 0, groupLinks: 0, roles: 0 };
     if (vappConfigured()) {
       const n = async (path) => {
         const r = await supa(path, { headers: { Prefer: 'count=exact', Range: '0-0' } });
@@ -140,7 +143,8 @@ export const handler = async (event, context) => {
       void n;
     }
 
-    const total = activities.length + volunteers.length + stewards.length + projects.length
+    // stewards are counted once, inside `counts` (they are a Supabase change now).
+    const total = activities.length + volunteers.length + projects.length
       + Object.values(counts).reduce((a, b) => a + b, 0);
 
     const plan = {
@@ -149,7 +153,6 @@ export const handler = async (event, context) => {
         activities: activities.length,
         activityHoursMoving: activityHours,
         volunteers: volunteers.length,
-        stewards: stewards.length,
         projects: projects.map((x) => x.name),
       },
       supabase: counts,
@@ -185,16 +188,17 @@ export const handler = async (event, context) => {
       const { cards } = swapCards(v.cards, fromPath, toPath, toTitle);
       await patchPage(v.id, { 'Cards': { rich_text: rtChunks(JSON.stringify(cards)) } });
     }
-    for (const s of stewards) {
-      const { cards } = swapCards(s.cards, fromPath, toPath, toTitle);
-      await patchPage(s.id, { 'Cards': { rich_text: rtChunks(JSON.stringify(cards)) } });
-    }
     for (const pr of projects) {
       const { cards } = swapCards(pr.volunteerGroups, fromPath, toPath, toTitle);
       await patchPage(pr.id, { 'Volunteer Groups': { rich_text: rtChunks(JSON.stringify(cards)) } });
     }
 
     // ── Commit: Supabase ─────────────────────────────────────────────────
+    // Steward register first (village-scoped helper, stamps who did it).
+    for (const s of stewards) {
+      const { cards } = swapCards(s.cards, fromPath, toPath, toTitle);
+      await patchSteward(s.id, village, { cards, last_updated_by: (auth.user.email || 'admin').slice(0, 200) });
+    }
     if (vappConfigured()) {
       const patch = (path, payload) => supa(path, {
         method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify(payload),

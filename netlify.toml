@@ -332,6 +332,12 @@
   to = "/.netlify/functions/steward-admin"
   status = 200
 
+# One-time Notion → Supabase steward-register migration (super-admin; GET = dry run, POST = commit)
+[[redirects]]
+  from = "/api/steward-migrate"
+  to = "/.netlify/functions/steward-migrate"
+  status = 200
+
 [[redirects]]
   from = "/api/volunteer-provision"
   to = "/.netlify/functions/volunteer-provision"

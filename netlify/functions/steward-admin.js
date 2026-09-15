@@ -4,7 +4,9 @@
  * GET  /api/steward-admin?village=               → { stewards }        (admin)
  * POST /api/steward-admin { village?, action, ... }                    (admin)
  *      add     { email, name?, cards:[{path,title}] }
- *              Upserts the VF Stewards row AND wires Netlify Identity:
+ *              Upserts the register row (Supabase `stewards`, migration 0018
+ *              — PII plan Phase 3b, 15 Sep 2026; `pageId` in request bodies
+ *              is now the row's uuid) AND wires Netlify Identity:
  *              invites the email if no account exists, and grants the
  *              "<village>:steward" role if they hold no role yet (existing
  *              roles are never downgraded). Identity failures are reported
@@ -18,16 +20,21 @@
  *              Identity role is left in place; with no Active register row
  *              they can sign in but see no cards)
  *      restore { pageId }                         Status → Active
+ *      editEmail { pageId, email }                re-wires Identity + app grants
+ *      delete  { pageId }                         super-admin: archive + revoke role
  *
  * Auth: village admin / super-admin. Village admins can only appoint stewards
- * for THEIR village — the role string granted is derived server-side.
+ * for THEIR village — the role string granted is derived server-side, and
+ * every register read/write is scoped to that village (getSteward returns
+ * null for another village's uuid).
  */
 
 import { requireRole, villageKey, getRoles } from './_auth.js';
 import {
-  STEWARDS_DB_ID, notionHeaders, jsonResp, notProvisioned, rtChunks,
-  queryAll, parseSteward, normPath,
+  jsonResp, normPath,
+  listStewards, getSteward, findStewardByEmail, createSteward, patchSteward, archiveSteward,
 } from './_stewards.js';
+import { supaConfigured } from './_supa.js';
 import { syncStewardRole } from './_vapp.js';
 
 // Where a steward actually does the job: the phone app. Per-village, because
@@ -150,28 +157,17 @@ async function revokeIdentityRole(context, email, village) {
   } catch (_) { /* best-effort */ }
 }
 
-async function getSteward(pageId) {
-  const res = await fetch(`https://api.notion.com/v1/pages/${pageId}`, { headers: notionHeaders() });
-  if (!res.ok) return null;
-  const page = await res.json();
-  const parent = page.parent?.database_id?.replace(/-/g, '');
-  if (parent !== STEWARDS_DB_ID.replace(/-/g, '')) return null;
-  return parseSteward(page);
-}
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const handler = async (event, context) => {
-  if (!STEWARDS_DB_ID) return notProvisioned();
+  if (!supaConfigured()) return jsonResp(503, { error: 'The steward register is stored in Supabase, which is not configured on this site (VAPP_SUPABASE_URL / VAPP_SUPABASE_SERVICE_KEY).' });
 
   if (event.httpMethod === 'GET') {
     const village = event.queryStringParameters?.village || process.env.VILLAGE_NAME || 'Smiths Lake';
     const auth = requireRole(context, { village, anyOf: ['admin'] });
     if (!auth.ok) return jsonResp(auth.status, { error: auth.error });
     try {
-      const stewards = (await queryAll(
-        STEWARDS_DB_ID,
-        { property: 'Village', rich_text: { equals: village } },
-        [{ property: 'Date Added', direction: 'descending' }],
-      )).map(parseSteward);
+      const stewards = await listStewards(village);
       return jsonResp(200, { stewards });
     } catch (err) {
       return jsonResp(502, { error: err.message });
@@ -193,43 +189,20 @@ export const handler = async (event, context) => {
   try {
     if (body.action === 'add') {
       const email = (body.email || '').trim().toLowerCase().slice(0, 200);
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonResp(400, { error: 'A valid email address is required' });
+      if (!email || !EMAIL_RE.test(email)) return jsonResp(400, { error: 'A valid email address is required' });
       const cards = cleanCards(body.cards);
       if (!cards.length) return jsonResp(400, { error: 'Pick at least one card for this steward' });
       const name = (body.name || '').trim().slice(0, 200) || email;
 
-      const existing = (await queryAll(STEWARDS_DB_ID, {
-        and: [
-          { property: 'Email', email: { equals: email } },
-          { property: 'Village', rich_text: { equals: village } },
-        ],
-      })).map(parseSteward)[0];
-
-      const properties = {
-        'Steward': { title: [{ text: { content: name } }] },
-        'Email': { email },
-        'Village': { rich_text: rtChunks(village.slice(0, 100)) },
-        'Cards': { rich_text: rtChunks(JSON.stringify(cards)) },
-        'Status': { select: { name: 'Active' } },
-        'Added By': { rich_text: rtChunks(adminEmail) },
-        'Date Added': { date: { start: new Date().toISOString().slice(0, 10) } },
-      };
-
-      let res;
+      // One live row per email per village (unique index): re-appointing a
+      // steward — Removed or still Active — updates that row. The submitted
+      // cards win; nothing is merged implicitly. added_by / date_added keep
+      // the original appointment for the audit trail.
+      const existing = await findStewardByEmail(village, email);
       if (existing) {
-        // Re-appointing merges nothing implicitly — the submitted cards win.
-        res = await fetch(`https://api.notion.com/v1/pages/${existing.id}`, {
-          method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ properties }),
-        });
+        await patchSteward(existing.id, village, { name, cards, status: 'Active', last_updated_by: adminEmail });
       } else {
-        res = await fetch('https://api.notion.com/v1/pages', {
-          method: 'POST', headers: notionHeaders(),
-          body: JSON.stringify({ parent: { database_id: STEWARDS_DB_ID }, properties }),
-        });
-      }
-      if (!res.ok) {
-        const detail = await res.text();
-        throw new Error(`Notion responded ${res.status}: ${detail.slice(0, 200)}`);
+        await createSteward(village, { name, email, cards, status: 'Active', added_by: adminEmail, last_updated_by: adminEmail });
       }
       const idr = await ensureIdentity(context, email, village);
       // Switch on their steward view in the APP (the console and the app are
@@ -242,21 +215,18 @@ export const handler = async (event, context) => {
     }
 
     if (body.action === 'cards' || body.action === 'remove' || body.action === 'restore') {
-      const steward = await getSteward(body.pageId);
-      if (!steward || steward.village !== village) return jsonResp(404, { error: 'Steward not found' });
-      let properties, changedCards = null;
+      const steward = await getSteward(body.pageId, village);
+      if (!steward) return jsonResp(404, { error: 'Steward not found' });
+      let values, changedCards = null;
       if (body.action === 'cards') {
         const cards = cleanCards(body.cards);
         if (!cards.length) return jsonResp(400, { error: 'A steward needs at least one card — use Remove instead' });
-        properties = { 'Cards': { rich_text: rtChunks(JSON.stringify(cards)) } };
+        values = { cards };
         changedCards = cards;
       } else {
-        properties = { 'Status': { select: { name: body.action === 'remove' ? 'Removed' : 'Active' } } };
+        values = { status: body.action === 'remove' ? 'Removed' : 'Active' };
       }
-      const res = await fetch(`https://api.notion.com/v1/pages/${body.pageId}`, {
-        method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ properties }),
-      });
-      if (!res.ok) throw new Error(`Notion responded ${res.status}`);
+      await patchSteward(steward.id, village, { ...values, last_updated_by: adminEmail });
       // Keep the app's steward grants in step: new card list on 'cards',
       // revoked on 'remove', restored to their register cards on 'restore'.
       const app = await syncStewardRole({
@@ -275,15 +245,14 @@ export const handler = async (event, context) => {
     // the new email; the old account keeps its role but no longer has a register
     // row, so it sees no cards.
     if (body.action === 'editEmail') {
-      const steward = await getSteward(body.pageId);
-      if (!steward || steward.village !== village) return jsonResp(404, { error: 'Steward not found' });
+      const steward = await getSteward(body.pageId, village);
+      if (!steward) return jsonResp(404, { error: 'Steward not found' });
       const newEmail = (body.email || '').trim().toLowerCase().slice(0, 200);
-      if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) return jsonResp(400, { error: 'A valid email address is required' });
+      if (!newEmail || !EMAIL_RE.test(newEmail)) return jsonResp(400, { error: 'A valid email address is required' });
       if (newEmail === (steward.email || '').toLowerCase()) return jsonResp(200, { ok: true });
-      const res = await fetch(`https://api.notion.com/v1/pages/${body.pageId}`, {
-        method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ properties: { 'Email': { email: newEmail } } }),
-      });
-      if (!res.ok) throw new Error(`Notion responded ${res.status}`);
+      // The unique index would refuse this anyway; say why in plain words first.
+      if (await findStewardByEmail(village, newEmail)) return jsonResp(409, { error: 'Another steward in this village already uses that email address' });
+      await patchSteward(steward.id, village, { email: newEmail, last_updated_by: adminEmail });
       const idr = await ensureIdentity(context, newEmail, village);
       // Move the app grants to the new address, and strip them from the old
       // one — otherwise the previous account keeps a live steward view.
@@ -294,16 +263,16 @@ export const handler = async (event, context) => {
       return jsonResp(200, { ok: true, ...(warning ? { warning } : {}) });
     }
 
-    // Hard-delete a steward from the register (super-admin only). Archives the
-    // Notion row AND revokes the steward role — but never deletes the account.
+    // Delete a steward from the register (super-admin only). Soft-deletes the
+    // row (archived_at — recoverable with one SQL update, and it frees the
+    // email for a fresh appointment) AND revokes the steward role — but never
+    // deletes the account.
     if (body.action === 'delete') {
       if (!getRoles(auth.user).includes('super-admin')) return jsonResp(403, { error: 'Only the super-admin can delete a steward from the register' });
-      const steward = await getSteward(body.pageId);
-      if (!steward || steward.village !== village) return jsonResp(404, { error: 'Steward not found' });
-      const res = await fetch(`https://api.notion.com/v1/pages/${body.pageId}`, {
-        method: 'PATCH', headers: notionHeaders(), body: JSON.stringify({ archived: true }),
-      });
-      if (!res.ok) throw new Error(`Notion responded ${res.status}`);
+      const steward = await getSteward(body.pageId, village);
+      if (!steward) return jsonResp(404, { error: 'Steward not found' });
+      await patchSteward(steward.id, village, { last_updated_by: adminEmail });
+      await archiveSteward(steward.id, village);
       await revokeIdentityRole(context, steward.email, village);
       // Revoke in the app too — the account stays, the steward view goes.
       await syncStewardRole({ email: steward.email, name: steward.name, village, cards: [], active: false });
