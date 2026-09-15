@@ -13,18 +13,33 @@
  *
  * The Identity role opens the door; the Stewards register scopes the rooms.
  *
- * Three Notion DBs (created once by /api/volunteer-provision):
- *   VF Stewards, VF Volunteers, VF Activities — all villages share each DB,
- *   scoped by the Village text column (same v1 model as Contributions/Members).
+ * ── STEWARD REGISTER: SUPABASE, NOT NOTION (PII plan Phase 3b, 15 Sep 2026) ──
+ * A steward row is a person (name + email + the cards they lead), so it lives
+ * in the Sydney Supabase project behind deny-by-default RLS — table `stewards`,
+ * migration 0018 in the village1st-volunteer-app repo. The helpers in the
+ * "Steward register" section below are the ONLY register I/O; resolveScope()
+ * reads through them, so its eight callers needed no change. The Notion
+ * "🧭 VF Stewards" DB id is kept solely for /api/steward-migrate.
+ *
+ * Two Notion DBs remain (created once by /api/volunteer-provision):
+ *   VF Volunteers, VF Activities — all villages share each DB, scoped by the
+ *   Village text column (same v1 model as the retired Contributions/Members).
  */
 
 // Rate-limit guard for api.notion.com. Side-effect import — see the file.
 import './_notion-guard.js';
 import { hasRole, requireRole } from './_auth.js';
+import {
+  selectVillage, selectOne, insertRow, updateRow, archiveRowById,
+  slugVillage, supaConfigured, today,
+} from './_supa.js';
 
 const NOTION_VERSION = '2022-06-28';
 
 // Fallbacks = the DBs provisioned under the Smiths Lake Community page (Aug 2026).
+// STEWARDS_DB_ID is retired — Supabase `stewards` since 15 Sep 2026. Exported
+// for steward-migrate.js (and volunteer-provision's "already provisioned"
+// check) only; no register read or write may use it.
 export const STEWARDS_DB_ID = process.env.NOTION_VF_STEWARDS_DB_ID || '3bfd508adfc18193bbcee2e46817f988';
 export const VOLUNTEERS_DB_ID = process.env.NOTION_VF_VOLUNTEERS_DB_ID || '3bfd508adfc181b88653c4c957393fd8';
 export const ACTIVITIES_DB_ID = process.env.NOTION_VF_ACTIVITIES_DB_ID || '3bfd508adfc181fb8d09f877c9769c8a';
@@ -134,6 +149,11 @@ export async function queryAll(dbId, filter, sorts) {
 
 // ── Parsers ───────────────────────────────────────────────────────
 
+/**
+ * Notion page → steward. RETIRED with the register: kept ONLY so
+ * steward-migrate.js can read the old "🧭 VF Stewards" pages. Live code uses
+ * parseStewardRow (same keys) further down.
+ */
 export function parseSteward(page) {
   const p = page.properties || {};
   return {
@@ -209,24 +229,136 @@ export function ensureActivitySchema() {
   return activitySchemaEnsured;
 }
 
+// ── Steward register (Supabase `stewards`, migration 0018) ────────
+//
+// Service-role access, so EVERY caller re-checks the Identity role AND the
+// village first (steward-admin does; resolveScope does via requireRole). The
+// village predicate on each read/write is what stops an admin of one village
+// reaching another village's register by guessing a uuid.
+
+export const T_STEWARDS = 'stewards';
+// Mirrored by the CHECK constraint in migration 0018 — change one, change both.
+export const STEWARD_STATUSES = ['Active', 'Removed'];
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const isUuid = (v) => UUID_RE.test(String(v || ''));
+
+const enc = encodeURIComponent;
+const STEWARD_ORDER = 'date_added.desc,created_at.desc';
+
+/** Row → the SAME shape parseSteward gave the consoles (id is now the uuid, village the slug). */
+export function parseStewardRow(r) {
+  return {
+    id: r.id,
+    name: r.name || '',
+    email: (r.email || '').toLowerCase(),
+    village: r.village_id || '',
+    cards: Array.isArray(r.cards) ? r.cards : [],
+    status: r.status || 'Active',
+    addedBy: r.added_by || '',
+    dateAdded: r.date_added || null,
+  };
+}
+
+/**
+ * Every live (not archived) steward row for a village, newest first — both
+ * Active and Removed by default, because the console shows Removed stewards
+ * greyed with a Restore button. `status` narrows to one status;
+ * `includeRemoved:false` drops Removed rows.
+ */
+export async function listStewards(village, { status, includeRemoved = true } = {}) {
+  const filters = [];
+  if (status) filters.push(`status=eq.${enc(status)}`);
+  else if (!includeRemoved) filters.push('status=eq.Active');
+  const rows = await selectVillage(T_STEWARDS, village, {
+    order: STEWARD_ORDER, extra: filters.length ? filters.join('&') : undefined,
+  });
+  return rows.map(parseStewardRow);
+}
+
+/**
+ * One steward, proven to belong to `village` and not archived. Replaces the
+ * Notion parent-database check. Null for a non-uuid id (PostgREST would 400
+ * on it), a foreign village's row, or an archived row.
+ */
+export async function getSteward(id, village) {
+  if (!isUuid(id)) return null;
+  const row = await selectOne(T_STEWARDS, id, village);
+  return row ? parseStewardRow(row) : null;
+}
+
+/** The live row (Active OR Removed) for an email in a village, else null. */
+export async function findStewardByEmail(village, email) {
+  const e = String(email || '').trim().toLowerCase();
+  if (!e) return null;
+  const rows = await selectVillage(T_STEWARDS, village, { extra: `email=eq.${enc(e)}&limit=1` });
+  return rows.length ? parseStewardRow(rows[0]) : null;
+}
+
+/** Insert; village_id and the lower-cased email are derived here so no caller can write a foreign slug by accident. */
+export async function createSteward(village, values) {
+  return insertRow(T_STEWARDS, {
+    ...values,
+    village_id: slugVillage(village),
+    email: String(values.email || '').trim().toLowerCase(),
+    date_added: values.date_added || today(),
+  });
+}
+export async function patchSteward(id, village, values) {
+  if (!isUuid(id)) throw new Error('Steward not found');
+  return updateRow(T_STEWARDS, id, village, values);
+}
+export async function archiveSteward(id, village) {
+  if (!isUuid(id)) throw new Error('Steward not found');
+  return archiveRowById(T_STEWARDS, id, village);
+}
+
+/**
+ * Raw PostgREST access for steward-migrate's reconciliation read (all
+ * villages, archived rows included) and its inserts. Same shape as
+ * _contrib.js contribRaw; errors carry .status so a missing table (404) can
+ * become a 412. Never echoes a row in an error.
+ */
+export async function stewardRaw(path, opts = {}) {
+  if (!supaConfigured()) {
+    throw new Error('The steward register is stored in Supabase, which is not configured on this site (VAPP_SUPABASE_URL / VAPP_SUPABASE_SERVICE_KEY).');
+  }
+  const res = await fetch(`${process.env.VAPP_SUPABASE_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers: {
+      apikey: process.env.VAPP_SUPABASE_SERVICE_KEY,
+      Authorization: `Bearer ${process.env.VAPP_SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      ...(opts.headers || {}),
+    },
+  });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (_) { data = text; }
+  if (!res.ok) {
+    const msg = (data && (data.message || data.hint)) || `Supabase responded ${res.status}`;
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
 // ── Card-level scoping ────────────────────────────────────────────
 
 /**
  * All ACTIVE steward assignments for an email in a village → array of card
- * objects [{path,title}], or [] if none. (An email can hold several rows;
- * cards are unioned.)
+ * objects [{path,title}], or [] if none. The register now allows one live row
+ * per email per village, but cards are still unioned so nothing is lost if
+ * that ever changes. Reads Supabase, so resolveScope() below is unchanged.
  */
 export async function getStewardCards(email, village) {
-  if (!STEWARDS_DB_ID || !email) return [];
-  const rows = await queryAll(STEWARDS_DB_ID, {
-    and: [
-      { property: 'Email', email: { equals: String(email).toLowerCase() } },
-      { property: 'Village', rich_text: { equals: village } },
-      { property: 'Status', select: { equals: 'Active' } },
-    ],
+  if (!email || !supaConfigured()) return [];
+  const rows = await selectVillage(T_STEWARDS, village, {
+    extra: `email=eq.${enc(String(email).trim().toLowerCase())}&status=eq.Active`,
   });
   let cards = [];
-  for (const row of rows) for (const c of parseSteward(row).cards) cards = mergeCard(cards, c);
+  for (const row of rows) for (const c of parseStewardRow(row).cards) cards = mergeCard(cards, c);
   return cards;
 }
 

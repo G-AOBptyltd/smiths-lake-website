@@ -18,11 +18,12 @@
  * register is exactly the write path that plan exists to close.
  *
  * Notifies the card's stewards (or the village notify list if the card has
- * none) via the VF Resend vars — env-gated, fail-open. Stewards are still read
- * from Notion (PII plan Phase 3); the message text reaches them in that email.
+ * none) via the VF Resend vars — env-gated, fail-open. Stewards are read from
+ * the Supabase register (PII plan Phase 3b); the message text reaches them in
+ * that email.
  */
 
-import { STEWARDS_DB_ID, jsonResp, queryAll, parseSteward, normPath } from './_stewards.js';
+import { jsonResp, listStewards, normPath } from './_stewards.js';
 import { getModuleRecipients } from './_villages.js';
 import { supaConfigured, slugVillage } from './_supa.js';
 
@@ -115,17 +116,9 @@ async function notifyStewards(v, context) {
   if (!key) return;
   let to = [];
   try {
-    if (STEWARDS_DB_ID) {
-      const rows = await queryAll(STEWARDS_DB_ID, {
-        and: [
-          { property: 'Village', rich_text: { equals: v.village } },
-          { property: 'Status', select: { equals: 'Active' } },
-        ],
-      });
-      to = rows.map(parseSteward)
-        .filter((s) => s.email && s.cards.some((c) => normPath(c.path) === v.cardPath))
-        .map((s) => s.email);
-    }
+    to = (await listStewards(v.village, { status: 'Active' }))
+      .filter((s) => s.email && s.cards.some((c) => normPath(c.path) === v.cardPath))
+      .map((s) => s.email);
   } catch (_) { /* fall through to village list */ }
   if (!to.length) to = await getModuleRecipients({ village: v.village, module: 'volunteers', context });
   if (!to.length) return;
