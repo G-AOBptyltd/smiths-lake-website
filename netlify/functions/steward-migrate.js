@@ -100,6 +100,27 @@ const summarise = (r) => ({
 
 const cardKey = (cards) => (cards || []).map((c) => normPath(c.path)).sort().join('|');
 
+/**
+ * Order the Notion pages so the row that SHOULD win the (village, email)
+ * unique index is seen first. The old register allowed several rows per
+ * person — removing a steward left a 'Removed' row behind and re-appointing
+ * them created a fresh one — while `stewards` keeps one live row each. Without
+ * an explicit order the winner would be whichever page Notion happened to
+ * return first, so a steward removed in August and re-appointed in September
+ * could land in Supabase as Removed and silently lose their access.
+ *
+ * Preference: a live page over a trashed one, then Active over Removed, then
+ * the most recently added. The superseded pages are reported as conflicts and
+ * skipped, which is exactly what the new model would hold for that person.
+ */
+function preferLive(a, b) {
+  const live = (r) => (r.archived_at ? 1 : 0);
+  if (live(a) !== live(b)) return live(a) - live(b);
+  const active = (r) => (r.status === 'Active' ? 0 : 1);
+  if (active(a) !== active(b)) return active(a) - active(b);
+  return String(b.date_added || b.created_at || '').localeCompare(String(a.date_added || a.created_at || ''));
+}
+
 /** Reconcile the mapped Notion rows against what Supabase already holds. */
 async function reconcile(mapped) {
   const all = await stewardRaw(`${T_STEWARDS}?select=id,notion_page_id,village_id,name,email,status,cards,archived_at`);
@@ -131,7 +152,7 @@ async function reconcile(mapped) {
     }
     const key = `${r.village_id}\n${r.email}`;
     if (!r.archived_at && (liveKeys.has(key) || pendingKeys.has(key))) {
-      conflicts.push({ notionId: r.notion_page_id, email: r.email, village: r.village_id, reason: 'A live steward row for this email already exists in this village (one per email+village) — merge the cards by hand.' });
+      conflicts.push({ notionId: r.notion_page_id, email: r.email, village: r.village_id, status: r.status, reason: 'Superseded — a live row for this person already holds the email in this village (the register keeps one each). This older page is skipped; check its cards are on the live row if it was Active.' });
       continue;
     }
     if (!r.archived_at) pendingKeys.add(key);
@@ -171,7 +192,7 @@ export const handler = async (event, context) => {
     }
 
     // queryAll paginates sequentially and backs off on 429 — never Promise.all.
-    const mapped = (await queryAll(STEWARDS_DB_ID)).map(mapPage);
+    const mapped = (await queryAll(STEWARDS_DB_ID)).map(mapPage).sort(preferLive);
     const plan = await reconcile(mapped);
 
     // ── DRY RUN ──────────────────────────────────────────────────────────
