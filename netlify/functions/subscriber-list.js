@@ -4,6 +4,11 @@
  * The human-facing newsletter subscriber list for the /admin/subscribers/
  * module. Admin-gated (PII). Returns plain people data — no Mailchimp/Supabase
  * internals — so the committee sees a clean mailing list, not plumbing.
+ *
+ * Since migration 0020 it also carries the consent truth the list never had:
+ * per subscriber `confirmed` / `consentAt` / `consentMethod`, and a `pending`
+ * total. Every pre-existing key keeps its exact name and shape — the console
+ * was extended to SHOW more, never to read something different.
  */
 
 import { jsonResp } from './_stewards.js';
@@ -21,6 +26,7 @@ export const handler = async (event, context) => {
   const r = await supa(
     `subscribers?village_id=eq.${vslug}` +
     `&select=email,first_name,last_name,status,tags,interests,merge_fields,source,subscribed_at,created_at` +
+    `,confirmed_at,consent_at,consent_method` +
     `&order=created_at.desc`
   );
   if (!r.ok) return jsonResp(502, { error: 'Could not load subscribers' });
@@ -41,6 +47,10 @@ export const handler = async (event, context) => {
     interests: Array.isArray(s.interests) ? s.interests : [],
     isVolunteer: volEmails.has((s.email || '').toLowerCase()),
     since: s.subscribed_at || s.created_at || null,
+    // Added by 0020 — the double opt-in and consent record.
+    confirmed: !!s.confirmed_at,
+    consentAt: s.consent_at || null,
+    consentMethod: s.consent_method || '',
   }));
 
   // Distinct interest names present (for the filter dropdown).
@@ -51,6 +61,10 @@ export const handler = async (event, context) => {
     total: subscribers.length,
     subscribed: subscribers.filter((s) => s.status === 'subscribed').length,
     unsubscribed: subscribers.filter((s) => s.status === 'unsubscribed').length,
+    // Signed up but not yet confirmed — nothing is ever sent to these
+    // addresses. Also counts a 'subscribed' row with no confirmed_at, which
+    // only a pre-0020 import can produce.
+    pending: subscribers.filter((s) => s.status === 'pending' || (s.status === 'subscribed' && !s.confirmed)).length,
   };
 
   return jsonResp(200, { configured: true, subscribers, counts, interests: [...interestSet].sort() });

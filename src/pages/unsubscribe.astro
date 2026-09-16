@@ -1,0 +1,114 @@
+---
+/**
+ * /unsubscribe/ — the first-party way off the mailing list.
+ *
+ * Every email carries a link here with ?token=<uuid>. The page calls
+ * /api/unsubscribe on load, because someone who clicked "unsubscribe" has
+ * already made their decision — making them click a second button to be
+ * believed is the dark pattern this replaces. (The API also answers a plain
+ * GET, so one-click List-Unsubscribe headers work without this page at all.)
+ *
+ * Changed their mind? A link back to the signup, not a re-subscribe button —
+ * rejoining goes through the same double opt-in as everybody else.
+ *
+ * noIndex — a token-bearing URL has no business in a search index.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Unsubscribe" noIndex={true}>
+  <main class="confirm-page">
+    <div class="container">
+      <div class="confirm-card">
+        <div class="confirm-icon" id="icon" aria-hidden="true">⏳</div>
+        <h1 id="heading">Removing you from the list…</h1>
+        <p id="detail">One moment.</p>
+        <div class="actions" id="actions" hidden>
+          <a href="/" class="btn btn-primary">Return home</a>
+          <a href="/membership/#updates" class="btn btn-outline" id="resub" hidden>Changed your mind? Sign up again</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  const token = new URLSearchParams(location.search).get('token') || '';
+  const icon = document.getElementById('icon')!;
+  const heading = document.getElementById('heading')!;
+  const detail = document.getElementById('detail')!;
+  const actions = document.getElementById('actions')!;
+  const resub = document.getElementById('resub')!;
+
+  function show(ic: string, head: string, text: string, offerResub = false) {
+    icon.textContent = ic;
+    heading.textContent = head;
+    detail.textContent = text;
+    actions.hidden = false;
+    resub.hidden = !offerResub;
+  }
+
+  (async () => {
+    if (!token) {
+      show('🔗', 'That link looks incomplete', 'Use the unsubscribe link exactly as it appears in the email — it carries a code this page needs.');
+      return;
+    }
+    try {
+      const r = await fetch('/api/unsubscribe?token=' + encodeURIComponent(token));
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.alreadyUnsubscribed) {
+        show('✓', 'You were already unsubscribed', "Nothing more to do — we won't email you community updates.", true);
+      } else if (r.ok) {
+        show('✓', "Done — you're unsubscribed", "We've stopped your community updates and removed your name and preferences. We keep your email address on a do-not-send list so you aren't added back by mistake.", true);
+      } else {
+        show('🔗', "That link isn't valid", data.error || 'Please email the committee and a person will remove you by hand.');
+      }
+    } catch (_) {
+      show('⚠️', "We couldn't reach the server", 'Nothing has changed yet — please try the link again in a moment.');
+    }
+  })();
+</script>
+
+<style>
+  .confirm-page {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .confirm-card {
+    text-align: center;
+    max-width: 560px;
+    padding: 3rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  .confirm-icon {
+    width: 80px;
+    height: 80px;
+    background: #16a34a;
+    color: white;
+    font-size: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+  }
+  /* var(--color-navy, …) not the literal hex: token defaults to this exact
+     value so default builds render identically, themed villages recolour. */
+  h1 { color: var(--color-navy, #1B365D); margin-bottom: 1rem; font-size: 1.6rem; }
+  p { color: #6B7280; margin-bottom: 2rem; line-height: 1.6; }
+  .actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .btn-primary { background: var(--color-navy, #1B365D); color: white; }
+  .btn-outline { border: 2px solid var(--color-navy, #1B365D); color: var(--color-navy, #1B365D); }
+  [hidden] { display: none !important; }
+</style>

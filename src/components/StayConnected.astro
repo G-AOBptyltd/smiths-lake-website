@@ -1,0 +1,261 @@
+---
+/**
+ * StayConnected — THE community-updates signup form.
+ *
+ * One component, replacing three separate Netlify `newsletter` forms (the news
+ * sidebar, the membership page's "Just want community updates?" block, and the
+ * orphaned SubscriptionForm) that had drifted into three different field sets,
+ * three resident-type vocabularies and three consent wordings.
+ *
+ * Posts JSON to /api/subscribe and renders its success state inline — nobody
+ * leaves the page to be told "thank you".
+ *
+ * ── THE CONSENT TEXT IS THE PAYLOAD ────────────────────────────────────────
+ * The sentence rendered next to the checkbox is ALSO submitted, verbatim, as
+ * `consentText`, so the row in Supabase records what this person was actually
+ * shown — not a re-typed approximation in a function somewhere. Change the
+ * wording here and the record changes with it, automatically. That is the
+ * point: a consent record that can drift from the page is not a record.
+ *
+ * Props:
+ *   variant    'card' (compact, for a sidebar) | 'full' (page-width block)
+ *   sourcePage the path this form sits on — stored as consent_source
+ */
+import { village } from '../config/village.js';
+
+interface Props {
+  variant?: 'card' | 'full';
+  sourcePage: string;
+}
+const { variant = 'card', sourcePage } = Astro.props;
+const isFull = variant === 'full';
+
+/**
+ * The three interests the list actually uses — mirrors INTERESTS in
+ * netlify/functions/_subscribers.js (change one, change both). "Community
+ * updates" is the list itself, so it is ticked and locked; the other two are
+ * genuine opt-ins. The investigation found seven Mailchimp groups, five of
+ * them with zero members: offering choices nobody takes is a worse form.
+ */
+const INTERESTS = [
+  { value: 'Community updates', label: 'Community updates', hint: 'News, meetings, events', locked: true },
+  { value: 'Landcare', label: 'Landcare', hint: 'Bush regeneration and working bees', locked: false },
+  { value: 'Emergency alerts', label: 'Emergency alerts', hint: 'Bushfire, flood, severe weather', locked: false },
+];
+
+/** ONE resident vocabulary — the member register's (RESIDENT_TYPES, _subscribers.js). */
+const RESIDENT_TYPES = [
+  'Permanent Resident',
+  'Holiday Home Owner',
+  'Renter',
+  'Visitor / Prospective Resident',
+  'Local Business',
+];
+
+// The exact sentence beside the checkbox AND the value stored as consent_text.
+const CONSENT_TEXT = `I agree to receive community updates from ${village.entityName} by email, and I understand I can unsubscribe at any time.`;
+
+const uid = `sc-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<div class={`stay-connected ${isFull ? 'sc--full' : 'sc--card'}`}>
+  <form class="sc-form" id={uid} novalidate data-source={sourcePage} data-village={village.name}>
+    <!-- Honeypot: hidden from people, catches bots -->
+    <p class="sc-hp" aria-hidden="true">
+      <label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+    </p>
+    <input type="hidden" name="consentText" value={CONSENT_TEXT} />
+
+    <div class={isFull ? 'sc-row' : ''}>
+      <div class="sc-field">
+        <label for={`${uid}-first`}>First name <span class="sc-req" aria-hidden="true">*</span></label>
+        <input type="text" id={`${uid}-first`} name="firstName" maxlength="100" required autocomplete="given-name" placeholder={isFull ? '' : 'First name'} />
+      </div>
+      {isFull && (
+        <div class="sc-field">
+          <label for={`${uid}-last`}>Last name <span class="sc-opt">(optional)</span></label>
+          <input type="text" id={`${uid}-last`} name="lastName" maxlength="100" autocomplete="family-name" />
+        </div>
+      )}
+    </div>
+
+    <div class={isFull ? 'sc-row' : ''}>
+      <div class="sc-field">
+        <label for={`${uid}-email`}>Email address <span class="sc-req" aria-hidden="true">*</span></label>
+        <input type="email" id={`${uid}-email`} name="email" maxlength="200" required autocomplete="email" placeholder={isFull ? '' : 'Email address'} />
+      </div>
+      {isFull && (
+        <div class="sc-field">
+          <label for={`${uid}-resident`}>I am a… <span class="sc-opt">(optional)</span></label>
+          <select id={`${uid}-resident`} name="residentType">
+            <option value="">Please select…</option>
+            {RESIDENT_TYPES.map((t) => <option value={t}>{t}</option>)}
+          </select>
+        </div>
+      )}
+    </div>
+
+    <fieldset class="sc-interests">
+      <legend>What would you like to hear about?</legend>
+      {INTERESTS.map((i) => (
+        <label class="sc-check">
+          <input
+            type="checkbox"
+            name="interests"
+            value={i.value}
+            checked={i.locked}
+            disabled={i.locked}
+          />
+          <span>
+            {i.label}
+            {i.locked && <span class="sc-opt"> (always on)</span>}
+            {isFull && i.hint && <small>{i.hint}</small>}
+          </span>
+        </label>
+      ))}
+    </fieldset>
+
+    <label class="sc-check sc-consent">
+      <input type="checkbox" name="consent" required />
+      <span>{CONSENT_TEXT} <a href="/privacy/">Privacy Policy</a></span>
+    </label>
+
+    <div class="sc-actions">
+      <button type="submit" class="sc-submit">Sign me up</button>
+      <span class="sc-status" role="status" aria-live="polite"></span>
+    </div>
+  </form>
+
+  <div class="sc-done" hidden>
+    <strong>Almost there — check your email 📬</strong>
+    <p class="sc-done-text">We've sent you a confirmation link. Click it and you're on the list. (No email? Check your junk folder.)</p>
+  </div>
+</div>
+
+<script>
+  /**
+   * One handler for every StayConnected form on the page. Reads the consent
+   * sentence straight out of the form, so what is stored is exactly what was
+   * displayed. The always-on interest is disabled in the markup (so it can't
+   * be unticked) and therefore is not in the FormData — it is added back here,
+   * and the API adds it again regardless.
+   */
+  document.querySelectorAll('.sc-form').forEach((el) => {
+    const form = el as HTMLFormElement;
+    const wrap = form.closest('.stay-connected')!;
+    const status = form.querySelector('.sc-status') as HTMLElement;
+    const btn = form.querySelector('.sc-submit') as HTMLButtonElement;
+    const done = wrap.querySelector('.sc-done') as HTMLElement;
+    const doneText = wrap.querySelector('.sc-done-text') as HTMLElement;
+
+    const fail = (msg: string) => {
+      status.textContent = msg;
+      status.className = 'sc-status sc-err';
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const firstName = String(fd.get('firstName') || '').trim();
+      const email = String(fd.get('email') || '').trim();
+
+      if (!firstName) return fail('Please add your first name.');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail('Please add a valid email address.');
+      if (!fd.get('consent')) return fail('Please tick the box so we know you agree.');
+
+      const interests = fd.getAll('interests').map(String);
+      if (!interests.includes('Community updates')) interests.push('Community updates');
+
+      btn.disabled = true;
+      status.textContent = 'Signing you up…';
+      status.className = 'sc-status';
+
+      try {
+        const r = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            village: form.dataset.village,
+            firstName,
+            lastName: String(fd.get('lastName') || '').trim(),
+            email,
+            residentType: String(fd.get('residentType') || ''),
+            interests,
+            consentText: String(fd.get('consentText') || ''),
+            sourcePage: form.dataset.source || location.pathname,
+            method: 'stay-connected',
+            website: String(fd.get('website') || ''),   // honeypot
+          }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
+
+        // A site with no mail relay configured confirms on the spot — say so,
+        // rather than telling people to wait for an email that never comes.
+        if (data.confirmationSent === false) {
+          doneText.textContent = "You're on the list — thanks for signing up. Every email we send has an unsubscribe link.";
+        }
+        form.hidden = true;
+        done.hidden = false;
+      } catch (err) {
+        fail(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+        btn.disabled = false;
+      }
+    });
+  });
+</script>
+
+<style>
+  .stay-connected { --sc-accent: #2d8b8b; }
+  .sc-form { display: block; }
+  .sc-hp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+
+  .sc-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .sc-row .sc-field { flex: 1; min-width: 200px; }
+  .sc-field { margin-bottom: 0.75rem; }
+  .sc-field label { display: block; font-size: 0.82rem; font-weight: 600; color: #374151; margin-bottom: 0.25rem; }
+  .sc-field input, .sc-field select {
+    width: 100%; box-sizing: border-box; font-family: inherit; font-size: 0.95rem;
+    padding: 0.6rem 0.75rem; border: 1px solid #d1d5db; border-radius: 8px; background: white;
+  }
+  .sc-field input:focus, .sc-field select:focus { outline: 2px solid var(--sc-accent); border-color: var(--sc-accent); }
+  .sc-req { color: #dc2626; }
+  .sc-opt { font-weight: 400; color: #9ca3af; }
+
+  .sc-interests { border: none; margin: 0.5rem 0 0.75rem; padding: 0; }
+  .sc-interests legend { font-size: 0.82rem; font-weight: 600; color: #374151; padding: 0; margin-bottom: 0.4rem; }
+
+  .sc-check { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.85rem; color: #374151; cursor: pointer; margin-bottom: 0.4rem; line-height: 1.45; }
+  .sc-check input { width: 1rem; height: 1rem; margin-top: 0.15rem; flex: 0 0 auto; accent-color: var(--sc-accent); }
+  .sc-check input:disabled { cursor: default; opacity: 0.75; }
+  .sc-check small { display: block; color: #6b7280; font-size: 0.78rem; }
+  .sc-consent { margin-top: 0.6rem; font-size: 0.8rem; color: #4b5563; }
+  .sc-consent a { color: var(--sc-accent); }
+
+  .sc-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.75rem; }
+  .sc-submit {
+    background: var(--sc-accent); color: white; border: none; border-radius: 8px;
+    padding: 0.7rem 1.5rem; font-size: 0.92rem; font-weight: 700; font-family: inherit; cursor: pointer;
+  }
+  .sc-submit:hover { filter: brightness(0.92); }
+  .sc-submit:disabled { background: #9ca3af; cursor: wait; }
+  .sc-status { font-size: 0.8rem; font-weight: 600; color: #6b7280; }
+  .sc-status.sc-err { color: #b91c1c; }
+
+  .sc-done strong { display: block; color: var(--sc-accent); font-size: 1rem; }
+  .sc-done p { font-size: 0.88rem; color: #4b5563; margin: 0.4rem 0 0; line-height: 1.6; }
+  [hidden] { display: none !important; }
+
+  /* Card variant — sits inside a sidebar card, so it stays tight and the
+     button spans the width the way the old sidebar form did. */
+  .sc--card .sc-submit { width: 100%; }
+  .sc--card .sc-field label {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  .sc--card .sc-interests legend { font-size: 0.78rem; }
+  .sc--card .sc-check { font-size: 0.8rem; }
+
+  /* Full variant — page-width block on /membership/. */
+  .sc--full .sc-submit { padding: 0.8rem 1.9rem; font-size: 1rem; }
+</style>

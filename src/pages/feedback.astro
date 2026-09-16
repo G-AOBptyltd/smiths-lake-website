@@ -62,18 +62,15 @@ const entityShort = import.meta.env.PUBLIC_ENTITY_SHORT || 'PPCA';
         </div>
       </div>
       
-      <form 
-        name="feedback" 
-        method="POST" 
-        data-netlify="true" 
-        netlify-honeypot="bot-field"
-        class="feedback-form"
-        action="/thank-you/"
-        id="feedback-form"
-      >
-        <input type="hidden" name="form-name" value="feedback" />
-        <p class="hidden">
-          <label>Don't fill this out: <input name="bot-field" /></label>
+      <!-- Feedback posts to /api/enquiry-submit → the `enquiries` table in the
+           Sydney Supabase project (migration 0020). It used to go to NETLIFY
+           FORMS and nowhere else: a US-hosted store outside this site's privacy
+           policy, with no retention control and no queue the committee could
+           work. Every field is unchanged; the honeypot is now named "website"
+           to match every other public writer on the platform. -->
+      <form class="feedback-form" id="feedback-form" novalidate>
+        <p class="hidden" aria-hidden="true">
+          <label>Don't fill this out: <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
         </p>
         
         <!-- Project field - shown via JS when ?project= parameter exists -->
@@ -182,14 +179,27 @@ const entityShort = import.meta.env.PUBLIC_ENTITY_SHORT || 'PPCA';
         </div>
         
         <div class="form-group">
-          <button type="submit" class="btn btn--primary btn--lg btn--full">Submit your comments</button>
+          <button type="submit" class="btn btn--primary btn--lg btn--full" id="fb-submit">Submit your comments</button>
+          <p class="form-status" id="fb-status" role="status" aria-live="polite"></p>
         </div>
+
+        <p class="collection-notice">
+          We collect your name, email and comments so the committee can consider them and
+          reply, and keep them only while the item is open. Stored securely in Australia,
+          never sold or shared. <a href="/privacy/">Privacy Policy</a>
+        </p>
         
         <!-- Back to project link - shown via JS when project parameter exists -->
         <p id="back-link" class="form-back" style="display: none;">
           <a href="/projects/" id="back-link-anchor">← Back to Projects</a>
         </p>
       </form>
+
+      <div class="feedback-sent" id="fb-sent" hidden>
+        <div class="sent-tick" aria-hidden="true">✓</div>
+        <h2>Thank you — your comments are with the committee</h2>
+        <p id="fb-sent-detail">Every submission is read. If we need more detail, we'll email you.</p>
+      </div>
       
       <aside class="feedback-note">
         <h2>🔒 Privacy Note</h2>
@@ -398,6 +408,49 @@ const entityShort = import.meta.env.PUBLIC_ENTITY_SHORT || 'PPCA';
     text-decoration: underline;
   }
   
+  .collection-notice {
+    font-size: 0.85rem;
+    color: #6b7280;
+    line-height: 1.6;
+    margin: 1rem 0 0;
+  }
+  
+  .form-status {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #6b7280;
+    margin: 0.5rem 0 0;
+    min-height: 1.2em;
+  }
+  
+  .form-status.is-err {
+    color: #b91c1c;
+  }
+  
+  .feedback-sent {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+  
+  .sent-tick {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #16a34a;
+    color: white;
+    font-size: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+  }
+  
+  [hidden] { display: none !important; }
+  
   .feedback-note {
     background: #1B365D;
     color: white;
@@ -521,5 +574,103 @@ const entityShort = import.meta.env.PUBLIC_ENTITY_SHORT || 'PPCA';
       document.title = `Feedback: ${projectName} | ${import.meta.env.PUBLIC_SITE_TITLE || import.meta.env.PUBLIC_VILLAGE_DISPLAY_NAME || 'Smiths Lake Village'}`;
     }
   });
+
+  /**
+   * Feedback → /api/enquiry-submit (Supabase `enquiries`), replacing the
+   * Netlify Forms POST. Inline success — nobody leaves the page to be told
+   * "thank you". The hidden project-default / category-default inputs are
+   * still read exactly as the ?project= script leaves them, so project and
+   * general feedback both submit unchanged.
+   *
+   * The "Email me updates" tick is now a REAL signup: it posts to
+   * /api/subscribe with the label text the person actually saw (the ?project=
+   * script rewrites that label, so it is read at submit time, not hardcoded).
+   * Previously the tick went to Netlify Forms and subscribed nobody.
+   */
+  (() => {
+    const form = document.getElementById('feedback-form');
+    if (!(form instanceof HTMLFormElement)) return;
+    const statusEl = document.getElementById('fb-status');
+    const submitBtn = document.getElementById('fb-submit');
+    const sent = document.getElementById('fb-sent');
+
+    const setStatus = (msg: string, isErr: boolean) => {
+      if (!statusEl) return;
+      statusEl.textContent = msg;
+      statusEl.className = 'form-status' + (isErr ? ' is-err' : '');
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const name = String(fd.get('name') || '').trim();
+      const email = String(fd.get('email') || '').trim();
+      const title = String(fd.get('title') || '').trim();
+      const details = String(fd.get('details') || '').trim();
+      const category = String(fd.get('category') || fd.get('category-default') || '');
+      const project = String(fd.get('project') || fd.get('project-default') || '');
+
+      if (!name) { setStatus('Please add your name.', true); return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setStatus('Please add a valid email address.', true); return; }
+      if (!category) { setStatus('Please choose a category.', true); return; }
+      if (!title) { setStatus('Please add a short summary.', true); return; }
+      if (!details) { setStatus('Please add the details.', true); return; }
+
+      if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
+      setStatus('Sending…', false);
+
+      const village = import.meta.env.PUBLIC_VILLAGE_NAME || 'Smiths Lake';
+      const honeypot = String(fd.get('website') || '');
+
+      try {
+        const r = await fetch('/api/enquiry-submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            village,
+            kind: 'feedback',
+            name,
+            email,
+            subject: title,
+            category,
+            message: details,
+            project,
+            priority: String(fd.get('priority') || ''),
+            sourcePage: '/feedback/',
+            website: honeypot,
+          }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
+
+        // Opt-in to community updates, if they ticked it. Best-effort: a
+        // mailing-list hiccup must never lose the feedback we just saved.
+        if (fd.get('subscribe')) {
+          const label = document.getElementById('subscribe-label');
+          const consentText = (label && label.textContent ? label.textContent : 'Email me updates about community initiatives').trim();
+          fetch('/api/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              village,
+              firstName: name.split(' ')[0],
+              lastName: name.split(' ').slice(1).join(' '),
+              email,
+              consentText,
+              sourcePage: '/feedback/',
+              method: 'stay-connected',
+              website: honeypot,
+            }),
+          }).catch(() => { /* best-effort */ });
+        }
+
+        form.hidden = true;
+        if (sent) sent.hidden = false;
+      } catch (err) {
+        setStatus(err instanceof Error ? err.message : 'Something went wrong. Please try again.', true);
+        if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
+      }
+    });
+  })();
 </script>
 </BaseLayout>

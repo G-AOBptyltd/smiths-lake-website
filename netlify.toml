@@ -82,6 +82,31 @@
   to = "/.netlify/functions/subscriber-list"
   status = 200
 
+# Signup forms rebuild (Phase 2 of the PII plan, migration 0020) — the ONE
+# mailing-list signup, its double opt-in confirmation, the platform's own
+# first-party unsubscribe, and contact/feedback enquiries off Netlify Forms.
+# All four are PUBLIC; the two token endpoints answer a plain GET so a
+# one-click List-Unsubscribe header and an emailed link both work.
+[[redirects]]
+  from = "/api/subscribe"
+  to = "/.netlify/functions/subscribe"
+  status = 200
+
+[[redirects]]
+  from = "/api/subscribe-confirm"
+  to = "/.netlify/functions/subscribe-confirm"
+  status = 200
+
+[[redirects]]
+  from = "/api/unsubscribe"
+  to = "/.netlify/functions/unsubscribe"
+  status = 200
+
+[[redirects]]
+  from = "/api/enquiry-submit"
+  to = "/.netlify/functions/enquiry-submit"
+  status = 200
+
 # Mailchimp audience → Supabase subscribers (one-time sync + ongoing webhook)
 [[redirects]]
   from = "/api/mailchimp-sync"
